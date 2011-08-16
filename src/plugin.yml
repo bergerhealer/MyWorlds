@@ -1,0 +1,23 @@
+name: My Worlds
+main: com.bergerkiller.bukkit.mw.MyWorlds
+version: 1.00
+author: bergerkiller
+commands:
+    world:
+        description: Cross-world commands to manage your worlds
+        usage: |
+            /world list - Lists all worlds of this server
+            /world info ([worldname]) - Shows information about a world
+            /world portals ([worldname]) - Lists all the portals
+            /world load [worldname] - Loads a world into memory
+            /world unload [worldname] - Unloads a world from memory
+            /world create [worldname] ([seed]) - Creates a new world
+            /world spawn [worldname] - Teleport to the world spawn
+            /world evacuate [worldname] - Removes all players by teleportation or kicking
+            /world repair [worldname] ([Seed]) - Repairs the level.dat
+            /world save [worldname] - Saves the world
+            /world delete [worldname] - Permanently deletes a world
+            /world copy [worldname] [newname] - Copies a world under a new name
+    tpp:
+        description: Cross-world teleportation commands
+        usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World
