@@ -2,8 +2,11 @@ package com.bergerkiller.bukkit.mw;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockCanBuildEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockListener;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.SignChangeEvent;
@@ -16,13 +19,12 @@ public class MWBlockListener extends BlockListener {
     }
     
     @Override
-    public void onBlockCanBuild(BlockCanBuildEvent event) {
-    	if (event.getMaterial() == Material.PORTAL) event.setBuildable(true);
-    }
-    
-    @Override
     public void onBlockPhysics(BlockPhysicsEvent event) {
-    	if (event.getBlock().getType() == Material.PORTAL) event.setCancelled(true);
+    	if (event.getBlock().getType() == Material.PORTAL) {
+    		if (!(event.getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR)) {
+    			event.setCancelled(true);
+    		}
+    	}
     }
     
     @Override
@@ -34,7 +36,7 @@ public class MWBlockListener extends BlockListener {
     		MyWorlds.notifyConsole(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
     	}
     }
-    
+        
     @Override
     public void onSignChange(SignChangeEvent event) {
     	Portal portal = Portal.get(event.getBlock(), event.getLines());

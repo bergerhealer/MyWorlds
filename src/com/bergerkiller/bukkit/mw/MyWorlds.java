@@ -36,7 +36,6 @@ public class MyWorlds extends JavaPlugin {
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Event.Type.ENTITY_PORTAL_ENTER, entityListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Highest, this);   
-        pm.registerEvent(Event.Type.BLOCK_CANBUILD, blockListener, Priority.Highest, this);   
         pm.registerEvent(Event.Type.BLOCK_PHYSICS, blockListener, Priority.Highest, this);   
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
         pm.registerEvent(Event.Type.CHUNK_LOAD, worldListener, Priority.Monitor, this);  
@@ -130,7 +129,7 @@ public class MyWorlds extends JavaPlugin {
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String cmdLabel, String[] args) {
 		boolean isplayer = sender instanceof Player;
-		if (cmdLabel.equalsIgnoreCase("world")) {
+		if (cmdLabel.equalsIgnoreCase("world") || cmdLabel.equalsIgnoreCase("myworlds") || cmdLabel.equalsIgnoreCase("worlds") || cmdLabel.equalsIgnoreCase("mw")) {
 			boolean showusage = false;
 			boolean showarginv = true;
 			if (args.length == 0) {

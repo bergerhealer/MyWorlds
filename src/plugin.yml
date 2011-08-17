@@ -1,10 +1,11 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.00
+version: 1.01
 author: bergerkiller
 commands:
     world:
         description: Cross-world commands to manage your worlds
+        aliases: [myworlds, worlds, mw]
         usage: |
             /world list - Lists all worlds of this server
             /world info ([worldname]) - Shows information about a world

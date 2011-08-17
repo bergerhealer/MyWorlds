@@ -78,15 +78,6 @@ public class WorldManager {
 			FileInputStream fis = new FileInputStream(f);
 			Tag t = Tag.readFrom(fis);
 			fis.close();
-			FileOutputStream erasor;
-			try {
-				erasor = new FileOutputStream("data.txt");
-				erasor.write(t.toString().getBytes());
-				erasor.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			return t;
 		} catch (Exception ex) {
 			return null;
