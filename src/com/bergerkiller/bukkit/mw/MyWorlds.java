@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -16,9 +17,13 @@ import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.config.Configuration;
 
 
 public class MyWorlds extends JavaPlugin {
+	public static boolean usePermissions = false;
+	public static boolean useSuperPerms = true;
+	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
 	public static void log(Level level, String message) {
@@ -40,6 +45,12 @@ public class MyWorlds extends JavaPlugin {
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
         pm.registerEvent(Event.Type.CHUNK_LOAD, worldListener, Priority.Monitor, this);  
         
+        Configuration config = getConfiguration();
+        usePermissions = config.getBoolean("usePermissions", usePermissions);
+        useSuperPerms = config.getBoolean("useSuperPerms", useSuperPerms);
+        config.setProperty("usePermissions", usePermissions);
+        config.setProperty("useSuperPerms", useSuperPerms);
+        config.save();
         //Permissions
 		Permission.init(this);
 		
@@ -48,7 +59,7 @@ public class MyWorlds extends JavaPlugin {
         
         //Commands
         getCommand("tpp").setExecutor(this);
-        getCommand("world").setExecutor(this);
+        getCommand("world").setExecutor(this);  
         
         //final msg
         PluginDescriptionFile pdfFile = this.getDescription();
@@ -61,7 +72,12 @@ public class MyWorlds extends JavaPlugin {
 		System.out.println("World Travel disabled!");
 	}
 	
-	public void showUsage(CommandSender sender, String command) {
+	public boolean showInv(CommandSender sender, String command) {
+		message(sender, ChatColor.RED + "Invalid arguments for this command!");
+		return showUsage(sender, command);
+	}
+	
+	public boolean showUsage(CommandSender sender, String command) {
 		if (Permission.has(sender, command)) {
 			String msg = (sender instanceof Player) ? ChatColor.YELLOW.toString() : "";
 			if (command.equalsIgnoreCase("world.list")) {
@@ -92,6 +108,9 @@ public class MyWorlds extends JavaPlugin {
 				msg += "/tpp [Portalname/Worldname] - Teleport to a Portal or World";
 			}
 			sender.sendMessage(msg);
+			return true;
+		} else {
+			return false;
 		}
 	}
 	public static void message(CommandSender sender, String message) {
@@ -128,19 +147,70 @@ public class MyWorlds extends JavaPlugin {
 	
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String cmdLabel, String[] args) {
-		boolean isplayer = sender instanceof Player;
-		if (cmdLabel.equalsIgnoreCase("world") || cmdLabel.equalsIgnoreCase("myworlds") || cmdLabel.equalsIgnoreCase("worlds") || cmdLabel.equalsIgnoreCase("mw")) {
-			boolean showusage = false;
-			boolean showarginv = true;
-			if (args.length == 0) {
-				showusage = true;
-			} else {
-				String subcommand = args[0];
-				if (subcommand.equalsIgnoreCase("list") && Permission.has(sender, "world.list")) {
+		String node = null; //generate a permission node from this command
+		if (cmdLabel.equalsIgnoreCase("world")
+				|| cmdLabel.equalsIgnoreCase("myworlds")
+				|| cmdLabel.equalsIgnoreCase("worlds")
+				|| cmdLabel.equalsIgnoreCase("mw")) {
+			if (args.length >= 1) {
+				if (args[0].equalsIgnoreCase("list")) {
+					node = "world.list";
+				} else if (args[0].equalsIgnoreCase("info")) {
+					node = "world.info";
+				} else if (args[0].equalsIgnoreCase("portals")) {
+					node = "world.portals";
+				} else if (args[0].equalsIgnoreCase("load")) {
+					node = "world.load";
+				} else if (args[0].equalsIgnoreCase("unload")) {
+					node = "world.unload";
+				} else if (args[0].equalsIgnoreCase("create")) {
+					node = "world.create";
+				} else if (args[0].equalsIgnoreCase("spawn")) {
+					node = "world.spawn";
+				} else if (args[0].equalsIgnoreCase("evacuate")) {
+					node = "world.evacuate";
+				} else if (args[0].equalsIgnoreCase("repair")) {
+					node = "world.repair";
+				} else if (args[0].equalsIgnoreCase("save")) {
+					node = "world.save";
+				} else if (args[0].equalsIgnoreCase("delete")) {
+					node = "world.delete";
+				} else if (args[0].equalsIgnoreCase("copy")) {
+					node = "world.copy";
+				}
+			}
+			if (node == null) {
+				//show default usage for /world
+				boolean hac = false; //has available commands
+				if (showUsage(sender, "world.list")) hac = true;
+				if (showUsage(sender, "world.portals")) hac = true;
+				if (showUsage(sender, "world.info")) hac = true;
+				if (showUsage(sender, "world.spawn")) hac = true;
+				if (showUsage(sender, "world.save")) hac = true;
+				if (showUsage(sender, "world.load")) hac = true;
+				if (showUsage(sender, "world.unload")) hac = true;
+				if (showUsage(sender, "world.create")) hac = true;
+				if (showUsage(sender, "world.repair")) hac = true;
+				if (showUsage(sender, "world.delete")) hac = true;
+				if (showUsage(sender, "world.rename")) hac = true;
+				if (showUsage(sender, "world.copy")) hac = true;
+				if (hac) {
+					if (args.length >= 1) message(sender, ChatColor.RED + "Unknown command: " + args[0]);
+				} else {
+					message(sender, ChatColor.RED + "You don't have permission to use this command!");
+				}
+			}
+		} else if (cmdLabel.equalsIgnoreCase("tpp")) {
+			node = "tpp";
+		}
+		if (node != null) {
+			if (Permission.has(sender, node)) {
+				//nodes made, commands can now be executed (finally!)
+				if (node == "world.list") {
 					//==========================================
 					//===============LIST COMMAND===============
 					//==========================================
-					if (isplayer) {
+					if (sender instanceof Player) {
 						//perform some nice layout coloring
 						sender.sendMessage("");
 						sender.sendMessage(ChatColor.GREEN + "[Loaded/Online] " + ChatColor.RED + "[Unloaded/Offline] " + ChatColor.DARK_RED + "[Broken/Dead]");
@@ -179,7 +249,7 @@ public class MyWorlds extends JavaPlugin {
 							sender.sendMessage("    " + world + " " + status);
 						}
 					}
-				} else if (subcommand.equalsIgnoreCase("portals") && Permission.has(sender, "world.portals")) {
+				} else if (node == "world.portals") {
 					//==========================================
 					//===============PORTALS COMMAND============
 					//==========================================
@@ -196,7 +266,7 @@ public class MyWorlds extends JavaPlugin {
 						portals = Portal.getPortals();
 					}
 					listPortals(sender, portals);
-				} else if (subcommand.equalsIgnoreCase("info") && Permission.has(sender, "world.info")) {
+				} else if (node == "world.info") {
 					//==========================================
 					//===============INFO COMMAND===============
 					//==========================================
@@ -243,7 +313,7 @@ public class MyWorlds extends JavaPlugin {
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
 					}
-				} else if (subcommand.equalsIgnoreCase("load") && Permission.has(sender, "world.load")) {
+				} else if (node == "world.load") {
 					//==========================================
 					//===============LOAD COMMAND===============
 					//==========================================
@@ -265,9 +335,9 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.RED + "World not found!");
 						}
 					} else {
-						showusage = true;
+						showInv(sender, node);
 					}
-				} else if (subcommand.equalsIgnoreCase("unload") && Permission.has(sender, "world.unload")) {
+				} else if (node == "world.unload") {
 					//============================================
 					//===============UNLOAD COMMAND===============
 					//============================================
@@ -289,9 +359,9 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.RED + "World not found!");
 						}
 					} else {
-						showusage = true;
+						showInv(sender, node);
 					}
-				} else if (subcommand.equalsIgnoreCase("evacuate") && Permission.has(sender, "world.evacuate")) {
+				} else if (node == "world.evacuate") {
 					//==============================================
 					//===============EVACUATE COMMAND===============
 					//==============================================
@@ -318,33 +388,9 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.RED + "World not found!");
 						}
 					} else {
-						showusage = true;
+						showInv(sender, node);
 					}
-				} else if (subcommand.equalsIgnoreCase("spawn") && Permission.has(sender, "world.spawn")) {
-					//===========================================
-					//===============SPAWN COMMAND===============
-					//===========================================
-					if (args.length == 2) {
-						String worldname = WorldManager.matchWorld(args[1]);
-						if (worldname != null) {
-							World w = Bukkit.getServer().getWorld(worldname);
-							if (w != null) {
-								if (sender instanceof Player) {
-									((Player) sender).teleport(w.getSpawnLocation());
-									sender.sendMessage(ChatColor.GREEN + "You have been teleported to '" + worldname + "'");
-								} else {
-									sender.sendMessage("A player is expected!");
-								}
-							} else {
-								message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
-							}
-						} else {
-							message(sender, ChatColor.RED + "World not found!");
-						}
-					} else {
-						showusage = true;
-					}
-				} else if (subcommand.equalsIgnoreCase("create") && Permission.has(sender, "world.create")) {
+				} else if (node == "world.create") {
 					//============================================
 					//===============CREATE COMMAND===============
 					//============================================
@@ -366,9 +412,9 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.RED + "World already exists!");
 						}
 					} else {
-						showusage = true;
+						showInv(sender, node);
 					}
-				} else if (subcommand.equalsIgnoreCase("repair") && Permission.has(sender, "world.repair")) {
+				} else if (node == "world.repair") {
 					//============================================
 					//===============REPAIR COMMAND===============
 					//============================================
@@ -394,9 +440,33 @@ public class MyWorlds extends JavaPlugin {
 						}
 						
 					} else {
-						showusage = true;
+						showInv(sender, node);
 					}
-				} else if (subcommand.equalsIgnoreCase("save") && Permission.has(sender, "world.save")) {
+				} else if (node == "world.spawn") {
+					//===========================================
+					//===============SPAWN COMMAND===============
+					//===========================================
+					if (args.length == 2) {
+						String worldname = WorldManager.matchWorld(args[1]);
+						if (worldname != null) {
+							World w = Bukkit.getServer().getWorld(worldname);
+							if (w != null) {
+								if (sender instanceof Player) {
+									((Player) sender).teleport(w.getSpawnLocation());
+									sender.sendMessage(ChatColor.GREEN + "You have been teleported to '" + worldname + "'");
+								} else {
+									sender.sendMessage("A player is expected!");
+								}
+							} else {
+								message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
+							}
+						} else {
+							message(sender, ChatColor.RED + "World not found!");
+						}
+					} else {
+						showInv(sender, node);
+					}
+				} else if (node == "world.save") {
 					//==========================================
 					//===============SAVE COMMAND===============
 					//==========================================
@@ -411,9 +481,9 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.RED + "World not found!");
 						}
 					} else {
-						showusage = true;
+						showInv(sender, node);
 					}
-				} else if (subcommand.equalsIgnoreCase("delete") && Permission.has(sender, "world.delete")) {
+				} else if (node == "world.save") {
 					//============================================
 					//===============DELETE COMMAND===============
 					//============================================
@@ -430,9 +500,9 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.RED + "World not found!");
 						}
 					} else {
-						showusage = true;
+						showInv(sender, node);
 					}
-				} else if (subcommand.equalsIgnoreCase("copy") && Permission.has(sender, "world.copy")) {
+				} else if (node == "world.copy") {
 					//============================================
 					//===============COPY COMMAND=================
 					//============================================
@@ -451,51 +521,32 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.RED + "World not found!");
 						}
 					} else {
-						showusage = true;
+						showInv(sender, node);
 					}
-				} else {
-					message(sender, ChatColor.DARK_RED + "Unknown command: " + subcommand);
-					showusage = true;
-					showarginv = false;
-				}
-			}
-			if (showusage) {
-				if (showarginv) {
-					message(sender, ChatColor.DARK_RED + "Invalid amount of arguments.");
-				}
-				showUsage(sender, "world.list");
-				showUsage(sender, "world.portals");
-				showUsage(sender, "world.info");
-				showUsage(sender, "world.spawn");
-				showUsage(sender, "world.save");
-				showUsage(sender, "world.load");
-				showUsage(sender, "world.unload");
-				showUsage(sender, "world.create");
-				showUsage(sender, "world.repair");
-				showUsage(sender, "world.delete");
-				showUsage(sender, "world.rename");
-				showUsage(sender, "world.copy");
-			}
-		} else if (cmdLabel.equalsIgnoreCase("tpp") && Permission.has(sender, "tpp")) {
-			if (args.length == 1) {
-				String portal = args[0];
-				Location tele = Portal.getPortalLocation(portal);
-				if (tele != null) {
-				    if (sender instanceof Player) {
-				    	((Player) sender).teleport(tele);
-				    } else {
-				       sender.sendMessage("This command is only for players!");
-				    }
-				} else {
-					message(sender, ChatColor.RED + "Portal not found!");
-					listPortals(sender, Portal.getPortals());
+				} else if (node == "tpp") {
+					//================================================
+					//===============TELEPORT PORTAL COMMAND==========
+					//================================================
+					if (args.length == 1) {
+						String portal = args[0];
+						Location tele = Portal.getPortalLocation(portal);
+						if (tele != null) {
+						    if (sender instanceof Player) {
+						    	((Player) sender).teleport(tele);
+						    } else {
+						       sender.sendMessage("This command is only for players!");
+						    }
+						} else {
+							message(sender, ChatColor.RED + "Portal not found!");
+							listPortals(sender, Portal.getPortals());
+						}
+					} else {
+						showInv(sender, node);
+					}			
 				}
 			} else {
-				message(sender, ChatColor.DARK_RED + "Invalid amount of arguments.");
-				showUsage(sender, "tpp");
-			}
-		} else {
-			message(sender, ChatColor.DARK_RED + "Unknown command!");
+				message(sender, ChatColor.RED + "You don't have permission to use this command!");
+			}	
 		}
 		return true;
 	}
