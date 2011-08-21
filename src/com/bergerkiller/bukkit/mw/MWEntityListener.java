@@ -23,7 +23,7 @@ public class MWEntityListener extends EntityListener {
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
     	Entity e = event.getEntity();
         long currtime = System.currentTimeMillis();
-        if (!portaltimes.containsKey(e) || currtime - portaltimes.get(e) >= 1000) {
+        if (!portaltimes.containsKey(e) || currtime - portaltimes.get(e) >= MyWorlds.teleportInterval) {
         	Portal portal = Portal.getPortal(event.getLocation(), 10);  	
         	if (portal != null) {
         		if (!(event.getEntity() instanceof Player) || Permission.has((Player) event.getEntity(), "portal.use")) {

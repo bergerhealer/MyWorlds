@@ -23,6 +23,7 @@ import org.bukkit.util.config.Configuration;
 public class MyWorlds extends JavaPlugin {
 	public static boolean usePermissions = false;
 	public static boolean useSuperPerms = true;
+	public static int teleportInterval = 2000;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -48,8 +49,10 @@ public class MyWorlds extends JavaPlugin {
         Configuration config = getConfiguration();
         usePermissions = config.getBoolean("usePermissions", usePermissions);
         useSuperPerms = config.getBoolean("useSuperPerms", useSuperPerms);
+        teleportInterval = config.getInt("teleportInterval", teleportInterval);
         config.setProperty("usePermissions", usePermissions);
         config.setProperty("useSuperPerms", useSuperPerms);
+        config.setProperty("teleportInterval", teleportInterval);
         config.save();
         //Permissions
 		Permission.init(this);
