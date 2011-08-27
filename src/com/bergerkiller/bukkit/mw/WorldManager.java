@@ -7,7 +7,6 @@ import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
@@ -42,14 +41,13 @@ public class WorldManager {
 	
 	public static Environment getEnvironment(String worldname) {
 		for (Environment env : Environment.values()) {
-			if (worldname.toUpperCase().endsWith("_" + env.toString())) {
+			if (worldname.toUpperCase().contains(env.toString())) {
 				return env;
 			}
 		}
 		return Environment.NORMAL;
 	}
-	
-	
+		
 	public static boolean generateData(String worldname, String seed) {
 		Tag data = new Tag(Type.TAG_Compound, "Data", new Tag[] {
 				new Tag(Type.TAG_Byte, "thundering", (byte) 0), 
@@ -182,11 +180,16 @@ public class WorldManager {
 		try {
 			MyWorlds.log(Level.INFO, "[MyWorlds] Loading or creating world: " + worldname);
 			Environment env = getEnvironment(worldname);
+			World w;
 			if (seed == null || seed == "") {
-				return Bukkit.getServer().createWorld(worldname, env);
+				w = Bukkit.getServer().createWorld(worldname, env);
 			} else {
-				return Bukkit.getServer().createWorld(worldname, env, getSeed(seed));
+				w = Bukkit.getServer().createWorld(worldname, env, getSeed(seed));
 			}
+			if (w != null) {
+				PvPData.updatePvP(w);
+			}
+			return w;
 		} catch (Exception ex) {
 			return null;
 		}

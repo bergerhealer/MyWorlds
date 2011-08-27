@@ -16,15 +16,15 @@ public class Permission {
 		if (MyWorlds.usePermissions) {
 			Plugin permissionsPlugin = plugin.getServer().getPluginManager().getPlugin("Permissions");
 			if (permissionsPlugin == null) {
-				MyWorlds.log(Level.WARNING, "[MyWorlds] Permission system not detected, defaulting to build-in permissions!");
+				MyWorlds.log(Level.WARNING, "Permission system not detected, defaulting to build-in permissions!");
 			} else {
 				permissionHandler = ((Permissions) permissionsPlugin).getHandler();
-				MyWorlds.log(Level.INFO, "[MyWorlds] Found and will use permissions plugin "+((Permissions)permissionsPlugin).getDescription().getFullName());
+				MyWorlds.log(Level.INFO, "Found and will use permissions plugin "+((Permissions)permissionsPlugin).getDescription().getFullName());
 			}
 		} else if (MyWorlds.useSuperPerms) {
-			MyWorlds.log(Level.INFO, "[MyWorlds] Using build-in 'Bukkit SuperPerms' as permissions plugin!");
+			MyWorlds.log(Level.INFO, "Using build-in 'Bukkit SuperPerms' as permissions plugin!");
 		} else {
-			MyWorlds.log(Level.INFO, "[MyWorlds] Permission system not enabled, defaulting to build-in permissions!");
+			MyWorlds.log(Level.INFO, "Permission system not enabled, defaulting to build-in permissions!");
 		}
 	}
 	public static boolean has(CommandSender sender, String command) {
@@ -42,7 +42,7 @@ public class Permission {
 				if (command.equalsIgnoreCase("portal.use")) return true;
 				//OP commands only, remainder is console-only
 				final String[] opCommands = new String[] {"world.load", "world.unload",
-						"world.create", "world.list", "world.info",
+						"world.create", "world.list", "world.info", "world.togglepvp", 
 						"world.spawn", "world.repair", "world.save", "world.evacuate", "world.portals", "tpp", "portal.create"};
 				for (String comm : opCommands) {
 					if (comm.equalsIgnoreCase(command)) return player.isOp();

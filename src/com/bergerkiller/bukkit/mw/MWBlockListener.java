@@ -2,22 +2,14 @@ package com.bergerkiller.bukkit.mw;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockCanBuildEvent;
-import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockListener;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.SignChangeEvent;
 
 public class MWBlockListener extends BlockListener {
-    private final MyWorlds plugin;
 
-    public MWBlockListener(final  MyWorlds plugin) {
-        this.plugin = plugin;
-    }
-    
     @Override
     public void onBlockPhysics(BlockPhysicsEvent event) {
     	if (event.getBlock().getType() == Material.PORTAL) {
@@ -29,14 +21,21 @@ public class MWBlockListener extends BlockListener {
     
     @Override
     public void onBlockBreak(BlockBreakEvent event) {    
-    	Portal portal = Portal.get(event.getBlock());
+    	Portal portal = Portal.get(event.getBlock(), false);
     	if (portal != null) {
     		portal.remove();
     		event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
     		MyWorlds.notifyConsole(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
     	}
     }
-        
+    
+	public static float getAngleDifference(float angle1, float angle2) {
+		float difference = angle1 - angle2;
+        while (difference < -180) difference += 360;
+        while (difference > 180) difference -= 360;
+        return Math.abs(difference);
+	}
+            
     @Override
     public void onSignChange(SignChangeEvent event) {
     	Portal portal = Portal.get(event.getBlock(), event.getLines());

@@ -8,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -22,18 +21,20 @@ import org.bukkit.util.config.Configuration;
 
 public class MyWorlds extends JavaPlugin {
 	public static boolean usePermissions = false;
-	public static boolean useSuperPerms = true;
+	public static boolean useSuperPerms = false;
 	public static int teleportInterval = 2000;
+	public static boolean useWaterTeleport = true;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
 	public static void log(Level level, String message) {
-		logger.log(level, message);
+		logger.log(level, "[MyWorlds] " + message);
 	}
 	
-	private final MWEntityListener entityListener = new MWEntityListener(this);
-	private final MWBlockListener blockListener = new MWBlockListener(this);
-	private final MWWorldListener worldListener = new MWWorldListener(this);
+	private final MWEntityListener entityListener = new MWEntityListener();
+	private final MWBlockListener blockListener = new MWBlockListener();
+	private final MWWorldListener worldListener = new MWWorldListener();
+	private final MWPlayerListener playerListener = new MWPlayerListener();
 	
 	public void onEnable() {
 		plugin = this;
@@ -42,7 +43,8 @@ public class MyWorlds extends JavaPlugin {
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Event.Type.ENTITY_PORTAL_ENTER, entityListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Highest, this);   
-        pm.registerEvent(Event.Type.BLOCK_PHYSICS, blockListener, Priority.Highest, this);   
+        pm.registerEvent(Event.Type.BLOCK_PHYSICS, blockListener, Priority.Highest, this); 
+        pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
         pm.registerEvent(Event.Type.CHUNK_LOAD, worldListener, Priority.Monitor, this);  
         
@@ -50,16 +52,35 @@ public class MyWorlds extends JavaPlugin {
         usePermissions = config.getBoolean("usePermissions", usePermissions);
         useSuperPerms = config.getBoolean("useSuperPerms", useSuperPerms);
         teleportInterval = config.getInt("teleportInterval", teleportInterval);
+        useWaterTeleport = config.getBoolean("useWaterTeleport", useWaterTeleport);
         config.setProperty("usePermissions", usePermissions);
         config.setProperty("useSuperPerms", useSuperPerms);
         config.setProperty("teleportInterval", teleportInterval);
+        config.setProperty("useWaterTeleport", useWaterTeleport);
         config.save();
         //Permissions
 		Permission.init(this);
 		
+		//Loaded worlds
+		SafeReader reader = new SafeReader(getDataFolder() + File.separator + "LoadedWorlds.txt");
+		String textline = null;
+		while ((textline = reader.readLine()) != null) {
+			if (WorldManager.worldExists(textline)) {
+				if (WorldManager.getOrCreateWorld(textline) == null) {
+					log(Level.SEVERE, "Failed to (pre)load world: " + textline);
+				}
+			} else {
+				log(Level.WARNING, "World: " + textline + " no longer exists and has not been loaded!");
+			}
+		}
+		reader.close();
+		
+		//PvP
+		PvPData.load(getDataFolder() + File.separator + "PvPWorlds.txt");
+		
 		//Portals
 		Portal.loadPortals(getDataFolder() + File.separator + "portals.txt");
-        
+
         //Commands
         getCommand("tpp").setExecutor(this);
         getCommand("world").setExecutor(this);  
@@ -72,7 +93,17 @@ public class MyWorlds extends JavaPlugin {
 		//Portals
 		Portal.savePortals(getDataFolder() + File.separator + "portals.txt");
 		
-		System.out.println("World Travel disabled!");
+		//PvP
+		PvPData.save(getDataFolder() + File.separator + "PvPWorlds.txt");
+		
+		//Loaded worlds
+		SafeWriter writer = new SafeWriter(getDataFolder() + File.separator + "LoadedWorlds.txt");
+		for (World w : getServer().getWorlds()) {
+			writer.writeLine(w.getName());
+		}
+		writer.close();
+		
+		System.out.println("My Worlds disabled!");
 	}
 	
 	public boolean showInv(CommandSender sender, String command) {
@@ -109,6 +140,8 @@ public class MyWorlds extends JavaPlugin {
 				msg += "/world save [worldname] - Saves the world";
 			} else if (command.equalsIgnoreCase("tpp")) {
 				msg += "/tpp [Portalname/Worldname] - Teleport to a Portal or World";
+			} else if (command.equalsIgnoreCase("world.togglepvp")) {
+				msg += "/world togglepvp ([world]) - Toggles PvP on or off";
 			}
 			sender.sendMessage(msg);
 			return true;
@@ -126,21 +159,46 @@ public class MyWorlds extends JavaPlugin {
 	}
 	public static void notifyConsole(CommandSender sender, String message) {
 		if (sender instanceof Player) {
-			log(Level.INFO, "[MyWorlds] " + ((Player) sender).getName() + " " + message);
+			log(Level.INFO, ((Player) sender).getName() + " " + message);
 		}
 	}
 	private void listPortals(CommandSender sender, String[] portals) {
-		message(sender, ChatColor.YELLOW + "Available portals: " + portals.length + " Portals");
+		message(sender, ChatColor.YELLOW + "Available portals: " + 
+				portals.length + " Portal" + ((portals.length == 1) ? "s" : ""));
+		if (sender instanceof Player) {
+			message(sender, ChatColor.GREEN + "[Very near] " + 
+		            ChatColor.DARK_GREEN + "[Near] " + 
+					ChatColor.YELLOW + "[Far] " + 
+		            ChatColor.RED + "[Other world]");
+		}
 		if (portals.length > 0) {
 			String msgpart = "";
 			for (String portal : portals) {
+				Location loc = Portal.getPortalLocation(portal);
+				ChatColor color = ChatColor.GREEN;
+				if (sender instanceof Player) {
+					Location ploc = ((Player) sender).getLocation();
+					if (ploc.getWorld() == loc.getWorld()) {
+						double d = ploc.distance(loc);
+						if (d <= 10) {
+							color = ChatColor.GREEN;
+						} else if (d <= 100) {
+							color = ChatColor.DARK_GREEN;
+						} else {
+							color = ChatColor.YELLOW;
+						}
+					} else {
+						color = ChatColor.RED;
+					}
+				}
+				
 				//display it
 				if (msgpart.length() + portal.length() < 70) {
 					if (msgpart != "") msgpart += ChatColor.WHITE + ", ";
-					msgpart += ChatColor.GREEN + portal;
+					msgpart += color + portal;
 				} else {
 					message(sender, msgpart);
-					msgpart = ChatColor.GREEN + portal;
+					msgpart = color + portal;
 				}
 			}
 			//possibly forgot one?
@@ -160,7 +218,11 @@ public class MyWorlds extends JavaPlugin {
 					node = "world.list";
 				} else if (args[0].equalsIgnoreCase("info")) {
 					node = "world.info";
+				} else if (args[0].equalsIgnoreCase("i")) {
+					node = "world.info";
 				} else if (args[0].equalsIgnoreCase("portals")) {
+					node = "world.portals";
+				} else if (args[0].equalsIgnoreCase("portal")) {
 					node = "world.portals";
 				} else if (args[0].equalsIgnoreCase("load")) {
 					node = "world.load";
@@ -172,14 +234,26 @@ public class MyWorlds extends JavaPlugin {
 					node = "world.spawn";
 				} else if (args[0].equalsIgnoreCase("evacuate")) {
 					node = "world.evacuate";
+				} else if (args[0].equalsIgnoreCase("evac")) {
+					node = "world.evacuate";
 				} else if (args[0].equalsIgnoreCase("repair")) {
+					node = "world.repair";
+				} else if (args[0].equalsIgnoreCase("rep")) {
 					node = "world.repair";
 				} else if (args[0].equalsIgnoreCase("save")) {
 					node = "world.save";
 				} else if (args[0].equalsIgnoreCase("delete")) {
 					node = "world.delete";
+				} else if (args[0].equalsIgnoreCase("del")) {
+					node = "world.delete";
 				} else if (args[0].equalsIgnoreCase("copy")) {
 					node = "world.copy";
+				} else if (args[0].equalsIgnoreCase("togglepvp")) {
+					node = "world.togglepvp";
+				} else if (args[0].equalsIgnoreCase("tpvp")) {
+					node = "world.togglepvp";	
+				} else if (args[0].equalsIgnoreCase("pvp")) {
+					node = "world.togglepvp";			
 				}
 			}
 			if (node == null) {
@@ -188,6 +262,7 @@ public class MyWorlds extends JavaPlugin {
 				if (showUsage(sender, "world.list")) hac = true;
 				if (showUsage(sender, "world.portals")) hac = true;
 				if (showUsage(sender, "world.info")) hac = true;
+				if (showUsage(sender, "world.togglepvp")) hac = true;
 				if (showUsage(sender, "world.spawn")) hac = true;
 				if (showUsage(sender, "world.save")) hac = true;
 				if (showUsage(sender, "world.load")) hac = true;
@@ -301,6 +376,11 @@ public class MyWorlds extends JavaPlugin {
 							}
 							World w = Bukkit.getServer().getWorld(worldname);
 							if (w != null) {
+								if (PvPData.isPvP(worldname)) { 
+									message(sender, ChatColor.WHITE + "PvP: " + ChatColor.GREEN + "Enabled");
+								} else {
+									message(sender, ChatColor.WHITE + "PvP: " + ChatColor.YELLOW + "Disabled");
+								}
 								int playercount = w.getPlayers().size();
 								if (playercount > 0) {
 									String msg = ChatColor.WHITE + "World status: " + ChatColor.GREEN + "Loaded" + ChatColor.WHITE + " with ";
@@ -312,6 +392,34 @@ public class MyWorlds extends JavaPlugin {
 							} else {
 								message(sender, ChatColor.WHITE + "World status: " + ChatColor.RED + "Unloaded");
 							}
+						}
+					} else {
+						message(sender, ChatColor.RED + "World not found!");
+					}
+				} else if (node == "world.togglepvp") {
+					//==========================================
+					//===============TOGGLE PVP COMMAND=========
+					//==========================================
+					String worldname = null;
+					if (args.length == 2) {
+						worldname = WorldManager.matchWorld(args[1]);
+					} else if (sender instanceof Player) {
+						worldname = ((Player) sender).getWorld().getName();
+					} else {
+						for (World w : getServer().getWorlds()) {
+							worldname = w.getName();
+							break;
+						}
+					}
+					if (worldname != null) {
+						PvPData.setPvP(worldname, !PvPData.isPvP(worldname));
+						if (PvPData.isPvP(worldname)) {
+							message(sender, ChatColor.GREEN + "PvP on World: '" + worldname + "' enabled!");
+						} else {
+							message(sender, ChatColor.YELLOW + "PvP on World: '" + worldname + "' disabled!");
+						}
+						if (!WorldManager.isLoaded(worldname)) {
+							message(sender, ChatColor.YELLOW + "Please note that this world is not loaded!");
 						}
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
@@ -530,22 +638,30 @@ public class MyWorlds extends JavaPlugin {
 					//================================================
 					//===============TELEPORT PORTAL COMMAND==========
 					//================================================
-					if (args.length == 1) {
-						String portal = args[0];
-						Location tele = Portal.getPortalLocation(portal);
-						if (tele != null) {
-						    if (sender instanceof Player) {
+					if (sender instanceof Player) {
+						if (args.length == 1) {
+							Location tele = Portal.getPortalLocation(args[0]);
+							if (tele != null) {
 						    	((Player) sender).teleport(tele);
-						    } else {
-						       sender.sendMessage("This command is only for players!");
-						    }
+						    	message(sender, ChatColor.GREEN + "You teleported to portal '" + args[0] + "'!");
+							} else {
+								//Match world
+								String worldname = WorldManager.matchWorld(args[0]);
+								World w = WorldManager.getWorld(worldname);
+								if (w != null) {
+									((Player) sender).teleport(w.getSpawnLocation());
+									message(sender, ChatColor.GREEN + "You teleported to the spawn area of world: '" + worldname + "'!");
+								} else {
+									message(sender, ChatColor.RED + "Portal or world not found!");
+									listPortals(sender, Portal.getPortals());
+								}
+							}
 						} else {
-							message(sender, ChatColor.RED + "Portal not found!");
-							listPortals(sender, Portal.getPortals());
-						}
+							showInv(sender, node);
+						}	
 					} else {
-						showInv(sender, node);
-					}			
+						sender.sendMessage("This command is only for players!");
+					}		
 				}
 			} else {
 				message(sender, ChatColor.RED + "You don't have permission to use this command!");

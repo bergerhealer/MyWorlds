@@ -1,19 +1,12 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 
-import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
-import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -33,11 +26,19 @@ public class Portal {
 	public Location getLocation() {
 		return this.location;
 	}
-	public String getDestinationName() {
+	public String getDestinationName() {		
 		return this.destination;
 	}
 	public Location getDestination() {
-		return getPortalLocation(destination);
+		Location loc = getPortalLocation(destination);
+		if (loc == null) {
+			String portalname = WorldManager.matchWorld(destination);
+			World w = WorldManager.getWorld(portalname);
+			if (w != null) {
+				loc = w.getSpawnLocation();
+			}
+		}
+		return loc;
 	}
 	public boolean hasDestination() {
 		if (this.destination == null) return false;
@@ -74,11 +75,17 @@ public class Portal {
 	}
 	public static Portal get(Location signloc) {
 		if (signloc == null) return null;
-		return get(signloc.getBlock());
+		return get(signloc.getBlock(), false);
 	}
-	public static Portal get(Block signblock) {
-		if (!signblock.getWorld().isChunkLoaded(signblock.getChunk())) {
-			signblock.getWorld().loadChunk(signblock.getChunk());
+	public static Portal get(Block signblock, boolean loadchunk) {
+		int cx = signblock.getLocation().getBlockX() >> 4;
+		int cz = signblock.getLocation().getBlockZ() >> 4;
+		if (!signblock.getWorld().isChunkLoaded(cx, cz)) {
+			if (loadchunk) {
+				signblock.getWorld().loadChunk(cx, cz);
+			} else {
+				return null;
+			}
 		}
 		if (signblock.getState() instanceof Sign) {
 			return get(signblock, ((Sign) signblock.getState()).getLines());
@@ -168,76 +175,85 @@ public class Portal {
 				}
 			}
 		}
-		
-		if (loc != null) {
-			return loc.clone().add(0.5, 2, 0.5);
-		} else {
-			portalname = WorldManager.matchWorld(portalname);
-			World w = WorldManager.getWorld(portalname);
-			if (w == null) return null;
-			return w.getSpawnLocation();
-		}
+		if (loc == null) return null;
+		return loc.clone().add(0.5, 2, 0.5);
 	}
 	
-	public static boolean loadPortals(String filename) {
-		try {
-			File f = new File(filename);
-			if (f.exists()) {
-				BufferedReader r = new BufferedReader(new FileReader(f));
-				String textline = null;
-				while((textline = r.readLine()) != null) {
-					String[] args = textline.split(" ");
-					if (args.length == 7) {
-						String name = args[0];
-						//load worlds?
-						//=============
-						World w = WorldManager.getOrCreateWorld(args[1]);
-						//=============
-						if (w != null) {
-							try {
-								Location loc = new Location(w, Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
-								portallocations.put(name, loc);
-							} catch (Exception ex) {
-								MyWorlds.log(Level.SEVERE, "[MyWorlds] Failed to load portal: " + name);
-							}
-						} else {
-							MyWorlds.log(Level.WARNING, "[MyWorlds] Failed to load world for portal: " + name);
-						}
+    private static HashMap<Entity, Long> portaltimes = new HashMap<Entity, Long>();
+    private static ArrayList<TeleportCommand> teleportations = new ArrayList<TeleportCommand>();  
+     
+    public static void handlePortalEnter(Entity e) {
+        long currtime = System.currentTimeMillis();
+        if (!portaltimes.containsKey(e) || currtime - portaltimes.get(e) >= MyWorlds.teleportInterval) {
+        	Portal portal = Portal.getPortal(e.getLocation(), 5);  	
+        	if (portal != null) {
+        		if (!(e instanceof Player) || Permission.has((Player) e, "portal.use")) {
+        			delayedTeleport(portal, e);
+        		}
+        	}
+    	}
+        portaltimes.put(e, currtime);
+    }
+    
+    private static class TeleportCommand {
+    	public Entity e;
+    	public Portal portal;
+    	public TeleportCommand(Entity e, Portal portal) {
+    		this.e = e;
+    		this.portal = portal;
+    	}
+    }
+    
+    public static void delayedTeleport(Portal portal, Entity e) {
+    	teleportations.add(new TeleportCommand(e, portal));
+    	MyWorlds.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MyWorlds.plugin, new Runnable() {
+    	    public void run() {
+    	    	TeleportCommand telec = teleportations.remove(0);
+    	    	boolean worked = telec.portal.teleport(telec.e);
+    	    	if (telec.e instanceof Player) {
+    	    		if (worked) {
+        				((Player) telec.e).sendMessage(ChatColor.GREEN + "You teleported to " + ChatColor.WHITE + telec.portal.getDestinationName() + ChatColor.GREEN + ", have a nice stay!");
+        			} else {
+        				((Player) telec.e).sendMessage(ChatColor.YELLOW + "This portal has no destination!");
+        			}
+        		}
+    	    }
+    	}, 1L);
+    }
+	
+	
+	public static void loadPortals(String filename) {
+		SafeReader r = new SafeReader(filename);
+		String textline = null;
+		while((textline = r.readNonEmptyLine()) != null) {
+			String[] args = textline.split(" ");
+			if (args.length == 7) {
+				String name = args[0];
+				//load worlds?
+				//=============
+				World w = WorldManager.getOrCreateWorld(args[1]);
+				//=============
+				if (w != null) {
+					try {
+						Location loc = new Location(w, Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
+						portallocations.put(name, loc);
+					} catch (Exception ex) {
+						MyWorlds.log(Level.SEVERE, "[MyWorlds] Failed to load portal: " + name);
 					}
+				} else {
+					MyWorlds.log(Level.WARNING, "[MyWorlds] Failed to load world for portal: " + name);
 				}
-				r.close();
-				return true;
-			} else {
-				MyWorlds.log(Level.SEVERE, "[MyWorlds] Portal configuration file not found: " + filename);
 			}
-			MyWorlds.log(Level.INFO, "[MyWorlds] " + portallocations.size() + " portals found in " + Bukkit.getServer().getWorlds().size() + " worlds.");
-		} catch (IOException ex) {
-			MyWorlds.log(Level.SEVERE, "[MyWorlds] Failed to access portal configuration file: " + filename);
-			ex.printStackTrace();
 		}
-		return false;
+		r.close();
 	}
-	public static boolean savePortals(String filename) {
-		try {
-			File f = new File(filename);
-			File dir = f.getParentFile();
-			if ((dir.exists() || dir.mkdirs()) && (f.exists() == false || f.delete())) {
-				BufferedWriter w = new BufferedWriter(new FileWriter(f));
-				for (String portal : getPortals()) {
-					Location loc = portallocations.get(portal);
-					w.write(portal + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + loc.getYaw() + " " + loc.getPitch());
-					w.newLine();
-				}
-				w.close();
-				return true;
-			} else {
-				MyWorlds.log(Level.SEVERE, "[MyWorlds] Failed to save portal configuration to file: " + filename);
-			}
-		} catch (IOException ex) {
-			MyWorlds.log(Level.SEVERE, "[MyWorlds] Failed to save portal configuration to file: " + filename);
-			ex.printStackTrace();
+	public static void savePortals(String filename) {
+		SafeWriter w = new SafeWriter(filename);
+		for (String portal : getPortals()) {
+			Location loc = portallocations.get(portal);
+			w.writeLine(portal + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + loc.getYaw() + " " + loc.getPitch());
 		}
-		return false;
+		w.close();
 	}
 	
 	private static HashMap<String, Location> portallocations = new HashMap<String, Location>();

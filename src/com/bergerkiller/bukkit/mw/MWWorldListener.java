@@ -6,11 +6,6 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.WorldListener;
 
 public class MWWorldListener extends WorldListener {
-    private final MyWorlds plugin;
-
-    public MWWorldListener(final  MyWorlds plugin) {
-        this.plugin = plugin;
-    }
 	
     @Override
     public void onChunkLoad(ChunkLoadEvent event) {
