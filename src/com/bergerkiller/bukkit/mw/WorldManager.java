@@ -10,6 +10,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.mw.Tag.Type;
@@ -46,6 +47,24 @@ public class WorldManager {
 			}
 		}
 		return Environment.NORMAL;
+	}
+	
+	public static String getWorldName(CommandSender sender, String[] args, boolean useAlternative) {
+		return getWorldName(sender, args[args.length - 1], useAlternative);
+	}
+	public static String getWorldName(CommandSender sender, String alternative, boolean useAlternative) {
+		String worldname = null;
+		if (useAlternative) {
+			worldname = WorldManager.matchWorld(alternative);
+		} else if (sender instanceof Player) {
+			worldname = ((Player) sender).getWorld().getName();
+		} else {
+			for (World w : Bukkit.getServer().getWorlds()) {
+				worldname = w.getName();
+				break;
+			}
+		}
+		return worldname;
 	}
 		
 	public static boolean generateData(String worldname, String seed) {
@@ -109,23 +128,32 @@ public class WorldManager {
 		return getFolderSize(getDataFolder(worldname));
 	}
 	public static WorldInfo getInfo(String worldname) {
+		WorldInfo info = null;
 		try {
 			Tag t = getData(worldname);
 			if (t != null) {
-				WorldInfo info = new WorldInfo();
+				info = new WorldInfo();
 				info.name = t.findTagByName("LevelName").getValue().toString();
 				info.seed = (Long) t.findTagByName("RandomSeed").getValue();
 				info.size = (Long) t.findTagByName("SizeOnDisk").getValue();
+				info.time = (Long) t.findTagByName("Time").getValue();
+				info.raining = ((Byte) t.findTagByName("raining").getValue()) != 0;
+		        info.thundering = ((Byte) t.findTagByName("thundering").getValue()) != 0;
 				if (info.size == 0) info.size = getWorldSize(worldname);
-				return info;
 			}
 		} catch (Exception ex) {}
 		World w = getWorld(worldname);
-		if (w == null) return null;
-		WorldInfo info = new WorldInfo();
-		info.name = w.getName();
-		info.seed = w.getSeed();
-		info.size = getWorldSize(worldname);
+		if (w != null) {
+			if (info == null) {
+				info = new WorldInfo();
+				info.size = getWorldSize(worldname);
+			}
+			info.name = w.getName();
+			info.seed = w.getSeed();
+			info.time = w.getFullTime();
+			info.raining = w.hasStorm();
+	        info.thundering = w.isThundering();
+		}
 		return info;
 	}
 	public static String[] getWorlds() {

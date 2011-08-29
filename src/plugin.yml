@@ -1,24 +1,74 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.05
+version: 1.06
 author: bergerkiller
 commands:
     world:
         description: Cross-world commands to manage your worlds
         aliases: [myworlds, mw, worlds]
         usage: |
-            /world list - Lists all worlds of this server
-            /world info ([worldname]) - Shows information about a world
-            /world portals ([worldname]) - Lists all the portals
-            /world load [worldname] - Loads a world into memory
-            /world unload [worldname] - Unloads a world from memory
-            /world create [worldname] ([seed]) - Creates a new world
-            /world spawn [worldname] - Teleport to the world spawn
-            /world evacuate [worldname] - Removes all players by teleportation or kicking
-            /world repair [worldname] ([Seed]) - Repairs the level.dat
-            /world save [worldname] - Saves the world
-            /world delete [worldname] - Permanently deletes a world
-            /world copy [worldname] [newname] - Copies a world under a new name
+            /world ? for usage
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World
+permissions:
+    myworlds.world.list:
+        description: Sets if the player can list all worlds on the server
+        default: op
+    myworlds.world.info:
+        description: Sets if the player can see world information, such as the seed and size
+        default: op
+    myworlds.world.portals:
+        description: Sets if the player can list all portals on the server
+        default: op
+    myworlds.world.load:
+        description: Sets if the player can load unloaded worlds (not create)
+        default: op
+    myworlds.world.unload:
+        description: Sets if the player can unload loaded worlds (not create)
+        default: op
+    myworlds.world.create:
+        description: Sets if the player can create worlds (not replace)
+        default: op
+    myworlds.world.spawn:
+        description: Sets if the player can teleport to world spawn points
+        default: op
+    myworlds.world.evacuate:
+        description: Sets if the player can clear a world from its players
+        default: op
+    myworlds.world.repair:
+        description: Sets if the player can repair damaged worlds (only if broken)
+        default: op
+    myworlds.world.save:
+        description: Sets if the player can save worlds
+        default: op
+    myworlds.world.delete:
+        description: Sets if the player can permanently delete worlds
+        default: false
+    myworlds.world.copy:
+        description: Sets if the player can clone worlds
+        default: false
+    myworlds.world.togglepvp:
+        description: Sets if the player can change the PvP setting on worlds
+        default: op
+    myworlds.world.allowspawn:
+        description: Sets if the player can start mobs spawning
+        default: op
+    myworlds.world.denyspawn:
+        description: Sets if the player can stop mobs from spawning
+        default: op
+    myworlds.world.weather:
+        description: Sets if the player can change the weather on worlds
+        default: op
+    myworlds.world.time:
+        description: Sets if the player can change the time on worlds
+        default: op
+    myworlds.portal.create:
+        description: Sets if the player can create teleport signs
+        default: op
+    myworlds.portal.use:
+        description: Sets if the player can use portals
+        default: true
+    myworlds.tpp:
+        description: Sets if the player can teleport to worlds or portals
+        default: no

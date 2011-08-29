@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.logging.Level;
 
 public class SafeReader {
@@ -29,7 +30,7 @@ public class SafeReader {
 	public String readNonEmptyLine() {
 		String line = readLine();
 		if (line == null) return null;
-		if (line.equals("")) return null;
+		if (line.equals("")) return readNonEmptyLine();
 		return line;
 	}
 	public String readLine() {
@@ -50,6 +51,21 @@ public class SafeReader {
 			MyWorlds.log(Level.SEVERE, "Error while closing stream: " + this.filename);
 			ex.printStackTrace();
 		}
+	}
+	
+	public static String[] readAll(String filename) {
+		return readAll(filename, true);
+	}
+	public static String[] readAll(String filename, boolean ignoreEmpty) {
+		SafeReader reader = new SafeReader(filename);
+		ArrayList<String> rval = new ArrayList<String>();
+		String textline = null;
+		while ((textline = reader.readLine()) != null) {
+			if (!ignoreEmpty || !textline.equals("")) {
+				rval.add(textline);
+			}
+		}
+		return rval.toArray(new String[0]);
 	}
 
 }

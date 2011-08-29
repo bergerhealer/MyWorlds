@@ -147,17 +147,16 @@ public class Portal {
 		return rval.toArray(new String[0]);
 	}
 	public static Portal getPortal(Location loc, double radius) {
-		double mindist = Double.MAX_VALUE;
 		Portal p = null;
 		for (String portalname : portallocations.keySet()) {
 			Location ploc = portallocations.get(portalname);
 			if (ploc != null && ploc.getWorld() == loc.getWorld()) {
 				double distance = ploc.distance(loc);
-				if (distance < mindist) {
+				if (distance < radius) {
 					Portal newp = Portal.get(ploc);
 					if (newp != null) {
 						p = newp;
-						mindist = distance;
+						radius = distance;
 					}
 				}
 			}
