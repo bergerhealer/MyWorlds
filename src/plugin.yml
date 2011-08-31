@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.06
+version: 1.07
 author: bergerkiller
 commands:
     world:
@@ -20,6 +20,9 @@ permissions:
         default: op
     myworlds.world.portals:
         description: Sets if the player can list all portals on the server
+        default: op
+    myworlds.world.setportal:
+        description: Sets if the player can change the default portal destination on the world
         default: op
     myworlds.world.load:
         description: Sets if the player can load unloaded worlds (not create)
@@ -71,4 +74,4 @@ permissions:
         default: true
     myworlds.tpp:
         description: Sets if the player can teleport to worlds or portals
-        default: no
+        default: op

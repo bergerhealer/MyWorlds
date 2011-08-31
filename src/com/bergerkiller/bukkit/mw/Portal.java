@@ -181,10 +181,27 @@ public class Portal {
     private static HashMap<Entity, Long> portaltimes = new HashMap<Entity, Long>();
     private static ArrayList<TeleportCommand> teleportations = new ArrayList<TeleportCommand>();  
      
+    public static void setDefault(String worldname, String destination) {
+    	defaultlocations.put(worldname.toLowerCase(), destination);
+    }
     public static void handlePortalEnter(Entity e) {
         long currtime = System.currentTimeMillis();
         if (!portaltimes.containsKey(e) || currtime - portaltimes.get(e) >= MyWorlds.teleportInterval) {
-        	Portal portal = Portal.getPortal(e.getLocation(), 5);  	
+        	Portal portal = getPortal(e.getLocation(), 5);  	
+        	if (portal == null) {
+        		//Default portals
+        		String def = defaultlocations.get(e.getWorld().getName().toLowerCase());
+        		if (def != null) portal = Portal.get(def);
+        		if (portal == null) {
+        			//world spawn?
+        			World w = WorldManager.getWorld(def);
+        			if (w != null) {
+        				e.teleport(w.getSpawnLocation());
+        			} else {
+        				
+        			}
+        		}
+        	}
         	if (portal != null) {
         		if (!(e instanceof Player) || Permission.has((Player) e, "portal.use")) {
         			delayedTeleport(portal, e);
@@ -220,11 +237,23 @@ public class Portal {
     	}, 1L);
     }
 	
-	
+	public static void loadDefaultPortals(String filename) {
+		for (String textline : SafeReader.readAll(filename, true)) {
+			String[] args = textline.split(" ");
+			if (args.length == 2) {
+				defaultlocations.put(args[0].toLowerCase(), args[1]);		
+			}
+		}
+	}
+	public static void saveDefaultPortals(String filename) {
+		SafeWriter writer = new SafeWriter(filename);
+		for (String key : defaultlocations.keySet()) {
+			writer.writeLine(key.toLowerCase() + " " + defaultlocations.get(key));
+		}
+		writer.close();
+	}
 	public static void loadPortals(String filename) {
-		SafeReader r = new SafeReader(filename);
-		String textline = null;
-		while((textline = r.readNonEmptyLine()) != null) {
+		for (String textline : SafeReader.readAll(filename, true)) {
 			String[] args = textline.split(" ");
 			if (args.length == 7) {
 				String name = args[0];
@@ -244,16 +273,16 @@ public class Portal {
 				}
 			}
 		}
-		r.close();
 	}
 	public static void savePortals(String filename) {
 		SafeWriter w = new SafeWriter(filename);
 		for (String portal : getPortals()) {
 			Location loc = portallocations.get(portal);
-			w.writeLine(portal + " " + loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + loc.getYaw() + " " + loc.getPitch());
+			w.writeLine(portal.replace(" ", "_") + " " + loc.getWorld().getName().replace(" ", "_") + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ() + " " + loc.getYaw() + " " + loc.getPitch());
 		}
 		w.close();
 	}
 	
+	private static HashMap<String, String> defaultlocations = new HashMap<String, String>();
 	private static HashMap<String, Location> portallocations = new HashMap<String, Location>();
 }

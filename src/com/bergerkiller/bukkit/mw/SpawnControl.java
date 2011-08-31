@@ -1,12 +1,10 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
 import org.bukkit.World;
 import org.bukkit.entity.Animals;
-import org.bukkit.entity.Creature;
 import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
@@ -75,7 +73,10 @@ public class SpawnControl {
 				} else if (typeline.equals("MONSTERS")) {
 					r.denyMonsters = true;
 				} else {
-					CreatureType type = CreatureType.valueOf(typeline);
+					CreatureType type = null;
+					try {
+						type = CreatureType.valueOf(typeline);
+					} catch (Exception ex) {}
 					if (type != null) {
 						r.deniedCreatures.add(type);
 					} else {

@@ -24,7 +24,7 @@ public class MyWorlds extends JavaPlugin {
 	public static boolean usePermissions = false;
 	public static int teleportInterval = 2000;
 	public static boolean useWaterTeleport = true;
-	public static int timeLockInterval = 10;
+	public static int timeLockInterval = 20;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -104,6 +104,9 @@ public class MyWorlds extends JavaPlugin {
 		//Portals
 		Portal.loadPortals(root() + "portals.txt");
 
+		//Default Portals
+		Portal.loadDefaultPortals(root() + "defaultportals.txt");
+		
         //Commands
         getCommand("tpp").setExecutor(this);
         getCommand("world").setExecutor(this);  
@@ -115,6 +118,9 @@ public class MyWorlds extends JavaPlugin {
 	public void onDisable() {
 		//Portals
 		Portal.savePortals(root() + "portals.txt");
+		
+		//Default Portals
+		Portal.saveDefaultPortals(root() + "defaultportals.txt");
 		
 		//PvP
 		PvPData.save(root() + "PvPWorlds.txt");
@@ -186,6 +192,8 @@ public class MyWorlds extends JavaPlugin {
 				msg = "/world allowspawn [creature] ([worldname])\n    Allows a certain creature type to spawn";
 			} else if (command.equalsIgnoreCase("world.denyspawn")) {
 				msg = "/world denyspawn [creature] ([worldname])\n    Denies a certain creature type from spawning";
+			} else if (command.equalsIgnoreCase("world.setportal")) {
+				msg = "/world setportal [destination] ([worldname])\n    Sets the default portal destination for a world";
 			}
 			if (msg == null) return true;
 			for (String line : msg.split("\n")) {
@@ -325,6 +333,14 @@ public class MyWorlds extends JavaPlugin {
 				    node = "world.allowspawn";
 				} else if (args[0].equalsIgnoreCase("denyspawning")) {
 				    node = "world.denyspawn";
+				} else if (args[0].equalsIgnoreCase("setportal")) {
+					node = "world.setportal";
+				} else if (args[0].equalsIgnoreCase("setdefaultportal")) {
+					node = "world.setportal";
+				} else if (args[0].equalsIgnoreCase("setdefportal")) {
+					node = "world.setportal";
+				} else if (args[0].equalsIgnoreCase("setdefport")) {
+					node = "world.setportal";
 				}
 			}
 			if (node == null) {
@@ -419,6 +435,32 @@ public class MyWorlds extends JavaPlugin {
 						portals = Portal.getPortals();
 					}
 					listPortals(sender, portals);
+				} else if (node == "world.setportal") {
+					//==============================================
+					//===============SET DEFAULT PORTAL COMMAND=====
+					//==============================================
+					if (args.length > 1) {
+						String dest = args[1];
+						String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
+						if (worldname != null) {
+							if (Portal.getPortalLocation(dest) != null) {
+								Portal.setDefault(worldname, dest);
+								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' set to portal: '" + dest + "'!");
+							} else if ((dest = WorldManager.matchWorld(dest)) != null) {
+								Portal.setDefault(worldname, dest);
+								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' set to world: '" + dest + "'!");
+								if (!WorldManager.isLoaded(dest)) {
+									message(sender, ChatColor.YELLOW + "Note that this world is not loaded, so nothing happens yet!");
+								}
+							} else {
+								message(sender, ChatColor.RED + "Destination is not a world or a portal!");
+							}
+						} else {
+							message(sender, ChatColor.RED + "World not found!");
+						}
+					} else {
+						showInv(sender, node);
+					}
 				} else if (node == "world.info") {
 					//==========================================
 					//===============INFO COMMAND===============

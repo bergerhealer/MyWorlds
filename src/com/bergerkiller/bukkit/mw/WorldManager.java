@@ -160,7 +160,7 @@ public class WorldManager {
 		ArrayList<String> rval = new ArrayList<String>();
 		for (String world : getServerFolder().list()) {
 			if (getDataFile(world).exists()) {
-				rval.add(world);
+				rval.add(world.replace(" ", "_"));
 			}
 		}
 		return rval.toArray(new String[0]);
@@ -183,7 +183,6 @@ public class WorldManager {
 		} catch (Exception ex) {
 			return null;
 		}
-
 	}
 	
 	public static boolean isBroken(String worldname) {
@@ -260,7 +259,8 @@ public class WorldManager {
     		return false;
     	}
     }
-    private static boolean rename(File sourceLocation, File targetLocation) {
+    @SuppressWarnings("unused")
+	private static boolean rename(File sourceLocation, File targetLocation) {
     	return sourceLocation.renameTo(targetLocation);
     }
 	private static long getFolderSize(File folder) {
