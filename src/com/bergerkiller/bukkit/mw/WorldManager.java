@@ -1,9 +1,19 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.*;
+import java.lang.ref.SoftReference;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
+
+import net.minecraft.server.CompressedStreamTools;
+import net.minecraft.server.NBTTagCompound;
+import net.minecraft.server.RegionFile;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -15,7 +25,62 @@ import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.mw.Tag.Type;
 
+@SuppressWarnings("rawtypes")
 public class WorldManager {
+	private static HashMap regionfiles;
+	private static Field rafField;
+	public static boolean initRegionFiles() {
+		try {
+        	Field a = net.minecraft.server.RegionFileCache.class.getDeclaredField("a");
+        	a.setAccessible(true);
+			regionfiles = (HashMap) a.get(null);
+			rafField = net.minecraft.server.RegionFile.class.getDeclaredField("c");
+			rafField.setAccessible(true);
+        	MyWorlds.log(Level.INFO, "Successfully bound variable to region file cache.");
+			MyWorlds.log(Level.INFO, "File references to unloaded worlds will be cleared!");
+			return true;
+		} catch (Throwable t) {
+			MyWorlds.log(Level.WARNING, "Failed to bind to region file cache.");
+			MyWorlds.log(Level.WARNING, "Files will stay referenced after being unloaded!");
+			t.printStackTrace();
+			return false;
+		}
+	}
+	
+	public static boolean clearWorldReference(World world) {
+		return clearWorldReference(world.getName());
+	}
+	public static boolean clearWorldReference(String worldname) {
+		if (regionfiles == null) return false;
+		if (rafField == null) return false;
+		ArrayList<Object> removedKeys = new ArrayList<Object>();
+		try {
+			for (Object o : regionfiles.entrySet()) {
+				Map.Entry e = (Map.Entry) o;
+				File f = (File) e.getKey();
+				if (f.toString().startsWith("." + File.separator + worldname)) {
+					SoftReference ref = (SoftReference) e.getValue();
+					try {
+						RegionFile file = (RegionFile) ref.get();
+						if (file != null) {
+							RandomAccessFile raf = (RandomAccessFile) rafField.get(file);
+							raf.close();
+							removedKeys.add(f);
+						}
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return false;
+		}
+		for (Object key : removedKeys) {
+			regionfiles.remove(key);
+		}
+		return true;
+	}
 	
 	private static File serverfolder;
 	public static File getServerFolder() {
@@ -24,6 +89,7 @@ public class WorldManager {
 	}
 	
 	public static long getSeed(String seed) {
+		if (seed == null) return 0;
 		long seedval = 0;
 		try {
 			seedval = Long.parseLong(seed);
@@ -72,7 +138,7 @@ public class WorldManager {
 				new Tag(Type.TAG_Byte, "thundering", (byte) 0), 
 				new Tag(Type.TAG_Long, "LastPlayed", System.currentTimeMillis()),
 				new Tag(Type.TAG_Long, "RandomSeed", getRandomSeed(seed)), 
-				new Tag(Type.TAG_Int, "version", 19132), 
+				new Tag(Type.TAG_Int, "version", (int) 19132), 
 				new Tag(Type.TAG_Long, "Time", 0L),
 				new Tag(Type.TAG_Byte, "raining", (byte) 0), 
 				new Tag(Type.TAG_Int, "SpawnX", 0), 
@@ -81,7 +147,7 @@ public class WorldManager {
 				new Tag(Type.TAG_Int, "SpawnZ", 0), 
 				new Tag(Type.TAG_String, "LevelName", worldname),
 				new Tag(Type.TAG_Long, "SizeOnDisk", getWorldSize(worldname)),
-				new Tag(Type.TAG_Long, "rainTime", 50000L), 
+				new Tag(Type.TAG_Int, "rainTime", (int) 50000), 
 				new Tag(Type.TAG_End, null, null)});
 		Tag finaltag = new Tag(Type.TAG_Compound, null, new Tag[] {data, new Tag(Type.TAG_End, null, null)});
 				
@@ -103,10 +169,6 @@ public class WorldManager {
 	public static boolean setData(String worldname, Tag data) {
     	File datafile = getDataFile(worldname);
     	try {
-    		FileOutputStream erasor = new FileOutputStream(datafile);
-    		erasor.write((new String()).getBytes());
-    		erasor.close();
-
 			OutputStream s = new FileOutputStream(datafile);
 			data.writeTo(s);
 			s.close();
@@ -160,7 +222,7 @@ public class WorldManager {
 		ArrayList<String> rval = new ArrayList<String>();
 		for (String world : getServerFolder().list()) {
 			if (getDataFile(world).exists()) {
-				rval.add(world.replace(" ", "_"));
+				rval.add(world);
 			}
 		}
 		return rval.toArray(new String[0]);
@@ -189,7 +251,7 @@ public class WorldManager {
 		if (getData(worldname) == null) {
 			return getWorld(worldname) == null;
 		}
-		return true;
+		return false;
 	}
 	public static boolean isLoaded(String worldname) {
 		return getWorld(worldname) != null;
@@ -203,20 +265,48 @@ public class WorldManager {
 		if (w != null) return w;
 		return createWorld(worldname, null);
 	}
+	
+	public static boolean unload(World world) {
+		clearWorldReference(world);
+		boolean succ = Bukkit.getServer().unloadWorld(world, false);
+		if (succ) {
+			
+		}
+		return succ;
+	}
 	public static World createWorld(String worldname, String seed) {
+		return createWorld(worldname, getSeed(seed));
+	}
+	public static World createWorld(String worldname, long seed) {
+		MyWorlds.log(Level.INFO, "Loading or creating world: " + worldname);
+		final int retrycount = 3;
+		World w = null;
+		int i = 0;
+		for (i = 0; i < retrycount + 1; i++) {
+			w = genWorld(worldname, seed);
+			if (w != null) break;
+		}
+		if (w != null) {
+			PvPData.updatePvP(w);
+		}
+		if (w == null) {
+			MyWorlds.log(Level.WARNING, "Operation failed after " + i + " retries!");
+		} else if (i == 1) {
+			MyWorlds.log(Level.INFO, "Operation succeeded after 1 retry!");
+		} else {
+			MyWorlds.log(Level.INFO, "Operation succeeded after " + i + " retries!");
+		}
+		MyWorlds.log(Level.INFO, "Loading or creating world: " + worldname);
+		return w;
+	}
+	private static World genWorld(String worldname, long seed) {
 		try {
-			MyWorlds.log(Level.INFO, "[MyWorlds] Loading or creating world: " + worldname);
 			Environment env = getEnvironment(worldname);
-			World w;
-			if (seed == null || seed == "") {
-				w = Bukkit.getServer().createWorld(worldname, env);
+			if (seed == 0) {
+				return Bukkit.getServer().createWorld(worldname, env);
 			} else {
-				w = Bukkit.getServer().createWorld(worldname, env, getSeed(seed));
+				return Bukkit.getServer().createWorld(worldname, env, seed);
 			}
-			if (w != null) {
-				PvPData.updatePvP(w);
-			}
-			return w;
 		} catch (Exception ex) {
 			return null;
 		}
@@ -230,7 +320,7 @@ public class WorldManager {
 		}
 		return folder.delete();
 	}
-    private static boolean copy(File sourceLocation , File targetLocation) {
+    public static boolean copy(File sourceLocation , File targetLocation) {
     	try {
             if (sourceLocation.isDirectory()) {
                 if (!targetLocation.exists()) {
@@ -351,6 +441,115 @@ public class WorldManager {
 	public static void teleportToWorldSpawn(World from, World to) {
 		for (Player p : from.getPlayers().toArray(new Player[0])) {
 			p.teleport(to.getSpawnLocation());
+		}
+	}
+	
+	/**
+	 * Repairs the chunk region file
+	 * Returns -1 if the file had to be removed
+	 * Returns -2 if we had no access
+	 * Returns -3 if file removal failed (from -1)
+	 * Returns the amount of changed chunks otherwise
+	 * @param chunkfile
+	 * @param backupfolder
+	 * @return
+	 */
+	public static int repairRegion(File chunkfile, File backupfolder) {
+		MyWorlds.log(Level.INFO, "Performing repairs on region file: " + chunkfile.getName());
+		RandomAccessFile raf = null;
+		try {
+			raf = new RandomAccessFile(chunkfile, "rw");
+			File backupfile = new File(backupfolder + File.separator + chunkfile.getName());
+			int[] locations = new int[1024];
+			for (int i = 0; i < 1024; i++) {
+				locations[i] = raf.readInt();
+			}
+			//Validate the data
+			int editcount = 0;
+			for (int i = 0; i < locations.length; i++) {
+				int location = locations[i];
+				if (location == 0) continue;
+				try {
+					int offset = location >> 8;
+                    int size = location & 255;
+					raf.seek((long) (offset * 4096));
+					int length = raf.readInt();
+					//Read and test the data
+					if (length > 4096 * size) {
+						editcount++;
+						locations[i] = 0;
+						MyWorlds.log(Level.WARNING, "Invalid length: " + length + " > 4096 * " + size);
+						//Invalid length
+					} else if (size > 0 && length > 0) {
+						byte version = raf.readByte();
+						byte[] data = new byte[length - 1];
+						raf.read(data);
+						ByteArrayInputStream bais = new ByteArrayInputStream(data);
+						//Try to load it all...
+						DataInputStream stream;
+						if (version == 1) {
+							stream = new DataInputStream(new GZIPInputStream(bais));
+						} else if (version == 2) {
+							stream = new DataInputStream(new InflaterInputStream(bais));
+						} else {
+							stream = null;
+							//Unknown version
+							MyWorlds.log(Level.WARNING, "Unknown region version: " + version + " (we probably need an update here!)");
+						}
+						if (stream != null) {
+							//Validate the stream and close
+							try {
+								NBTTagCompound nbttagcompound = CompressedStreamTools.a((DataInput) stream);
+								if (nbttagcompound == null) {
+									MyWorlds.log(Level.WARNING, "Damaged data at chunk " + i);
+									editcount++;
+									locations[i] = 0;
+								}
+							} catch (Exception ex) {
+								//Invalid.
+								ex.printStackTrace();
+							}
+							stream.close();
+						}
+					}
+				} catch (Exception ex) {
+					editcount++;
+					locations[i] = 0;
+					ex.printStackTrace();
+				}
+			}
+			if (editcount > 0) {
+				if (backupfolder.mkdirs() && copy(chunkfile, backupfile)) {
+					//Write out the new locations
+					raf.seek(0);
+					for (int location : locations) {
+						raf.writeInt(location);
+					}
+				} else {
+					MyWorlds.log(Level.WARNING, "Failed to make a copy of the file, no changes are made.");
+					return -2;
+				}
+			}
+			//Done.
+			raf.close();
+			return editcount;
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		try {
+			if (raf != null) raf.close();
+		} catch (Exception ex) {}
+		
+		try {
+			chunkfile.delete();
+			return -1;
+		} catch (Exception ex) {
+			return -3;
 		}
 	}
 }

@@ -5,6 +5,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 public class MWPlayerListener extends PlayerListener {
 	
@@ -17,6 +18,13 @@ public class MWPlayerListener extends PlayerListener {
 			b = b.getRelative(direction);
 			--maxwidth;
 			if (maxwidth <= 0) return false;
+		}
+	}
+	
+	@Override
+	public void onPlayerTeleport(PlayerTeleportEvent event) {
+		if (event.getFrom().getWorld() != event.getTo().getWorld()) {
+			GamemodeHandler.updatePlayer(event.getPlayer(), event.getTo().getWorld());
 		}
 	}
 	

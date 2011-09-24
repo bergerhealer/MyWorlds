@@ -14,7 +14,14 @@ public class TimeControl {
 	 */
 	public static long getTime(String timeName) {
 		try {
-			return (Long.parseLong(timeName) - 8) * 1000 ;
+			String[] bits = timeName.split(":");
+			if (bits.length == 2) {
+				long hours = 1000 * (Long.parseLong(bits[0]) - 8);
+				long minutes = 1000 * Long.parseLong(bits[1]) / 60;
+				return hours + minutes;
+			} else {
+				return (long) ((Double.parseDouble(timeName) - 8) * 1000) ;
+			}
 		} catch (Exception ex) {
 	        // Or some shortcuts
 	        if (timeName.equalsIgnoreCase("dawn")) {
@@ -120,8 +127,8 @@ public class TimeControl {
     		l.start();
     	} else {
     		l.time = time;
-    		if (l.isRunning()) l.stop();
-    		l.start();
+    		l.prevtime = time;
+    		l.run();
     	}
     }
     public static void unlockTime(String worldname) {

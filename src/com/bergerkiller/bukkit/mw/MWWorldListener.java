@@ -11,13 +11,13 @@ public class MWWorldListener extends WorldListener {
 	
     @Override
     public void onChunkLoad(ChunkLoadEvent event) {
-    	for (String portal : Portal.getPortals(event.getChunk())) {
-    		Portal p = Portal.get(portal);
+		for (String portalname : Portal.getPortals(event.getChunk())) {
+    		Portal p = Portal.get(portalname);
     		if (p == null) {
-    			MyWorlds.log(Level.WARNING, "Auto-removed portal '" + portal + "' because it is no longer there!");
-    			Portal.remove(portal);
+    			MyWorlds.log(Level.WARNING, "Auto-removed portal '" + portalname + "' because it is no longer there!");
+    			Portal.remove(portalname);
     		}
-    	}
+		}
     }
     
     @Override
@@ -29,6 +29,7 @@ public class MWWorldListener extends WorldListener {
     public void onWorldUnload(WorldUnloadEvent event) {
     	if (!event.isCancelled()) {
         	TimeControl.setLocking(event.getWorld().getName(), false);
+        	WorldManager.clearWorldReference(event.getWorld());
     	}
     }
     

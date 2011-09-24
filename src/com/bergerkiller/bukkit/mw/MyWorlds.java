@@ -1,16 +1,19 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.CreatureType;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
@@ -19,12 +22,16 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 
+import com.bergerkiller.bukkit.mw.SpawnControl.SpawnRestriction;
+
 
 public class MyWorlds extends JavaPlugin {
 	public static boolean usePermissions = false;
 	public static int teleportInterval = 2000;
 	public static boolean useWaterTeleport = true;
 	public static int timeLockInterval = 20;
+	public static boolean useWorldEnterPermissions = false;
+	public static boolean usePortalEnterPermissions = false;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -52,25 +59,39 @@ public class MyWorlds extends JavaPlugin {
         pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Highest, this);   
         pm.registerEvent(Event.Type.BLOCK_PHYSICS, blockListener, Priority.Highest, this); 
         pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
         pm.registerEvent(Event.Type.CHUNK_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_UNLOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WEATHER_CHANGE, weatherListener, Priority.Highest, this);  
         
+        String locale = "default";
+        
         Configuration config = getConfiguration();
         usePermissions = config.getBoolean("usePermissions", usePermissions);
         teleportInterval = config.getInt("teleportInterval", teleportInterval);
         useWaterTeleport = config.getBoolean("useWaterTeleport", useWaterTeleport);
         timeLockInterval = config.getInt("timeLockInterval", timeLockInterval);
+        useWorldEnterPermissions = config.getBoolean("useWorldEnterPermissions", useWorldEnterPermissions);
+        usePortalEnterPermissions = config.getBoolean("usePortalEnterPermissions", usePortalEnterPermissions);
+        locale = config.getString("locale", locale);
+        
         config.setProperty("usePermissions", usePermissions);
         config.setProperty("teleportInterval", teleportInterval);
         config.setProperty("useWaterTeleport", useWaterTeleport);
         config.setProperty("timeLockInterval", timeLockInterval);
+        config.setProperty("useWorldEnterPermissions", useWorldEnterPermissions);
+        config.setProperty("usePortalEnterPermissions", usePortalEnterPermissions);
+        config.setProperty("locale", locale);
         config.save();
+        
+        //Localization
+        Localization.init(this, locale);
+        
         //Permissions
 		Permission.init(this);
-				
+
 		//Loaded worlds
 		SafeReader reader = new SafeReader(root() + "LoadedWorlds.txt");
 		String textline = null;
@@ -104,12 +125,18 @@ public class MyWorlds extends JavaPlugin {
 		//Portals
 		Portal.loadPortals(root() + "portals.txt");
 
+		//Game modes
+		GamemodeHandler.load(root() + "gamemodes.txt");
+		
 		//Default Portals
 		Portal.loadDefaultPortals(root() + "defaultportals.txt");
 		
         //Commands
         getCommand("tpp").setExecutor(this);
         getCommand("world").setExecutor(this);  
+        
+        //Chunk cache
+        WorldManager.initRegionFiles();
         
         //final msg
         PluginDescriptionFile pdfFile = this.getDescription();
@@ -124,6 +151,9 @@ public class MyWorlds extends JavaPlugin {
 		
 		//PvP
 		PvPData.save(root() + "PvPWorlds.txt");
+		
+		//Game modes
+		GamemodeHandler.save(root() + "gamemodes.txt");
 		
 		//Spawn control settings
 		SpawnControl.save(root() + "WorldSpawnRestriction.txt");
@@ -155,66 +185,25 @@ public class MyWorlds extends JavaPlugin {
 	
 	public boolean showUsage(CommandSender sender, String command) {
 		if (Permission.has(sender, command)) {
-			String msg = null;
-			if (command.equalsIgnoreCase("world.list")) {
-				msg = "/world list - Lists all worlds of this server";
-			} else if (command.equalsIgnoreCase("world.info")) {
-				msg = "/world info ([worldname]) - Shows information about a world";
-			} else if (command.equalsIgnoreCase("world.portals")) {
-				msg = "/world portals ([worldname]) - Lists all the portals";
-			} else if (command.equalsIgnoreCase("world.load")) {
-				msg = "/world load [worldname] - Loads a world into memory";
-			} else if (command.equalsIgnoreCase("world.unload")) {
-				msg = "/world unload [worldname] - Unloads a world from memory";
-			} else if (command.equalsIgnoreCase("world.create")) {
-				msg = "/world create [worldname] ([seed]) - Creates a new world";
-			} else if (command.equalsIgnoreCase("world.delete")) {
-				msg = "/world delete [worldname] - Permanently deletes a world";
-			} else if (command.equalsIgnoreCase("world.spawn")) {
-				msg = "/world spawn [worldname] - Teleport to the world spawn";
-			} else if (command.equalsIgnoreCase("world.copy")) {
-				msg = "/world copy [worldname] [newname] - Copies a world under a new name";		
-			} else if (command.equalsIgnoreCase("world.evacuate")) {
-				msg = "/world evacuate [worldname] - Removes all players by teleportation or kicking";		
-			} else if (command.equalsIgnoreCase("world.repair")) {
-				msg = "/world repair [worldname] ([Seed]) - Repairs the level.dat";		
-			} else if (command.equalsIgnoreCase("world.save")) {
-				msg = "/world save [worldname] - Saves the world";
-			} else if (command.equalsIgnoreCase("tpp")) {
-				msg = "/tpp [Portalname/Worldname] - Teleport to a Portal or World";
-			} else if (command.equalsIgnoreCase("world.togglepvp")) {
-				msg = "/world togglepvp ([world]) - Toggles PvP on or off";
-			} else if (command.equalsIgnoreCase("world.weather")) {
-				msg = "/world weather ([hold]) [storm/sun] ([worldname])\n    Changes and holds weather states";
-			} else if (command.equalsIgnoreCase("world.time")) {
-				msg = "/world time ([lock]) [day/night/noon/12] ([worldname])\n    Changes and locks the time";
-			} else if (command.equalsIgnoreCase("world.allowspawn")) {
-				msg = "/world allowspawn [creature] ([worldname])\n    Allows a certain creature type to spawn";
-			} else if (command.equalsIgnoreCase("world.denyspawn")) {
-				msg = "/world denyspawn [creature] ([worldname])\n    Denies a certain creature type from spawning";
-			} else if (command.equalsIgnoreCase("world.setportal")) {
-				msg = "/world setportal [destination] ([worldname])\n    Sets the default portal destination for a world";
-			}
+			String msg = Localization.get("help." + command, "");
 			if (msg == null) return true;
-			for (String line : msg.split("\n")) {
-				if (sender instanceof Player) {
-					sender.sendMessage(ChatColor.YELLOW + line);
-				} else {
-					sender.sendMessage(line);
-				}
-			}
+			message(sender, msg);
 			return true;
 		} else {
 			return false;
 		}
 	}
-	public static void message(CommandSender sender, String message) {
-		if (!(sender instanceof Player)) {
-			for (ChatColor cc : ChatColor.values()) {
-				message = message.replace(cc.toString(), "");
+	public static void message(Object sender, String message) {
+		if (message != null && message.length() > 0) {
+			if (sender instanceof CommandSender) {
+				if (!(sender instanceof Player)) {
+					message = ChatColor.stripColor(message);
+				}
+				for (String line : message.split("\n")) {
+					((CommandSender) sender).sendMessage(line);
+				}
 			}
 		}
-		sender.sendMessage(message);
 	}
 	public static void notifyConsole(CommandSender sender, String message) {
 		if (sender instanceof Player) {
@@ -226,28 +215,31 @@ public class MyWorlds extends JavaPlugin {
 			message(sender, ChatColor.GREEN + "[Very near] " + 
 		            ChatColor.DARK_GREEN + "[Near] " + 
 					ChatColor.YELLOW + "[Far] " + 
-		            ChatColor.RED + "[Other world]");
+		            ChatColor.RED + "[Other world] " + 
+					ChatColor.DARK_RED + "[Unavailable]");
 		}
 		message(sender, ChatColor.YELLOW + "Available portals: " + 
-				portals.length + " Portal" + ((portals.length == 1) ? "s" : ""));
+				portals.length + " Portal" + ((portals.length == 1) ? "" : "s"));
 		if (portals.length > 0) {
 			String msgpart = "";
 			for (String portal : portals) {
 				Location loc = Portal.getPortalLocation(portal);
-				ChatColor color = ChatColor.GREEN;
-				if (sender instanceof Player) {
-					Location ploc = ((Player) sender).getLocation();
-					if (ploc.getWorld() == loc.getWorld()) {
-						double d = ploc.distance(loc);
-						if (d <= 10) {
-							color = ChatColor.GREEN;
-						} else if (d <= 100) {
-							color = ChatColor.DARK_GREEN;
+				ChatColor color = ChatColor.DARK_RED;
+				if (loc != null) {
+					if (sender instanceof Player) {
+						Location ploc = ((Player) sender).getLocation();
+						if (ploc.getWorld() == loc.getWorld()) {
+							double d = ploc.distance(loc);
+							if (d <= 10) {
+								color = ChatColor.GREEN;
+							} else if (d <= 100) {
+								color = ChatColor.DARK_GREEN;
+							} else {
+								color = ChatColor.YELLOW;
+							}
 						} else {
-							color = ChatColor.YELLOW;
+							color = ChatColor.RED;
 						}
-					} else {
-						color = ChatColor.RED;
 					}
 				}
 				
@@ -265,8 +257,37 @@ public class MyWorlds extends JavaPlugin {
 		}
 	}
 	
+	public static String[] convertArgs(String[] args) {
+		ArrayList<String> tmpargs = new ArrayList<String>();
+		boolean isCommenting = false;
+		for (String arg : args) {
+			if (!isCommenting && (arg.startsWith("\"") || arg.startsWith("'"))) {
+				if (arg.endsWith("\"") && arg.length() > 1) {
+					tmpargs.add(arg.substring(1, arg.length() - 1));
+				} else {
+					isCommenting = true;
+					tmpargs.add(arg.substring(1));
+				}
+			} else if (isCommenting && (arg.endsWith("\"") || arg.endsWith("'"))) {
+				arg = arg.substring(0, arg.length() - 1);
+				arg = tmpargs.get(tmpargs.size() - 1) + " " + arg;
+				tmpargs.set(tmpargs.size() - 1, arg);
+				isCommenting = false;
+			} else if (isCommenting) {
+				arg = tmpargs.get(tmpargs.size() - 1) + " " + arg;
+				tmpargs.set(tmpargs.size() - 1, arg);
+			} else {
+				tmpargs.add(arg);
+			}
+		}
+		return tmpargs.toArray(new String[0]);
+	}
+	
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String cmdLabel, String[] args) {
+		//First of all, convert the args so " " is in one arg.
+		args = convertArgs(args);
+		
 		String node = null; //generate a permission node from this command
 		if (cmdLabel.equalsIgnoreCase("world")
 				|| cmdLabel.equalsIgnoreCase("myworlds")
@@ -341,6 +362,16 @@ public class MyWorlds extends JavaPlugin {
 					node = "world.setportal";
 				} else if (args[0].equalsIgnoreCase("setdefport")) {
 					node = "world.setportal";
+				} else if (args[0].equalsIgnoreCase("setspawn")) {
+					node = "world.setspawn";
+				} else if (args[0].equalsIgnoreCase("gamemode")) {
+					node = "world.gamemode";
+				} else if (args[0].equalsIgnoreCase("setgamemode")) {
+					node = "world.gamemode";
+				} else if (args[0].equalsIgnoreCase("gm")) {
+					node = "world.gamemode";
+				} else if (args[0].equalsIgnoreCase("setgm")) {
+					node = "world.gamemode";
 				}
 			}
 			if (node == null) {
@@ -357,16 +388,18 @@ public class MyWorlds extends JavaPlugin {
 				if (showUsage(sender, "world.weather")) hac = true;		
 				if (showUsage(sender, "world.time")) hac = true;			
 				if (showUsage(sender, "world.spawn")) hac = true;
+				if (showUsage(sender, "world.setspawn")) hac = true;
 				if (showUsage(sender, "world.list")) hac = true;
 				if (showUsage(sender, "world.info")) hac = true;
 				if (showUsage(sender, "world.portals")) hac = true;
+				if (showUsage(sender, "world.gamemode")) hac = true;
 				if (showUsage(sender, "world.togglepvp")) hac = true;
 				if (showUsage(sender, "world.allowspawn")) hac = true;
-				if (showUsage(sender, "world.denyspawn")) hac = true;
+				if (showUsage(sender, "world.denyspawn")) hac = true;		
 				if (hac) {
 					if (args.length >= 1) message(sender, ChatColor.RED + "Unknown command: " + args[0]);
 				} else {
-					message(sender, ChatColor.RED + "You don't have permission to use this command!");
+					Localization.message(sender, "command.nopermission");
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {
@@ -443,7 +476,10 @@ public class MyWorlds extends JavaPlugin {
 						String dest = args[1];
 						String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
 						if (worldname != null) {
-							if (Portal.getPortalLocation(dest) != null) {
+							if (dest.equals("")) {
+								Portal.setDefault(worldname, null);
+								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' cleared!");
+							} else if (Portal.getPortalLocation(dest) != null) {
 								Portal.setDefault(worldname, dest);
 								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' set to portal: '" + dest + "'!");
 							} else if ((dest = WorldManager.matchWorld(dest)) != null) {
@@ -453,7 +489,7 @@ public class MyWorlds extends JavaPlugin {
 									message(sender, ChatColor.YELLOW + "Note that this world is not loaded, so nothing happens yet!");
 								}
 							} else {
-								message(sender, ChatColor.RED + "Destination is not a world or a portal!");
+								message(sender, ChatColor.RED + "Destination is not a world or portal!");
 							}
 						} else {
 							message(sender, ChatColor.RED + "World not found!");
@@ -497,6 +533,13 @@ public class MyWorlds extends JavaPlugin {
 							} else {
 								message(sender, ChatColor.WHITE + "PvP: " + ChatColor.YELLOW + "Disabled");
 							}
+							//Game mode
+							GameMode mode = GamemodeHandler.get(worldname, null);
+							if (mode == null) {
+								message(sender, ChatColor.WHITE + "Game mode: " + ChatColor.YELLOW + "Not set");
+							} else {
+								message(sender, ChatColor.WHITE + "Game mode: " + ChatColor.YELLOW + mode.name().toLowerCase());
+							}
 							//Time
 							String timestr = TimeControl.getTimeString(worldname, info.time);
 							message(sender, ChatColor.WHITE + "Time: " + ChatColor.YELLOW + timestr);
@@ -521,8 +564,7 @@ public class MyWorlds extends JavaPlugin {
 								} else {
 									message(sender, ChatColor.WHITE + "Weather: " + ChatColor.YELLOW + "The sky is clear");
 								}
-							}
-							
+							}							
 							World w = Bukkit.getServer().getWorld(worldname);
 							if (w != null) {
 								int playercount = w.getPlayers().size();
@@ -540,21 +582,40 @@ public class MyWorlds extends JavaPlugin {
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
 					}
+				} else if (node == "world.gamemode") {
+					String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
+					if (worldname != null) {
+						if (args.length == 1) {
+							//display
+							GameMode mode = GamemodeHandler.get(worldname, null);
+							String msg = ChatColor.YELLOW + "Current game mode of world '" + worldname + "': ";
+							if (mode == null) {
+								message(sender, msg + ChatColor.YELLOW + "Not set");
+							} else {
+								message(sender, msg + ChatColor.YELLOW + mode.name().toLowerCase());
+							}
+						} else {
+							//Parse the gamemode
+							GameMode mode = GamemodeHandler.getMode(args[1], null);
+							GamemodeHandler.set(worldname, mode);
+							if (mode == null) {
+								message(sender, ChatColor.YELLOW + "Game mode of World '" + worldname + "' cleared!");
+							} else {
+								World w = WorldManager.getWorld(worldname);
+								if (w != null) {
+									GamemodeHandler.updatePlayers(w);
+								}
+								message(sender, ChatColor.YELLOW + "Game mode of World '" + worldname + "' set to " + mode.name().toLowerCase() + "!");
+							}
+						}
+					} else {
+						message(sender, ChatColor.RED + "World not found!");
+					}
 				} else if (node == "world.togglepvp") {
 					//==========================================
 					//===============TOGGLE PVP COMMAND=========
 					//==========================================
-					String worldname = null;
-					if (args.length == 2) {
-						worldname = WorldManager.matchWorld(args[1]);
-					} else if (sender instanceof Player) {
-						worldname = ((Player) sender).getWorld().getName();
-					} else {
-						for (World w : getServer().getWorlds()) {
-							worldname = w.getName();
-							break;
-						}
-					}
+					String worldname = WorldManager.getWorldName(sender, args, args.length == 2);
 					if (worldname != null) {
 						PvPData.setPvP(worldname, !PvPData.isPvP(worldname));
 						if (PvPData.isPvP(worldname)) {
@@ -574,79 +635,111 @@ public class MyWorlds extends JavaPlugin {
 					//==========================================
 					String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
 					if (worldname != null) {
-						SpawnControl.SpawnRestriction r = SpawnControl.get(worldname);
-						//Get the type to set
-						String type = null;
-						if (args[1].equalsIgnoreCase("animal")) {
-							type = "animal";
-						} else if (args[1].equalsIgnoreCase("animals")) {
-							type = "animal";
-						} else if (args[1].equalsIgnoreCase("monster")) {
-							type = "monster";
-						} else if (args[1].equalsIgnoreCase("monsters")) {
-							type = "monster";
-						} else if (args[1].equalsIgnoreCase("mob")) {
-							type = "mob";
-						} else if (args[1].equalsIgnoreCase("mobs")) {
-							type = "mob";	
-						} else if (args[1].equalsIgnoreCase("creature")) {
-							type = "mob";
-						} else if (args[1].equalsIgnoreCase("creatures")) {
-							type = "mob";
-						} else if (args[1].equalsIgnoreCase("all")) {
-							type = "mob";
-						} else {
-							type = args[1].toUpperCase();
-							CreatureType ctype = CreatureType.valueOf(type);
-							if (ctype == null && type.endsWith("S")) {
-								ctype = CreatureType.valueOf(type.substring(0, type.length() - 2));
-							}
-							if (ctype != null) {
-								type = ctype.name().toLowerCase();
+						if (args.length >= 2) {
+							SpawnControl.SpawnRestriction r = SpawnControl.get(worldname);
+							//Get the type to set
+							String type = null;
+							if (args[1].equalsIgnoreCase("animal")) {
+								type = "animal";
+							} else if (args[1].equalsIgnoreCase("animals")) {
+								type = "animal";
+							} else if (args[1].equalsIgnoreCase("monster")) {
+								type = "monster";
+							} else if (args[1].equalsIgnoreCase("monsters")) {
+								type = "monster";
+							} else if (args[1].equalsIgnoreCase("mob")) {
+								type = "mob";
+							} else if (args[1].equalsIgnoreCase("mobs")) {
+								type = "mob";	
+							} else if (args[1].equalsIgnoreCase("creature")) {
+								type = "mob";
+							} else if (args[1].equalsIgnoreCase("creatures")) {
+								type = "mob";
+							} else if (args[1].equalsIgnoreCase("all")) {
+								type = "mob";
 							} else {
-								type = null;
+								type = args[1].toUpperCase();
+								CreatureType ctype = null;
+								try {
+									ctype = CreatureType.valueOf(type);
+								} catch (Exception e) {}
+								if (ctype == null && type.endsWith("S")) {
+									try {
+										ctype = CreatureType.valueOf(type.substring(0, type.length() - 2));
+									} catch (Exception e) {}
+								}
+								if (ctype != null) {
+									type = ctype.name().toLowerCase();
+								} else {
+									type = null;
+								}
+							}
+							//Set it, of course
+							if (type != null) {
+								if (node == "world.allowspawn") {
+									if (type.equals("animal")) {
+										r.setAnimals(false);
+									} else if (type.equals("monster")) {
+										r.setMonsters(false);
+									} else if (type.equals("mob")) {
+										r.deniedCreatures.clear();
+									} else {
+										r.deniedCreatures.remove(CreatureType.valueOf(type.toUpperCase()));
+									}
+									if (WorldManager.isLoaded(worldname)) {
+										message(sender, ChatColor.GREEN + type + "s are now allowed to spawn on world: '" + worldname + "'!");
+									} else {
+										message(sender, ChatColor.GREEN + type + "s are allowed to spawn on world: '" + worldname + "' once it is loaded!");
+									}
+								} else {
+									if (type.equals("animal")) {
+										r.setAnimals(true);
+									} else if (type.equals("monster")) {
+										r.setMonsters(true);
+									} else if (type.equals("mob")) {
+										r.setAnimals(true);
+										r.setMonsters(true);
+									} else {
+										r.deniedCreatures.add(CreatureType.valueOf(type.toUpperCase()));
+									}
+									//Capitalize
+									type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
+									if (WorldManager.isLoaded(worldname)) {
+										message(sender, ChatColor.YELLOW + type + "s can no longer spawn on world: '" + worldname + "'!");
+									} else {
+										message(sender, ChatColor.YELLOW + type + "s can no longer spawn on world: '" + worldname + "' once it is loaded!");
+									}
+								}
+								World w = WorldManager.getWorld(worldname);
+								if (w != null) {
+									SpawnRestriction restriction = SpawnControl.get(worldname);
+									for (Entity e : w.getEntities()) {
+										if (restriction.isDenied(e)) {
+											e.remove();
+										}
+									}
+								}
+							} else {
+								message(sender, ChatColor.RED + "Invalid creature type!");
 							}
 						}
-						//Set it, of course
-						if (type != null) {
-							if (node == "world.allowspawn") {
-								if (type.equals("animal")) {
-									r.denyAnimals = false;
-								} else if (type.equals("monster")) {
-									r.denyMonsters = false;
-								} else if (type.equals("mob")) {
-									r.denyAnimals = false;
-									r.denyMonsters = false;
-									r.deniedCreatures.clear();
+						//Mobs
+						SpawnRestriction restr = SpawnControl.get(worldname);
+						if (restr.deniedCreatures.size() == 0) {
+							message(sender, ChatColor.WHITE + "All mobs are allowed to spawn right now.");
+						} else {
+							message(sender, ChatColor.WHITE + "The following mobs are denied from spawning:");
+							String message = ChatColor.YELLOW.toString();
+							boolean first = true;
+							for (CreatureType type : restr.deniedCreatures) {
+								if (first) {
+									message += type.getName();
+									first = false;
 								} else {
-									r.deniedCreatures.remove(CreatureType.valueOf(type.toUpperCase()));
-								}
-								if (WorldManager.isLoaded(worldname)) {
-									message(sender, ChatColor.GREEN + type + "s are now allowed to spawn on world: '" + worldname + "'!");
-								} else {
-									message(sender, ChatColor.GREEN + type + "s are allowed to spawn on world: '" + worldname + "' once it is loaded!");
-								}
-							} else {
-								if (type.equals("animal")) {
-									r.denyAnimals = true;
-								} else if (type.equals("monster")) {
-									r.denyMonsters = true;
-								} else if (type.equals("mob")) {
-									r.denyAnimals = true;
-									r.denyMonsters = true;
-								} else {
-									r.deniedCreatures.add(CreatureType.valueOf(type.toUpperCase()));
-								}
-								//Capitalize
-								type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
-								if (WorldManager.isLoaded(worldname)) {
-									message(sender, ChatColor.YELLOW + type + "s can no longer spawn on world: '" + worldname + "'!");
-								} else {
-									message(sender, ChatColor.YELLOW + type + "s can no longer spawn on world: '" + worldname + "' once it is loaded!");
+									message += ", " + type.getName();
 								}
 							}
-						} else {
-							message(sender, ChatColor.RED + "Invalid creature type!");
+							message(sender, message);
 						}
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
@@ -742,6 +835,17 @@ public class MyWorlds extends JavaPlugin {
 					} else {
 						showInv(sender, node);
 					}
+				} else if (node == "world.setspawn") {
+					//====================================
+					//===============SET SPAWN COMMAND====
+					//====================================
+					if (sender instanceof Player) {
+						Location loc = ((Player) sender).getLocation();
+						loc.getWorld().setSpawnLocation(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+						sender.sendMessage(ChatColor.GREEN + "Spawn location of world '" + loc.getWorld().getName() + "' set!");
+					} else {
+						sender.sendMessage("This command is only for players!");
+					}
 				} else if (node == "world.time") {
 					//====================================
 					//===============TIME COMMAND=========
@@ -835,7 +939,6 @@ public class MyWorlds extends JavaPlugin {
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
 					}
-					
 				} else if (node == "world.load") {
 					//==========================================
 					//===============LOAD COMMAND===============
@@ -870,7 +973,7 @@ public class MyWorlds extends JavaPlugin {
 							World w = Bukkit.getServer().getWorld(worldname);
 							if (w != null) {
 								notifyConsole(sender, "Issued an unload command for world: " + worldname);
-								if (Bukkit.getServer().unloadWorld(w, false)) {
+								if (WorldManager.unload(w)) {
 									message(sender, ChatColor.GREEN + "World '" + worldname + "' has been unloaded!");
 								} else {
 									message(sender, ChatColor.RED + "Failed to unload the world (main world or online players?)");
@@ -945,18 +1048,10 @@ public class MyWorlds extends JavaPlugin {
 						String worldname = WorldManager.matchWorld(args[1]);
 						if (worldname == null) worldname = args[1];
 						if (WorldManager.getDataFolder(worldname).exists()) {
-							if (!WorldManager.isLoaded(worldname) && WorldManager.isBroken(worldname)) {
-								String seed = "";
-								for (int i = 2;i < args.length;i++) {
-									seed += args[i] + " ";
-								}
-								if (WorldManager.generateData(worldname, seed) && WorldManager.getData(worldname) != null) {
-									message(sender, ChatColor.GREEN + "World: '" + worldname + "' has been repaired!");
-								} else {
-									message(sender, ChatColor.RED + "Failed to repair world '" + worldname + "'!");
-								}
+							if (!WorldManager.isLoaded(worldname)) {
+								AsyncHandler.repair(sender, worldname);
 							} else {
-								message(sender, ChatColor.YELLOW + "This world is not broken, repair not needed!");
+								message(sender, ChatColor.YELLOW + "Can't repair a loaded world!");
 							}
 						} else {
 							message(sender, ChatColor.RED + "World not found!");
@@ -968,25 +1063,22 @@ public class MyWorlds extends JavaPlugin {
 					//===========================================
 					//===============SPAWN COMMAND===============
 					//===========================================
-					if (args.length == 2) {
-						String worldname = WorldManager.matchWorld(args[1]);
-						if (worldname != null) {
-							World w = Bukkit.getServer().getWorld(worldname);
-							if (w != null) {
-								if (sender instanceof Player) {
-									((Player) sender).teleport(w.getSpawnLocation());
-									sender.sendMessage(ChatColor.GREEN + "You have been teleported to '" + worldname + "'");
-								} else {
-									sender.sendMessage("A player is expected!");
+					String worldname = WorldManager.getWorldName(sender, args, args.length >= 2);
+					if (worldname != null) {
+						World w = Bukkit.getServer().getWorld(worldname);
+						if (w != null) {
+							if (sender instanceof Player) {
+								if (Permission.handleTeleport((Player) sender, w.getSpawnLocation())) {
+									//Success
 								}
 							} else {
-								message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
+								sender.sendMessage("A player is expected!");
 							}
 						} else {
-							message(sender, ChatColor.RED + "World not found!");
+							message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
 						}
 					} else {
-						showInv(sender, node);
+						message(sender, ChatColor.RED + "World not found!");
 					}
 				} else if (node == "world.save") {
 					//==========================================
@@ -1060,20 +1152,27 @@ public class MyWorlds extends JavaPlugin {
 					//===============TELEPORT PORTAL COMMAND==========
 					//================================================
 					if (sender instanceof Player) {
+						Player player = (Player) sender;
 						if (args.length == 1) {
-							Location tele = Portal.getPortalLocation(args[0]);
+							Location tele = Portal.getPortalLocation(args[0], true);
 							if (tele != null) {
-						    	((Player) sender).teleport(tele);
-						    	message(sender, ChatColor.GREEN + "You teleported to portal '" + args[0] + "'!");
+								if (Permission.handleTeleport(player, args[0], tele)) {
+									//Success
+								}
 							} else {
 								//Match world
 								String worldname = WorldManager.matchWorld(args[0]);
-								World w = WorldManager.getWorld(worldname);
-								if (w != null) {
-									((Player) sender).teleport(w.getSpawnLocation());
-									message(sender, ChatColor.GREEN + "You teleported to the spawn area of world: '" + worldname + "'!");
+								if (worldname != null) {
+									World w = WorldManager.getWorld(worldname);
+									if (w != null) {
+										if (Permission.handleTeleport(player, w.getSpawnLocation())) {
+											//Success
+										}
+									} else {
+										message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
+									}
 								} else {
-									message(sender, ChatColor.RED + "Portal or world not found!");
+									Localization.message(sender, "portal.notfound");
 									listPortals(sender, Portal.getPortals());
 								}
 							}
@@ -1085,7 +1184,7 @@ public class MyWorlds extends JavaPlugin {
 					}		
 				}
 			} else {
-				message(sender, ChatColor.RED + "You don't have permission to use this command!");
+				Localization.message(sender, "command.nopermission");
 			}	
 		}
 		return true;

@@ -47,6 +47,7 @@ public class SafeReader {
 		if (this.r == null) return;
 		try {
 			this.r.close();
+			this.r = null;
 		} catch (Exception ex) {
 			MyWorlds.log(Level.SEVERE, "Error while closing stream: " + this.filename);
 			ex.printStackTrace();

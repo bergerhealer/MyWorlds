@@ -4,10 +4,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.bukkit.World;
-import org.bukkit.entity.Animals;
 import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Monster;
 
 public class SpawnControl {
 	
@@ -15,31 +13,43 @@ public class SpawnControl {
 	public static class SpawnRestriction {
 		public SpawnRestriction() {}
 		public HashSet<CreatureType> deniedCreatures = new HashSet<CreatureType>();
-		public boolean denyMonsters = false;
-		public boolean denyAnimals = false;
-		public boolean isDenied(Entity e, CreatureType type) {
-			if (e instanceof Animals) {
-				if (denyAnimals) return true;
-			} else if (e instanceof Monster) {
-				if (denyMonsters) return true;
-			}
+		public boolean isDenied(Entity entity) {
+			return isDenied(getCreature(entity));
+		}
+		public boolean isDenied(CreatureType type) {
+			if (type == null) return false;
 			return deniedCreatures.contains(type);
-		}		
+		}
 		public boolean isDenied(String type) {
-			type = type.toUpperCase();
-			if (type.equalsIgnoreCase("ANIMAL")) {
-				return denyAnimals;
-			} else if (type.equalsIgnoreCase("MONSTER")) {
-				return denyMonsters;
-			} else {
-				for (CreatureType ctype : deniedCreatures) {
-					if (ctype.name().equals(type)) return true;
-				}
+			for (CreatureType ctype : deniedCreatures) {
+				if (ctype.name().equals(type)) return true;
 			}
 			if (type.endsWith("S")) {
 				return isDenied(type.substring(0, type.length() - 2));
 			}
 			return false;
+		}
+		public void setAnimals(boolean deny) {
+			for (CreatureType type : CreatureType.values()) {
+				if (isAnimal(type)) {
+					if (deny) {
+						deniedCreatures.add(type);
+					} else {
+						deniedCreatures.remove(type);
+					}
+				}
+			}
+		}
+		public void setMonsters(boolean deny) {
+			for (CreatureType type : CreatureType.values()) {
+				if (isMonster(type)) {
+					if (deny) {
+						deniedCreatures.add(type);
+					} else {
+						deniedCreatures.remove(type);
+					}
+				}
+			}
 		}
 	}
 	
@@ -52,11 +62,56 @@ public class SpawnControl {
 		}
 		return restr;
 	}
-	
-	public static boolean canSpawn(World w, Entity e, CreatureType type) {
-		return !get(w.getName()).isDenied(e, type);
+	public static SpawnRestriction get(World w) {
+		return get(w.getName());
 	}
-
+	
+	public static boolean canSpawn(Entity entity) {
+		return !get(entity.getWorld()).isDenied(entity);
+	}
+	
+	public static boolean isMonster(CreatureType type) {
+		if (type == null) return false;
+		switch (type) {
+		case CREEPER : return true;
+		case GHAST : return true;
+		case GIANT : return true;
+		case MONSTER : return true;
+		case PIG_ZOMBIE : return true;
+		case SKELETON : return true;
+		case SLIME : return true;
+		case SPIDER : return true;
+		case ZOMBIE : return true;
+		}
+		return false;
+	}
+	public static boolean isAnimal(CreatureType type) {
+		if (type == null) return false;
+		switch (type) {
+		case CHICKEN : return true;
+		case COW : return true;
+		case SHEEP : return true;
+		case SQUID : return true;
+		case WOLF : return true;
+		case PIG : return true;
+		}
+		return false;
+	}
+	
+	public static CreatureType getCreature(String name) {
+		for (CreatureType ctype : CreatureType.values()) {
+			if (name.equalsIgnoreCase(ctype.getName())) {
+				return ctype;
+			}
+		}
+		return null;
+	}
+	public static CreatureType getCreature(Entity e) {
+		String name = e.getClass().getSimpleName();
+		if (name.startsWith("Craft")) name = name.substring(5);
+		return getCreature(name);
+	}
+	
 	public static void load(String filename) {
 		SafeReader reader = new SafeReader(filename);
 		while (true) {
@@ -69,9 +124,9 @@ public class SpawnControl {
 				if (typeline == null) break;
 				typeline = typeline.trim().toUpperCase();
 				if (typeline.equals("ANIMALS")) {
-					r.denyAnimals = true;
+					r.setAnimals(true);
 				} else if (typeline.equals("MONSTERS")) {
-					r.denyMonsters = true;
+					r.setMonsters(true);
 				} else {
 					CreatureType type = null;
 					try {
@@ -92,9 +147,8 @@ public class SpawnControl {
 		for (String worldname : spawnRestrictions.keySet()) {
 			SpawnRestriction restr = spawnRestrictions.get(worldname);
 			if (restr == null) continue;
+			if (restr.deniedCreatures.size() == 0) continue;
 			writer.writeLine(worldname);
-			if (restr.denyAnimals) writer.writeLine("    ANIMALS");
-			if (restr.denyMonsters) writer.writeLine("    MONSTERS");
 			for (CreatureType type : restr.deniedCreatures) {
 				writer.writeLine("    " + type.name());
 			}

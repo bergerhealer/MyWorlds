@@ -13,7 +13,7 @@ public class MWEntityListener extends EntityListener {
     
     @Override
     public void onCreatureSpawn(CreatureSpawnEvent event) {
-    	if (!SpawnControl.canSpawn(event.getLocation().getWorld(), event.getEntity(), event.getCreatureType())) {
+    	if (!SpawnControl.canSpawn(event.getEntity())) {
     		event.setCancelled(true);
     	}
     }

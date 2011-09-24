@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.07
+version: 1.1
 author: bergerkiller
 commands:
     world:
@@ -66,11 +66,23 @@ permissions:
     myworlds.world.time:
         description: Sets if the player can change the time on worlds
         default: op
+    myworlds.world.gamemode:
+        description: Sets if the player can change the gamemode of a world
+        default: op
+    myworlds.world.setspawn:
+        description: Sets if the player can change the spawn point of a world
+        default: op
+    myworlds.world.enter.*:
+        description: Sets if the player can enter a certain world through portals
+        default: true;
     myworlds.portal.create:
         description: Sets if the player can create teleport signs
         default: op
     myworlds.portal.use:
         description: Sets if the player can use portals
+        default: true
+    myworlds.portal.enter.*:
+        description: Sets if the player can enter a certain portal
         default: true
     myworlds.tpp:
         description: Sets if the player can teleport to worlds or portals
