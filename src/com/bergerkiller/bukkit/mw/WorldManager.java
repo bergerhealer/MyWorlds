@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
@@ -22,6 +23,15 @@ import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.world.WorldUnloadEvent;
+import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.config.Configuration;
+import org.getspout.spout.chunkstore.ChunkStore;
+import org.getspout.spout.chunkstore.SimpleChunkDataManager;
+import org.getspout.spout.chunkstore.SimpleRegionFile;
+import org.getspout.spoutapi.SpoutManager;
 
 import com.bergerkiller.bukkit.mw.Tag.Type;
 
@@ -47,10 +57,9 @@ public class WorldManager {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public static boolean clearWorldReference(World world) {
-		return clearWorldReference(world.getName());
-	}
-	public static boolean clearWorldReference(String worldname) {
+		String worldname = world.getName();
 		if (regionfiles == null) return false;
 		if (rafField == null) return false;
 		ArrayList<Object> removedKeys = new ArrayList<Object>();
@@ -73,15 +82,141 @@ public class WorldManager {
 				}
 			}
 		} catch (Exception ex) {
+			MyWorlds.log(Level.WARNING, "Exception while removing world reference for '" + worldname + "'!");
 			ex.printStackTrace();
-			return false;
+		}
+		try {
+			//Spout
+			if (Bukkit.getServer().getPluginManager().isPluginEnabled("Spout")) {
+				//Close the friggin' meta streams!
+				SimpleChunkDataManager manager = (SimpleChunkDataManager) SpoutManager.getChunkDataManager();
+				Field chunkstore = SimpleChunkDataManager.class.getDeclaredField("chunkStore");
+				chunkstore.setAccessible(true);
+				ChunkStore store = (ChunkStore) chunkstore.get(manager);
+				Field regionfiles = ChunkStore.class.getDeclaredField("regionFiles");
+				regionfiles.setAccessible(true);
+				HashMap<UUID, HashMap<Long, SimpleRegionFile>> regionFiles;
+				regionFiles = (HashMap<UUID, HashMap<Long, SimpleRegionFile>>) regionfiles.get(store);
+				//operate on region files
+				HashMap<Long, SimpleRegionFile> data = regionFiles.remove(world.getUID());
+				if (data != null) {
+					//close streams...
+					for (SimpleRegionFile file : data.values()) {
+						file.close();
+					}
+				}
+			}
+		} catch (Exception ex) {
+			MyWorlds.log(Level.WARNING, "Exception while removing Spout world reference for '" + worldname + "'!");
+			ex.printStackTrace();
 		}
 		for (Object key : removedKeys) {
 			regionfiles.remove(key);
 		}
 		return true;
 	}
+
+	private static HashMap<String, Environment> worldEnvirons = new HashMap<String, Environment>();
+	private static HashMap<String, String> worldGens = new HashMap<String, String>();
 	
+	public static void load(Configuration config, String worldname) {
+		String env = config.getString(worldname + ".environment", WorldManager.getEnvironment(worldname).name());
+		for (Environment e : Environment.values()) {
+			if (e.name().equalsIgnoreCase(env)) {
+				worldEnvirons.put(worldname, e);
+				break;
+			}
+		}
+		String gen = config.getString(worldname + ".chunkGenerator", "default");
+		if (!gen.equalsIgnoreCase("default") && !gen.equals("")) {
+			worldGens.put(worldname, gen);
+		}
+	}
+	public static void save(Configuration config) {
+		for (Map.Entry<String, Environment> entry : worldEnvirons.entrySet()) {
+			config.setProperty(entry.getKey() + ".environment", entry.getValue().name());
+		}
+		for (Map.Entry<String, String> entry : worldGens.entrySet()) {
+			config.setProperty(entry.getKey() + ".chunkGenerator", entry.getValue());
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static String[] getGeneratorPlugins() {
+		ArrayList<String> gens = new ArrayList<String>();
+		for (Plugin plugin : Bukkit.getServer().getPluginManager().getPlugins()) {
+			try {
+				String mainclass = plugin.getDescription().getMain();
+				Class cmain = Class.forName(mainclass);
+				if (cmain.getMethod("getDefaultWorldGenerator", String.class, String.class).getDeclaringClass() != JavaPlugin.class) {
+					gens.add(plugin.getDescription().getName());
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		return gens.toArray(new String[0]);
+	}
+	public static String getGeneratorPlugin(String forWorld) {
+		return worldGens.get(forWorld.toLowerCase());
+	}
+	
+	public static String fixGeneratorName(String name) {
+		if (name == null) return null;
+		String id = "";
+		int index = name.indexOf(":");
+		if (index != -1) {
+			id = name.substring(index + 1);
+			name = name.substring(0, index);
+		}
+		if (!name.equals("")) {
+			name = name.toLowerCase();
+			//get plugin
+			String pname = null;
+			String[] plugins = getGeneratorPlugins();
+			for (String plugin : plugins) {
+				if (plugin.toLowerCase().equals(name)) {
+					pname = plugin;
+					break;
+				}
+			}
+			if (pname == null) {
+				for (String plugin : plugins) {
+					if (plugin.toLowerCase().contains(name)) {
+						pname = plugin;
+						break;
+					}
+				}
+			}
+			if (pname == null) {
+				return name + ":" + id;
+			} else {
+				return pname + ":" + id;
+			}
+		} else {
+			return name + ":" + id;
+		}
+	}
+	
+	public static ChunkGenerator getGenerator(String worldname, String name) {
+		if (name == null) return null;
+		String id = "";
+		int index = name.indexOf(":");
+		if (index != -1) {
+			id = name.substring(index + 1);
+			name = name.substring(0, index);
+		}
+		Plugin plug = Bukkit.getServer().getPluginManager().getPlugin(name);
+		if (plug != null) {
+			return plug.getDefaultWorldGenerator(worldname, id);
+		} else {
+			return null;
+		}
+	}
+	public static void setGenerator(String worldname, String name) {
+		worldGens.put(worldname.toLowerCase(), name);
+	}
+
 	private static File serverfolder;
 	public static File getServerFolder() {
 		if (serverfolder == null) serverfolder = MyWorlds.plugin.getDataFolder().getAbsoluteFile().getParentFile().getParentFile();
@@ -107,12 +242,22 @@ public class WorldManager {
 	}
 	
 	public static Environment getEnvironment(String worldname) {
+		Environment e = worldEnvirons.get(worldname.toLowerCase());
+		if (e != null) return e;
 		for (Environment env : Environment.values()) {
 			if (worldname.toUpperCase().contains(env.toString())) {
+				worldEnvirons.put(worldname.toLowerCase(), env);
 				return env;
 			}
 		}
+		worldEnvirons.put(worldname.toLowerCase(), Environment.NORMAL);
 		return Environment.NORMAL;
+	}
+	public static String getGeneratorName(String worldname) {
+		return worldGens.get(worldname.toLowerCase());
+	}
+	public static void setGeneratorName(String worldname, String genname) {
+		worldGens.put(worldname.toLowerCase(), genname);
 	}
 	
 	public static String getWorldName(CommandSender sender, String[] args, boolean useAlternative) {
@@ -185,6 +330,9 @@ public class WorldManager {
 	public static File getDataFile(String worldname) {
 		return new File(getDataFolder(worldname) + File.separator + "level.dat");
 	}
+	public static File getUIDFile(String worldname) {
+		return new File(getDataFolder(worldname) + File.separator + "uid.dat");
+	}
 
 	public static long getWorldSize(String worldname) {
 		return getFolderSize(getDataFolder(worldname));
@@ -201,6 +349,8 @@ public class WorldManager {
 				info.time = (Long) t.findTagByName("Time").getValue();
 				info.raining = ((Byte) t.findTagByName("raining").getValue()) != 0;
 		        info.thundering = ((Byte) t.findTagByName("thundering").getValue()) != 0;
+		        info.environment = getEnvironment(worldname);
+		        info.chunkGenerator = getGeneratorName(worldname);
 				if (info.size == 0) info.size = getWorldSize(worldname);
 			}
 		} catch (Exception ex) {}
@@ -215,13 +365,15 @@ public class WorldManager {
 			info.time = w.getFullTime();
 			info.raining = w.hasStorm();
 	        info.thundering = w.isThundering();
+	        info.environment = w.getEnvironment();
+	        info.chunkGenerator = getGeneratorName(worldname);
 		}
 		return info;
 	}
 	public static String[] getWorlds() {
 		ArrayList<String> rval = new ArrayList<String>();
 		for (String world : getServerFolder().list()) {
-			if (getDataFile(world).exists()) {
+			if (worldExists(world) || isLoaded(world)) {
 				rval.add(world);
 			}
 		}
@@ -267,10 +419,14 @@ public class WorldManager {
 	}
 	
 	public static boolean unload(World world) {
-		clearWorldReference(world);
-		boolean succ = Bukkit.getServer().unloadWorld(world, false);
+		//TODO: MISSING EVENT CALL FROM BUKKIT, BEING FIXED HERE!
+		// REMOVE IF NO LONGER NEEDED (!!!)
+		WorldUnloadEvent event = new WorldUnloadEvent(world);
+		Bukkit.getServer().getPluginManager().callEvent(event);
+		boolean succ = !event.isCancelled();
+		
 		if (succ) {
-			
+			succ = Bukkit.getServer().unloadWorld(world, false);
 		}
 		return succ;
 	}
@@ -278,38 +434,55 @@ public class WorldManager {
 		return createWorld(worldname, getSeed(seed));
 	}
 	public static World createWorld(String worldname, long seed) {
-		MyWorlds.log(Level.INFO, "Loading or creating world: " + worldname);
+		String gen = getGeneratorPlugin(worldname);
+		if (gen == null) {
+			MyWorlds.log(Level.INFO, "Loading or creating world: '" + worldname + "' using seed " + seed);
+		} else {
+			MyWorlds.log(Level.INFO, "Loading or creating world: '" + worldname + "' using seed " + seed + " and chunk generator: '" + gen + "'");
+		}
 		final int retrycount = 3;
 		World w = null;
 		int i = 0;
 		for (i = 0; i < retrycount + 1; i++) {
-			w = genWorld(worldname, seed);
+			try {
+				Environment env = getEnvironment(worldname);
+				if (gen == null) {
+					if (seed == 0) {
+						w = Bukkit.getServer().createWorld(worldname, env);
+					} else {
+						w = Bukkit.getServer().createWorld(worldname, env, seed);
+					}
+				} else {
+					ChunkGenerator cgen = getGenerator(worldname, gen);
+					if (cgen == null) {
+						MyWorlds.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
+						break;
+					}
+					if (seed == 0) {
+						w = Bukkit.getServer().createWorld(worldname, env, cgen);
+					} else {
+						w = Bukkit.getServer().createWorld(worldname, env, seed, cgen);
+					}
+				}
+			} catch (Exception ex) {
+			}
 			if (w != null) break;
 		}
 		if (w != null) {
 			PvPData.updatePvP(w);
+			//Data file is made?
+			if (!worldExists(worldname)) {
+				w.save();
+			}
 		}
 		if (w == null) {
 			MyWorlds.log(Level.WARNING, "Operation failed after " + i + " retries!");
 		} else if (i == 1) {
 			MyWorlds.log(Level.INFO, "Operation succeeded after 1 retry!");
-		} else {
+		} else if (i > 0) {
 			MyWorlds.log(Level.INFO, "Operation succeeded after " + i + " retries!");
 		}
-		MyWorlds.log(Level.INFO, "Loading or creating world: " + worldname);
 		return w;
-	}
-	private static World genWorld(String worldname, long seed) {
-		try {
-			Environment env = getEnvironment(worldname);
-			if (seed == 0) {
-				return Bukkit.getServer().createWorld(worldname, env);
-			} else {
-				return Bukkit.getServer().createWorld(worldname, env, seed);
-			}
-		} catch (Exception ex) {
-			return null;
-		}
 	}
 	
 	private static boolean delete(File folder) {

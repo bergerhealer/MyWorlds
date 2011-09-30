@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.util.config.Configuration;
 
 public class GamemodeHandler {
 	private static HashMap<String, GameMode> worldModes = new HashMap<String, GameMode>();
@@ -55,31 +56,18 @@ public class GamemodeHandler {
 		}
 	}
 
-	public static void save(String filename) {
-		SafeWriter writer = new SafeWriter(filename);
-		for (Map.Entry<String, GameMode> mode : worldModes.entrySet()) {
-			writer.writeLine("\"" + mode.getKey() + "\" " + mode.getValue().name());
-		}
-		writer.close();
-	}
-	public static void load(String filename) {
-		for (String textline : SafeReader.readAll(filename)) {
-			int index = textline.indexOf("\"");
-			if (index >= 0) {
-				textline = textline.substring(index + 1);
-				index = textline.indexOf("\"");
-				if (index > 0) {
-					String worldname = textline.substring(0, index);
-					textline = textline.substring(index + 1).trim();
-					//read mode
-					GameMode mode = getMode(textline, null);
-					if (mode != null) {
-						worldModes.put(worldname, mode);
-					}
-				}
+	public static void save(Configuration config) {
+		for (String world : config.getKeys()) {
+			if (get(world, null) == null) {
+				config.setProperty(world.toLowerCase() + ".gamemode", "none");
 			}
 		}
-		updateAll();
+		for (Map.Entry<String, GameMode> mode : worldModes.entrySet()) {
+			config.setProperty(mode.getKey() + ".gamemode", mode.getValue().name());
+		}
 	}
-	
+	public static void load(Configuration config, String worldname) {
+		set(worldname, config.getString(worldname + ".gamemode", "NONE"));
+	}
+		
 }

@@ -1,8 +1,10 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.bukkit.World;
+import org.bukkit.util.config.Configuration;
 
 public class TimeControl {
 	
@@ -83,32 +85,27 @@ public class TimeControl {
     /*
      * Time locking saving
      */
-    public static void load(String filename) {
-    	SafeReader reader = new SafeReader(filename);
-    	String textline = null;
-    	while ((textline = reader.readNonEmptyLine()) != null) {
-    		int spaceindex = textline.indexOf(" ");
-    		if (spaceindex != -1) {
-    			try {
-    				long time = Long.parseLong(textline.substring(0, spaceindex));
-    				String worldname = textline.substring(spaceindex + 1).toLowerCase();
-    				if (!worldname.equals("")) {
-    					TimeControl.lockTime(worldname, time);
-    					TimeControl.setLocking(worldname, true);
-    				}
-    			} catch (Exception ex) {};
+    public static void load(Configuration config, String worldname) {
+    	long time = config.getInt(worldname + ".lockedtime", -1);
+    	if (time >= 0) {
+			TimeControl.lockTime(worldname, time);
+			TimeControl.setLocking(worldname, true);
+    	}
+    }
+    public static void save(Configuration config) {
+    	for (String worldname : config.getKeys()) {
+    		Locker l = lockers.get(worldname.toLowerCase());
+    		if (l != null && l.isRunning()) {
+    			config.setProperty(worldname.toLowerCase() + ".lockedtime", l.time);
+    		} else {
+    			config.removeProperty(worldname.toLowerCase() + ".lockedtime");
     		}
     	}
-    	reader.close();
-    }
-    public static void save(String filename) {
-    	SafeWriter writer = new SafeWriter(filename);
-    	for (String worldname : lockers.keySet()) {
-    		writer.writeLine(lockers.get(worldname).time + " " + worldname);
+    	for (Map.Entry<String, Locker> locker : lockers.entrySet()) {
+    		config.setProperty(locker.getKey() + ".lockedtime", locker.getValue().time);
     	}
-    	writer.close();
     }
-    
+        
     /*
      * Time locking mechanics
      */

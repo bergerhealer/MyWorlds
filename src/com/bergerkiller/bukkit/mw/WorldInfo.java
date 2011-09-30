@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw;
 
+import org.bukkit.World.Environment;
+
 public class WorldInfo {
 	public String name;
 	public long seed;
@@ -8,4 +10,6 @@ public class WorldInfo {
 	public boolean raining;
 	public boolean thundering;
 	public boolean loaded;
+	public Environment environment;
+	public String chunkGenerator;
 }

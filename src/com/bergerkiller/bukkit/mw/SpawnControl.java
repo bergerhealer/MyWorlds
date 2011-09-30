@@ -1,11 +1,14 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import org.bukkit.World;
 import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
+import org.bukkit.util.config.Configuration;
 
 public class SpawnControl {
 	
@@ -82,6 +85,8 @@ public class SpawnControl {
 		case SLIME : return true;
 		case SPIDER : return true;
 		case ZOMBIE : return true;
+		case ENDERMAN : return true;
+		case CAVE_SPIDER : return true;
 		}
 		return false;
 	}
@@ -112,49 +117,29 @@ public class SpawnControl {
 		return getCreature(name);
 	}
 	
-	public static void load(String filename) {
-		SafeReader reader = new SafeReader(filename);
-		while (true) {
-			String worldname = reader.readNonEmptyLine();
-			if (worldname == null) break;
-			//Get the denied types for this world
-			SpawnRestriction r = get(worldname);
-			while (true) {
-				String typeline = reader.readNonEmptyLine();
-				if (typeline == null) break;
-				typeline = typeline.trim().toUpperCase();
-				if (typeline.equals("ANIMALS")) {
-					r.setAnimals(true);
-				} else if (typeline.equals("MONSTERS")) {
-					r.setMonsters(true);
-				} else {
-					CreatureType type = null;
-					try {
-						type = CreatureType.valueOf(typeline);
-					} catch (Exception ex) {}
-					if (type != null) {
-						r.deniedCreatures.add(type);
-					} else {
-						break;
-					}
-				}
+	public static void load(Configuration config, String worldname) {
+		SpawnRestriction r = get(worldname);
+		for (String type : config.getStringList(worldname + ".deniedCreatures", new ArrayList<String>())) {
+			type = type.toUpperCase();
+			if (type.equals("ANIMALS")) {
+				r.setAnimals(true);
+			} else if (type.equals("MONSTERS")) {
+				r.setMonsters(true);
+			} else {
+				try {
+					r.deniedCreatures.add(CreatureType.valueOf(type));
+				} catch (Exception ex) {}
 			}
 		}
-		reader.close();
 	}
-	public static void save(String filename) {
-		SafeWriter writer = new SafeWriter(filename);
-		for (String worldname : spawnRestrictions.keySet()) {
-			SpawnRestriction restr = spawnRestrictions.get(worldname);
-			if (restr == null) continue;
-			if (restr.deniedCreatures.size() == 0) continue;
-			writer.writeLine(worldname);
-			for (CreatureType type : restr.deniedCreatures) {
-				writer.writeLine("    " + type.name());
+	public static void save(Configuration config) {
+		for (Map.Entry<String, SpawnRestriction> restr : spawnRestrictions.entrySet()) {
+			ArrayList<String> creatures = new ArrayList<String>();
+			for (CreatureType type : restr.getValue().deniedCreatures) {
+				creatures.add(type.name());
 			}
-			writer.writeLine("END");
+			config.setProperty(restr.getKey() + ".deniedCreatures", creatures);
 		}
-		writer.close();
 	}
 	
 }

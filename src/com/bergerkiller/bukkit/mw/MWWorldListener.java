@@ -1,7 +1,5 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.util.logging.Level;
-
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.WorldListener;
 import org.bukkit.event.world.WorldLoadEvent;
@@ -11,13 +9,7 @@ public class MWWorldListener extends WorldListener {
 	
     @Override
     public void onChunkLoad(ChunkLoadEvent event) {
-		for (String portalname : Portal.getPortals(event.getChunk())) {
-    		Portal p = Portal.get(portalname);
-    		if (p == null) {
-    			MyWorlds.log(Level.WARNING, "Auto-removed portal '" + portalname + "' because it is no longer there!");
-    			Portal.remove(portalname);
-    		}
-		}
+    	Portal.validate(1, event.getChunk());
     }
     
     @Override

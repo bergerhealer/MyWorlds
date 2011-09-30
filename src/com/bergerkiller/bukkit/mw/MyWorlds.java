@@ -91,45 +91,12 @@ public class MyWorlds extends JavaPlugin {
         
         //Permissions
 		Permission.init(this);
-
-		//Loaded worlds
-		SafeReader reader = new SafeReader(root() + "LoadedWorlds.txt");
-		String textline = null;
-		while ((textline = reader.readLine()) != null) {
-			if (WorldManager.worldExists(textline)) {
-				if (WorldManager.getOrCreateWorld(textline) == null) {
-					log(Level.SEVERE, "Failed to (pre)load world: " + textline);
-				}
-			} else {
-				log(Level.WARNING, "World: " + textline + " no longer exists and has not been loaded!");
-			}
-		}
-		reader.close();
-		
-		//Spawn control settings
-		SpawnControl.load(root() + "WorldSpawnRestriction.txt");
-		
-		//Weather settings
-		reader = new SafeReader(root() + "WeatherHoldWorlds.txt");
-		while ((textline = reader.readNonEmptyLine()) != null) {
-			MWWeatherListener.holdWorld(textline, true);
-		}
-		reader.close();
-		
-		//Time settings
-		TimeControl.load(root() + "TimeLockedWorlds.txt");
-		
-		//PvP
-		PvPData.load(root() + "PvPWorlds.txt");
 		
 		//Portals
 		Portal.loadPortals(root() + "portals.txt");
 
-		//Game modes
-		GamemodeHandler.load(root() + "gamemodes.txt");
-		
-		//Default Portals
-		Portal.loadDefaultPortals(root() + "defaultportals.txt");
+		//World info
+		WorldConfig.load(root() + "worlds.yml");
 		
         //Commands
         getCommand("tpp").setExecutor(this);
@@ -140,40 +107,14 @@ public class MyWorlds extends JavaPlugin {
         
         //final msg
         PluginDescriptionFile pdfFile = this.getDescription();
-        System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " is enabled!" );
+        System.out.println("[MyWorlds] version " + pdfFile.getVersion() + " is enabled!" );
 	}
 	public void onDisable() {
 		//Portals
 		Portal.savePortals(root() + "portals.txt");
 		
-		//Default Portals
-		Portal.saveDefaultPortals(root() + "defaultportals.txt");
-		
-		//PvP
-		PvPData.save(root() + "PvPWorlds.txt");
-		
-		//Game modes
-		GamemodeHandler.save(root() + "gamemodes.txt");
-		
-		//Spawn control settings
-		SpawnControl.save(root() + "WorldSpawnRestriction.txt");
-		
-		//Weather
-		SafeWriter writer = new SafeWriter(root() + "WeatherHoldWorlds.txt");
-		for (String worldname : MWWeatherListener.holdWorlds) {
-			writer.writeLine(worldname);
-		}
-		writer.close();
-		
-		//Time settings
-		TimeControl.save(root() + "TimeLockedWorlds.txt");
-		
-		//Loaded worlds
-		writer = new SafeWriter(root() + "LoadedWorlds.txt");
-		for (World w : getServer().getWorlds()) {
-			writer.writeLine(w.getName());
-		}
-		writer.close();
+		//World info
+		WorldConfig.save(root() + "worlds.yml");
 		
 		System.out.println("My Worlds disabled!");
 	}
@@ -372,6 +313,14 @@ public class MyWorlds extends JavaPlugin {
 					node = "world.gamemode";
 				} else if (args[0].equalsIgnoreCase("setgm")) {
 					node = "world.gamemode";
+				} else if (args[0].equalsIgnoreCase("generators")) {
+					node = "world.listgenerators";
+				} else if (args[0].equalsIgnoreCase("gen")) {
+					node = "world.listgenerators";
+				} else if (args[0].equalsIgnoreCase("listgenerators")) {
+					node = "world.listgenerators";
+				} else if (args[0].equalsIgnoreCase("listgen")) {
+					node = "world.listgenerators";
 				}
 			}
 			if (node == null) {
@@ -385,6 +334,7 @@ public class MyWorlds extends JavaPlugin {
 				if (showUsage(sender, "world.load")) hac = true;
 				if (showUsage(sender, "world.unload")) hac = true;
 				if (showUsage(sender, "world.create")) hac = true;
+				if (showUsage(sender, "world.listgenerators")) hac = true;
 				if (showUsage(sender, "world.weather")) hac = true;		
 				if (showUsage(sender, "world.time")) hac = true;			
 				if (showUsage(sender, "world.spawn")) hac = true;
@@ -468,6 +418,24 @@ public class MyWorlds extends JavaPlugin {
 						portals = Portal.getPortals();
 					}
 					listPortals(sender, portals);
+				} else if (node == "world.listgenerators") {
+					//==================================================
+					//===============LIST GENERATORS COMMAND============
+					//==================================================
+					message(sender, ChatColor.YELLOW + "Available chunk generators:");
+					String msgpart = "";
+					for (String plugin : WorldManager.getGeneratorPlugins()) {
+						plugin = ChatColor.GREEN + plugin;
+						//display it
+						if (msgpart.length() + plugin.length() < 70) {
+							if (msgpart != "") msgpart += ChatColor.WHITE + " / ";
+							msgpart += plugin;
+						} else {
+							sender.sendMessage(msgpart);
+							msgpart = plugin;
+						}
+					}
+					message(sender, msgpart);
 				} else if (node == "world.setportal") {
 					//==============================================
 					//===============SET DEFAULT PORTAL COMMAND=====
@@ -518,14 +486,20 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.RED + "' " + worldname + "' is broken, no information can be shown!");
 						} else {
 							message(sender, ChatColor.YELLOW + "Information about the world: " + worldname);
-							message(sender, ChatColor.WHITE + "Internal name: " + info.name);
-							message(sender, ChatColor.WHITE + "World seed: " + info.seed);
-							if (info.size > 1000000) {
-								message(sender, ChatColor.WHITE + "World size: " + (info.size / 1000000) + " Megabytes");
-							} else if (info.size > 1000) {
-								message(sender, ChatColor.WHITE + "World size: " + (info.size / 1000) + " Kilobytes");
+							message(sender, ChatColor.WHITE + "Internal name: " + ChatColor.YELLOW + info.name);
+							message(sender, ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + info.environment.name().toLowerCase());
+							if (info.chunkGenerator == null) {
+								message(sender, ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + "Default");
 							} else {
-								message(sender, ChatColor.WHITE + "World size: " + (info.size) + " Bytes");
+								message(sender, ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + info.chunkGenerator);
+							}
+							message(sender, ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + info.seed);
+							if (info.size > 1000000) {
+								message(sender, ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size / 1000000) + " Megabytes");
+							} else if (info.size > 1000) {
+								message(sender, ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size / 1000) + " Kilobytes");
+							} else {
+								message(sender, ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size) + " Bytes");
 							}
 							//PvP
 							if (PvPData.isPvP(worldname)) { 
@@ -1022,13 +996,34 @@ public class MyWorlds extends JavaPlugin {
 					//============================================
 					if (args.length >= 2) {
 						String worldname = args[1];
+						String gen = null;
+						if (worldname.contains(":")) {
+							String[] parts = worldname.split(":");
+							if (parts.length == 2) {
+								worldname = parts[0];
+								gen = parts[1];
+							} else {
+								worldname = parts[0];
+								gen = parts[1] + ":" + parts[2];
+							}
+						}
 						if (!WorldManager.worldExists(worldname)) {
 							String seed = "";
 							for (int i = 2;i < args.length;i++) {
 								seed += args[i] + " ";
 							}
 							notifyConsole(sender, "Issued a world creation command for world: " + worldname);
-							message(sender, ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
+							if (gen == null) {
+								message(sender, ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
+							} else {
+								gen = WorldManager.fixGeneratorName(gen);
+								if (gen == null) {
+									message(sender, ChatColor.RED + "Failed to create world because the generator '" + gen + "' is missing!");
+								} else {
+									WorldManager.setGenerator(worldname, gen);
+									message(sender, ChatColor.YELLOW + "Creating world '" + worldname + "' using generator '" + gen + "' (this can take a while) ...");
+								}
+							}
 							if (WorldManager.createWorld(worldname, seed) != null) {
 								MyWorlds.message(sender, ChatColor.GREEN + "World '" + worldname + "' has been created and is ready for use!");
 							} else {

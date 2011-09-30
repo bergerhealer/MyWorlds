@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 
 import org.bukkit.Chunk;
@@ -13,6 +14,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
+import org.bukkit.util.config.Configuration;
 
 public class Portal {
 	private String name;
@@ -70,6 +72,9 @@ public class Portal {
 		return portallocations.containsKey(name);
 	}
 
+	/*
+	 * Getters and setters
+	 */
 	public static void remove(String name) {
 		portallocations.remove(name);
 		portalworlds.remove(name);
@@ -81,6 +86,24 @@ public class Portal {
 		if (signloc == null) return null;
 		return get(signloc.getBlock(), false);
 	}
+	public static Portal get(Location signloc, double radius) {
+		Portal p = null;
+		for (String portalname : portallocations.keySet()) {
+			Location ploc = getPortalLocation(portalname);
+			if (ploc != null && ploc.getWorld() == signloc.getWorld()) {
+				double distance = ploc.distance(signloc);
+				if (distance <= radius) {
+					Portal newp = Portal.get(ploc);
+					if (newp != null) {
+						p = newp;
+						radius = distance;
+					}
+				}
+			}
+		}
+		return p;
+	}
+	
 	public static Portal get(Block signblock, boolean loadchunk) {
 		int cx = signblock.getLocation().getBlockX() >> 4;
 		int cz = signblock.getLocation().getBlockZ() >> 4;
@@ -153,23 +176,6 @@ public class Portal {
 		}
 		return rval.toArray(new String[0]);
 	}
-	public static Portal getPortal(Location loc, double radius) {
-		Portal p = null;
-		for (String portalname : portallocations.keySet()) {
-			Location ploc = getPortalLocation(portalname);
-			if (ploc != null && ploc.getWorld() == loc.getWorld()) {
-				double distance = ploc.distance(loc);
-				if (distance <= radius) {
-					Portal newp = Portal.get(ploc);
-					if (newp != null) {
-						p = newp;
-						radius = distance;
-					}
-				}
-			}
-		}
-		return p;
-	}
 	public static Location getPortalLocation(String portalname) {
 		if (portalname == null) return null;
 		Location loc = portallocations.get(portalname);
@@ -198,14 +204,54 @@ public class Portal {
 		return loc;
 	}
 	
-	
 	public static String getPortalWorld(String portalname) {
 		return portalworlds.get(portalname);
 	}
 	
+	private static class PortalValidateCommand implements Runnable {
+		public PortalValidateCommand(String... portalnames) {
+			this.portalnames = portalnames;
+		}
+		
+		private String[] portalnames;
+		
+		@Override
+		public void run() {
+			for (String portalname : portalnames) {
+				Location loc = getPortalLocation(portalname);
+				if (loc != null) {
+					if (loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4, loc.getBlockZ() >> 4)) {
+						//validate
+						if (get(loc) == null) {
+			    			MyWorlds.log(Level.WARNING, "Auto-removed portal '" + portalname + "' because it is no longer there!");
+			    			remove(portalname);
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	public static void validate(int delay, World world) {
+		validate(delay, getPortals(world));
+	}
+	public static void validate(int delay, Chunk chunk) {
+		validate(delay, getPortals(chunk));
+	}
+	public static void validate(int delay, String... portalnames) {
+		PortalValidateCommand cmd = new PortalValidateCommand(portalnames);
+		if (delay < 0) {
+			cmd.run();
+		} else {
+			MyWorlds.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MyWorlds.plugin, cmd);
+		}
+	}
+     
+    /*
+     * Teleportation and teleport defaults
+     */
     private static HashMap<Entity, Long> portaltimes = new HashMap<Entity, Long>();
     private static ArrayList<TeleportCommand> teleportations = new ArrayList<TeleportCommand>();  
-     
     public static void setDefault(String worldname, String destination) {
     	if (destination == null) {
         	defaultlocations.remove(worldname.toLowerCase());
@@ -216,7 +262,7 @@ public class Portal {
     public static void handlePortalEnter(Entity e) {
         long currtime = System.currentTimeMillis();
         if (!portaltimes.containsKey(e) || currtime - portaltimes.get(e) >= MyWorlds.teleportInterval) {
-        	Portal portal = getPortal(e.getLocation(), 5);  	
+        	Portal portal = get(e.getLocation(), 5);  	
         	if (portal == null) {
         		//Default portals
         		String def = defaultlocations.get(e.getWorld().getName().toLowerCase());
@@ -239,7 +285,6 @@ public class Portal {
     	}
         portaltimes.put(e, currtime);
     }
-    
     private static class TeleportCommand {
     	public Entity e;
     	public Portal portal;
@@ -248,7 +293,6 @@ public class Portal {
     		this.portal = portal;
     	}
     }
-    
     public static void delayedTeleport(Portal portal, Entity e) {
     	teleportations.add(new TeleportCommand(e, portal));
     	MyWorlds.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MyWorlds.plugin, new Runnable() {
@@ -265,20 +309,24 @@ public class Portal {
     	}, 0L);
     }
 	
-	public static void loadDefaultPortals(String filename) {
-		for (String textline : SafeReader.readAll(filename, true)) {
-			String[] args = MyWorlds.convertArgs(textline.split(" "));
-			if (args.length == 2) {
-				defaultlocations.put(args[0].toLowerCase(), args[1]);		
-			}
+    /*
+     * Loading and saving
+     */
+	public static void loadDefaultPortals(Configuration config, String worldname) {
+		String def = config.getString(worldname + ".defaultPortal", null);
+		if (def != null) {
+			defaultlocations.put(worldname.toLowerCase(), def);
 		}
 	}
-	public static void saveDefaultPortals(String filename) {
-		SafeWriter writer = new SafeWriter(filename);
-		for (String key : defaultlocations.keySet()) {
-			writer.writeLine("\"" + key.toLowerCase() + "\" \"" + defaultlocations.get(key) + "\"");
+	public static void saveDefaultPortals(Configuration config) {
+		for (String worldname : config.getKeys()) {
+			if (!defaultlocations.containsKey(worldname.toLowerCase())) {
+				config.removeProperty(worldname + ".defaultPortal");
+			}
 		}
-		writer.close();
+		for (Map.Entry<String, String> entry : defaultlocations.entrySet()) {
+			config.setProperty(entry.getKey() + ".defaultPortal", entry.getValue());
+		}
 	}
 	public static void loadPortals(String filename) {
 		for (String textline : SafeReader.readAll(filename, true)) {

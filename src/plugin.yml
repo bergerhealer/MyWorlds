@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.1
+version: 1.11
 author: bergerkiller
 commands:
     world:
@@ -20,6 +20,9 @@ permissions:
         default: op
     myworlds.world.portals:
         description: Sets if the player can list all portals on the server
+        default: op
+    myworlds.world.listgenerators:
+        description: Sets if the player can list all chunk generators on the server
         default: op
     myworlds.world.setportal:
         description: Sets if the player can change the default portal destination on the world
