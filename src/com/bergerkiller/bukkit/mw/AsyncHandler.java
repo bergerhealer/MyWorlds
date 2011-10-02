@@ -24,10 +24,11 @@ public class AsyncHandler {
 		command = "copy";
 		run();
 	}
-	public static void repair(CommandSender sender, String worldname) {
-		args = new Object[2];
+	public static void repair(CommandSender sender, String worldname, long seed) {
+		args = new Object[3];
 		args[0] = worldname;
-		args[1] = sender;
+		args[1] = seed;
+		args[2] = sender;
 		command = "repair";
 		run();
 	}
@@ -56,14 +57,11 @@ public class AsyncHandler {
 					}
 				} else if (command.equals("repair")) {
 					String worldname = args[0].toString();
-					CommandSender sender = (CommandSender) args[1];
+					long seed = (Long) args[1];
+					CommandSender sender = (CommandSender) args[2];
 					
 					boolean worked = false;
 					if (WorldManager.isBroken(worldname)) {
-						String seed = "";
-						for (int i = 2;i < args.length;i++) {
-							seed += args[i] + " ";
-						}
 						worked = WorldManager.generateData(worldname, seed);
 						MyWorlds.message(sender, ChatColor.YELLOW + "Level.dat regenerated using seed: " + seed);
 					} else {

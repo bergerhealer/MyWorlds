@@ -1,16 +1,18 @@
 package com.bergerkiller.bukkit.mw;
 
-import org.bukkit.event.world.ChunkLoadEvent;
+import java.util.HashSet;
+
+import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldListener;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 public class MWWorldListener extends WorldListener {
 	
-    @Override
-    public void onChunkLoad(ChunkLoadEvent event) {
-    	Portal.validate(1, event.getChunk());
-    }
+	private static HashSet<String> initIgnoreWorlds = new HashSet<String>();
+	public static void ignoreWorld(String worldname) {
+		initIgnoreWorlds.add(worldname);
+	}
     
     @Override
     public void onWorldLoad(WorldLoadEvent event) {
@@ -22,6 +24,16 @@ public class MWWorldListener extends WorldListener {
     	if (!event.isCancelled()) {
         	TimeControl.setLocking(event.getWorld().getName(), false);
         	WorldManager.clearWorldReference(event.getWorld());
+    	}
+    }
+    
+    @Override
+    public void onWorldInit(WorldInitEvent event) {
+    	if (initIgnoreWorlds.contains(event.getWorld().getName())) {
+    		initIgnoreWorlds.remove(event.getWorld().getName());
+    		event.getWorld().setKeepSpawnInMemory(false);
+    	} else {
+        	WorldManager.updateKeepSpawnMemory(event.getWorld());
     	}
     }
     

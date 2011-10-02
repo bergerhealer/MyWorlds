@@ -74,7 +74,7 @@ public class Localization {
 			writer.writeLine("help.world.delete: &e/world delete [worldname] - Permanently deletes a world");
 			writer.writeLine("help.world.spawn: &e/world spawn [worldname] - Teleport to the world spawn");
 			writer.writeLine("help.world.copy: &e/world copy [worldname] [newname] - Copies a world under a new name");
-			writer.writeLine("help.world.evacuate: &e/world evacuate [worldname]&n&e - Removes all players by teleportation or kicking");
+			writer.writeLine("help.world.evacuate: &e/world evacuate [worldname]&n&e    Removes all players by teleportation or kicking");
 			writer.writeLine("help.world.repair: &e/world repair [worldname] ([Seed]) - Repairs the world");
 			writer.writeLine("help.world.save: &e/world save [worldname] - Saves the world");
 			writer.writeLine("help.world.togglepvp: &e/world togglepvp ([world]) - Toggles PvP on or off");
@@ -85,6 +85,7 @@ public class Localization {
 			writer.writeLine("help.world.setportal: &e/world setportal [destination] ([worldname]) - Set default portal destination");
 			writer.writeLine("help.world.setspawn: &e/world setspawn - Sets the world spawn point to your location");
 			writer.writeLine("help.world.gamemode: &e/world gamemode [mode] ([worldname]) - Sets or clears the gamemode for a world");
+			writer.writeLine("help.world.togglespawnloaded: &e/world togglespawnloaded ([worldname])&n&e    Toggles keep-spawn-in-memory on or off");
 			writer.close();
 		}
 		

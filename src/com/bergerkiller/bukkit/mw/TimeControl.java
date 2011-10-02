@@ -124,7 +124,6 @@ public class TimeControl {
     		l.start();
     	} else {
     		l.time = time;
-    		l.prevtime = time;
     		l.run();
     	}
     }
@@ -160,28 +159,19 @@ public class TimeControl {
     	public Locker(String worldname, long time) {
     		this.worldname = worldname;
     		this.time = time;
-    		this.prevtime = time;
     	}
     	
-    	private final long maxTime = Long.MAX_VALUE - 24000L;
     	private int id = -1;
     	private String worldname;
     	private World w;
     	private long time;
-    	private long prevtime;
     	
     	public boolean isRunning() {
     		return this.id != -1;
     	}
 		@Override
 		public void run() {
-			//Time exceeded?
-			if (prevtime > maxTime) {
-				prevtime = time;
-			} else {
-				prevtime += 24000;
-			}
-			this.w.setFullTime(prevtime);
+			WorldManager.setTime(this.w, time);
 		}
 		
 		public void stop() {

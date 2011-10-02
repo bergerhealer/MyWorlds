@@ -61,9 +61,9 @@ public class MyWorlds extends JavaPlugin {
         pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
-        pm.registerEvent(Event.Type.CHUNK_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_UNLOAD, worldListener, Priority.Monitor, this);  
+        pm.registerEvent(Event.Type.WORLD_INIT, worldListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.WEATHER_CHANGE, weatherListener, Priority.Highest, this);  
         
         String locale = "default";
@@ -115,6 +115,9 @@ public class MyWorlds extends JavaPlugin {
 		
 		//World info
 		WorldConfig.save(root() + "worlds.yml");
+		
+		//Abort chunk loader
+		LoadChunksTask.abort();
 		
 		System.out.println("My Worlds disabled!");
 	}
@@ -321,6 +324,12 @@ public class MyWorlds extends JavaPlugin {
 					node = "world.listgenerators";
 				} else if (args[0].equalsIgnoreCase("listgen")) {
 					node = "world.listgenerators";
+				} else if (args[0].equalsIgnoreCase("togglespawnloaded")) {
+					node = "world.togglespawnloaded";
+				} else if (args[0].equalsIgnoreCase("spawnloaded")) {
+					node = "world.togglespawnloaded";
+				} else if (args[0].equalsIgnoreCase("keepspawnloaded")) {
+					node = "world.togglespawnloaded";
 				}
 			}
 			if (node == null) {
@@ -493,6 +502,7 @@ public class MyWorlds extends JavaPlugin {
 							} else {
 								message(sender, ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + info.chunkGenerator);
 							}
+							message(sender, ChatColor.WHITE + "Keep spawn loaded: " + ChatColor.YELLOW + info.keepSpawnInMemory);
 							message(sender, ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + info.seed);
 							if (info.size > 1000000) {
 								message(sender, ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size / 1000000) + " Megabytes");
@@ -599,6 +609,25 @@ public class MyWorlds extends JavaPlugin {
 						}
 						if (!WorldManager.isLoaded(worldname)) {
 							message(sender, ChatColor.YELLOW + "Please note that this world is not loaded!");
+						}
+					} else {
+						message(sender, ChatColor.RED + "World not found!");
+					}
+				} else if (node == "world.togglespawnloaded") {
+					//==========================================
+					//===============TOGGLE SPAWN LOADED========
+					//==========================================
+					String worldname = WorldManager.getWorldName(sender, args, args.length == 2);
+					if (worldname != null) {
+						boolean value = !WorldManager.getKeepSpawnInMemory(worldname);
+						WorldManager.setKeepSpawnInMemory(worldname, value);
+						if (value) {
+							message(sender, ChatColor.GREEN + "The spawn area on World: '" + worldname + "' is now kept loaded!");
+						} else {
+							message(sender, ChatColor.YELLOW + "The spawn area on World: '" + worldname + "' is no longer kept loaded!");
+						}
+						if (!WorldManager.isLoaded(worldname)) {
+							message(sender, ChatColor.YELLOW + "These settings will be used as soon this world is loaded.");
 						}
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
@@ -897,11 +926,11 @@ public class MyWorlds extends JavaPlugin {
 								if (w != null) {
 									if (TimeControl.isLocked(worldname)) {
 										TimeControl.unlockTime(worldname);
-										w.setFullTime(time);
+										WorldManager.setTime(w, time);
 										message(sender, ChatColor.GREEN + "Time of world '" + worldname + "' unlocked and set to " + 
 										        TimeControl.getTimeString(time) + "!");
 									} else {
-										w.setFullTime(time);
+										WorldManager.setTime(w, time);
 										message(sender, ChatColor.GREEN + "Time of world '" + worldname + "' set to " + 
 										        TimeControl.getTimeString(time) + "!");
 									}
@@ -925,7 +954,7 @@ public class MyWorlds extends JavaPlugin {
 							} else {
 								notifyConsole(sender, "Issued a load command for world: " + worldname);
 								message(sender, ChatColor.YELLOW + "Loading world: '" + worldname + "'...");
-								if (WorldManager.createWorld(worldname, null) != null) {
+								if (WorldManager.createWorld(worldname, 0) != null) {
 									message(sender, ChatColor.GREEN + "World loaded!");
 								} else {
 									message(sender, ChatColor.RED + "Failed to load world, it is probably broken!");
@@ -1010,8 +1039,10 @@ public class MyWorlds extends JavaPlugin {
 						if (!WorldManager.worldExists(worldname)) {
 							String seed = "";
 							for (int i = 2;i < args.length;i++) {
-								seed += args[i] + " ";
+								if (seed != "") seed += " ";
+								seed += args[i];
 							}
+							long seedval = WorldManager.getRandomSeed(seed);
 							notifyConsole(sender, "Issued a world creation command for world: " + worldname);
 							if (gen == null) {
 								message(sender, ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
@@ -1024,10 +1055,51 @@ public class MyWorlds extends JavaPlugin {
 									message(sender, ChatColor.YELLOW + "Creating world '" + worldname + "' using generator '" + gen + "' (this can take a while) ...");
 								}
 							}
-							if (WorldManager.createWorld(worldname, seed) != null) {
-								MyWorlds.message(sender, ChatColor.GREEN + "World '" + worldname + "' has been created and is ready for use!");
+					        message(sender, ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
+					        MWWorldListener.ignoreWorld(worldname);
+					        World world = WorldManager.createWorld(worldname, seedval);
+							if (world != null) {
+								//load chunks
+								final int keepdimension = 14;
+								final int total = 4 * keepdimension * keepdimension;
+								int current = 0;
+								int spawnx = world.getSpawnLocation().getBlockX() >> 4;
+							    int spawnz = world.getSpawnLocation().getBlockZ() >> 4;
+								for (int x = -keepdimension; x < keepdimension; x++) {
+									boolean first = true;
+									for (int z = -keepdimension; z < keepdimension; z++) {
+										int cx = spawnx + x;
+										int cz = spawnz + z;
+										Task t = null;
+										if (first || (current + 2) == total) {
+											int per = 100;
+											if (first) per = 100 * current / total;
+											t = new Task(sender, per) {
+												public void run() {
+													CommandSender sender = (CommandSender) getArg(0);
+													int percent = getIntArg(1);
+												    message(sender, ChatColor.YELLOW + "Preparing spawn area (" + percent + "%)...");
+												    MyWorlds.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
+												}
+											};
+											first = false;
+										}
+										if (++current == total) {
+											t = new Task(sender, world) {
+												public void run() {
+													CommandSender sender = (CommandSender) getArg(0);
+													World world = (World) getArg(1);
+													world.setKeepSpawnInMemory(true);
+												    message(sender, ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
+												    MyWorlds.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
+												}
+											};
+										}
+										LoadChunksTask.add(world, cx, cz, t);
+									}
+								}
 							} else {
-								MyWorlds.message(sender, ChatColor.RED + "World creation failed!");
+								message(sender, ChatColor.RED + "World creation failed!");
 							}
 						} else {
 							message(sender, ChatColor.RED + "World already exists!");
@@ -1041,10 +1113,15 @@ public class MyWorlds extends JavaPlugin {
 					//============================================
 					if (args.length >= 2) {
 						String worldname = WorldManager.matchWorld(args[1]);
-						if (worldname == null) worldname = args[1];
+						//get seed
+						String seed = "";
+						for (int i = 2;i < args.length;i++) {
+							if (seed != "") seed += " ";
+							seed += args[i];
+						}
 						if (WorldManager.getDataFolder(worldname).exists()) {
 							if (!WorldManager.isLoaded(worldname)) {
-								AsyncHandler.repair(sender, worldname);
+								AsyncHandler.repair(sender, worldname, WorldManager.getRandomSeed(seed));
 							} else {
 								message(sender, ChatColor.YELLOW + "Can't repair a loaded world!");
 							}

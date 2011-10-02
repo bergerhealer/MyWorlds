@@ -12,4 +12,5 @@ public class WorldInfo {
 	public boolean loaded;
 	public Environment environment;
 	public String chunkGenerator;
+	public boolean keepSpawnInMemory;
 }

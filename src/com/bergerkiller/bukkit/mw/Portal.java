@@ -97,6 +97,13 @@ public class Portal {
 					if (newp != null) {
 						p = newp;
 						radius = distance;
+					} else if (ploc.getWorld().isChunkLoaded(ploc.getBlockX() >> 4, ploc.getBlockZ() >> 4)) {
+						//In loaded chunk and NOT found!
+						//Remove it
+						portallocations.remove(portalname);
+						MyWorlds.log(Level.WARNING, "Removed portal '" + portalname + "' because it is no longer there!");
+						//End the loop and call the function again
+						return get(signloc, radius);
 					}
 				}
 			}
@@ -208,45 +215,7 @@ public class Portal {
 		return portalworlds.get(portalname);
 	}
 	
-	private static class PortalValidateCommand implements Runnable {
-		public PortalValidateCommand(String... portalnames) {
-			this.portalnames = portalnames;
-		}
-		
-		private String[] portalnames;
-		
-		@Override
-		public void run() {
-			for (String portalname : portalnames) {
-				Location loc = getPortalLocation(portalname);
-				if (loc != null) {
-					if (loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4, loc.getBlockZ() >> 4)) {
-						//validate
-						if (get(loc) == null) {
-			    			MyWorlds.log(Level.WARNING, "Auto-removed portal '" + portalname + "' because it is no longer there!");
-			    			remove(portalname);
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	public static void validate(int delay, World world) {
-		validate(delay, getPortals(world));
-	}
-	public static void validate(int delay, Chunk chunk) {
-		validate(delay, getPortals(chunk));
-	}
-	public static void validate(int delay, String... portalnames) {
-		PortalValidateCommand cmd = new PortalValidateCommand(portalnames);
-		if (delay < 0) {
-			cmd.run();
-		} else {
-			MyWorlds.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MyWorlds.plugin, cmd);
-		}
-	}
-     
+	     
     /*
      * Teleportation and teleport defaults
      */

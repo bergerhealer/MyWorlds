@@ -5,8 +5,11 @@ import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
@@ -14,6 +17,7 @@ import java.util.zip.InflaterInputStream;
 
 import net.minecraft.server.CompressedStreamTools;
 import net.minecraft.server.NBTTagCompound;
+import net.minecraft.server.NextTickListEntry;
 import net.minecraft.server.RegionFile;
 
 import org.bukkit.Bukkit;
@@ -22,6 +26,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.command.CommandSender;
+import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.generator.ChunkGenerator;
@@ -116,6 +121,7 @@ public class WorldManager {
 		return true;
 	}
 
+	private static HashMap<String, Boolean> keepSpawnMemory = new HashMap<String, Boolean>();
 	private static HashMap<String, Environment> worldEnvirons = new HashMap<String, Environment>();
 	private static HashMap<String, String> worldGens = new HashMap<String, String>();
 	
@@ -131,6 +137,11 @@ public class WorldManager {
 		if (!gen.equalsIgnoreCase("default") && !gen.equals("")) {
 			worldGens.put(worldname, gen);
 		}
+		if (config.getBoolean(worldname + ".keepSpawnLoaded", true)) {
+			keepSpawnMemory.put(worldname, true);
+		} else {
+			keepSpawnMemory.put(worldname, false);
+		}
 	}
 	public static void save(Configuration config) {
 		for (Map.Entry<String, Environment> entry : worldEnvirons.entrySet()) {
@@ -138,6 +149,32 @@ public class WorldManager {
 		}
 		for (Map.Entry<String, String> entry : worldGens.entrySet()) {
 			config.setProperty(entry.getKey() + ".chunkGenerator", entry.getValue());
+		}
+		for (Map.Entry<String, Boolean> entry : keepSpawnMemory.entrySet()) {
+			config.setProperty(entry.getKey() + ".keepSpawnLoaded", entry.getValue());
+		}
+	}
+	
+	public static void setKeepSpawnInMemory(String worldname, boolean value) {
+		keepSpawnMemory.put(worldname.toLowerCase(), value);
+		World w = getWorld(worldname);
+		if (w != null) {
+			w.setKeepSpawnInMemory(value);
+		}
+	}
+	public static boolean getKeepSpawnInMemory(String worldname) {
+		worldname = worldname.toLowerCase();
+		if (!keepSpawnMemory.containsKey(worldname)) {
+			keepSpawnMemory.put(worldname, true);
+			return true;
+		} else {
+			return keepSpawnMemory.get(worldname);
+		}
+	}
+	public static void updateKeepSpawnMemory(World world) {
+		boolean keep = getKeepSpawnInMemory(world.getName());
+		if (keep != world.getKeepSpawnInMemory()) {
+			world.setKeepSpawnInMemory(keep);
 		}
 	}
 	
@@ -237,7 +274,7 @@ public class WorldManager {
 		long seedval = getSeed(seed);
 		if (seedval == 0) {
 			seedval = new Random().nextLong();
-		} 
+		}
 		return seedval;
 	}
 	
@@ -279,10 +316,13 @@ public class WorldManager {
 	}
 		
 	public static boolean generateData(String worldname, String seed) {
+		return generateData(worldname, getRandomSeed(seed));
+	}
+	public static boolean generateData(String worldname, long seed) {
 		Tag data = new Tag(Type.TAG_Compound, "Data", new Tag[] {
 				new Tag(Type.TAG_Byte, "thundering", (byte) 0), 
 				new Tag(Type.TAG_Long, "LastPlayed", System.currentTimeMillis()),
-				new Tag(Type.TAG_Long, "RandomSeed", getRandomSeed(seed)), 
+				new Tag(Type.TAG_Long, "RandomSeed", seed), 
 				new Tag(Type.TAG_Int, "version", (int) 19132), 
 				new Tag(Type.TAG_Long, "Time", 0L),
 				new Tag(Type.TAG_Byte, "raining", (byte) 0), 
@@ -351,6 +391,7 @@ public class WorldManager {
 		        info.thundering = ((Byte) t.findTagByName("thundering").getValue()) != 0;
 		        info.environment = getEnvironment(worldname);
 		        info.chunkGenerator = getGeneratorName(worldname);
+		        info.keepSpawnInMemory = getKeepSpawnInMemory(worldname);
 				if (info.size == 0) info.size = getWorldSize(worldname);
 			}
 		} catch (Exception ex) {}
@@ -366,6 +407,7 @@ public class WorldManager {
 			info.raining = w.hasStorm();
 	        info.thundering = w.isThundering();
 	        info.environment = w.getEnvironment();
+	        info.keepSpawnInMemory = getKeepSpawnInMemory(worldname);
 	        info.chunkGenerator = getGeneratorName(worldname);
 		}
 		return info;
@@ -415,7 +457,7 @@ public class WorldManager {
 	public static World getOrCreateWorld(String worldname) {
 		World w = getWorld(worldname);
 		if (w != null) return w;
-		return createWorld(worldname, null);
+		return createWorld(worldname, 0);
 	}
 	
 	public static boolean unload(World world) {
@@ -429,9 +471,6 @@ public class WorldManager {
 			succ = Bukkit.getServer().unloadWorld(world, false);
 		}
 		return succ;
-	}
-	public static World createWorld(String worldname, String seed) {
-		return createWorld(worldname, getSeed(seed));
 	}
 	public static World createWorld(String worldname, long seed) {
 		String gen = getGeneratorPlugin(worldname);
@@ -483,6 +522,36 @@ public class WorldManager {
 			MyWorlds.log(Level.INFO, "Operation succeeded after " + i + " retries!");
 		}
 		return w;
+	}
+	
+	private static List redstoneInfo;	
+	private static Field tickListField;
+	private static boolean initFields = false;
+	public static void setTime(World world, long time) {
+		long timedif = time - world.getFullTime();
+		net.minecraft.server.World w = ((CraftWorld) world).getHandle();
+		w.setTimeAndFixTicklists(time);
+		try {
+			if (!initFields) {
+				Field info = net.minecraft.server.BlockRedstoneTorch.class.getDeclaredField("b");
+				info.setAccessible(true);
+				redstoneInfo = (List) info.get(null);
+				tickListField = net.minecraft.server.World.class.getDeclaredField("N");
+				tickListField.setAccessible(true);
+			}
+			if (redstoneInfo != null && tickListField != null) {
+				TreeSet ticklist = (TreeSet) tickListField.get(w);
+		        NextTickListEntry nextticklistentry;
+
+		        for (Iterator iterator = ticklist.iterator(); iterator.hasNext(); nextticklistentry.e += timedif) {
+		            nextticklistentry = (NextTickListEntry) iterator.next();
+		        }
+				redstoneInfo.clear();
+			}
+		} catch (Exception ex) {
+			MyWorlds.log(Level.SEVERE, "Failed to fix redstone while setting time!");
+			ex.printStackTrace();
+		}
 	}
 	
 	private static boolean delete(File folder) {

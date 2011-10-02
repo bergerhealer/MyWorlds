@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.11
+version: 1.13
 author: bergerkiller
 commands:
     world:
@@ -56,6 +56,9 @@ permissions:
         default: false
     myworlds.world.togglepvp:
         description: Sets if the player can change the PvP setting on worlds
+        default: op
+    myworlds.world.togglespawnloaded:
+        description: Sets if the player can toggle spawn chunk loading on or off
         default: op
     myworlds.world.allowspawn:
         description: Sets if the player can start mobs spawning
