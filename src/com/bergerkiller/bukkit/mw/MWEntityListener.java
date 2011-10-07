@@ -14,9 +14,11 @@ public class MWEntityListener extends EntityListener {
     
     @Override
     public void onCreatureSpawn(CreatureSpawnEvent event) {
-    	if (event.getSpawnReason() != SpawnReason.CUSTOM) {
-        	if (!SpawnControl.canSpawn(event.getEntity())) {
-        		event.setCancelled(true);
+    	if (!event.isCancelled()) {
+        	if (event.getSpawnReason() != SpawnReason.CUSTOM) {
+            	if (!SpawnControl.canSpawn(event.getEntity())) {
+            		event.setCancelled(true);
+            	}
         	}
     	}
     }

@@ -55,11 +55,12 @@ public class MyWorlds extends JavaPlugin {
 		//Event registering
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Event.Type.ENTITY_PORTAL_ENTER, entityListener, Priority.Monitor, this);
-        pm.registerEvent(Event.Type.CREATURE_SPAWN, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Highest, this);   
+        pm.registerEvent(Event.Type.CREATURE_SPAWN, entityListener, Priority.Lowest, this);
+        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.BLOCK_PHYSICS, blockListener, Priority.Highest, this); 
-        pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
         pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_UNLOAD, worldListener, Priority.Monitor, this);  
@@ -843,9 +844,18 @@ public class MyWorlds extends JavaPlugin {
 					//===============SET SPAWN COMMAND====
 					//====================================
 					if (sender instanceof Player) {
-						Location loc = ((Player) sender).getLocation();
-						loc.getWorld().setSpawnLocation(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
-						sender.sendMessage(ChatColor.GREEN + "Spawn location of world '" + loc.getWorld().getName() + "' set!");
+						Player p = (Player) sender;
+						Position pos = new Position(p.getLocation());
+						String worldname = WorldManager.getWorldName(sender, args, args.length == 2);
+						if (worldname != null) {
+							WorldManager.setSpawn(worldname, pos);
+							if (worldname.equalsIgnoreCase(p.getWorld().getName())) {
+								p.getWorld().setSpawnLocation(pos.getBlockX(), pos.getBlockY(), pos.getBlockZ());
+							}
+							sender.sendMessage(ChatColor.GREEN + "Spawn location of world '" + worldname + "' set to your position!");
+						} else {
+							message(sender, ChatColor.RED + "World not found!");
+						}
 					} else {
 						sender.sendMessage("This command is only for players!");
 					}
@@ -1137,10 +1147,15 @@ public class MyWorlds extends JavaPlugin {
 					//===========================================
 					String worldname = WorldManager.getWorldName(sender, args, args.length >= 2);
 					if (worldname != null) {
-						World w = Bukkit.getServer().getWorld(worldname);
-						if (w != null) {
+						World world = WorldManager.getWorld(worldname);
+						if (world != null) {
+							Location loc = world.getSpawnLocation();
+							for (Position pos : WorldManager.getSpawnPoints(world)) {
+								loc = pos.toLocation();
+								break;
+							}
 							if (sender instanceof Player) {
-								if (Permission.handleTeleport((Player) sender, w.getSpawnLocation())) {
+								if (Permission.handleTeleport((Player) sender, loc)) {
 									//Success
 								}
 							} else {

@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.util.logging.Level;
 
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -83,9 +84,19 @@ public class Permission {
 		return true;
 	}
 		
-	public static boolean canEnter(Player player, String worldname) {
+	public static boolean canEnter(Player player, Portal portal) {
+		return canEnterPortal(player, portal.getName());
+	}
+	public static boolean canEnter(Player player, World world) {
+		return canEnterWorld(player, world.getName());
+	}
+	public static boolean canEnterPortal(Player player, String portalname) {
+		if (!MyWorlds.usePortalEnterPermissions) return true;	
+		return has(player, "portal.enter." + portalname);
+	}
+	public static boolean canEnterWorld(Player player, String worldname) {
 		if (!MyWorlds.useWorldEnterPermissions) return true;
-		return has(player, "enter." + worldname);
+		return has(player, "world.enter." + worldname);
 	}
 	
 }

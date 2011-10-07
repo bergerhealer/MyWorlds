@@ -12,20 +12,24 @@ public class MWBlockListener extends BlockListener {
 
     @Override
     public void onBlockPhysics(BlockPhysicsEvent event) {
-    	if (event.getBlock().getType() == Material.PORTAL) {
-    		if (!(event.getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR)) {
-    			event.setCancelled(true);
-    		}
+    	if (!event.isCancelled()) {
+        	if (event.getBlock().getType() == Material.PORTAL) {
+        		if (!(event.getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR)) {
+        			event.setCancelled(true);
+        		}
+        	}
     	}
     }
     
     @Override
     public void onBlockBreak(BlockBreakEvent event) {    
-    	Portal portal = Portal.get(event.getBlock(), false);
-    	if (portal != null) {
-    		portal.remove();
-    		event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
-    		MyWorlds.notifyConsole(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
+    	if (!event.isCancelled()) {
+        	Portal portal = Portal.get(event.getBlock(), false);
+        	if (portal != null) {
+        		portal.remove();
+        		event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
+        		MyWorlds.notifyConsole(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
+        	}
     	}
     }
     
@@ -38,20 +42,22 @@ public class MWBlockListener extends BlockListener {
             
     @Override
     public void onSignChange(SignChangeEvent event) {
-    	Portal portal = Portal.get(event.getBlock(), event.getLines());
-		if (portal != null) {
-			if (Permission.has(event.getPlayer(), "portal.create")) {
-				portal.add();
-				MyWorlds.notifyConsole(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
-				if (portal.hasDestination()) {
-	    			event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + portal.getDestinationName() + ChatColor.GREEN + "!");
-				} else {
-	    			event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new destination portal!");
-				}
-			} else {
-				event.setCancelled(true);
-			}
-		}
+    	if (!event.isCancelled()) {
+        	Portal portal = Portal.get(event.getBlock(), event.getLines());
+    		if (portal != null) {
+    			if (Permission.has(event.getPlayer(), "portal.create")) {
+    				portal.add();
+    				MyWorlds.notifyConsole(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
+    				if (portal.hasDestination()) {
+    	    			event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + portal.getDestinationName() + ChatColor.GREEN + "!");
+    				} else {
+    	    			event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new destination portal!");
+    				}
+    			} else {
+    				event.setCancelled(true);
+    			}
+    		}
+    	}
     }
     
 }

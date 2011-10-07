@@ -25,10 +25,10 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
+import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
-import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -124,6 +124,7 @@ public class WorldManager {
 	private static HashMap<String, Boolean> keepSpawnMemory = new HashMap<String, Boolean>();
 	private static HashMap<String, Environment> worldEnvirons = new HashMap<String, Environment>();
 	private static HashMap<String, String> worldGens = new HashMap<String, String>();
+	private static HashMap<String, Position> spawnPoints = new HashMap<String, Position>();
 	
 	public static void load(Configuration config, String worldname) {
 		String env = config.getString(worldname + ".environment", WorldManager.getEnvironment(worldname).name());
@@ -142,6 +143,15 @@ public class WorldManager {
 		} else {
 			keepSpawnMemory.put(worldname, false);
 		}
+		String worldspawn = config.getString(worldname + ".spawn.world", null);
+		if (worldspawn != null) {
+			double x = config.getDouble(worldname + ".spawn.x", 0);
+			double y = config.getDouble(worldname + ".spawn.y", 64);
+			double z = config.getDouble(worldname + ".spawn.z", 0);
+			float yaw = (float) config.getDouble(worldname + ".spawn.yaw", 0);
+			float pitch = (float) config.getDouble(worldname + ".spawn.pitch", 0);
+			spawnPoints.put(worldname, new Position(worldspawn, x, y, z, yaw, pitch));
+		}
 	}
 	public static void save(Configuration config) {
 		for (Map.Entry<String, Environment> entry : worldEnvirons.entrySet()) {
@@ -153,8 +163,69 @@ public class WorldManager {
 		for (Map.Entry<String, Boolean> entry : keepSpawnMemory.entrySet()) {
 			config.setProperty(entry.getKey() + ".keepSpawnLoaded", entry.getValue());
 		}
+		for (Map.Entry<String, Position> entry : spawnPoints.entrySet()) {
+			config.setProperty(entry.getKey() + ".spawn.world", entry.getValue().getWorldName());
+			config.setProperty(entry.getKey() + ".spawn.x", entry.getValue().getX());
+			config.setProperty(entry.getKey() + ".spawn.y", entry.getValue().getY());
+			config.setProperty(entry.getKey() + ".spawn.z", entry.getValue().getZ());
+			config.setProperty(entry.getKey() + ".spawn.yaw", entry.getValue().getYaw());
+			config.setProperty(entry.getKey() + ".spawn.pitch", entry.getValue().getPitch());
+		}
 	}
 	
+	/*
+	 * World spawn points
+	 */
+	public static void setSpawnLocation(String forWorld, Location destination) {
+		setSpawn(forWorld, new Position(destination));
+	}
+	public static void setSpawn(String forWorld, Position destination) {
+		spawnPoints.put(forWorld.toLowerCase(), destination);
+	}
+	public static Position getSpawn(String ofWorld) {
+		Position pos = spawnPoints.get(ofWorld.toLowerCase());
+		if (pos == null) {
+			//Try to store the default location
+			World world = getWorld(ofWorld);
+			if (world != null) {
+				pos = new Position(world.getSpawnLocation());
+				setSpawn(ofWorld, pos);
+			}
+		}
+		return pos;
+	}
+	public static Location getSpawnLocation(String ofWorld) {
+		Position pos = getSpawn(ofWorld);
+		if (pos != null) {
+			Location loc = pos.toLocation();
+			if (loc.getWorld() != null) {
+				return loc;
+			}
+		}
+		return null;
+	}
+	public static Location getSpawnLocation(World ofWorld) {
+		return getSpawnLocation(ofWorld.getName());
+	}
+	public static Position[] getSpawnPoints() {
+		return spawnPoints.values().toArray(new Position[0]);
+	}
+	public static Position[] getSpawnPoints(World onWorld) {
+		return getSpawnPoints(onWorld.getName());
+	}
+	public static Position[] getSpawnPoints(String onWorld) {
+		ArrayList<Position> pos = new ArrayList<Position>();
+		for (Position p : spawnPoints.values()) {
+			if (p.getWorldName().equalsIgnoreCase(onWorld)) {
+				pos.add(p);
+			}
+		}
+		return pos.toArray(new Position[0]);
+	}
+	
+	/*
+	 * Keep spawn in memory
+	 */
 	public static void setKeepSpawnInMemory(String worldname, boolean value) {
 		keepSpawnMemory.put(worldname.toLowerCase(), value);
 		World w = getWorld(worldname);
@@ -178,6 +249,9 @@ public class WorldManager {
 		}
 	}
 	
+	/*
+	 * Chunk generators
+	 */
 	@SuppressWarnings("unchecked")
 	public static String[] getGeneratorPlugins() {
 		ArrayList<String> gens = new ArrayList<String>();
@@ -197,7 +271,6 @@ public class WorldManager {
 	public static String getGeneratorPlugin(String forWorld) {
 		return worldGens.get(forWorld.toLowerCase());
 	}
-	
 	public static String fixGeneratorName(String name) {
 		if (name == null) return null;
 		String id = "";
@@ -234,7 +307,6 @@ public class WorldManager {
 			return name + ":" + id;
 		}
 	}
-	
 	public static ChunkGenerator getGenerator(String worldname, String name) {
 		if (name == null) return null;
 		String id = "";
@@ -254,6 +326,9 @@ public class WorldManager {
 		worldGens.put(worldname.toLowerCase(), name);
 	}
 
+	/*
+	 * General world fields
+	 */
 	private static File serverfolder;
 	public static File getServerFolder() {
 		if (serverfolder == null) serverfolder = MyWorlds.plugin.getDataFolder().getAbsoluteFile().getParentFile().getParentFile();
@@ -461,17 +536,9 @@ public class WorldManager {
 	}
 	
 	public static boolean unload(World world) {
-		//TODO: MISSING EVENT CALL FROM BUKKIT, BEING FIXED HERE!
-		// REMOVE IF NO LONGER NEEDED (!!!)
-		WorldUnloadEvent event = new WorldUnloadEvent(world);
-		Bukkit.getServer().getPluginManager().callEvent(event);
-		boolean succ = !event.isCancelled();
-		
-		if (succ) {
-			succ = Bukkit.getServer().unloadWorld(world, false);
-		}
-		return succ;
+		return Bukkit.getServer().unloadWorld(world, false);
 	}
+
 	public static World createWorld(String worldname, long seed) {
 		String gen = getGeneratorPlugin(worldname);
 		if (gen == null) {
@@ -482,28 +549,36 @@ public class WorldManager {
 		final int retrycount = 3;
 		World w = null;
 		int i = 0;
+		boolean useDepr = false;
+		try {
+			Class.forName("org.bukkit.WorldCreator");
+		} catch (Exception ex) {
+			useDepr = true;
+		}
+		ChunkGenerator cgen = null;
+		try {
+			if (gen != null) {
+				cgen = getGenerator(worldname, gen);
+			}
+		} catch (Exception ex) {}
+		if (gen != null && cgen == null) {
+			MyWorlds.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
+			return null;
+		}
 		for (i = 0; i < retrycount + 1; i++) {
 			try {
 				Environment env = getEnvironment(worldname);
-				if (gen == null) {
-					if (seed == 0) {
-						w = Bukkit.getServer().createWorld(worldname, env);
-					} else {
-						w = Bukkit.getServer().createWorld(worldname, env, seed);
-					}
+				if (useDepr) {
+					Bukkit.getServer().createWorld(worldname, env, seed, cgen);
 				} else {
-					ChunkGenerator cgen = getGenerator(worldname, gen);
-					if (cgen == null) {
-						MyWorlds.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
-						break;
-					}
-					if (seed == 0) {
-						w = Bukkit.getServer().createWorld(worldname, env, cgen);
-					} else {
-						w = Bukkit.getServer().createWorld(worldname, env, seed, cgen);
-					}
+					WorldCreator c = new WorldCreator(worldname);
+					c.environment(env);
+					c.seed(seed);
+					c.generator(cgen);
+					w = c.createWorld();
 				}
 			} catch (Exception ex) {
+				MyWorlds.log(Level.WARNING, "World load issue: " + ex.getMessage());
 			}
 			if (w != null) break;
 		}
@@ -636,40 +711,42 @@ public class WorldManager {
 		return true;
 	}
 	
-	public static void evacuate(World world, String message) {
-		Player[] players = world.getPlayers().toArray(new Player[0]);
-		if (players.length == 0) return;
-		Location to = null;
-		for (String name : Portal.getPortals(world)) {
-			Portal p = Portal.get(name);
-			if (p != null) {
-				to = p.getDestination();
-				if (to != null && to.getWorld() != world) {
-					break;
+	public static Location getEvacuation(Player player) {
+		World world = player.getWorld();
+		String[] portalnames;
+		if (Permission.has(player, "world.spawn") || Permission.has(player, "tpp")) {
+			for (Position pos : getSpawnPoints()) {
+				Location loc = pos.toLocation();
+				if (loc.getWorld() == null) continue;
+				if (Permission.canEnter(player, loc.getWorld())) {
+					return loc;
+				}
+			}
+			portalnames = Portal.getPortals();
+		} else {
+			portalnames = Portal.getPortals(world);
+		}
+		for (String name : portalnames) {
+			if (Permission.canEnterPortal(player, name)) {
+				Location loc = Portal.getPortalLocation(name, true);
+				if (loc == null) continue;
+				if (loc.getWorld() == null) continue;
+				if (Permission.canEnter(player, loc.getWorld())) {
+					return loc;
 				}
 			}
 		}
-		if (to == null) {
-			//find a possible world as hideout for those allowed
-			for (World w : Bukkit.getServer().getWorlds()) {
-				if (w != world) {
-					to = w.getSpawnLocation();
-					break;
-				}
-			}
-			//evacuate
-			for (Player p : players) {
-				if (to != null && (Permission.has(p, "world.spawn") || Permission.has(p, "tpp"))) {
-					p.teleport(to);
-					p.sendMessage(ChatColor.RED + message);
-				} else {
-					p.kickPlayer(message);
-				}
-			}
-		} else {
-			for (Player p : players) {
-				p.teleport(to);
-				p.sendMessage(ChatColor.RED + message);
+		return null;
+	}
+
+	public static void evacuate(World world, String message) {
+		for (Player player : world.getPlayers()) {
+			Location loc = getEvacuation(player);
+			if (loc != null) {
+				player.teleport(loc);
+				player.sendMessage(ChatColor.RED + message);
+			} else {
+				player.kickPlayer(message);
 			}
 		}
 	}
