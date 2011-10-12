@@ -34,6 +34,8 @@ public class MWWorldListener extends WorldListener {
     		event.getWorld().setKeepSpawnInMemory(false);
     	} else {
         	WorldManager.updateKeepSpawnMemory(event.getWorld());
+        	PvPData.updatePvP(event.getWorld());
+        	WorldManager.updateDifficulty(event.getWorld());
     	}
     }
     

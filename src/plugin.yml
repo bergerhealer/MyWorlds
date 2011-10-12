@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.15
+version: 1.17
 author: bergerkiller
 commands:
     world:
@@ -54,8 +54,11 @@ permissions:
     myworlds.world.copy:
         description: Sets if the player can clone worlds
         default: false
+    myworlds.world.difficulty:
+        description: Sets if the player can change the difficulty setting of worlds
+        default: op
     myworlds.world.togglepvp:
-        description: Sets if the player can change the PvP setting on worlds
+        description: Sets if the player can change the PvP setting of worlds
         default: op
     myworlds.world.togglespawnloaded:
         description: Sets if the player can toggle spawn chunk loading on or off

@@ -36,7 +36,7 @@ public class WorldConfig {
 				MyWorlds.log(Level.WARNING, "World: " + worldname + " no longer exists and has not been loaded!");
 			}
 		}
-		if (config.getBoolean(worldname + ".weatherHold", false)) {
+		if (config.getBoolean(worldname + ".holdWeather", false)) {
 			MWWeatherListener.holdWorlds.add(worldname.toLowerCase());
 		}
 	}

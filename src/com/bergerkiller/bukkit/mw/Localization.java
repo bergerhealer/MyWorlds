@@ -86,6 +86,7 @@ public class Localization {
 			writer.writeLine("help.world.setspawn: &e/world setspawn - Sets the world spawn point to your location");
 			writer.writeLine("help.world.gamemode: &e/world gamemode [mode] ([worldname]) - Sets or clears the gamemode for a world");
 			writer.writeLine("help.world.togglespawnloaded: &e/world togglespawnloaded ([worldname])&n&e    Toggles keep-spawn-in-memory on or off");
+			writer.writeLine("help.world.difficulty: &e/world difficuly [difficulty] ([worldname])&n&e    Sets or displays the difficulty");
 			writer.close();
 		}
 		

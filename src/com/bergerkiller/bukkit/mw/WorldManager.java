@@ -22,6 +22,7 @@ import net.minecraft.server.RegionFile;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
@@ -124,6 +125,7 @@ public class WorldManager {
 	private static HashMap<String, Boolean> keepSpawnMemory = new HashMap<String, Boolean>();
 	private static HashMap<String, Environment> worldEnvirons = new HashMap<String, Environment>();
 	private static HashMap<String, String> worldGens = new HashMap<String, String>();
+	private static HashMap<String, Difficulty> worldDiff = new HashMap<String, Difficulty>();
 	private static HashMap<String, Position> spawnPoints = new HashMap<String, Position>();
 	
 	public static void load(Configuration config, String worldname) {
@@ -139,9 +141,13 @@ public class WorldManager {
 			worldGens.put(worldname, gen);
 		}
 		if (config.getBoolean(worldname + ".keepSpawnLoaded", true)) {
-			keepSpawnMemory.put(worldname, true);
+			setKeepSpawnInMemory(worldname, true);
 		} else {
-			keepSpawnMemory.put(worldname, false);
+			setKeepSpawnInMemory(worldname, false);
+		}
+		Difficulty diff = parseDifficulty(config.getString(worldname + "difficulty", null));
+		if (diff != null) {
+			setDifficulty(worldname, diff);
 		}
 		String worldspawn = config.getString(worldname + ".spawn.world", null);
 		if (worldspawn != null) {
@@ -162,6 +168,9 @@ public class WorldManager {
 		}
 		for (Map.Entry<String, Boolean> entry : keepSpawnMemory.entrySet()) {
 			config.setProperty(entry.getKey() + ".keepSpawnLoaded", entry.getValue());
+		}
+		for (Map.Entry<String, Difficulty> entry : worldDiff.entrySet()) {
+			config.setProperty(entry.getKey() + ".difficulty", entry.getValue().toString());
 		}
 		for (Map.Entry<String, Position> entry : spawnPoints.entrySet()) {
 			config.setProperty(entry.getKey() + ".spawn.world", entry.getValue().getWorldName());
@@ -221,6 +230,59 @@ public class WorldManager {
 			}
 		}
 		return pos.toArray(new Position[0]);
+	}
+	
+	/*
+	 * World difficulty
+	 */
+	public static void updateDifficulty(World world) {
+		Difficulty dif = worldDiff.get(world.getName().toLowerCase());
+		if (dif != null) {
+			world.setDifficulty(dif);
+		}
+	}
+	public static Difficulty parseDifficulty(String name) {
+		if (name != null) {
+			int val;
+			try {
+				val = Integer.parseInt(name);
+			} catch (Exception ex) {
+				val = -1;
+			}
+			for (Difficulty d : Difficulty.values()) {
+				if (d.toString().equalsIgnoreCase(name) || (val != -1 && d.getValue() == val)) {
+					return d;
+				}
+			}
+		}
+		return null;
+	}
+	public static Difficulty getDifficulty(String worldname) {
+		worldname = worldname.toLowerCase();
+		Difficulty dif = worldDiff.get(worldname);
+		if (dif == null) {
+			World w = getWorld(worldname);
+			if (w != null) {
+				dif = w.getDifficulty();
+			} else {
+				dif = Difficulty.NORMAL;
+			}
+			worldDiff.put(worldname, dif);
+		}
+		return dif;
+	}
+	public static Difficulty getDifficulty(World world) {
+		return getDifficulty(world.getName());
+	}
+	public static void setDifficulty(String worldname, Difficulty diff) {
+		if (diff != null) {
+			worldDiff.put(worldname.toLowerCase(), diff);
+			World w = getWorld(worldname);
+			if (w != null) w.setDifficulty(diff);
+		}
+	}
+	public static void setDifficulty(World world, Difficulty diff) {
+		setDifficulty(world.getName(), diff);
 	}
 	
 	/*

@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Difficulty;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -331,6 +332,12 @@ public class MyWorlds extends JavaPlugin {
 					node = "world.togglespawnloaded";
 				} else if (args[0].equalsIgnoreCase("keepspawnloaded")) {
 					node = "world.togglespawnloaded";
+				} else if (args[0].equalsIgnoreCase("difficulty")) {
+					node = "world.difficulty";
+				} else if (args[0].equalsIgnoreCase("difficult")) {
+					node = "world.difficulty";
+				} else if (args[0].equalsIgnoreCase("diff")) {
+					node = "world.difficulty";
 				}
 			}
 			if (node == null) {
@@ -518,6 +525,8 @@ public class MyWorlds extends JavaPlugin {
 							} else {
 								message(sender, ChatColor.WHITE + "PvP: " + ChatColor.YELLOW + "Disabled");
 							}
+							//Difficulty
+							message(sender, ChatColor.WHITE + "Difficulty: " + ChatColor.YELLOW + WorldManager.getDifficulty(worldname).toString().toLowerCase());
 							//Game mode
 							GameMode mode = GamemodeHandler.get(worldname, null);
 							if (mode == null) {
@@ -567,7 +576,31 @@ public class MyWorlds extends JavaPlugin {
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
 					}
+				} else if (node == "world.difficulty") {
+					//=========================================
+					//===============DIFFICULTY COMMAND========
+					//=========================================
+					String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
+					if (worldname != null) {
+					    if (args.length == 1) {
+					    	String diff = WorldManager.getDifficulty(worldname).toString().toLowerCase();
+					    	message(sender, ChatColor.YELLOW + "Difficulty of world '" + worldname + "' is set at " + ChatColor.WHITE + diff);
+					    } else {
+					    	Difficulty diff = WorldManager.parseDifficulty(args[1]);
+					    	if (diff != null) {
+								WorldManager.setDifficulty(worldname, diff);
+								message(sender, ChatColor.YELLOW + "Difficulty of world '" + worldname + "' set to " + ChatColor.WHITE + diff.toString().toLowerCase());
+					    	} else {
+					    		message(sender, ChatColor.RED + "Difficulty '" + args[1] + "' has not been recognized!");
+					    	}
+					    }
+					} else {
+						message(sender, ChatColor.RED + "World not found!");
+					}
 				} else if (node == "world.gamemode") {
+					//=========================================
+					//===============GAME MODE COMMAND=========
+					//=========================================
 					String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
 					if (worldname != null) {
 						if (args.length == 1) {
