@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -19,6 +20,7 @@ import org.bukkit.util.config.Configuration;
 public class Portal {
 	private String name;
 	private String destination;
+	private String destdisplayname;
 	private Location location;
 	
 	public String getName() {
@@ -27,11 +29,14 @@ public class Portal {
 	public Location getLocation() {
 		return this.location;
 	}
-	public String getDestinationName() {		
-		return this.destination;
+	public String getDestinationName() {
+		if (this.destdisplayname == null || this.destdisplayname.equals("")) {
+			this.destdisplayname = fixDot(this.destination);
+		}
+		return this.destdisplayname;
 	}
 	public Location getDestination() {
-		Location loc = getPortalLocation(destination, true);
+		Location loc = getPortalLocation(destination, location.getWorld().getName(), true);
 		if (loc == null) {
 			String portalname = WorldManager.matchWorld(destination);
 			World w = WorldManager.getWorld(portalname);
@@ -59,23 +64,30 @@ public class Portal {
 	}
 			
 	public void add() {
-		portallocations.put(name, new Position(location));
+		getPortalLocations(location.getWorld().getName()).put(name, new Position(location));
 	}
-	public void remove() {
-		remove(this.name);
+	public boolean remove() {
+		return remove(this.name, this.location.getWorld().getName());
 	}		
 	public boolean isAdded() {
-		return portallocations.containsKey(name);
+		return getPortalLocations(this.location.getWorld().getName()).containsKey(name);
 	}
 
 	/*
 	 * Getters and setters
 	 */
-	public static void remove(String name) {
-		portallocations.remove(name);
+	public static boolean exists(String world, String portalname) {
+		return getPortalLocations(world).containsKey(portalname);
+	}
+	public static String fixDot(String portalname) {
+		if (portalname == null) return null;
+		return portalname.substring(portalname.indexOf(".") + 1);
+	}
+	public static boolean remove(String name, String world) {
+		return getPortalLocations(world).remove(name) != null;
 	}
 	public static Portal get(String name) {
-		return get(getPortalLocation(name));
+		return get(getPortalLocation(name, null));
 	}
 	public static Portal get(Location signloc) {
 		if (signloc == null) return null;
@@ -83,8 +95,10 @@ public class Portal {
 	}
 	public static Portal get(Location signloc, double radius) {
 		Portal p = null;
-		for (String portalname : portallocations.keySet()) {
-			Location ploc = getPortalLocation(portalname);
+		HashMap<String, Position> positions = getPortalLocations(signloc.getWorld().getName());
+		for (Map.Entry<String, Position> pos : positions.entrySet()) {
+			Location ploc = getPortalLocation(pos.getValue());
+			String portalname = pos.getKey();
 			if (ploc != null && ploc.getWorld() == signloc.getWorld()) {
 				double distance = ploc.distance(signloc);
 				if (distance <= radius) {
@@ -95,7 +109,7 @@ public class Portal {
 					} else if (ploc.getWorld().isChunkLoaded(ploc.getBlockX() >> 4, ploc.getBlockZ() >> 4)) {
 						//In loaded chunk and NOT found!
 						//Remove it
-						portallocations.remove(portalname);
+						positions.remove(portalname);
 						MyWorlds.log(Level.WARNING, "Removed portal '" + portalname + "' because it is no longer there!");
 						//End the loop and call the function again
 						return get(signloc, radius);
@@ -129,6 +143,7 @@ public class Portal {
 					Portal p = new Portal();
 					p.name = name.replace("\"", "").replace("'", "");
 					p.destination = lines[2].replace("\"", "").replace("'", "");
+					p.destdisplayname = lines[3];
 					p.location = signblock.getLocation();
 			    	MaterialData data = signblock.getState().getData();
 			    	float yaw = 0;
@@ -153,13 +168,19 @@ public class Portal {
 	}
 
 	public static String[] getPortals() {
-		return portallocations.keySet().toArray(new String[0]);
+		HashSet<String> names = new HashSet<String>();
+		for (HashMap<String, Position> positions : portallocations.values()) {
+			names.addAll(positions.keySet());
+		}
+		return names.toArray(new String[0]);
 	}
 	public static String[] getPortals(World w) {
 		ArrayList<String> rval = new ArrayList<String>();
-		for (Map.Entry<String, Position> entry : portallocations.entrySet()) {
-			if (entry.getValue().getWorldName().equals(w.getName())) {
-				rval.add(entry.getKey());
+		for (HashMap<String, Position> positions : portallocations.values()) {
+			for (Map.Entry<String, Position> entry : positions.entrySet()) {
+				if (entry.getValue().getWorldName().equals(w.getName())) {
+					rval.add(entry.getKey());
+				}
 			}
 		}
 		return rval.toArray(new String[0]);
@@ -167,7 +188,7 @@ public class Portal {
 	public static String[] getPortals(Chunk c) {
 		ArrayList<String> rval = new ArrayList<String>();
 		for (String name : getPortals()) {
-			Location loc = getPortalLocation(name);
+			Location loc = getPortalLocation(name, c.getWorld().getName());
 			if (loc != null && loc.getWorld() == c.getWorld()) {
 				if (c.getX() == (loc.getBlockX() >> 4)) {
 					if (c.getZ() == (loc.getBlockZ() >> 4)) {
@@ -188,24 +209,31 @@ public class Portal {
 		}
 		return null;
 	}
-	public static Location getPortalLocation(String portalname) {
+	public static Location getPortalLocation(String portalname, String world) {
 		if (portalname == null) return null;
-		Position pos = portallocations.get(portalname);
-		if (pos == null) return null;
-		Location loc = getPortalLocation(pos);
-	    if (loc == null) {
-			for (Map.Entry<String, Position> entry : portallocations.entrySet()) {
+		int dotindex = portalname.indexOf(".");
+		if (dotindex != -1) {
+			world = WorldManager.matchWorld(portalname.substring(0, dotindex));
+			portalname = portalname.substring(dotindex + 1);
+		}
+		if (world != null) {
+			Position pos = getPortalLocations(world).get(portalname);
+			if (pos != null) {
+				Location loc = getPortalLocation(pos);
+			    if (loc != null) return loc;
+			}
+		}
+    	for (HashMap<String, Position> positions : portallocations.values()) {
+			for (Map.Entry<String, Position> entry : positions.entrySet()) {
 				if (entry.getKey().equalsIgnoreCase(portalname)) {
 					return getPortalLocation(entry.getValue());
 				}
 			}
-			return null;
-		} else {
-			return loc;
-		}
+    	}
+    	return null;
 	}
-	public static Location getPortalLocation(String portalname, boolean spawnlocation) {
-		Location loc = getPortalLocation(portalname);
+	public static Location getPortalLocation(String portalname, String world, boolean spawnlocation) {
+		Location loc = getPortalLocation(portalname, world);
 		if (loc != null && spawnlocation) return loc.add(0.5, 2, 0.5);
 		return loc;
 	}
@@ -298,7 +326,7 @@ public class Portal {
 				String name = args[0];
 				try {
 					Position pos = new Position(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
-					portallocations.put(name, pos);
+					getPortalLocations(args[1]).put(name, pos);
 				} catch (Exception ex) {
 					MyWorlds.log(Level.SEVERE, "Failed to load portal: " + name);
 				}
@@ -307,13 +335,24 @@ public class Portal {
 	}
 	public static void savePortals(String filename) {
 		SafeWriter w = new SafeWriter(filename);
-		for (String portal : getPortals()) {
-			Position pos = portallocations.get(portal);
-			w.writeLine("\"" + portal + "\" \"" + pos.getWorldName() + "\" " + pos.getBlockX() + " " + pos.getBlockY() + " " + pos.getBlockZ() + " " + pos.getYaw() + " " + pos.getPitch());
+		for (HashMap<String, Position> positions : portallocations.values()) {
+			for (Map.Entry<String, Position> p : positions.entrySet()) {
+				Position pos = p.getValue();
+				w.writeLine("\"" + p.getKey() + "\" \"" + pos.getWorldName() + "\" " + pos.getBlockX() + " " + pos.getBlockY() + " " + pos.getBlockZ() + " " + pos.getYaw() + " " + pos.getPitch());
+			}
 		}
 		w.close();
 	}
 	
 	private static HashMap<String, String> defaultlocations = new HashMap<String, String>();
-	private static HashMap<String, Position> portallocations = new HashMap<String, Position>();
+	private static HashMap<String, HashMap<String, Position>> portallocations = new HashMap<String, HashMap<String, Position>>();
+	private static HashMap<String, Position> getPortalLocations(String worldname) {
+		worldname = worldname.toLowerCase();
+		HashMap<String, Position> rval = portallocations.get(worldname);
+		if (rval == null) {
+			rval = new HashMap<String, Position>();
+			portallocations.put(worldname, rval);
+		}
+		return rval;
+	}
 }

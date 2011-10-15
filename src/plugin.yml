@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.17
+version: 1.18
 author: bergerkiller
 commands:
     world:
@@ -86,6 +86,9 @@ permissions:
         default: true;
     myworlds.portal.create:
         description: Sets if the player can create teleport signs
+        default: op
+    myworlds.portal.override:
+        description: Sets if the player can replace existing portals
         default: op
     myworlds.portal.use:
         description: Sets if the player can use portals

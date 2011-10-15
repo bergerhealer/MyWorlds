@@ -33,6 +33,7 @@ public class MyWorlds extends JavaPlugin {
 	public static int timeLockInterval = 20;
 	public static boolean useWorldEnterPermissions = false;
 	public static boolean usePortalEnterPermissions = false;
+	public static boolean allowPortalNameOverride = false;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -66,7 +67,7 @@ public class MyWorlds extends JavaPlugin {
         pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_UNLOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_INIT, worldListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.WEATHER_CHANGE, weatherListener, Priority.Highest, this);  
+        pm.registerEvent(Event.Type.WEATHER_CHANGE, weatherListener, Priority.Highest, this); 
         
         String locale = "default";
         
@@ -77,6 +78,7 @@ public class MyWorlds extends JavaPlugin {
         timeLockInterval = config.getInt("timeLockInterval", timeLockInterval);
         useWorldEnterPermissions = config.getBoolean("useWorldEnterPermissions", useWorldEnterPermissions);
         usePortalEnterPermissions = config.getBoolean("usePortalEnterPermissions", usePortalEnterPermissions);
+        allowPortalNameOverride = config.getBoolean("allowPortalNameOverride", allowPortalNameOverride);
         locale = config.getString("locale", locale);
         
         config.setProperty("usePermissions", usePermissions);
@@ -85,6 +87,7 @@ public class MyWorlds extends JavaPlugin {
         config.setProperty("timeLockInterval", timeLockInterval);
         config.setProperty("useWorldEnterPermissions", useWorldEnterPermissions);
         config.setProperty("usePortalEnterPermissions", usePortalEnterPermissions);
+        config.setProperty("allowPortalNameOverride", allowPortalNameOverride);
         config.setProperty("locale", locale);
         config.save();
         
@@ -169,7 +172,7 @@ public class MyWorlds extends JavaPlugin {
 		if (portals.length > 0) {
 			String msgpart = "";
 			for (String portal : portals) {
-				Location loc = Portal.getPortalLocation(portal);
+				Location loc = Portal.getPortalLocation(portal, null);
 				ChatColor color = ChatColor.DARK_RED;
 				if (loc != null) {
 					if (sender instanceof Player) {
@@ -464,7 +467,7 @@ public class MyWorlds extends JavaPlugin {
 							if (dest.equals("")) {
 								Portal.setDefault(worldname, null);
 								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' cleared!");
-							} else if (Portal.getPortalLocation(dest) != null) {
+							} else if (Portal.getPortalLocation(dest, null) != null) {
 								Portal.setDefault(worldname, dest);
 								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' set to portal: '" + dest + "'!");
 							} else if ((dest = WorldManager.matchWorld(dest)) != null) {
@@ -1274,9 +1277,9 @@ public class MyWorlds extends JavaPlugin {
 					if (sender instanceof Player) {
 						Player player = (Player) sender;
 						if (args.length == 1) {
-							Location tele = Portal.getPortalLocation(args[0], true);
+							Location tele = Portal.getPortalLocation(args[0], player.getWorld().getName(), true);
 							if (tele != null) {
-								if (Permission.handleTeleport(player, args[0], tele)) {
+								if (Permission.handleTeleport(player, Portal.fixDot(args[0]), tele)) {
 									//Success
 								}
 							} else {

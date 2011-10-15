@@ -790,7 +790,7 @@ public class WorldManager {
 		}
 		for (String name : portalnames) {
 			if (Permission.canEnterPortal(player, name)) {
-				Location loc = Portal.getPortalLocation(name, true);
+				Location loc = Portal.getPortalLocation(name, player.getWorld().getName(), true);
 				if (loc == null) continue;
 				if (loc.getWorld() == null) continue;
 				if (Permission.canEnter(player, loc.getWorld())) {

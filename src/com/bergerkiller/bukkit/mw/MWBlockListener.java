@@ -25,8 +25,7 @@ public class MWBlockListener extends BlockListener {
     public void onBlockBreak(BlockBreakEvent event) {    
     	if (!event.isCancelled()) {
         	Portal portal = Portal.get(event.getBlock(), false);
-        	if (portal != null) {
-        		portal.remove();
+        	if (portal != null && portal.remove()) {
         		event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
         		MyWorlds.notifyConsole(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
         	}
@@ -46,6 +45,13 @@ public class MWBlockListener extends BlockListener {
         	Portal portal = Portal.get(event.getBlock(), event.getLines());
     		if (portal != null) {
     			if (Permission.has(event.getPlayer(), "portal.create")) {
+    				if (Portal.exists(event.getPlayer().getWorld().getName(), portal.getDestinationName())) {
+    					if (!MyWorlds.allowPortalNameOverride || !Permission.has(event.getPlayer(), "portal.override")) {
+    						event.getPlayer().sendMessage(ChatColor.RED + "This portal name is already used!");
+    						event.setCancelled(true);
+    						return;
+    					}
+    				}
     				portal.add();
     				MyWorlds.notifyConsole(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
     				if (portal.hasDestination()) {
