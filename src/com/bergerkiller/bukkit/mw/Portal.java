@@ -15,7 +15,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
-import org.bukkit.util.config.Configuration;
 
 public class Portal {
 	private String name;
@@ -243,20 +242,13 @@ public class Portal {
      */
     private static HashMap<Entity, Long> portaltimes = new HashMap<Entity, Long>();
     private static ArrayList<TeleportCommand> teleportations = new ArrayList<TeleportCommand>();  
-    public static void setDefault(String worldname, String destination) {
-    	if (destination == null) {
-        	defaultlocations.remove(worldname.toLowerCase());
-    	} else {
-        	defaultlocations.put(worldname.toLowerCase(), destination);
-    	}
-    }
     public static void handlePortalEnter(Entity e) {
         long currtime = System.currentTimeMillis();
         if (!portaltimes.containsKey(e) || currtime - portaltimes.get(e) >= MyWorlds.teleportInterval) {
         	Portal portal = get(e.getLocation(), 5);  	
         	if (portal == null) {
         		//Default portals
-        		String def = defaultlocations.get(e.getWorld().getName().toLowerCase());
+        		String def = WorldConfig.get(e).defaultPortal;
         		if (def != null) portal = Portal.get(def);
         		if (portal == null) {
         			//world spawn?
@@ -303,22 +295,6 @@ public class Portal {
     /*
      * Loading and saving
      */
-	public static void loadDefaultPortals(Configuration config, String worldname) {
-		String def = config.getString(worldname + ".defaultPortal", null);
-		if (def != null) {
-			defaultlocations.put(worldname.toLowerCase(), def);
-		}
-	}
-	public static void saveDefaultPortals(Configuration config) {
-		for (String worldname : config.getKeys()) {
-			if (!defaultlocations.containsKey(worldname.toLowerCase())) {
-				config.removeProperty(worldname + ".defaultPortal");
-			}
-		}
-		for (Map.Entry<String, String> entry : defaultlocations.entrySet()) {
-			config.setProperty(entry.getKey() + ".defaultPortal", entry.getValue());
-		}
-	}
 	public static void loadPortals(String filename) {
 		for (String textline : SafeReader.readAll(filename, true)) {
 			String[] args = MyWorlds.convertArgs(textline.split(" "));
@@ -344,7 +320,6 @@ public class Portal {
 		w.close();
 	}
 	
-	private static HashMap<String, String> defaultlocations = new HashMap<String, String>();
 	private static HashMap<String, HashMap<String, Position>> portallocations = new HashMap<String, HashMap<String, Position>>();
 	private static HashMap<String, Position> getPortalLocations(String worldname) {
 		worldname = worldname.toLowerCase();

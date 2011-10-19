@@ -4,6 +4,7 @@ import java.io.*;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -22,7 +23,6 @@ import net.minecraft.server.RegionFile;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
@@ -33,7 +33,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
 import org.getspout.spout.chunkstore.ChunkStore;
 import org.getspout.spout.chunkstore.SimpleChunkDataManager;
 import org.getspout.spout.chunkstore.SimpleRegionFile;
@@ -121,66 +120,6 @@ public class WorldManager {
 		}
 		return true;
 	}
-
-	private static HashMap<String, Boolean> keepSpawnMemory = new HashMap<String, Boolean>();
-	private static HashMap<String, Environment> worldEnvirons = new HashMap<String, Environment>();
-	private static HashMap<String, String> worldGens = new HashMap<String, String>();
-	private static HashMap<String, Difficulty> worldDiff = new HashMap<String, Difficulty>();
-	private static HashMap<String, Position> spawnPoints = new HashMap<String, Position>();
-	
-	public static void load(Configuration config, String worldname) {
-		String env = config.getString(worldname + ".environment", WorldManager.getEnvironment(worldname).name());
-		for (Environment e : Environment.values()) {
-			if (e.name().equalsIgnoreCase(env)) {
-				worldEnvirons.put(worldname, e);
-				break;
-			}
-		}
-		String gen = config.getString(worldname + ".chunkGenerator", "default");
-		if (!gen.equalsIgnoreCase("default") && !gen.equals("")) {
-			worldGens.put(worldname, gen);
-		}
-		if (config.getBoolean(worldname + ".keepSpawnLoaded", true)) {
-			setKeepSpawnInMemory(worldname, true);
-		} else {
-			setKeepSpawnInMemory(worldname, false);
-		}
-		Difficulty diff = parseDifficulty(config.getString(worldname + "difficulty", null));
-		if (diff != null) {
-			setDifficulty(worldname, diff);
-		}
-		String worldspawn = config.getString(worldname + ".spawn.world", null);
-		if (worldspawn != null) {
-			double x = config.getDouble(worldname + ".spawn.x", 0);
-			double y = config.getDouble(worldname + ".spawn.y", 64);
-			double z = config.getDouble(worldname + ".spawn.z", 0);
-			float yaw = (float) config.getDouble(worldname + ".spawn.yaw", 0);
-			float pitch = (float) config.getDouble(worldname + ".spawn.pitch", 0);
-			spawnPoints.put(worldname, new Position(worldspawn, x, y, z, yaw, pitch));
-		}
-	}
-	public static void save(Configuration config) {
-		for (Map.Entry<String, Environment> entry : worldEnvirons.entrySet()) {
-			config.setProperty(entry.getKey() + ".environment", entry.getValue().name());
-		}
-		for (Map.Entry<String, String> entry : worldGens.entrySet()) {
-			config.setProperty(entry.getKey() + ".chunkGenerator", entry.getValue());
-		}
-		for (Map.Entry<String, Boolean> entry : keepSpawnMemory.entrySet()) {
-			config.setProperty(entry.getKey() + ".keepSpawnLoaded", entry.getValue());
-		}
-		for (Map.Entry<String, Difficulty> entry : worldDiff.entrySet()) {
-			config.setProperty(entry.getKey() + ".difficulty", entry.getValue().toString());
-		}
-		for (Map.Entry<String, Position> entry : spawnPoints.entrySet()) {
-			config.setProperty(entry.getKey() + ".spawn.world", entry.getValue().getWorldName());
-			config.setProperty(entry.getKey() + ".spawn.x", entry.getValue().getX());
-			config.setProperty(entry.getKey() + ".spawn.y", entry.getValue().getY());
-			config.setProperty(entry.getKey() + ".spawn.z", entry.getValue().getZ());
-			config.setProperty(entry.getKey() + ".spawn.yaw", entry.getValue().getYaw());
-			config.setProperty(entry.getKey() + ".spawn.pitch", entry.getValue().getPitch());
-		}
-	}
 	
 	/*
 	 * World spawn points
@@ -189,19 +128,10 @@ public class WorldManager {
 		setSpawn(forWorld, new Position(destination));
 	}
 	public static void setSpawn(String forWorld, Position destination) {
-		spawnPoints.put(forWorld.toLowerCase(), destination);
+		WorldConfig.get(forWorld).spawnPoint = destination;
 	}
 	public static Position getSpawn(String ofWorld) {
-		Position pos = spawnPoints.get(ofWorld.toLowerCase());
-		if (pos == null) {
-			//Try to store the default location
-			World world = getWorld(ofWorld);
-			if (world != null) {
-				pos = new Position(world.getSpawnLocation());
-				setSpawn(ofWorld, pos);
-			}
-		}
-		return pos;
+		return WorldConfig.get(ofWorld).spawnPoint;
 	}
 	public static Location getSpawnLocation(String ofWorld) {
 		Position pos = getSpawn(ofWorld);
@@ -217,98 +147,26 @@ public class WorldManager {
 		return getSpawnLocation(ofWorld.getName());
 	}
 	public static Position[] getSpawnPoints() {
-		return spawnPoints.values().toArray(new Position[0]);
+		Collection<WorldConfig> all = WorldConfig.all();
+		Position[] pos = new Position[all.size()];
+		int i = 0;
+		for (WorldConfig wc : all) {
+			pos[i] = wc.spawnPoint;
+			i++;
+		}
+		return pos;
 	}
 	public static Position[] getSpawnPoints(World onWorld) {
 		return getSpawnPoints(onWorld.getName());
 	}
 	public static Position[] getSpawnPoints(String onWorld) {
 		ArrayList<Position> pos = new ArrayList<Position>();
-		for (Position p : spawnPoints.values()) {
+		for (Position p : getSpawnPoints()) {
 			if (p.getWorldName().equalsIgnoreCase(onWorld)) {
 				pos.add(p);
 			}
 		}
 		return pos.toArray(new Position[0]);
-	}
-	
-	/*
-	 * World difficulty
-	 */
-	public static void updateDifficulty(World world) {
-		Difficulty dif = worldDiff.get(world.getName().toLowerCase());
-		if (dif != null) {
-			world.setDifficulty(dif);
-		}
-	}
-	public static Difficulty parseDifficulty(String name) {
-		if (name != null) {
-			int val;
-			try {
-				val = Integer.parseInt(name);
-			} catch (Exception ex) {
-				val = -1;
-			}
-			for (Difficulty d : Difficulty.values()) {
-				if (d.toString().equalsIgnoreCase(name) || (val != -1 && d.getValue() == val)) {
-					return d;
-				}
-			}
-		}
-		return null;
-	}
-	public static Difficulty getDifficulty(String worldname) {
-		worldname = worldname.toLowerCase();
-		Difficulty dif = worldDiff.get(worldname);
-		if (dif == null) {
-			World w = getWorld(worldname);
-			if (w != null) {
-				dif = w.getDifficulty();
-			} else {
-				dif = Difficulty.NORMAL;
-			}
-			worldDiff.put(worldname, dif);
-		}
-		return dif;
-	}
-	public static Difficulty getDifficulty(World world) {
-		return getDifficulty(world.getName());
-	}
-	public static void setDifficulty(String worldname, Difficulty diff) {
-		if (diff != null) {
-			worldDiff.put(worldname.toLowerCase(), diff);
-			World w = getWorld(worldname);
-			if (w != null) w.setDifficulty(diff);
-		}
-	}
-	public static void setDifficulty(World world, Difficulty diff) {
-		setDifficulty(world.getName(), diff);
-	}
-	
-	/*
-	 * Keep spawn in memory
-	 */
-	public static void setKeepSpawnInMemory(String worldname, boolean value) {
-		keepSpawnMemory.put(worldname.toLowerCase(), value);
-		World w = getWorld(worldname);
-		if (w != null) {
-			w.setKeepSpawnInMemory(value);
-		}
-	}
-	public static boolean getKeepSpawnInMemory(String worldname) {
-		worldname = worldname.toLowerCase();
-		if (!keepSpawnMemory.containsKey(worldname)) {
-			keepSpawnMemory.put(worldname, true);
-			return true;
-		} else {
-			return keepSpawnMemory.get(worldname);
-		}
-	}
-	public static void updateKeepSpawnMemory(World world) {
-		boolean keep = getKeepSpawnInMemory(world.getName());
-		if (keep != world.getKeepSpawnInMemory()) {
-			world.setKeepSpawnInMemory(keep);
-		}
 	}
 	
 	/*
@@ -331,7 +189,7 @@ public class WorldManager {
 		return gens.toArray(new String[0]);
 	}
 	public static String getGeneratorPlugin(String forWorld) {
-		return worldGens.get(forWorld.toLowerCase());
+		return WorldConfig.get(forWorld).chunkGeneratorName;
 	}
 	public static String fixGeneratorName(String name) {
 		if (name == null) return null;
@@ -385,9 +243,8 @@ public class WorldManager {
 		}
 	}
 	public static void setGenerator(String worldname, String name) {
-		worldGens.put(worldname.toLowerCase(), name);
+		WorldConfig.get(worldname).chunkGeneratorName = name;
 	}
-
 	/*
 	 * General world fields
 	 */
@@ -414,26 +271,7 @@ public class WorldManager {
 		}
 		return seedval;
 	}
-	
-	public static Environment getEnvironment(String worldname) {
-		Environment e = worldEnvirons.get(worldname.toLowerCase());
-		if (e != null) return e;
-		for (Environment env : Environment.values()) {
-			if (worldname.toUpperCase().contains(env.toString())) {
-				worldEnvirons.put(worldname.toLowerCase(), env);
-				return env;
-			}
-		}
-		worldEnvirons.put(worldname.toLowerCase(), Environment.NORMAL);
-		return Environment.NORMAL;
-	}
-	public static String getGeneratorName(String worldname) {
-		return worldGens.get(worldname.toLowerCase());
-	}
-	public static void setGeneratorName(String worldname, String genname) {
-		worldGens.put(worldname.toLowerCase(), genname);
-	}
-	
+		
 	public static String getWorldName(CommandSender sender, String[] args, boolean useAlternative) {
 		return getWorldName(sender, args[args.length - 1], useAlternative);
 	}
@@ -526,9 +364,6 @@ public class WorldManager {
 				info.time = (Long) t.findTagByName("Time").getValue();
 				info.raining = ((Byte) t.findTagByName("raining").getValue()) != 0;
 		        info.thundering = ((Byte) t.findTagByName("thundering").getValue()) != 0;
-		        info.environment = getEnvironment(worldname);
-		        info.chunkGenerator = getGeneratorName(worldname);
-		        info.keepSpawnInMemory = getKeepSpawnInMemory(worldname);
 				if (info.size == 0) info.size = getWorldSize(worldname);
 			}
 		} catch (Exception ex) {}
@@ -543,9 +378,6 @@ public class WorldManager {
 			info.time = w.getFullTime();
 			info.raining = w.hasStorm();
 	        info.thundering = w.isThundering();
-	        info.environment = w.getEnvironment();
-	        info.keepSpawnInMemory = getKeepSpawnInMemory(worldname);
-	        info.chunkGenerator = getGeneratorName(worldname);
 		}
 		return info;
 	}
@@ -627,9 +459,10 @@ public class WorldManager {
 			MyWorlds.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
 			return null;
 		}
+		WorldConfig wc = WorldConfig.get(worldname);
 		for (i = 0; i < retrycount + 1; i++) {
 			try {
-				Environment env = getEnvironment(worldname);
+				Environment env = wc.environment;
 				if (useDepr) {
 					Bukkit.getServer().createWorld(worldname, env, seed, cgen);
 				} else {
@@ -645,7 +478,7 @@ public class WorldManager {
 			if (w != null) break;
 		}
 		if (w != null) {
-			PvPData.updatePvP(w);
+			wc.updatePVP(w);
 			//Data file is made?
 			if (!worldExists(worldname)) {
 				w.save();

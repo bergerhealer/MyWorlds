@@ -23,9 +23,6 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 
-import com.bergerkiller.bukkit.mw.SpawnControl.SpawnRestriction;
-
-
 public class MyWorlds extends JavaPlugin {
 	public static boolean usePermissions = false;
 	public static int teleportInterval = 2000;
@@ -33,7 +30,10 @@ public class MyWorlds extends JavaPlugin {
 	public static int timeLockInterval = 20;
 	public static boolean useWorldEnterPermissions = false;
 	public static boolean usePortalEnterPermissions = false;
+	public static boolean useWorldTeleportPermissions = false;
+	public static boolean usePortalTeleportPermissions = false;
 	public static boolean allowPortalNameOverride = false;
+	public static boolean useWorldOperators = false;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -63,6 +63,7 @@ public class MyWorlds extends JavaPlugin {
         pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
         pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_UNLOAD, worldListener, Priority.Monitor, this);  
@@ -78,7 +79,10 @@ public class MyWorlds extends JavaPlugin {
         timeLockInterval = config.getInt("timeLockInterval", timeLockInterval);
         useWorldEnterPermissions = config.getBoolean("useWorldEnterPermissions", useWorldEnterPermissions);
         usePortalEnterPermissions = config.getBoolean("usePortalEnterPermissions", usePortalEnterPermissions);
+        useWorldTeleportPermissions = config.getBoolean("useWorldTeleportPermissions", useWorldTeleportPermissions);
+        usePortalTeleportPermissions = config.getBoolean("usePortalTeleportPermissions", usePortalTeleportPermissions);
         allowPortalNameOverride = config.getBoolean("allowPortalNameOverride", allowPortalNameOverride);
+        useWorldOperators = config.getBoolean("useWorldOperators", useWorldOperators);
         locale = config.getString("locale", locale);
         
         config.setProperty("usePermissions", usePermissions);
@@ -87,7 +91,10 @@ public class MyWorlds extends JavaPlugin {
         config.setProperty("timeLockInterval", timeLockInterval);
         config.setProperty("useWorldEnterPermissions", useWorldEnterPermissions);
         config.setProperty("usePortalEnterPermissions", usePortalEnterPermissions);
+        config.setProperty("useWorldTeleportPermissions", useWorldTeleportPermissions);
+        config.setProperty("usePortalTeleportPermissions", usePortalTeleportPermissions);
         config.setProperty("allowPortalNameOverride", allowPortalNameOverride);
+        config.setProperty("useWorldOperators", useWorldOperators);
         config.setProperty("locale", locale);
         config.save();
         
@@ -101,7 +108,7 @@ public class MyWorlds extends JavaPlugin {
 		Portal.loadPortals(root() + "portals.txt");
 
 		//World info
-		WorldConfig.load(root() + "worlds.yml");
+		WorldConfig.loadAll(root() + "worlds.yml");
 		
         //Commands
         getCommand("tpp").setExecutor(this);
@@ -119,7 +126,7 @@ public class MyWorlds extends JavaPlugin {
 		Portal.savePortals(root() + "portals.txt");
 		
 		//World info
-		WorldConfig.save(root() + "worlds.yml");
+		WorldConfig.saveAll(root() + "worlds.yml");
 		
 		//Abort chunk loader
 		LoadChunksTask.abort();
@@ -341,6 +348,18 @@ public class MyWorlds extends JavaPlugin {
 					node = "world.difficulty";
 				} else if (args[0].equalsIgnoreCase("diff")) {
 					node = "world.difficulty";
+				} else if (args[0].equalsIgnoreCase("op")) {
+					node = "world.op";
+				} else if (args[0].equalsIgnoreCase("deop")) {
+					node = "world.deop";
+				} else if (args[0].equalsIgnoreCase("setsave")) {
+					node = "world.setsaving";
+				} else if (args[0].equalsIgnoreCase("setsaving")) {
+					node = "world.setsaving";
+				} else if (args[0].equalsIgnoreCase("saving")) {
+					node = "world.setsaving";
+				} else if (args[0].equalsIgnoreCase("autosave")) {
+					node = "world.setsaving";
 				}
 			}
 			if (node == null) {
@@ -364,6 +383,8 @@ public class MyWorlds extends JavaPlugin {
 				if (showUsage(sender, "world.portals")) hac = true;
 				if (showUsage(sender, "world.gamemode")) hac = true;
 				if (showUsage(sender, "world.togglepvp")) hac = true;
+				if (showUsage(sender, "world.op")) hac = true;
+				if (showUsage(sender, "world.deop")) hac = true;
 				if (showUsage(sender, "world.allowspawn")) hac = true;
 				if (showUsage(sender, "world.denyspawn")) hac = true;		
 				if (hac) {
@@ -465,13 +486,13 @@ public class MyWorlds extends JavaPlugin {
 						String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
 						if (worldname != null) {
 							if (dest.equals("")) {
-								Portal.setDefault(worldname, null);
+								WorldConfig.get(worldname).defaultPortal = null;
 								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' cleared!");
 							} else if (Portal.getPortalLocation(dest, null) != null) {
-								Portal.setDefault(worldname, dest);
+								WorldConfig.get(worldname).defaultPortal = dest;
 								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' set to portal: '" + dest + "'!");
 							} else if ((dest = WorldManager.matchWorld(dest)) != null) {
-								Portal.setDefault(worldname, dest);
+								WorldConfig.get(worldname).defaultPortal = dest;
 								message(sender, ChatColor.GREEN + "Default destination of world '" + worldname + "' set to world: '" + dest + "'!");
 								if (!WorldManager.isLoaded(dest)) {
 									message(sender, ChatColor.YELLOW + "Note that this world is not loaded, so nothing happens yet!");
@@ -505,15 +526,17 @@ public class MyWorlds extends JavaPlugin {
 						if (info == null) {
 							message(sender, ChatColor.RED + "' " + worldname + "' is broken, no information can be shown!");
 						} else {
+							WorldConfig wc = WorldConfig.get(worldname);
 							message(sender, ChatColor.YELLOW + "Information about the world: " + worldname);
 							message(sender, ChatColor.WHITE + "Internal name: " + ChatColor.YELLOW + info.name);
-							message(sender, ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + info.environment.name().toLowerCase());
-							if (info.chunkGenerator == null) {
+							message(sender, ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + wc.environment.name().toLowerCase());
+							if (wc.chunkGeneratorName == null) {
 								message(sender, ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + "Default");
 							} else {
-								message(sender, ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + info.chunkGenerator);
+								message(sender, ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + wc.chunkGeneratorName);
 							}
-							message(sender, ChatColor.WHITE + "Keep spawn loaded: " + ChatColor.YELLOW + info.keepSpawnInMemory);
+							message(sender, ChatColor.WHITE + "Auto-saving: " + ChatColor.YELLOW + wc.autosave);
+							message(sender, ChatColor.WHITE + "Keep spawn loaded: " + ChatColor.YELLOW + wc.keepSpawnInMemory);
 							message(sender, ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + info.seed);
 							if (info.size > 1000000) {
 								message(sender, ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size / 1000000) + " Megabytes");
@@ -523,25 +546,25 @@ public class MyWorlds extends JavaPlugin {
 								message(sender, ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size) + " Bytes");
 							}
 							//PvP
-							if (PvPData.isPvP(worldname)) { 
+							if (wc.pvp) { 
 								message(sender, ChatColor.WHITE + "PvP: " + ChatColor.GREEN + "Enabled");
 							} else {
 								message(sender, ChatColor.WHITE + "PvP: " + ChatColor.YELLOW + "Disabled");
 							}
 							//Difficulty
-							message(sender, ChatColor.WHITE + "Difficulty: " + ChatColor.YELLOW + WorldManager.getDifficulty(worldname).toString().toLowerCase());
+							message(sender, ChatColor.WHITE + "Difficulty: " + ChatColor.YELLOW + wc.difficulty.toString().toLowerCase());
 							//Game mode
-							GameMode mode = GamemodeHandler.get(worldname, null);
+							GameMode mode = wc.gameMode;
 							if (mode == null) {
 								message(sender, ChatColor.WHITE + "Game mode: " + ChatColor.YELLOW + "Not set");
 							} else {
 								message(sender, ChatColor.WHITE + "Game mode: " + ChatColor.YELLOW + mode.name().toLowerCase());
 							}
 							//Time
-							String timestr = TimeControl.getTimeString(worldname, info.time);
+							String timestr = wc.timeControl.getTime(info.time);
 							message(sender, ChatColor.WHITE + "Time: " + ChatColor.YELLOW + timestr);
 							//Weather
-							if (MWWeatherListener.isHolding(worldname)) {
+							if (wc.holdWeather) {
 								if (info.raining) {
 									if (info.thundering) {
 										message(sender, ChatColor.WHITE + "Weather: " + ChatColor.YELLOW + "Endless storm with lightning");
@@ -585,13 +608,15 @@ public class MyWorlds extends JavaPlugin {
 					//=========================================
 					String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
 					if (worldname != null) {
+						WorldConfig wc = WorldConfig.get(worldname);
 					    if (args.length == 1) {
-					    	String diff = WorldManager.getDifficulty(worldname).toString().toLowerCase();
+					    	String diff = wc.difficulty.toString().toLowerCase();
 					    	message(sender, ChatColor.YELLOW + "Difficulty of world '" + worldname + "' is set at " + ChatColor.WHITE + diff);
 					    } else {
-					    	Difficulty diff = WorldManager.parseDifficulty(args[1]);
+					    	Difficulty diff = Util.parseDifficulty(args[1], Difficulty.NORMAL);
 					    	if (diff != null) {
-								WorldManager.setDifficulty(worldname, diff);
+								wc.difficulty = diff;
+								wc.updateDifficulty(wc.getWorld());
 								message(sender, ChatColor.YELLOW + "Difficulty of world '" + worldname + "' set to " + ChatColor.WHITE + diff.toString().toLowerCase());
 					    	} else {
 					    		message(sender, ChatColor.RED + "Difficulty '" + args[1] + "' has not been recognized!");
@@ -608,7 +633,7 @@ public class MyWorlds extends JavaPlugin {
 					if (worldname != null) {
 						if (args.length == 1) {
 							//display
-							GameMode mode = GamemodeHandler.get(worldname, null);
+							GameMode mode = WorldConfig.get(worldname).gameMode;
 							String msg = ChatColor.YELLOW + "Current game mode of world '" + worldname + "': ";
 							if (mode == null) {
 								message(sender, msg + ChatColor.YELLOW + "Not set");
@@ -617,15 +642,12 @@ public class MyWorlds extends JavaPlugin {
 							}
 						} else {
 							//Parse the gamemode
-							GameMode mode = GamemodeHandler.getMode(args[1], null);
-							GamemodeHandler.set(worldname, mode);
+							GameMode mode = Util.parseGameMode(args[1], null);
+							WorldConfig wc = WorldConfig.get(worldname);
+							wc.setGameMode(mode);
 							if (mode == null) {
 								message(sender, ChatColor.YELLOW + "Game mode of World '" + worldname + "' cleared!");
 							} else {
-								World w = WorldManager.getWorld(worldname);
-								if (w != null) {
-									GamemodeHandler.updatePlayers(w);
-								}
 								message(sender, ChatColor.YELLOW + "Game mode of World '" + worldname + "' set to " + mode.name().toLowerCase() + "!");
 							}
 						}
@@ -638,8 +660,10 @@ public class MyWorlds extends JavaPlugin {
 					//==========================================
 					String worldname = WorldManager.getWorldName(sender, args, args.length == 2);
 					if (worldname != null) {
-						PvPData.setPvP(worldname, !PvPData.isPvP(worldname));
-						if (PvPData.isPvP(worldname)) {
+						WorldConfig wc = WorldConfig.get(worldname);
+						wc.pvp = !wc.pvp;
+						wc.updatePVP(wc.getWorld());
+						if (wc.pvp) {
 							message(sender, ChatColor.GREEN + "PvP on World: '" + worldname + "' enabled!");
 						} else {
 							message(sender, ChatColor.YELLOW + "PvP on World: '" + worldname + "' disabled!");
@@ -650,15 +674,89 @@ public class MyWorlds extends JavaPlugin {
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
 					}
+				} else if (node == "world.op" || node == "world.deop") {
+					//=====================================
+					//===============(DE)OP COMMAND========
+					//=====================================
+					if (args.length >= 2) {
+						String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
+						if (worldname != null) {
+							WorldConfig wc = WorldConfig.get(worldname);
+							String playername = args[1];
+							if (playername.equals("\\*")) {
+								wc.OPlist.clear();
+								if (node == "world.op") {
+									wc.OPlist.add("\\*");
+									message(sender, ChatColor.YELLOW + "Everyone on world '" + worldname + "' now is an operator!");
+								} else {
+									message(sender, ChatColor.YELLOW + "Operators on world '" + worldname + "' have been cleared!");
+								}
+							} else {
+								if (node == "world.op") {
+									wc.OPlist.add(playername.toLowerCase());
+									wc.updateOP(wc.getWorld());
+									message(sender, ChatColor.WHITE + playername + " " + ChatColor.YELLOW + " is now an operator on world '" + worldname + "'!");
+									if (sender instanceof Player) {
+										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped '" + playername + "' on world '" + worldname + "'!");
+									}
+								} else {
+									wc.OPlist.remove(playername.toLowerCase());
+									wc.updateOP(wc.getWorld());
+									message(sender, ChatColor.WHITE + playername + " " + ChatColor.YELLOW + " is no longer an operator on world '" + worldname + "'!");
+									if (sender instanceof Player) {
+										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped '" + playername + "' on world '" + worldname + "'!");
+									}
+								}
+							}
+						} else {
+							message(sender, ChatColor.RED + "World not found!");
+						}
+					} else {
+						//list Operators
+						WorldConfig wc = WorldConfig.get(WorldManager.getWorldName(sender, args, false));
+						message(sender, ChatColor.YELLOW + "Operators of world '" + wc.worldname + "':");
+						if (sender instanceof Player) {
+							//perform some nice layout coloring
+							String msgpart = "";
+							for (String player : wc.OPlist) {
+								//prepare it
+								if (Bukkit.getServer().getPlayer(player) != null) {
+									player = ChatColor.GREEN + player;
+								} else {
+									player = ChatColor.RED + player;
+								}
+								//display it
+								if (msgpart.length() + player.length() < 70) {
+									if (msgpart != "") msgpart += ChatColor.WHITE + " / ";
+									msgpart += player;
+								} else {
+									sender.sendMessage(msgpart);
+									msgpart = player;
+								}
+							}
+							//possibly forgot one?
+							if (msgpart != "") sender.sendMessage(msgpart);
+						} else {
+							//plain world per line
+							for (String player : wc.OPlist) {
+								String status = "[Offline]";
+								if (Bukkit.getServer().getPlayer(player) != null) {
+									status = "[Online]";
+								}
+								sender.sendMessage("    " + player + " " + status);
+							}
+						}
+					}
 				} else if (node == "world.togglespawnloaded") {
 					//==========================================
 					//===============TOGGLE SPAWN LOADED========
 					//==========================================
 					String worldname = WorldManager.getWorldName(sender, args, args.length == 2);
 					if (worldname != null) {
-						boolean value = !WorldManager.getKeepSpawnInMemory(worldname);
-						WorldManager.setKeepSpawnInMemory(worldname, value);
-						if (value) {
+						WorldConfig wc = WorldConfig.get(worldname);
+						wc.keepSpawnInMemory = !wc.keepSpawnInMemory;
+						wc.updateKeepSpawnInMemory(wc.getWorld());
+						if (wc.keepSpawnInMemory) {
 							message(sender, ChatColor.GREEN + "The spawn area on World: '" + worldname + "' is now kept loaded!");
 						} else {
 							message(sender, ChatColor.YELLOW + "The spawn area on World: '" + worldname + "' is no longer kept loaded!");
@@ -676,7 +774,7 @@ public class MyWorlds extends JavaPlugin {
 					String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
 					if (worldname != null) {
 						if (args.length >= 2) {
-							SpawnControl.SpawnRestriction r = SpawnControl.get(worldname);
+							SpawnControl sc = WorldConfig.get(worldname).spawnControl;
 							//Get the type to set
 							String type = null;
 							if (args[1].equalsIgnoreCase("animal")) {
@@ -718,13 +816,13 @@ public class MyWorlds extends JavaPlugin {
 							if (type != null) {
 								if (node == "world.allowspawn") {
 									if (type.equals("animal")) {
-										r.setAnimals(false);
+										sc.setAnimals(false);
 									} else if (type.equals("monster")) {
-										r.setMonsters(false);
+										sc.setMonsters(false);
 									} else if (type.equals("mob")) {
-										r.deniedCreatures.clear();
+										sc.deniedCreatures.clear();
 									} else {
-										r.deniedCreatures.remove(CreatureType.valueOf(type.toUpperCase()));
+										sc.deniedCreatures.remove(CreatureType.valueOf(type.toUpperCase()));
 									}
 									if (WorldManager.isLoaded(worldname)) {
 										message(sender, ChatColor.GREEN + type + "s are now allowed to spawn on world: '" + worldname + "'!");
@@ -733,14 +831,14 @@ public class MyWorlds extends JavaPlugin {
 									}
 								} else {
 									if (type.equals("animal")) {
-										r.setAnimals(true);
+										sc.setAnimals(true);
 									} else if (type.equals("monster")) {
-										r.setMonsters(true);
+										sc.setMonsters(true);
 									} else if (type.equals("mob")) {
-										r.setAnimals(true);
-										r.setMonsters(true);
+										sc.setAnimals(true);
+										sc.setMonsters(true);
 									} else {
-										r.deniedCreatures.add(CreatureType.valueOf(type.toUpperCase()));
+										sc.deniedCreatures.add(CreatureType.valueOf(type.toUpperCase()));
 									}
 									//Capitalize
 									type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
@@ -752,9 +850,8 @@ public class MyWorlds extends JavaPlugin {
 								}
 								World w = WorldManager.getWorld(worldname);
 								if (w != null) {
-									SpawnRestriction restriction = SpawnControl.get(worldname);
 									for (Entity e : w.getEntities()) {
-										if (restriction.isDenied(e)) {
+										if (sc.isDenied(e)) {
 											e.remove();
 										}
 									}
@@ -764,14 +861,14 @@ public class MyWorlds extends JavaPlugin {
 							}
 						}
 						//Mobs
-						SpawnRestriction restr = SpawnControl.get(worldname);
-						if (restr.deniedCreatures.size() == 0) {
+						SpawnControl sc = WorldConfig.get(worldname).spawnControl;
+						if (sc.deniedCreatures.size() == 0) {
 							message(sender, ChatColor.WHITE + "All mobs are allowed to spawn right now.");
 						} else {
 							message(sender, ChatColor.WHITE + "The following mobs are denied from spawning:");
 							String message = ChatColor.YELLOW.toString();
 							boolean first = true;
-							for (CreatureType type : restr.deniedCreatures) {
+							for (CreatureType type : sc.deniedCreatures) {
 								if (first) {
 									message += type.getName();
 									first = false;
@@ -837,12 +934,13 @@ public class MyWorlds extends JavaPlugin {
 						}
 						String worldname = WorldManager.getWorldName(sender, args, useWorld);
 						if (worldname != null) {
-							MWWeatherListener.holdWorld(worldname, setHold);
-							World w = WorldManager.getWorld(worldname);
+							WorldConfig wc = WorldConfig.get(worldname);
+							World w = wc.getWorld();
 							if (w != null) {
-								boolean holdchange = MWWeatherListener.isHolding(worldname) != setHold;
+								boolean holdchange = wc.holdWeather != setHold;
+								wc.holdWeather = setHold;
 								if (setStorm && ((!w.hasStorm()) || (setThunder && !w.isThundering()) || holdchange)) {
-									MWWeatherListener.setWeather(w, true, setHold);
+									MWWeatherListener.setWeather(w, true);
 									if (setThunder) {
 										 w.setThundering(true);
 									}
@@ -855,7 +953,7 @@ public class MyWorlds extends JavaPlugin {
 										message(sender, ChatColor.GREEN + "You started a " +  a + "storm on world: '" + worldname + "'!");
 									}
 								} else if (setSun && (w.hasStorm() || holdchange)) {
-									MWWeatherListener.setWeather(w, false, setHold);
+									MWWeatherListener.setWeather(w, false);
 									if (setHold) {
 										message(sender, ChatColor.GREEN + "You stopped the formation of storms on world: '" + worldname + "'!");
 									} else {
@@ -955,23 +1053,24 @@ public class MyWorlds extends JavaPlugin {
 							message(sender, ChatColor.YELLOW + "The current time of world '" + 
 									worldname + "' is " + TimeControl.getTimeString(time));
 						} else {
+							TimeControl tc = WorldConfig.get(worldname).timeControl;
 							if (lock) {
-								TimeControl.lockTime(worldname, time);
+								tc.lockTime(time);
 								if (!WorldManager.isLoaded(worldname)) {
-									TimeControl.setLocking(worldname, false);
+									tc.setLocking(false);
 									message(sender, ChatColor.YELLOW + "World '" + worldname + 
 											"' is not loaded, time will be locked to " + 
 											TimeControl.getTimeString(time) + " as soon it is loaded!");
 								} else {
-									TimeControl.setLocking(worldname, true);
+									tc.setLocking(true);
 									message(sender, ChatColor.GREEN + "Time of world '" + worldname + "' locked to " + 
 									        TimeControl.getTimeString(time) + "!");
 								}
 							} else {
 								World w = WorldManager.getWorld(worldname);
 								if (w != null) {
-									if (TimeControl.isLocked(worldname)) {
-										TimeControl.unlockTime(worldname);
+									if (tc.isLocked()) {
+										tc.unlockTime();
 										WorldManager.setTime(w, time);
 										message(sender, ChatColor.GREEN + "Time of world '" + worldname + "' unlocked and set to " + 
 										        TimeControl.getTimeString(time) + "!");
@@ -1183,6 +1282,12 @@ public class MyWorlds extends JavaPlugin {
 					//===========================================
 					String worldname = WorldManager.getWorldName(sender, args, args.length >= 2);
 					if (worldname != null) {
+						if (args.length >= 2) {
+							if (MyWorlds.useWorldEnterPermissions && !Permission.has(sender, "world.teleport." + worldname)) {
+								Localization.message(sender, "world.noaccess");
+								return true;
+							}
+						}
 						World world = WorldManager.getWorld(worldname);
 						if (world != null) {
 							Location loc = world.getSpawnLocation();
@@ -1199,6 +1304,36 @@ public class MyWorlds extends JavaPlugin {
 							}
 						} else {
 							message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
+						}
+					} else {
+						message(sender, ChatColor.RED + "World not found!");
+					}
+				} else if (node == "world.setsaving") {
+					//==========================================
+					//===========AUTO SAVE TOGGLE COMMAND=======
+					//==========================================
+					boolean display = true;
+					if (args.length > 1) {
+						display = !Util.isBool(args[1]);
+					}
+					String worldname = WorldManager.getWorldName(sender, args, args.length >= 3 || (args.length == 2 && display));
+					if (worldname != null) {
+						WorldConfig wc = WorldConfig.get(worldname);
+						if (display) {
+							if (wc.autosave) {
+								message(sender, ChatColor.YELLOW + "Auto-saving on world '" + worldname + "' is enabled!");
+							} else {
+								message(sender, ChatColor.YELLOW + "Auto-saving on world '" + worldname + "' is disabled!");
+							}
+						} else {
+							boolean set = Util.getBool(args[1]);
+							wc.autosave = set;
+							wc.updateAutoSave(wc.getWorld());
+							if (set) {
+								message(sender, ChatColor.YELLOW + "Auto-saving on world '" + worldname + "' is now enabled!");
+							} else {
+								message(sender, ChatColor.YELLOW + "Auto-saving on world '" + worldname + "' is now disabled!");
+							}
 						}
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
@@ -1279,8 +1414,12 @@ public class MyWorlds extends JavaPlugin {
 						if (args.length == 1) {
 							Location tele = Portal.getPortalLocation(args[0], player.getWorld().getName(), true);
 							if (tele != null) {
-								if (Permission.handleTeleport(player, Portal.fixDot(args[0]), tele)) {
-									//Success
+								if (!usePortalTeleportPermissions || Permission.has(player, "portal.teleport." + args[0])) {
+									if (Permission.handleTeleport(player, Portal.fixDot(args[0]), tele)) {
+										//Success
+									}
+								} else {
+									Localization.message(player, "portal.noaccess");
 								}
 							} else {
 								//Match world
@@ -1288,8 +1427,12 @@ public class MyWorlds extends JavaPlugin {
 								if (worldname != null) {
 									World w = WorldManager.getWorld(worldname);
 									if (w != null) {
-										if (Permission.handleTeleport(player, w.getSpawnLocation())) {
-											//Success
+										if (!useWorldTeleportPermissions || Permission.has(player, "world.teleport." + w.getName())) {
+											if (Permission.handleTeleport(player, w.getSpawnLocation())) {
+												//Success
+											}
+										} else {
+											Localization.message(player, "world.noaccess");
 										}
 									} else {
 										message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");

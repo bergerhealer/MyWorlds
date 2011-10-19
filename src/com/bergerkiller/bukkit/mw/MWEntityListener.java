@@ -16,9 +16,9 @@ public class MWEntityListener extends EntityListener {
     public void onCreatureSpawn(CreatureSpawnEvent event) {
     	if (!event.isCancelled()) {
         	if (event.getSpawnReason() != SpawnReason.CUSTOM) {
-            	if (!SpawnControl.canSpawn(event.getEntity())) {
-            		event.setCancelled(true);
-            	}
+        		if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
+        			event.setCancelled(true);
+        		}
         	}
     	}
     }

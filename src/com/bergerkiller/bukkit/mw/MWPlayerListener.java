@@ -4,6 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -27,9 +28,14 @@ public class MWPlayerListener extends PlayerListener {
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
 		if (!event.isCancelled()) {
 			if (event.getFrom().getWorld() != event.getTo().getWorld()) {
-				GamemodeHandler.updatePlayer(event.getPlayer(), event.getTo().getWorld());
+				WorldConfig.get(event.getTo()).update(event.getPlayer());
 			}
 		}
+	}
+	
+	@Override
+	public void onPlayerJoin(PlayerJoinEvent event) {
+		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
 	}
 	
 	@Override
@@ -40,6 +46,7 @@ public class MWPlayerListener extends PlayerListener {
 				event.setRespawnLocation(loc);
 			}
 		}
+		WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
 	}
 	
 	@Override

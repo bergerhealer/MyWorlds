@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.18
+version: 1.20
 author: bergerkiller
 commands:
     world:
@@ -48,6 +48,9 @@ permissions:
     myworlds.world.save:
         description: Sets if the player can save worlds
         default: op
+    myworlds.world.setsaving:
+        description: Sets if the player can toggle world auto-saving on or off
+        default: op
     myworlds.world.delete:
         description: Sets if the player can permanently delete worlds
         default: false
@@ -59,6 +62,12 @@ permissions:
         default: op
     myworlds.world.togglepvp:
         description: Sets if the player can change the PvP setting of worlds
+        default: op
+    myworlds.world.op:
+        description: Sets if the player can add operators to a world
+        default: op
+    myworlds.world.deop:
+        description: Sets if the player can remove operator from a world
         default: op
     myworlds.world.togglespawnloaded:
         description: Sets if the player can toggle spawn chunk loading on or off
@@ -81,6 +90,9 @@ permissions:
     myworlds.world.setspawn:
         description: Sets if the player can change the spawn point of a world
         default: op
+    myworlds.world.teleport.*:
+        description: Sets the worlds a player can teleport to using /tpp and /world spawn
+        default: true
     myworlds.world.enter.*:
         description: Sets if the player can enter a certain world through portals
         default: true;
@@ -92,6 +104,9 @@ permissions:
         default: op
     myworlds.portal.use:
         description: Sets if the player can use portals
+        default: true
+    myworlds.portal.teleport.*:
+        description: Sets the portals a player can teleport to using /tpp
         default: true
     myworlds.portal.enter.*:
         description: Sets if the player can enter a certain portal

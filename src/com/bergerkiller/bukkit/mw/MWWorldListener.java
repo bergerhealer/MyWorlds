@@ -16,13 +16,13 @@ public class MWWorldListener extends WorldListener {
     
     @Override
     public void onWorldLoad(WorldLoadEvent event) {
-    	TimeControl.setLocking(event.getWorld().getName(), true);
+    	WorldConfig.get(event.getWorld()).timeControl.setLocking(true);
     }
     
     @Override
     public void onWorldUnload(WorldUnloadEvent event) {
     	if (!event.isCancelled()) {
-        	TimeControl.setLocking(event.getWorld().getName(), false);
+    		WorldConfig.get(event.getWorld()).timeControl.setLocking(false);
         	WorldManager.clearWorldReference(event.getWorld());
     	}
     }
@@ -33,9 +33,7 @@ public class MWWorldListener extends WorldListener {
     		initIgnoreWorlds.remove(event.getWorld().getName());
     		event.getWorld().setKeepSpawnInMemory(false);
     	} else {
-        	WorldManager.updateKeepSpawnMemory(event.getWorld());
-        	PvPData.updatePvP(event.getWorld());
-        	WorldManager.updateDifficulty(event.getWorld());
+    		WorldConfig.get(event.getWorld()).update(event.getWorld());
     	}
     }
     

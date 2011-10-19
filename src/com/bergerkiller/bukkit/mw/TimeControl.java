@@ -1,10 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.bukkit.World;
-import org.bukkit.util.config.Configuration;
 
 public class TimeControl {
 	
@@ -68,9 +64,8 @@ public class TimeControl {
                 hours < 12 ? "am" : "pm");
     }
     
-    public static String getTimeString(String worldname, long backup) {
-    	Locker l = lockers.get(worldname);
-    	if (l == null) {
+    public String getTime(long backup) {
+    	if (this.locker == null) {
     		World w = WorldManager.getWorld(worldname);
     		if (w == null) {
     			return getTimeString(backup);
@@ -78,75 +73,47 @@ public class TimeControl {
         		return getTimeString(w.getTime());
     		}
     	} else {
-    		return getTimeString(l.time);
+    		return getTimeString(this.locker.time);
     	}
+    }
+            
+    public TimeControl(String worldname) {
+    	this.worldname = worldname;
     }
     
-    /*
-     * Time locking saving
-     */
-    public static void load(Configuration config, String worldname) {
-    	long time = config.getInt(worldname + ".lockedtime", -1);
-    	if (time >= 0) {
-			TimeControl.lockTime(worldname, time);
-			TimeControl.setLocking(worldname, true);
-    	}
-    }
-    public static void save(Configuration config) {
-    	for (String worldname : config.getKeys()) {
-    		Locker l = lockers.get(worldname.toLowerCase());
-    		if (l != null && l.isRunning()) {
-    			config.setProperty(worldname.toLowerCase() + ".lockedtime", l.time);
-    		} else {
-    			config.removeProperty(worldname.toLowerCase() + ".lockedtime");
-    		}
-    	}
-    	for (Map.Entry<String, Locker> locker : lockers.entrySet()) {
-    		config.setProperty(locker.getKey() + ".lockedtime", locker.getValue().time);
-    	}
-    }
-        
-    /*
-     * Time locking mechanics
-     */
-    private static HashMap<String, Locker> lockers = new HashMap<String, Locker>();
-    
-    public static boolean isLocked(String worldname) {
-    	return lockers.containsKey(worldname.toLowerCase());
-    }
-    
-    public static void lockTime(String worldname, long time) {
-    	worldname = worldname.toLowerCase();
-    	Locker l = lockers.get(worldname);
-    	if (l == null) {
-    		l = new Locker(worldname, time);
-    		lockers.put(worldname, l);
-    		l.start();
+    public String worldname;
+    public Locker locker;
+
+    public void lockTime(long time) {
+    	if (this.locker == null) {
+    		this.locker = new Locker(worldname, time);
+    		this.locker.start();
     	} else {
-    		l.time = time;
-    		l.run();
+        	this.locker.time = time;
+        	this.locker.run();
     	}
     }
-    public static void unlockTime(String worldname) {
-    	worldname = worldname.toLowerCase();
-    	Locker l = lockers.get(worldname);
-    	if (l == null) return;
-    	l.stop();
-    	lockers.remove(worldname);
+    public void unlockTime() {
+    	if (this.locker != null) {
+    		this.locker.stop();
+    		this.locker = null;
+    	}
+    }
+    public boolean isLocked() {
+    	return this.locker != null && this.locker.isRunning();
     }
     
     /*
      * Sets if the time update task should be running
      * See also: World/Plugin load and unload
      */
-    public static boolean setLocking(String worldname, boolean locking) {
-    	Locker l = lockers.get(worldname.toLowerCase());
-    	if (l != null) {
-    		if (l.isRunning() != locking) {
+    public boolean setLocking(boolean locking) {
+    	if (this.locker != null) {
+    		if (this.locker.isRunning() != locking) {
             	if (locking) { 
-            		return l.start();
+            		return this.locker.start();
             	} else {
-            		l.stop();
+            		this.locker.stop();
             		return true;
             	}
     		}
@@ -154,7 +121,7 @@ public class TimeControl {
     	return false;
     }
     
-    private static class Locker implements Runnable {
+    public static class Locker implements Runnable {
 
     	public Locker(String worldname, long time) {
     		this.worldname = worldname;
@@ -164,7 +131,7 @@ public class TimeControl {
     	private int id = -1;
     	private String worldname;
     	private World w;
-    	private long time;
+    	public long time;
     	
     	public boolean isRunning() {
     		return this.id != -1;
