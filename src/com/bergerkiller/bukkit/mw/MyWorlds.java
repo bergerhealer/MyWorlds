@@ -679,32 +679,80 @@ public class MyWorlds extends JavaPlugin {
 					//===============(DE)OP COMMAND========
 					//=====================================
 					if (args.length >= 2) {
+						boolean all = args.length == 3 && (args[2].startsWith("*") || args[2].equalsIgnoreCase("all"));
 						String worldname = WorldManager.getWorldName(sender, args, args.length == 3);
 						if (worldname != null) {
 							WorldConfig wc = WorldConfig.get(worldname);
 							String playername = args[1];
-							if (playername.equals("\\*")) {
+							if (playername.startsWith("*")) {
 								wc.OPlist.clear();
 								if (node == "world.op") {
-									wc.OPlist.add("\\*");
-									message(sender, ChatColor.YELLOW + "Everyone on world '" + worldname + "' now is an operator!");
+									wc.OPlist.add("*");
+									message(sender, ChatColor.YELLOW + "Everyone on world '" + worldname + "' is an operator now!");
+									if (sender instanceof Player) {
+										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped everyone on world '" + worldname + "'!");
+									}
 								} else {
 									message(sender, ChatColor.YELLOW + "Operators on world '" + worldname + "' have been cleared!");
+									if (sender instanceof Player) {
+										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped everyone on world '" + worldname + "'!");
+									}
 								}
 							} else {
 								if (node == "world.op") {
 									wc.OPlist.add(playername.toLowerCase());
-									wc.updateOP(wc.getWorld());
-									message(sender, ChatColor.WHITE + playername + " " + ChatColor.YELLOW + " is now an operator on world '" + worldname + "'!");
+									message(sender, ChatColor.WHITE + playername + ChatColor.YELLOW + " is now an operator on world '" + worldname + "'!");
 									if (sender instanceof Player) {
 										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped '" + playername + "' on world '" + worldname + "'!");
 									}
 								} else {
 									wc.OPlist.remove(playername.toLowerCase());
-									wc.updateOP(wc.getWorld());
-									message(sender, ChatColor.WHITE + playername + " " + ChatColor.YELLOW + " is no longer an operator on world '" + worldname + "'!");
+									message(sender, ChatColor.WHITE + playername + ChatColor.YELLOW + " is no longer an operator on world '" + worldname + "'!");
 									if (sender instanceof Player) {
 										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped '" + playername + "' on world '" + worldname + "'!");
+									}
+								}
+							}
+							wc.updateOP(wc.getWorld());
+						} else if (all) {
+							String playername = args[1];
+							if (playername.startsWith("*")) {
+								for (WorldConfig wc : WorldConfig.all()) {
+									wc.OPlist.clear();
+									if (node == "world.op") {
+										wc.OPlist.add("*");
+									}
+									wc.updateOP(wc.getWorld());
+								}
+								if (node == "world.op") {
+									message(sender, ChatColor.YELLOW + "Everyone is now an operator on all worlds!");
+									if (sender instanceof Player) {
+										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped everyone on all worlds!");
+									}
+								} else {
+									message(sender, ChatColor.YELLOW + "Everyone is no longer an operator on any world!");
+									if (sender instanceof Player) {
+										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped everyone on all worlds!");
+									}
+								}
+							} else {
+								for (WorldConfig wc : WorldConfig.all()) {
+									if (node == "world.op") {
+										wc.OPlist.add(playername.toLowerCase());
+									} else {
+										wc.OPlist.remove(playername.toLowerCase());
+									}
+									wc.updateOP(wc.getWorld());
+								}
+								if (node == "world.op") {
+									message(sender, ChatColor.WHITE + playername + ChatColor.YELLOW + " is now an operator on all worlds!");
+									if (sender instanceof Player) {
+										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped '" + playername + "' on all worlds!");
+									}
+								} else {
+									message(sender, ChatColor.WHITE + playername + ChatColor.YELLOW + " is no longer an operator on any world!");
+									if (sender instanceof Player) {
+										MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped '" + playername + "' on all worlds!");
 									}
 								}
 							}

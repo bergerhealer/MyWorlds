@@ -45,22 +45,31 @@ public class WorldConfig {
 	public static void loadAll(String filename) {
 		Configuration config = new Configuration(new File(filename));
 		config.load();
+		String[] worlds = WorldManager.getWorlds();
 		for (String worldname : config.getKeys()) {
-			new WorldConfig(worldname, config);
-			
-			if (config.getBoolean(worldname + ".loaded", false)) {
-				if (WorldManager.worldExists(worldname)) {
-					if (WorldManager.getOrCreateWorld(worldname) == null) {
-						MyWorlds.log(Level.SEVERE, "Failed to (pre)load world: " + worldname);
+			for (String world : worlds) {
+				if (world.equalsIgnoreCase(worldname)) {
+					new WorldConfig(worldname, config);
+					
+					if (config.getBoolean(worldname + ".loaded", false)) {
+						if (WorldManager.worldExists(worldname)) {
+							if (WorldManager.getOrCreateWorld(worldname) == null) {
+								MyWorlds.log(Level.SEVERE, "Failed to (pre)load world: " + worldname);
+							}
+						} else {
+							MyWorlds.log(Level.WARNING, "World: " + worldname + " no longer exists and has not been loaded!");
+						}
 					}
-				} else {
-					MyWorlds.log(Level.WARNING, "World: " + worldname + " no longer exists and has not been loaded!");
+					break;
 				}
 			}
 		}
 	}
 	public static void saveAll(String filename) {
 		Configuration config = new Configuration(new File(filename));
+		for (String key : config.getKeys()) {
+			config.removeProperty(key);
+		}
 		for (WorldConfig wc : all()) {
 			wc.save(config);
 		}
@@ -86,7 +95,7 @@ public class WorldConfig {
 		}
 		this.holdWeather = config.getBoolean(worldname + "holdWeather", false);
 		this.pvp = config.getBoolean(worldname + "pvp", this.pvp);
-		for (String type : config.getStringList(worldname + ".deniedCreatures", new ArrayList<String>())) {
+		for (String type : config.getStringList(worldname + "deniedCreatures", new ArrayList<String>())) {
 			type = type.toUpperCase();
 			if (type.equals("ANIMALS")) {
 				this.spawnControl.setAnimals(true);
@@ -104,9 +113,7 @@ public class WorldConfig {
 			this.timeControl.setLocking(true);
     	}
     	this.defaultPortal = config.getString(worldname + "defaultPortal", null);
-    	if (MyWorlds.useWorldOperators) {
-    		this.OPlist = config.getStringList(worldname + "operators", this.OPlist);
-    	}
+    	this.OPlist = config.getStringList(worldname + "operators", this.OPlist);
 	}
 	public WorldConfig(String worldname) {
 		this.worldname = worldname.toLowerCase();
@@ -238,8 +245,8 @@ public class WorldConfig {
 	        this.autosave = w.isAutoSave();
 		}
 		
-		worldname = worldname.toLowerCase() + ".";
-		config.setProperty(worldname + "loaded", WorldManager.isLoaded(worldname));
+		String worldname = this.worldname + ".";
+		config.setProperty(worldname + "loaded", WorldManager.isLoaded(this.worldname));
 		config.setProperty(worldname + "keepSpawnLoaded", this.keepSpawnInMemory);
 		config.setProperty(worldname + "environment", this.environment.toString());
 		if (this.chunkGeneratorName != null) {
@@ -268,9 +275,7 @@ public class WorldConfig {
 	    } else {
 	    	config.setProperty(worldname + "defaultPortal", this.defaultPortal);
 	    }
-	    if (MyWorlds.useWorldOperators) {
-	    	config.setProperty(worldname + "operators", this.OPlist);
-	    }
+	    config.setProperty(worldname + "operators", this.OPlist);
 		config.setProperty(worldname + "deniedCreatures", creatures);
 		config.setProperty(worldname + "holdWeather", this.holdWeather);
 		config.setProperty(worldname + "difficulty", this.difficulty.toString());
