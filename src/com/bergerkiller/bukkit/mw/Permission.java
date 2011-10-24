@@ -44,28 +44,27 @@ public class Permission {
 			return true;
 		}
 	}
-	
-	public static boolean handleTeleport(Entity entity, String portalname, Location portalloc) {
-		if (portalname == null || portalloc == null) return false;
+		
+	public static boolean handleTeleport(Entity entity, Portal portal) {
+		return handleTeleport(entity, portal.getName(), portal.getDestinationName(), portal.getDestinationDisplayName(), portal.getDestination());
+	}
+	public static boolean handleTeleport(Entity entity, String toportalname, Location portalloc) {
+		return handleTeleport(entity, null, toportalname, toportalname, portalloc);
+	}
+	public static boolean handleTeleport(Entity entity, String fromportalname, String toportalname, String toportaldispname, Location portalloc) {
+		if (toportaldispname == null || portalloc == null) return false;
 		if (entity instanceof Player) {
 			Player p = (Player) entity;
-			if (has(p, "portal.use")) {
-				if (MyWorlds.usePortalEnterPermissions && !has(p, "portal.enter." + portalname)) {
-					Localization.message(p, "portal.noaccess");
-					return false;
-				} else {
-					p.sendMessage(Localization.getPortalEnter(portalname));
-				}
-			} else {
+			if (fromportalname != null && !canEnterPortal(p, fromportalname)) {
 				Localization.message(p, "portal.noaccess");
 				return false;
+			} else {
+				p.sendMessage(Localization.getPortalEnter(toportalname, toportaldispname));
 			}
 		}
 		return handleTeleport(entity, portalloc, false);
 	}
-	public static boolean handleTeleport(Entity entity, Portal portal) {
-		return handleTeleport(entity, portal.getDestinationName(), portal.getDestination());
-	}
+	
 	public static boolean handleTeleport(Entity entity, Location to) {
 		return handleTeleport(entity, to, true);
 	}
@@ -73,7 +72,7 @@ public class Permission {
 		if (to == null) return false;
 		if (entity instanceof Player) {
 			Player p = (Player) entity;
-			if (MyWorlds.useWorldEnterPermissions && !has(p, "world.enter." + to.getWorld().getName())) {
+			if (!canEnter(p, to.getWorld())) {
 				Localization.message(p, "world.noaccess");
 				return false;
 			} else if (showworld) {
@@ -91,12 +90,21 @@ public class Permission {
 		return canEnterWorld(player, world.getName());
 	}
 	public static boolean canEnterPortal(Player player, String portalname) {
+		if (!has(player, "portal.use")) return false;
 		if (!MyWorlds.usePortalEnterPermissions) return true;	
-		return has(player, "portal.enter." + portalname);
+		return has(player, "portal.enter." + portalname) || has(player, "portal.enter.*");
 	}
 	public static boolean canEnterWorld(Player player, String worldname) {
 		if (!MyWorlds.useWorldEnterPermissions) return true;
-		return has(player, "world.enter." + worldname);
+		return has(player, "world.enter." + worldname) || has(player, "world.enter.*");
 	}
 	
+	public static boolean canTeleportPortal(Player player, String portalname) {
+		if (!MyWorlds.usePortalTeleportPermissions) return true;
+		return has(player, "portal.teleport." + portalname) || has(player, "portal.teleport.*");
+	}
+	public static boolean canTeleportWorld(Player player, String worldname) {
+		if (!MyWorlds.useWorldTeleportPermissions) return true;
+		return has(player, "world.teleport." + worldname) || has(player, "world.teleport.*");
+	}
 }

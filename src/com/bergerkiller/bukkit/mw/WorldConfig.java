@@ -74,8 +74,11 @@ public class WorldConfig {
 			wc.save(config);
 		}
 		config.save();
-	}	
-
+	}
+	public static void remove(String worldname) {
+		config.remove(worldname.toLowerCase());
+	}
+	
 	public WorldConfig(String worldname, Configuration config) {
 		this(worldname);
 		worldname = worldname.toLowerCase() + ".";

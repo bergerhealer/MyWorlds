@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -177,7 +178,7 @@ public class MyWorlds extends JavaPlugin {
 		message(sender, ChatColor.YELLOW + "Available portals: " + 
 				portals.length + " Portal" + ((portals.length == 1) ? "" : "s"));
 		if (portals.length > 0) {
-			String msgpart = "";
+			int index = 0;
 			for (String portal : portals) {
 				Location loc = Portal.getPortalLocation(portal, null);
 				ChatColor color = ChatColor.DARK_RED;
@@ -198,19 +199,11 @@ public class MyWorlds extends JavaPlugin {
 						}
 					}
 				}
-				
-				//display it
-				if (msgpart.length() + portal.length() < 70) {
-					if (msgpart != "") msgpart += ChatColor.WHITE + ", ";
-					msgpart += color + portal;
-				} else {
-					message(sender, msgpart);
-					msgpart = color + portal;
-				}
+				portals[index] = color + portal;
+				index++;
 			}
-			//possibly forgot one?
-			if (msgpart != "") message(sender, msgpart);
 		}
+		Util.list(sender, ", ", portals);
 	}
 	
 	public static String[] convertArgs(String[] args) {
@@ -1250,6 +1243,7 @@ public class MyWorlds extends JavaPlugin {
 							}
 					        message(sender, ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
 					        MWWorldListener.ignoreWorld(worldname);
+					        WorldConfig.remove(worldname);
 					        World world = WorldManager.createWorld(worldname, seedval);
 							if (world != null) {
 								//load chunks
@@ -1328,33 +1322,34 @@ public class MyWorlds extends JavaPlugin {
 					//===========================================
 					//===============SPAWN COMMAND===============
 					//===========================================
-					String worldname = WorldManager.getWorldName(sender, args, args.length >= 2);
-					if (worldname != null) {
-						if (args.length >= 2) {
-							if (MyWorlds.useWorldEnterPermissions && !Permission.has(sender, "world.teleport." + worldname)) {
-								Localization.message(sender, "world.noaccess");
-								return true;
+					if (sender instanceof Player) {
+						Player player = (Player) sender;
+						String worldname = WorldManager.getWorldName(sender, args, args.length >= 2);
+						if (worldname != null) {
+							if (args.length >= 2) {
+								if (Permission.canTeleportWorld(player, worldname)) {
+									Localization.message(sender, "world.noaccess");
+									return true;
+								}
 							}
-						}
-						World world = WorldManager.getWorld(worldname);
-						if (world != null) {
-							Location loc = world.getSpawnLocation();
-							for (Position pos : WorldManager.getSpawnPoints(world)) {
-								loc = pos.toLocation();
-								break;
-							}
-							if (sender instanceof Player) {
+							World world = WorldManager.getWorld(worldname);
+							if (world != null) {
+								Location loc = world.getSpawnLocation();
+								for (Position pos : WorldManager.getSpawnPoints(world)) {
+									loc = pos.toLocation();
+									break;
+								}
 								if (Permission.handleTeleport((Player) sender, loc)) {
 									//Success
 								}
 							} else {
-								sender.sendMessage("A player is expected!");
+								message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
 							}
 						} else {
-							message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
+							message(sender, ChatColor.RED + "World not found!");
 						}
 					} else {
-						message(sender, ChatColor.RED + "World not found!");
+						sender.sendMessage("A player is expected!");
 					}
 				} else if (node == "world.setsaving") {
 					//==========================================
@@ -1457,30 +1452,72 @@ public class MyWorlds extends JavaPlugin {
 					//================================================
 					//===============TELEPORT PORTAL COMMAND==========
 					//================================================
-					if (sender instanceof Player) {
-						Player player = (Player) sender;
-						if (args.length == 1) {
-							Location tele = Portal.getPortalLocation(args[0], player.getWorld().getName(), true);
-							if (tele != null) {
-								if (!usePortalTeleportPermissions || Permission.has(player, "portal.teleport." + args[0])) {
-									if (Permission.handleTeleport(player, Portal.fixDot(args[0]), tele)) {
-										//Success
-									}
+					if (args.length >= 1) {
+						Player[] targets = null;
+						String dest = null;
+						if (args.length > 1) {
+							HashSet<Player> found = new HashSet<Player>();
+							for (int i = 0; i < args.length - 1; i++) {
+								Player player = Bukkit.getServer().getPlayer(args[i]);
+								if (player == null) {
+									message(sender, ChatColor.RED + "Player '" + args[i] + "' has not been found!");
 								} else {
-									Localization.message(player, "portal.noaccess");
+									found.add(player);
+								}
+							}
+							targets = found.toArray(new Player[0]);
+							dest = args[args.length - 1];
+						} else if (sender instanceof Player) {
+							targets = new Player[] {(Player) sender};
+							dest = args[0];
+						} else {
+							sender.sendMessage("This command is only for players!");
+							return true;
+						}
+						if (targets.length > 0) {
+							//Get prefered world
+							World world = targets[0].getWorld();
+							if (sender instanceof Player) world = ((Player) sender).getWorld();
+							//Get portal
+							Location tele = Portal.getPortalLocation(dest, world.getName(), true);
+							if (tele != null) {
+								//Perform portal teleports
+								int succcount = 0;
+								for (Player target : targets) {
+									if (Permission.canTeleportPortal(target, dest)) {
+										if (Permission.handleTeleport(target, dest, tele)) {
+											//Success
+											succcount++;
+										}
+									} else {
+										Localization.message(target, "portal.noaccess");
+									}
+								}
+								if (targets.length > 1 || targets[0] != sender) {
+									message(sender, ChatColor.YELLOW.toString() + succcount + "/" + targets.length + 
+											" Players have been teleported to portal '" + dest + "'!");
 								}
 							} else {
 								//Match world
-								String worldname = WorldManager.matchWorld(args[0]);
+								String worldname = WorldManager.matchWorld(dest);
 								if (worldname != null) {
 									World w = WorldManager.getWorld(worldname);
 									if (w != null) {
-										if (!useWorldTeleportPermissions || Permission.has(player, "world.teleport." + w.getName())) {
-											if (Permission.handleTeleport(player, w.getSpawnLocation())) {
-												//Success
+										//Perform world teleports
+										int succcount = 0;
+										for (Player target : targets) {
+											if (Permission.canTeleportWorld(target, w.getName())) {
+												if (Permission.handleTeleport(target, w.getSpawnLocation())) {
+													//Success
+													succcount++;
+												}
+											} else {
+												Localization.message(target, "world.noaccess");
 											}
-										} else {
-											Localization.message(player, "world.noaccess");
+										}
+										if (targets.length > 1 || targets[0] != sender) {
+											message(sender, ChatColor.YELLOW.toString() + succcount + "/" + targets.length + 
+													" Players have been teleported to world '" + w.getName() + "'!");
 										}
 									} else {
 										message(sender, ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
@@ -1490,12 +1527,10 @@ public class MyWorlds extends JavaPlugin {
 									listPortals(sender, Portal.getPortals());
 								}
 							}
-						} else {
-							showInv(sender, node);
-						}	
+						}
 					} else {
-						sender.sendMessage("This command is only for players!");
-					}		
+						showInv(sender, node);
+					}	
 				}
 			} else {
 				Localization.message(sender, "command.nopermission");

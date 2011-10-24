@@ -460,6 +460,7 @@ public class WorldManager {
 			return null;
 		}
 		WorldConfig wc = WorldConfig.get(worldname);
+		wc.chunkGeneratorName = gen;
 		for (i = 0; i < retrycount + 1; i++) {
 			try {
 				Environment env = wc.environment;

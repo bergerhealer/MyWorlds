@@ -14,15 +14,18 @@ public class Localization {
 		return getWorldEnter(w.getName());
 	}
 	public static String getPortalEnter(Portal portal) {
-		return getPortalEnter(portal.getDestinationName());
+		return getPortalEnter(portal.getDestinationName(), portal.getDestinationDisplayName());
 	}	
 	public static String getWorldEnter(String worldname) {
 		String msg = get("world.enter." + worldname, get("world.enter", ""));
 		return msg.replace("%name%", worldname);
 	}
 	public static String getPortalEnter(String portalname) {
+		return getPortalEnter(portalname, portalname);
+	}
+	public static String getPortalEnter(String portalname, String portaldispname) {
 		String msg = get("portal.enter." + portalname, get("portal.enter", ""));
-		return msg.replace("%name%", portalname);
+		return msg.replace("%name%", portaldispname);
 	}
 	
 	public static void message(Object sender, String key) {

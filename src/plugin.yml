@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.21
+version: 1.24
 author: bergerkiller
 commands:
     world:
@@ -92,10 +92,10 @@ permissions:
         default: op
     myworlds.world.teleport.*:
         description: Sets the worlds a player can teleport to using /tpp and /world spawn
-        default: true
+        default: op
     myworlds.world.enter.*:
         description: Sets if the player can enter a certain world through portals
-        default: true;
+        default: op;
     myworlds.portal.create:
         description: Sets if the player can create teleport signs
         default: op
@@ -107,10 +107,10 @@ permissions:
         default: true
     myworlds.portal.teleport.*:
         description: Sets the portals a player can teleport to using /tpp
-        default: true
+        default: op
     myworlds.portal.enter.*:
         description: Sets if the player can enter a certain portal
-        default: true
+        default: op
     myworlds.tpp:
         description: Sets if the player can teleport to worlds or portals
         default: op

@@ -29,6 +29,9 @@ public class Portal {
 		return this.location;
 	}
 	public String getDestinationName() {
+		return fixDot(this.destination);
+	}
+	public String getDestinationDisplayName() {
 		if (this.destdisplayname == null || this.destdisplayname.equals("")) {
 			this.destdisplayname = fixDot(this.destination);
 		}
@@ -61,7 +64,7 @@ public class Portal {
 		}
 		return false;
 	}
-			
+	
 	public void add() {
 		getPortalLocations(location.getWorld().getName()).put(name, new Position(location));
 	}
@@ -71,7 +74,7 @@ public class Portal {
 	public boolean isAdded() {
 		return getPortalLocations(this.location.getWorld().getName()).containsKey(name);
 	}
-
+    
 	/*
 	 * Getters and setters
 	 */
@@ -165,7 +168,7 @@ public class Portal {
 		}
 		return null;
 	}
-
+    
 	public static String[] getPortals() {
 		HashSet<String> names = new HashSet<String>();
 		for (HashMap<String, Position> positions : portallocations.values()) {
@@ -236,7 +239,7 @@ public class Portal {
 		if (loc != null && spawnlocation) return loc.add(0.5, 2, 0.5);
 		return loc;
 	}
-		     
+	
     /*
      * Teleportation and teleport defaults
      */
@@ -249,21 +252,22 @@ public class Portal {
         	if (portal == null) {
         		//Default portals
         		String def = WorldConfig.get(e).defaultPortal;
-        		if (def != null) portal = Portal.get(def);
-        		if (portal == null) {
-        			//world spawn?
-        			World w = WorldManager.getWorld(def);
-        			if (w != null) {
-        				if (Permission.handleTeleport(e, w.getSpawnLocation())) {
-        					MyWorlds.message(e, Localization.getWorldEnter(w));
-        				}
+        		if (def != null) {
+        			Location loc = getPortalLocation(def, e.getWorld().getName(), true);
+        			if (loc == null) {
+        				//world spawn?
+            			World w = WorldManager.getWorld(def);
+            			if (w != null) {
+            				delayedTeleport(null, WorldManager.getSpawnLocation(w), null, e);
+            			} else {
+            				//Additional destinations??
+            			}
         			} else {
-        				//Additional destinations??
+        				delayedTeleport(null, loc, def, e);
         			}
         		}
-        	}
-        	if (portal != null) {
-        		delayedTeleport(portal, e);
+        	} else {
+        		delayedTeleport(portal, null, null, e);
         	}
     	}
         portaltimes.put(e, currtime);
@@ -271,23 +275,35 @@ public class Portal {
     private static class TeleportCommand {
     	public Entity e;
     	public Portal portal;
-    	public TeleportCommand(Entity e, Portal portal) {
+    	public Location dest;
+    	public String name;
+    	public TeleportCommand(Entity e, Portal portal, Location dest, String name) {
     		this.e = e;
     		this.portal = portal;
+    		this.dest = dest;
+    		this.name = name;
     	}
     }
-    public static void delayedTeleport(Portal portal, Entity e) {
-    	teleportations.add(new TeleportCommand(e, portal));
+    public static void delayedTeleport(Portal portal, Location dest, String destname, Entity e) {
+    	teleportations.add(new TeleportCommand(e, portal, dest, destname));
     	MyWorlds.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MyWorlds.plugin, new Runnable() {
     	    public void run() {
     	    	TeleportCommand telec = teleportations.remove(0);
-	    		if (telec.portal.hasDestination()) {
-	    			if (Permission.handleTeleport(telec.e, telec.portal)) {
-	    				//Success
-	    			}
-    			} else {
-    				MyWorlds.message(telec.e, Localization.get("portal.nodestination"));
-    			}
+    	    	if (telec.portal == null) {
+    	    		if (telec.name == null) {
+    	    			Permission.handleTeleport(telec.e, telec.dest);
+    	    		} else {
+    	    			Permission.handleTeleport(telec.e, telec.name, telec.dest);
+    	    		}
+    	    	} else {
+    	    		if (telec.portal.hasDestination()) {
+    	    			if (Permission.handleTeleport(telec.e, telec.portal)) {
+    	    				//Success
+    	    			}
+        			} else {
+        				MyWorlds.message(telec.e, Localization.get("portal.nodestination"));
+        			}
+    	    	}
     	    }
     	}, 0L);
     }
