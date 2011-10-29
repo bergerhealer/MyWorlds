@@ -16,7 +16,7 @@ import com.nijiko.permissions.PermissionHandler;
 public class Permission {
 	private static PermissionHandler permissionHandler = null; //Permissions 3.* ONLY
 	public static void init(JavaPlugin plugin) {
-		if (MyWorlds.usePermissions) {
+		if (MyWorlds.usePermissions.get()) {
 			Plugin permissionsPlugin = plugin.getServer().getPluginManager().getPlugin("Permissions");
 			if (permissionsPlugin == null) {
 				MyWorlds.log(Level.WARNING, "Permission system not detected, defaulting to build-in permissions!");
@@ -91,20 +91,20 @@ public class Permission {
 	}
 	public static boolean canEnterPortal(Player player, String portalname) {
 		if (!has(player, "portal.use")) return false;
-		if (!MyWorlds.usePortalEnterPermissions) return true;	
+		if (!MyWorlds.usePortalEnterPermissions.get()) return true;	
 		return has(player, "portal.enter." + portalname) || has(player, "portal.enter.*");
 	}
 	public static boolean canEnterWorld(Player player, String worldname) {
-		if (!MyWorlds.useWorldEnterPermissions) return true;
+		if (!MyWorlds.useWorldEnterPermissions.get()) return true;
 		return has(player, "world.enter." + worldname) || has(player, "world.enter.*");
 	}
 	
 	public static boolean canTeleportPortal(Player player, String portalname) {
-		if (!MyWorlds.usePortalTeleportPermissions) return true;
+		if (!MyWorlds.usePortalTeleportPermissions.get()) return true;
 		return has(player, "portal.teleport." + portalname) || has(player, "portal.teleport.*");
 	}
 	public static boolean canTeleportWorld(Player player, String worldname) {
-		if (!MyWorlds.useWorldTeleportPermissions) return true;
+		if (!MyWorlds.useWorldTeleportPermissions.get()) return true;
 		return has(player, "world.teleport." + worldname) || has(player, "world.teleport.*");
 	}
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import org.bukkit.Chunk;
@@ -243,11 +244,19 @@ public class Portal {
     /*
      * Teleportation and teleport defaults
      */
-    private static HashMap<Entity, Long> portaltimes = new HashMap<Entity, Long>();
+    private static WeakHashMap<Entity, Long> portaltimes = new WeakHashMap<Entity, Long>();
     private static ArrayList<TeleportCommand> teleportations = new ArrayList<TeleportCommand>();  
     public static void handlePortalEnter(Entity e) {
         long currtime = System.currentTimeMillis();
-        if (!portaltimes.containsKey(e) || currtime - portaltimes.get(e) >= MyWorlds.teleportInterval) {
+    	long lastteleport;
+    	if (portaltimes.containsKey(e)) {
+    		lastteleport = portaltimes.get(e);
+    	} else {
+    		lastteleport = currtime - MyWorlds.teleportInterval.get();
+    		portaltimes.put(e, lastteleport);
+    	}
+        if (currtime - lastteleport >= MyWorlds.teleportInterval.get()) {
+        	portaltimes.put(e, currtime);
         	Portal portal = get(e.getLocation(), 5);  	
         	if (portal == null) {
         		//Default portals
@@ -270,7 +279,6 @@ public class Portal {
         		delayedTeleport(portal, null, null, e);
         	}
     	}
-        portaltimes.put(e, currtime);
     }
     private static class TeleportCommand {
     	public Entity e;

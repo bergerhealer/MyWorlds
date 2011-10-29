@@ -25,7 +25,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -179,6 +178,7 @@ public class WorldManager {
 			try {
 				String mainclass = plugin.getDescription().getMain();
 				Class cmain = Class.forName(mainclass);
+				if (cmain == null) continue;
 				if (cmain.getMethod("getDefaultWorldGenerator", String.class, String.class).getDeclaringClass() != JavaPlugin.class) {
 					gens.add(plugin.getDescription().getName());
 				}
@@ -443,12 +443,6 @@ public class WorldManager {
 		final int retrycount = 3;
 		World w = null;
 		int i = 0;
-		boolean useDepr = false;
-		try {
-			Class.forName("org.bukkit.WorldCreator");
-		} catch (Exception ex) {
-			useDepr = true;
-		}
 		ChunkGenerator cgen = null;
 		try {
 			if (gen != null) {
@@ -463,16 +457,11 @@ public class WorldManager {
 		wc.chunkGeneratorName = gen;
 		for (i = 0; i < retrycount + 1; i++) {
 			try {
-				Environment env = wc.environment;
-				if (useDepr) {
-					Bukkit.getServer().createWorld(worldname, env, seed, cgen);
-				} else {
-					WorldCreator c = new WorldCreator(worldname);
-					c.environment(env);
-					c.seed(seed);
-					c.generator(cgen);
-					w = c.createWorld();
-				}
+				WorldCreator c = new WorldCreator(worldname);
+				c.environment(wc.environment);
+				c.seed(seed);
+				c.generator(cgen);
+				w = c.createWorld();
 			} catch (Exception ex) {
 				MyWorlds.log(Level.WARNING, "World load issue: " + ex.getMessage());
 			}

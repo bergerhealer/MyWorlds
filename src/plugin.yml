@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.24
+version: 1.26
 author: bergerkiller
 commands:
     world:

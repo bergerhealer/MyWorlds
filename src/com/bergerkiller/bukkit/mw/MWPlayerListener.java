@@ -53,7 +53,7 @@ public class MWPlayerListener extends PlayerListener {
 	public void onPlayerMove(PlayerMoveEvent event) {
 		if (!event.isCancelled()) {
 			Block b = event.getTo().getBlock();
-			if (MyWorlds.useWaterTeleport && b.getTypeId() == 9) {
+			if (MyWorlds.useWaterTeleport.get() && b.getTypeId() == 9) {
 				if (b.getRelative(BlockFace.UP).getTypeId() == 9 ||
 						b.getRelative(BlockFace.DOWN).getTypeId() == 9) {
 					boolean allow = false;

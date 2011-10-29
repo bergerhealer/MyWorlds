@@ -22,19 +22,19 @@ import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
+import com.bergerkiller.bukkit.mw.Configuration.Property;
 
 public class MyWorlds extends JavaPlugin {
-	public static boolean usePermissions = false;
-	public static int teleportInterval = 2000;
-	public static boolean useWaterTeleport = true;
-	public static int timeLockInterval = 20;
-	public static boolean useWorldEnterPermissions = false;
-	public static boolean usePortalEnterPermissions = false;
-	public static boolean useWorldTeleportPermissions = false;
-	public static boolean usePortalTeleportPermissions = false;
-	public static boolean allowPortalNameOverride = false;
-	public static boolean useWorldOperators = false;
+	public static Property<Boolean> usePermissions;
+	public static Property<Integer> teleportInterval;
+	public static Property<Boolean> useWaterTeleport;
+	public static Property<Integer> timeLockInterval;
+	public static Property<Boolean> useWorldEnterPermissions;
+	public static Property<Boolean> usePortalEnterPermissions;
+	public static Property<Boolean> useWorldTeleportPermissions;
+	public static Property<Boolean> usePortalTeleportPermissions;
+	public static Property<Boolean> allowPortalNameOverride;
+	public static Property<Boolean> useWorldOperators;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -71,36 +71,24 @@ public class MyWorlds extends JavaPlugin {
         pm.registerEvent(Event.Type.WORLD_INIT, worldListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.WEATHER_CHANGE, weatherListener, Priority.Highest, this); 
         
-        String locale = "default";
+
         
-        Configuration config = getConfiguration();
-        usePermissions = config.getBoolean("usePermissions", usePermissions);
-        teleportInterval = config.getInt("teleportInterval", teleportInterval);
-        useWaterTeleport = config.getBoolean("useWaterTeleport", useWaterTeleport);
-        timeLockInterval = config.getInt("timeLockInterval", timeLockInterval);
-        useWorldEnterPermissions = config.getBoolean("useWorldEnterPermissions", useWorldEnterPermissions);
-        usePortalEnterPermissions = config.getBoolean("usePortalEnterPermissions", usePortalEnterPermissions);
-        useWorldTeleportPermissions = config.getBoolean("useWorldTeleportPermissions", useWorldTeleportPermissions);
-        usePortalTeleportPermissions = config.getBoolean("usePortalTeleportPermissions", usePortalTeleportPermissions);
-        allowPortalNameOverride = config.getBoolean("allowPortalNameOverride", allowPortalNameOverride);
-        useWorldOperators = config.getBoolean("useWorldOperators", useWorldOperators);
-        locale = config.getString("locale", locale);
-        
-        config.setProperty("usePermissions", usePermissions);
-        config.setProperty("teleportInterval", teleportInterval);
-        config.setProperty("useWaterTeleport", useWaterTeleport);
-        config.setProperty("timeLockInterval", timeLockInterval);
-        config.setProperty("useWorldEnterPermissions", useWorldEnterPermissions);
-        config.setProperty("usePortalEnterPermissions", usePortalEnterPermissions);
-        config.setProperty("useWorldTeleportPermissions", useWorldTeleportPermissions);
-        config.setProperty("usePortalTeleportPermissions", usePortalTeleportPermissions);
-        config.setProperty("allowPortalNameOverride", allowPortalNameOverride);
-        config.setProperty("useWorldOperators", useWorldOperators);
-        config.setProperty("locale", locale);
-        config.save();
+        Configuration config = new Configuration(this);
+        usePermissions = config.getProperty("usePermissions", false);
+        teleportInterval = config.getProperty("teleportInterval", 2000);
+        useWaterTeleport = config.getProperty("useWaterTeleport", true);
+        timeLockInterval = config.getProperty("timeLockInterval", 20);
+        useWorldEnterPermissions = config.getProperty("useWorldEnterPermissions", false);
+        usePortalEnterPermissions = config.getProperty("usePortalEnterPermissions", false);
+        useWorldTeleportPermissions = config.getProperty("useWorldTeleportPermissions", false);
+        usePortalTeleportPermissions = config.getProperty("usePortalTeleportPermissions", false);
+        allowPortalNameOverride = config.getProperty("allowPortalNameOverride", false);
+        useWorldOperators = config.getProperty("useWorldOperators", false);
+        Property<String> locale = config.getProperty("locale", "default");
+        config.init();
         
         //Localization
-        Localization.init(this, locale);
+        Localization.init(this, locale.get());
         
         //Permissions
 		Permission.init(this);
@@ -1230,20 +1218,20 @@ public class MyWorlds extends JavaPlugin {
 							}
 							long seedval = WorldManager.getRandomSeed(seed);
 							notifyConsole(sender, "Issued a world creation command for world: " + worldname);
+					        WorldConfig.remove(worldname);
 							if (gen == null) {
 								message(sender, ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
 							} else {
-								gen = WorldManager.fixGeneratorName(gen);
-								if (gen == null) {
+								String fixgen = WorldManager.fixGeneratorName(gen);
+								if (fixgen == null) {
 									message(sender, ChatColor.RED + "Failed to create world because the generator '" + gen + "' is missing!");
 								} else {
-									WorldManager.setGenerator(worldname, gen);
-									message(sender, ChatColor.YELLOW + "Creating world '" + worldname + "' using generator '" + gen + "' (this can take a while) ...");
+									WorldManager.setGenerator(worldname, fixgen);
+									message(sender, ChatColor.YELLOW + "Creating world '" + worldname + "' using generator '" + fixgen + "' (this can take a while) ...");
 								}
 							}
 					        message(sender, ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
 					        MWWorldListener.ignoreWorld(worldname);
-					        WorldConfig.remove(worldname);
 					        World world = WorldManager.createWorld(worldname, seedval);
 							if (world != null) {
 								//load chunks
@@ -1323,15 +1311,8 @@ public class MyWorlds extends JavaPlugin {
 					//===============SPAWN COMMAND===============
 					//===========================================
 					if (sender instanceof Player) {
-						Player player = (Player) sender;
 						String worldname = WorldManager.getWorldName(sender, args, args.length >= 2);
 						if (worldname != null) {
-							if (args.length >= 2) {
-								if (Permission.canTeleportWorld(player, worldname)) {
-									Localization.message(sender, "world.noaccess");
-									return true;
-								}
-							}
 							World world = WorldManager.getWorld(worldname);
 							if (world != null) {
 								Location loc = world.getSpawnLocation();
@@ -1417,6 +1398,7 @@ public class MyWorlds extends JavaPlugin {
 						if (WorldManager.worldExists(worldname)) {
 							if (!WorldManager.isLoaded(worldname)) {
 								notifyConsole(sender, "Issued a world deletion command for world: " + worldname);
+								WorldConfig.remove(worldname);
 								AsyncHandler.delete(sender, worldname);
 							} else {
 								message(sender, ChatColor.RED + "World is loaded, please unload the world first!");

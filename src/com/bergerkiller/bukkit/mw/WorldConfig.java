@@ -18,7 +18,6 @@ import org.bukkit.World.Environment;
 import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.util.config.Configuration;
 
 public class WorldConfig {	
 	private static HashMap<String, WorldConfig> config = new HashMap<String, WorldConfig>();
@@ -43,10 +42,10 @@ public class WorldConfig {
 		return config.values();
 	}
 	public static void loadAll(String filename) {
-		Configuration config = new Configuration(new File(filename));
+		Configuration config = new Configuration(filename);
 		config.load();
 		String[] worlds = WorldManager.getWorlds();
-		for (String worldname : config.getKeys()) {
+		for (String worldname : config.getKeys(false)) {
 			for (String world : worlds) {
 				if (world.equalsIgnoreCase(worldname)) {
 					new WorldConfig(worldname, config);
@@ -67,8 +66,8 @@ public class WorldConfig {
 	}
 	public static void saveAll(String filename) {
 		Configuration config = new Configuration(new File(filename));
-		for (String key : config.getKeys()) {
-			config.removeProperty(key);
+		for (String key : config.getKeys(false)) {
+			config.set(key, null);
 		}
 		for (WorldConfig wc : all()) {
 			wc.save(config);
@@ -98,7 +97,7 @@ public class WorldConfig {
 		}
 		this.holdWeather = config.getBoolean(worldname + "holdWeather", false);
 		this.pvp = config.getBoolean(worldname + "pvp", this.pvp);
-		for (String type : config.getStringList(worldname + "deniedCreatures", new ArrayList<String>())) {
+		for (String type : config.getListOf(worldname + "deniedCreatures", new ArrayList<String>())) {
 			type = type.toUpperCase();
 			if (type.equals("ANIMALS")) {
 				this.spawnControl.setAnimals(true);
@@ -116,7 +115,7 @@ public class WorldConfig {
 			this.timeControl.setLocking(true);
     	}
     	this.defaultPortal = config.getString(worldname + "defaultPortal", null);
-    	this.OPlist = config.getStringList(worldname + "operators", this.OPlist);
+    	this.OPlist = config.getListOf(worldname + "operators", this.OPlist);
 	}
 	public WorldConfig(String worldname) {
 		this.worldname = worldname.toLowerCase();
@@ -165,7 +164,7 @@ public class WorldConfig {
 		}
 	}
 	public void updateOP(Player player) {
-		if (MyWorlds.useWorldOperators) {
+		if (MyWorlds.useWorldOperators.get()) {
 			boolean op = this.isOP(player);
 			if (op != player.isOp()) {
 				player.setOp(op);
@@ -178,7 +177,7 @@ public class WorldConfig {
 		}
 	}
 	public void updateOP(World world) {
-		if (MyWorlds.useWorldOperators) {
+		if (MyWorlds.useWorldOperators.get()) {
 			for (Player p : world.getPlayers()) updateOP(p);
 		}
 	}
@@ -249,43 +248,35 @@ public class WorldConfig {
 		}
 		
 		String worldname = this.worldname + ".";
-		config.setProperty(worldname + "loaded", WorldManager.isLoaded(this.worldname));
-		config.setProperty(worldname + "keepSpawnLoaded", this.keepSpawnInMemory);
-		config.setProperty(worldname + "environment", this.environment.toString());
-		if (this.chunkGeneratorName != null) {
-			config.setProperty(worldname + "chunkGenerator", this.chunkGeneratorName);
-		} else {
-			config.removeProperty(worldname + "chunkGenerator");
-		}
+		config.set(worldname + "loaded", WorldManager.isLoaded(this.worldname));
+		config.set(worldname + "keepSpawnLoaded", this.keepSpawnInMemory);
+		config.set(worldname + "environment", this.environment.toString());
+		config.set(worldname + "chunkGenerator", this.chunkGeneratorName);
 		if (this.gameMode == null) {
-			config.setProperty(worldname + "gamemode", "NONE");
+			config.set(worldname + "gamemode", "NONE");
 		} else {
-			config.setProperty(worldname + "gamemode", this.gameMode.toString());
+			config.set(worldname + "gamemode", this.gameMode.toString());
 		}
 		
 		if (this.timeControl.locker != null && this.timeControl.locker.isRunning()) {
-			config.setProperty(worldname + "lockedtime", this.timeControl.locker.time);
+			config.set(worldname + "lockedtime", this.timeControl.locker.time);
 		} else {
-			config.removeProperty(worldname + "lockedtime");
+			config.set(worldname + "lockedtime", null);
 		}
 
 		ArrayList<String> creatures = new ArrayList<String>();
 		for (CreatureType type : this.spawnControl.deniedCreatures) {
 			creatures.add(type.name());
 		}
-	    if (this.defaultPortal == null) {
-	    	config.removeProperty(worldname + "defaultPortal");
-	    } else {
-	    	config.setProperty(worldname + "defaultPortal", this.defaultPortal);
-	    }
-	    config.setProperty(worldname + "operators", this.OPlist);
-		config.setProperty(worldname + "deniedCreatures", creatures);
-		config.setProperty(worldname + "holdWeather", this.holdWeather);
-		config.setProperty(worldname + "difficulty", this.difficulty.toString());
-		config.setProperty(worldname + "spawn.world", this.spawnPoint.getWorldName());
-		config.setProperty(worldname + "spawn.x", this.spawnPoint.getX());
-		config.setProperty(worldname + "spawn.y", this.spawnPoint.getY());
-		config.setProperty(worldname + "spawn.z", this.spawnPoint.getZ());
+		config.set(worldname + "defaultPortal", this.defaultPortal);
+	    config.set(worldname + "operators", this.OPlist);
+		config.set(worldname + "deniedCreatures", creatures);
+		config.set(worldname + "holdWeather", this.holdWeather);
+		config.set(worldname + "difficulty", this.difficulty.toString());
+		config.set(worldname + "spawn.world", this.spawnPoint.getWorldName());
+		config.set(worldname + "spawn.x", this.spawnPoint.getX());
+		config.set(worldname + "spawn.y", this.spawnPoint.getY());
+		config.set(worldname + "spawn.z", this.spawnPoint.getZ());
 	}
 	
 }

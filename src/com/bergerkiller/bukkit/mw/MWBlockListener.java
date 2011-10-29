@@ -46,7 +46,7 @@ public class MWBlockListener extends BlockListener {
     		if (portal != null) {
     			if (Permission.has(event.getPlayer(), "portal.create")) {
     				if (Portal.exists(event.getPlayer().getWorld().getName(), portal.getName())) {
-    					if (!MyWorlds.allowPortalNameOverride || !Permission.has(event.getPlayer(), "portal.override")) {
+    					if (!MyWorlds.allowPortalNameOverride.get() || !Permission.has(event.getPlayer(), "portal.override")) {
     						event.getPlayer().sendMessage(ChatColor.RED + "This portal name is already used!");
     						event.setCancelled(true);
     						return;
