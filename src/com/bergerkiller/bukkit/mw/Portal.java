@@ -252,10 +252,10 @@ public class Portal {
     	if (portaltimes.containsKey(e)) {
     		lastteleport = portaltimes.get(e);
     	} else {
-    		lastteleport = currtime - MyWorlds.teleportInterval.get();
+    		lastteleport = currtime - MyWorlds.teleportInterval;
     		portaltimes.put(e, lastteleport);
     	}
-        if (currtime - lastteleport >= MyWorlds.teleportInterval.get()) {
+        if (currtime - lastteleport >= MyWorlds.teleportInterval) {
         	portaltimes.put(e, currtime);
         	Portal portal = get(e.getLocation(), 5);  	
         	if (portal == null) {

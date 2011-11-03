@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.26
+version: 1.28
 author: bergerkiller
 commands:
     world:
@@ -17,6 +17,9 @@ permissions:
         default: op
     myworlds.world.info:
         description: Sets if the player can see world information, such as the seed and size
+        default: op
+    myworlds.world.config:
+        description: Sets if the player can manually load and save the world configuration
         default: op
     myworlds.world.portals:
         description: Sets if the player can list all portals on the server
@@ -96,6 +99,12 @@ permissions:
     myworlds.world.enter.*:
         description: Sets if the player can enter a certain world through portals
         default: op;
+    myworlds.world.build.*:
+        description: Sets if the player can build in a certain world
+        default: op
+    myworlds.world.use.*:
+        description: Sets if the player can interact with blocks in a certain world
+        default: op
     myworlds.portal.create:
         description: Sets if the player can create teleport signs
         default: op

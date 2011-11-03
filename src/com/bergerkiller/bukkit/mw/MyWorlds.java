@@ -22,19 +22,20 @@ import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import com.bergerkiller.bukkit.mw.Configuration.Property;
 
 public class MyWorlds extends JavaPlugin {
-	public static Property<Boolean> usePermissions;
-	public static Property<Integer> teleportInterval;
-	public static Property<Boolean> useWaterTeleport;
-	public static Property<Integer> timeLockInterval;
-	public static Property<Boolean> useWorldEnterPermissions;
-	public static Property<Boolean> usePortalEnterPermissions;
-	public static Property<Boolean> useWorldTeleportPermissions;
-	public static Property<Boolean> usePortalTeleportPermissions;
-	public static Property<Boolean> allowPortalNameOverride;
-	public static Property<Boolean> useWorldOperators;
+	public static boolean usePermissions;
+	public static int teleportInterval;
+	public static boolean useWaterTeleport;
+	public static int timeLockInterval;
+	public static boolean useWorldEnterPermissions;
+	public static boolean usePortalEnterPermissions;
+	public static boolean useWorldTeleportPermissions;
+	public static boolean usePortalTeleportPermissions;
+	public static boolean useWorldBuildPermissions;
+	public static boolean useWorldUsePermissions;
+	public static boolean allowPortalNameOverride;
+	public static boolean useWorldOperators;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -59,12 +60,14 @@ public class MyWorlds extends JavaPlugin {
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Event.Type.ENTITY_PORTAL_ENTER, entityListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.CREATURE_SPAWN, entityListener, Priority.Lowest, this);
-        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.BLOCK_PLACE, blockListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.BLOCK_PHYSICS, blockListener, Priority.Highest, this); 
         pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLAYER_INTERACT, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
         pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_UNLOAD, worldListener, Priority.Monitor, this);  
@@ -74,21 +77,24 @@ public class MyWorlds extends JavaPlugin {
 
         
         Configuration config = new Configuration(this);
-        usePermissions = config.getProperty("usePermissions", false);
-        teleportInterval = config.getProperty("teleportInterval", 2000);
-        useWaterTeleport = config.getProperty("useWaterTeleport", true);
-        timeLockInterval = config.getProperty("timeLockInterval", 20);
-        useWorldEnterPermissions = config.getProperty("useWorldEnterPermissions", false);
-        usePortalEnterPermissions = config.getProperty("usePortalEnterPermissions", false);
-        useWorldTeleportPermissions = config.getProperty("useWorldTeleportPermissions", false);
-        usePortalTeleportPermissions = config.getProperty("usePortalTeleportPermissions", false);
-        allowPortalNameOverride = config.getProperty("allowPortalNameOverride", false);
-        useWorldOperators = config.getProperty("useWorldOperators", false);
-        Property<String> locale = config.getProperty("locale", "default");
-        config.init();
+        config.load();
+        usePermissions = config.parse("usePermissions", false);
+        teleportInterval = config.parse("teleportInterval", 2000);
+        useWaterTeleport = config.parse("useWaterTeleport", true);
+        timeLockInterval = config.parse("timeLockInterval", 20);
+        useWorldEnterPermissions = config.parse("useWorldEnterPermissions", false);
+        usePortalEnterPermissions = config.parse("usePortalEnterPermissions", false);
+        useWorldTeleportPermissions = config.parse("useWorldTeleportPermissions", false);
+        usePortalTeleportPermissions = config.parse("usePortalTeleportPermissions", false);
+        useWorldBuildPermissions = config.parse("useWorldBuildPermissions", false);
+        useWorldUsePermissions = config.parse("useWorldUsePermissions", false);
+        allowPortalNameOverride = config.parse("allowPortalNameOverride", false);
+        useWorldOperators = config.parse("useWorldOperators", false);
+        String locale = config.parse("locale", "default");
+        config.save();
         
         //Localization
-        Localization.init(this, locale.get());
+        Localization.init(this, locale);
         
         //Permissions
 		Permission.init(this);
@@ -341,6 +347,10 @@ public class MyWorlds extends JavaPlugin {
 					node = "world.setsaving";
 				} else if (args[0].equalsIgnoreCase("autosave")) {
 					node = "world.setsaving";
+				} else if (args[0].equalsIgnoreCase("config")) {
+					node = "world.config";
+				} else if (args[0].equalsIgnoreCase("cfg")) {
+					node = "world.config";
 				}
 			}
 			if (node == null) {
@@ -582,6 +592,23 @@ public class MyWorlds extends JavaPlugin {
 						}
 					} else {
 						message(sender, ChatColor.RED + "World not found!");
+					}
+				} else if (node == "world.config") {
+					//==========================================
+					//===============CONFIG COMMAND=============
+					//==========================================
+					if (args.length == 2) {
+						if (args[1].equalsIgnoreCase("load")) {
+							WorldConfig.loadAll(root() + "worlds.yml");
+							message(sender, ChatColor.GREEN + "World configuration has been loaded!");
+						} else if (args[1].equalsIgnoreCase("save")) {
+							WorldConfig.saveAll(root() + "worlds.yml");
+							message(sender, ChatColor.GREEN + "World configuration has been saved!");
+						} else {
+							this.showInv(sender, node);
+						}
+					} else {
+						this.showInv(sender, node);
 					}
 				} else if (node == "world.difficulty") {
 					//=========================================

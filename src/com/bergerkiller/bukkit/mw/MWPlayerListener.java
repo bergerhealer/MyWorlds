@@ -1,9 +1,13 @@
 package com.bergerkiller.bukkit.mw;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.event.Event.Result;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -21,6 +25,37 @@ public class MWPlayerListener extends PlayerListener {
 			b = b.getRelative(direction);
 			--maxwidth;
 			if (maxwidth <= 0) return false;
+		}
+	}
+	
+	@Override
+	public void onPlayerInteract(PlayerInteractEvent event) {
+		if (event.isCancelled()) return;
+		if (event.useInteractedBlock() == Result.DENY) return;
+		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+			Material type = event.getClickedBlock().getType();
+			switch (type) {
+			case LEVER : break;
+			case WOODEN_DOOR : break;
+			case IRON_DOOR : break;
+			case TRAP_DOOR : break;
+			case CHEST : break;
+			case FURNACE : break;
+			case BURNING_FURNACE : break;
+			case DISPENSER : break;
+			case WORKBENCH : break;
+			case DIODE_BLOCK_ON : break;
+			case DIODE_BLOCK_OFF : break;	
+			case BED : break;
+			case CAKE : break;
+			case NOTE_BLOCK : break;
+			case JUKEBOX : break;
+			default : return;
+			}
+			if (!Permission.canUse(event.getPlayer())) {
+				event.getPlayer().sendMessage(ChatColor.RED + "You are not allowed to use this in this world!");
+				event.setUseInteractedBlock(Result.DENY);
+			}
 		}
 	}
 	
@@ -53,7 +88,7 @@ public class MWPlayerListener extends PlayerListener {
 	public void onPlayerMove(PlayerMoveEvent event) {
 		if (!event.isCancelled()) {
 			Block b = event.getTo().getBlock();
-			if (MyWorlds.useWaterTeleport.get() && b.getTypeId() == 9) {
+			if (MyWorlds.useWaterTeleport && b.getTypeId() == 9) {
 				if (b.getRelative(BlockFace.UP).getTypeId() == 9 ||
 						b.getRelative(BlockFace.DOWN).getTypeId() == 9) {
 					boolean allow = false;

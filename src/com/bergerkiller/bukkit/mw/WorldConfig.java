@@ -22,8 +22,7 @@ import org.bukkit.entity.Player;
 public class WorldConfig {	
 	private static HashMap<String, WorldConfig> config = new HashMap<String, WorldConfig>();
 	public static WorldConfig get(String worldname) {
-		worldname = worldname.toLowerCase();
-		WorldConfig c = config.get(worldname);
+		WorldConfig c = config.get(worldname.toLowerCase());
 		if (c == null) {
 			c = new WorldConfig(worldname);
 		}
@@ -80,7 +79,7 @@ public class WorldConfig {
 	
 	public WorldConfig(String worldname, Configuration config) {
 		this(worldname);
-		worldname = worldname.toLowerCase() + ".";
+		worldname += ".";
 		this.keepSpawnInMemory = config.getBoolean(worldname + "keepSpawnLoaded", this.keepSpawnInMemory);
 		this.environment = Util.parseEnvironment(config.getString(worldname + "environment"), this.environment);
 		this.chunkGeneratorName = config.getString(worldname + "chunkGenerator", null);
@@ -118,8 +117,9 @@ public class WorldConfig {
     	this.OPlist = config.getListOf(worldname + "operators", this.OPlist);
 	}
 	public WorldConfig(String worldname) {
-		this.worldname = worldname.toLowerCase();
-		config.put(this.worldname, this);
+		this.worldname = worldname;
+		worldname = worldname.toLowerCase();
+		config.put(worldname, this);
 		World world = this.getWorld();
 		if (world != null) {
 			this.keepSpawnInMemory = world.getKeepSpawnInMemory();
@@ -130,7 +130,7 @@ public class WorldConfig {
 			this.autosave = world.isAutoSave();
 		} else {
 			this.keepSpawnInMemory = true;
-			this.environment = Util.parseEnvironment(this.worldname, Environment.NORMAL);
+			this.environment = Util.parseEnvironment(worldname, Environment.NORMAL);
 			this.difficulty = Difficulty.NORMAL;
 			this.spawnPoint = new Position(worldname, 0, 64, 0);
 			this.pvp = true;
@@ -164,7 +164,7 @@ public class WorldConfig {
 		}
 	}
 	public void updateOP(Player player) {
-		if (MyWorlds.useWorldOperators.get()) {
+		if (MyWorlds.useWorldOperators) {
 			boolean op = this.isOP(player);
 			if (op != player.isOp()) {
 				player.setOp(op);
@@ -177,7 +177,7 @@ public class WorldConfig {
 		}
 	}
 	public void updateOP(World world) {
-		if (MyWorlds.useWorldOperators.get()) {
+		if (MyWorlds.useWorldOperators) {
 			for (Player p : world.getPlayers()) updateOP(p);
 		}
 	}

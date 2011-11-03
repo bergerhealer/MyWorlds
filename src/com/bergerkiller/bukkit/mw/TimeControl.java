@@ -146,7 +146,7 @@ public class TimeControl {
 			this.id = -1;
 		}
 		public boolean start() {
-			return this.start(MyWorlds.timeLockInterval.get());
+			return this.start(MyWorlds.timeLockInterval);
 		}
 		public boolean start(long interval) {
 			this.w = WorldManager.getWorld(this.worldname);
