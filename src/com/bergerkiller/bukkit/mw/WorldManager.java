@@ -43,7 +43,7 @@ import com.bergerkiller.bukkit.mw.Tag.Type;
 public class WorldManager {
 	private static HashMap regionfiles;
 	private static Field rafField;
-	public static boolean initRegionFiles() {
+	public static boolean init() {
 		try {
         	Field a = net.minecraft.server.RegionFileCache.class.getDeclaredField("a");
         	a.setAccessible(true);
@@ -59,6 +59,13 @@ public class WorldManager {
 			t.printStackTrace();
 			return false;
 		}
+	}
+	public static void deinit() {
+		regionfiles = null;
+		rafField = null;
+		serverfolder = null;
+		redstoneInfo = null;
+		tickListField = null;
 	}
 	
 	@SuppressWarnings("unchecked")

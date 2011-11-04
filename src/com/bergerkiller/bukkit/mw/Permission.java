@@ -4,7 +4,6 @@ import java.util.logging.Level;
 
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -28,20 +27,17 @@ public class Permission {
 			MyWorlds.log(Level.INFO, "Using build-in 'Bukkit SuperPerms' as permissions plugin!");;
 		}
 	}
-	public static boolean has(CommandSender sender, String command) {
-		if (sender instanceof Player) {
-			Player player = (Player) sender;
-			if (permissionHandler != null) {
-				//Permissions 3.*
-				return permissionHandler.has(player, "myworlds." + command);
-			} else {
-				//Build-in permissions
-				return ((Player) sender).hasPermission("myworlds." + command);
-			}
+	public static void deinit() {
+		permissionHandler = null;
+	}
+	
+	public static boolean has(Player player, String command) {
+		if (permissionHandler != null) {
+			//Permissions 3.*
+			return permissionHandler.has(player, "myworlds." + command);
 		} else {
-			if (command.equalsIgnoreCase("world.spawn")) return false;
-			if (command.equalsIgnoreCase("tpp")) return false;
-			return true;
+			//Build-in permissions
+			return player.hasPermission("myworlds." + command);
 		}
 	}
 		

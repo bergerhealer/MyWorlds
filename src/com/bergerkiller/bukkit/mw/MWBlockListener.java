@@ -29,7 +29,7 @@ public class MWBlockListener extends BlockListener {
             	Portal portal = Portal.get(event.getBlock(), false);
             	if (portal != null && portal.remove()) {
             		event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
-            		MyWorlds.notifyConsole(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
+            		Util.notifyConsole(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
             	}
     		} else {
     			event.getPlayer().sendMessage(ChatColor.RED + "You are not allowed to break blocks in this world!");
@@ -69,7 +69,7 @@ public class MWBlockListener extends BlockListener {
     					}
     				}
     				portal.add();
-    				MyWorlds.notifyConsole(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
+    				Util.notifyConsole(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
     				if (portal.hasDestination()) {
     	    			event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + portal.getDestinationName() + ChatColor.GREEN + "!");
     				} else {

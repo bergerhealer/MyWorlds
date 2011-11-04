@@ -19,6 +19,11 @@ public class LoadChunksTask implements Runnable {
 			taskid = -1;
 		}
 	}
+	public static void deinit() {
+		abort();
+		remaining.clear();
+		remaining = null;
+	}
 	
 	private static Queue<ChunkCoord> remaining = new LinkedList<ChunkCoord>();
 	public static void add(World world, int cx, int cz) {

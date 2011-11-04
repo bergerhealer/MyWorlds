@@ -1,10 +1,14 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.ArrayList;
+import java.util.logging.Level;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
 import org.bukkit.GameMode;
 import org.bukkit.World.Environment;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 public class Util {
 
@@ -75,6 +79,52 @@ public class Util {
 		if (name.equals("disable")) return true;
 		return false;
 	}
+	
+	public static void message(Object sender, String message) {
+		if (message != null && message.length() > 0) {
+			if (sender instanceof CommandSender) {
+				if (!(sender instanceof Player)) {
+					message = ChatColor.stripColor(message);
+				}
+				for (String line : message.split("\n")) {
+					((CommandSender) sender).sendMessage(line);
+				}
+			}
+		}
+	}
+	
+	public static void notifyConsole(CommandSender sender, String message) {
+		if (sender instanceof Player) {
+			MyWorlds.log(Level.INFO, ((Player) sender).getName() + " " + message);
+		}
+	}
+	
+	public static String[] convertArgs(String[] args) {
+		ArrayList<String> tmpargs = new ArrayList<String>();
+		boolean isCommenting = false;
+		for (String arg : args) {
+			if (!isCommenting && (arg.startsWith("\"") || arg.startsWith("'"))) {
+				if (arg.endsWith("\"") && arg.length() > 1) {
+					tmpargs.add(arg.substring(1, arg.length() - 1));
+				} else {
+					isCommenting = true;
+					tmpargs.add(arg.substring(1));
+				}
+			} else if (isCommenting && (arg.endsWith("\"") || arg.endsWith("'"))) {
+				arg = arg.substring(0, arg.length() - 1);
+				arg = tmpargs.get(tmpargs.size() - 1) + " " + arg;
+				tmpargs.set(tmpargs.size() - 1, arg);
+				isCommenting = false;
+			} else if (isCommenting) {
+				arg = tmpargs.get(tmpargs.size() - 1) + " " + arg;
+				tmpargs.set(tmpargs.size() - 1, arg);
+			} else {
+				tmpargs.add(arg);
+			}
+		}
+		return tmpargs.toArray(new String[0]);
+	}
+	
 
 	public static void list(CommandSender sender, String delimiter, String... items) {
 		String msgpart = "";
@@ -84,11 +134,11 @@ public class Util {
 				if (msgpart != "") msgpart += ChatColor.WHITE + delimiter;
 				msgpart += item;
 			} else {
-				MyWorlds.message(sender, msgpart);
+				message(sender, msgpart);
 				msgpart = item;
 			}
 		}
 		//possibly forgot one?
-		if (msgpart != "") MyWorlds.message(sender, msgpart);
+		if (msgpart != "") message(sender, msgpart);
 	}
 }

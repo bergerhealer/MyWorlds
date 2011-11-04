@@ -309,7 +309,7 @@ public class Portal {
     	    				//Success
     	    			}
         			} else {
-        				MyWorlds.message(telec.e, Localization.get("portal.nodestination"));
+        				Util.message(telec.e, Localization.get("portal.nodestination"));
         			}
     	    	}
     	    }
@@ -319,9 +319,9 @@ public class Portal {
     /*
      * Loading and saving
      */
-	public static void loadPortals(String filename) {
+	public static void init(String filename) {
 		for (String textline : SafeReader.readAll(filename, true)) {
-			String[] args = MyWorlds.convertArgs(textline.split(" "));
+			String[] args = Util.convertArgs(textline.split(" "));
 			if (args.length == 7) {
 				String name = args[0];
 				try {
@@ -333,7 +333,7 @@ public class Portal {
 			}
 		}
 	}
-	public static void savePortals(String filename) {
+	public static void deinit(String filename) {
 		SafeWriter w = new SafeWriter(filename);
 		for (HashMap<String, Position> positions : portallocations.values()) {
 			for (Map.Entry<String, Position> p : positions.entrySet()) {
@@ -342,6 +342,8 @@ public class Portal {
 			}
 		}
 		w.close();
+		portallocations.clear();
+		portallocations = null;
 	}
 	
 	private static HashMap<String, HashMap<String, Position>> portallocations = new HashMap<String, HashMap<String, Position>>();

@@ -42,18 +42,18 @@ public class AsyncHandler {
 				if (command.equals("delete")) {
 					CommandSender sender = (CommandSender) args[1];
 					if (WorldManager.deleteWorld(args[0].toString())) {
-						MyWorlds.message(sender, ChatColor.GREEN + "World '" + args[0].toString() + "' has been removed!");
+						Util.message(sender, ChatColor.GREEN + "World '" + args[0].toString() + "' has been removed!");
 					} else {
-						MyWorlds.message(sender, ChatColor.RED + "Failed to (completely) remove the world!");
+						Util.message(sender, ChatColor.RED + "Failed to (completely) remove the world!");
 					}
 				} else if (command.equals("copy")) {
 					String oldworld = args[0].toString();
 					String newworld = args[1].toString();
 					CommandSender sender = (CommandSender) args[2];
 					if (WorldManager.copyWorld(oldworld, newworld)) {
-						MyWorlds.message(sender, ChatColor.GREEN + "World '" + oldworld + "' has been copied as '" + newworld + "'!");
+						Util.message(sender, ChatColor.GREEN + "World '" + oldworld + "' has been copied as '" + newworld + "'!");
 					} else {
-						MyWorlds.message(sender, ChatColor.RED + "Failed to copy world to '" + newworld + "'!");
+						Util.message(sender, ChatColor.RED + "Failed to copy world to '" + newworld + "'!");
 					}
 				} else if (command.equals("repair")) {
 					String worldname = args[0].toString();
@@ -63,7 +63,7 @@ public class AsyncHandler {
 					boolean worked = false;
 					if (WorldManager.isBroken(worldname)) {
 						worked = WorldManager.generateData(worldname, seed);
-						MyWorlds.message(sender, ChatColor.YELLOW + "Level.dat regenerated using seed: " + seed);
+						Util.message(sender, ChatColor.YELLOW + "Level.dat regenerated using seed: " + seed);
 					} else {
 						worked = true;
 					}
@@ -84,7 +84,7 @@ public class AsyncHandler {
 								String[] regionfiles = regionfolder.list();
 								int i = 1;
 								for (String listedFile : regionfiles) {
-									MyWorlds.message(sender, ChatColor.YELLOW + "Scanning and repairing file " + i + "/" + regionfiles.length);
+									Util.message(sender, ChatColor.YELLOW + "Scanning and repairing file " + i + "/" + regionfiles.length);
 									if (listedFile.toLowerCase().endsWith(".mcr")) {
 										int fixcount = WorldManager.repairRegion(new File(regionfolder + File.separator + listedFile), backupfolder);
 										if (fixcount == -1) {
@@ -101,13 +101,13 @@ public class AsyncHandler {
 									}
 									i++;
 								}
-								MyWorlds.message(sender, ChatColor.YELLOW + "Fixed " + totalfixes + " chunk(s) and removed " + totalremoves + " file(s)!");
-								MyWorlds.message(sender, ChatColor.YELLOW.toString() + fixedfilecount + " File(s) are affected!");
+								Util.message(sender, ChatColor.YELLOW + "Fixed " + totalfixes + " chunk(s) and removed " + totalremoves + " file(s)!");
+								Util.message(sender, ChatColor.YELLOW.toString() + fixedfilecount + " File(s) are affected!");
 								if (totalaccessfailures > 0) {
-									MyWorlds.message(sender, ChatColor.YELLOW.toString() + totalaccessfailures + " File(s) were inaccessible (OK-status unknown).");
+									Util.message(sender, ChatColor.YELLOW.toString() + totalaccessfailures + " File(s) were inaccessible (OK-status unknown).");
 								}
 								if (totaldelfailures > 0) {
-									MyWorlds.message(sender, ChatColor.YELLOW.toString() + totaldelfailures + " Unrecoverable file(s) could not be removed.");
+									Util.message(sender, ChatColor.YELLOW.toString() + totaldelfailures + " Unrecoverable file(s) could not be removed.");
 								}
 							} else {
 								MyWorlds.log(Level.INFO, "Region folder not found, no regions edited.");
@@ -118,9 +118,9 @@ public class AsyncHandler {
 						}
 					}
 					if (worked) {
-						MyWorlds.message(sender, ChatColor.GREEN + "World: '" + worldname + "' has been repaired!");
+						Util.message(sender, ChatColor.GREEN + "World: '" + worldname + "' has been repaired!");
 					} else {
-						MyWorlds.message(sender, ChatColor.RED + "Failed to repair world '" + worldname + "'!");
+						Util.message(sender, ChatColor.RED + "Failed to repair world '" + worldname + "'!");
 					}
 				}
 			}

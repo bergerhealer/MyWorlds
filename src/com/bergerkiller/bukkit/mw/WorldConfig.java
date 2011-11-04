@@ -40,7 +40,7 @@ public class WorldConfig {
 	public static Collection<WorldConfig> all() {
 		return config.values();
 	}
-	public static void loadAll(String filename) {
+	public static void init(String filename) {
 		Configuration config = new Configuration(filename);
 		config.load();
 		String[] worlds = WorldManager.getWorlds();
@@ -64,15 +64,20 @@ public class WorldConfig {
 		}
 	}
 	public static void saveAll(String filename) {
-		Configuration config = new Configuration(new File(filename));
-		for (String key : config.getKeys(false)) {
-			config.set(key, null);
+		Configuration cfg = new Configuration(new File(filename));
+		for (String key : cfg.getKeys(false)) {
+			cfg.set(key, null);
 		}
 		for (WorldConfig wc : all()) {
-			wc.save(config);
+			wc.save(cfg);
 		}
-		config.save();
 	}
+	public static void deinit(String filename) {
+		saveAll(filename);
+		config.clear();
+		config = null;
+	}
+	
 	public static void remove(String worldname) {
 		config.remove(worldname.toLowerCase());
 	}
