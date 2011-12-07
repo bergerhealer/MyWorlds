@@ -1,16 +1,22 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.Iterator;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
@@ -76,12 +82,16 @@ public class MWPlayerListener extends PlayerListener {
 	@Override
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
 		if (!event.isBedSpawn()) {
-			Location loc = WorldManager.getSpawnLocation(event.getPlayer().getWorld().getName());
+			Location loc = WorldManager.getRespawnLocation(event.getPlayer().getWorld());
 			if (loc != null) {
 				event.setRespawnLocation(loc);
 			}
 		}
 		WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
+	}
+	
+	public void onPlayerQuit(PlayerQuitEvent event) {
+		WorldConfig.updateReload(event.getPlayer());
 	}
 	
 	@Override
@@ -107,6 +117,29 @@ public class MWPlayerListener extends PlayerListener {
 						Portal.handlePortalEnter(event.getPlayer());
 				}
 			}
+			if (event.getFrom().getWorld() != event.getTo().getWorld()) {
+				WorldConfig.updateReload(event.getFrom());
+			}
 		}
 	}
+
+	@Override
+	public void onPlayerChat(PlayerChatEvent event) {
+		if (!Permission.canChat(event.getPlayer())) {
+			event.setCancelled(true);
+			event.getPlayer().sendMessage(Localization.get("world.nochataccess"));
+			return;
+		}
+		Iterator<Player> iterator = event.getRecipients().iterator();
+		while (iterator.hasNext()) {
+			if (!Permission.canChat(event.getPlayer(), iterator.next())) {
+				iterator.remove();
+			}
+		}
+	}
+
+	public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+		WorldConfig.updateReload(event.getFrom());
+	}
+	
 }

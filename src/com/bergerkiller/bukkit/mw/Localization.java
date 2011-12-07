@@ -20,6 +20,7 @@ public class Localization {
 		messages.put("world.enter", "§aYou teleported to world '%name%'!");
 		messages.put("world.enter.world1", "§aYou teleported to world 1, have a nice stay!");
 		messages.put("world.noaccess", "§4You are not allowed to enter this world!");
+		messages.put("world.nochataccess", "§4You are not allowed to use the chat in this world!");
 		messages.put("world.notfound", "§cWorld not found!");
 		messages.put("world.notloaded", "§eWorld '%name%' is not loaded!");
 		messages.put("portal.enter", "§aYou teleported to '%name%'!");

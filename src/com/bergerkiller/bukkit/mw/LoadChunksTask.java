@@ -14,18 +14,24 @@ public class LoadChunksTask implements Runnable {
 	}
 	
 	public static void abort() {
+		remaining = new LinkedList<ChunkCoord>();
 		if (taskid != -1) {
 			MyWorlds.plugin.getServer().getScheduler().cancelTask(taskid);
 			taskid = -1;
 		}
 	}
+	
+	public static void init() {
+		remaining = new LinkedList<ChunkCoord>();
+	}
+	
 	public static void deinit() {
 		abort();
 		remaining.clear();
 		remaining = null;
 	}
 	
-	private static Queue<ChunkCoord> remaining = new LinkedList<ChunkCoord>();
+	private static Queue<ChunkCoord> remaining;
 	public static void add(World world, int cx, int cz) {
 		add(world, cx, cz, null);
 	}

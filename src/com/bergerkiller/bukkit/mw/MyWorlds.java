@@ -23,8 +23,10 @@ public class MyWorlds extends JavaPlugin {
 	public static boolean usePortalTeleportPermissions;
 	public static boolean useWorldBuildPermissions;
 	public static boolean useWorldUsePermissions;
+	public static boolean useWorldChatPermissions;
 	public static boolean allowPortalNameOverride;
 	public static boolean useWorldOperators;
+	public static boolean onlyObsidianPortals = false;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -49,21 +51,22 @@ public class MyWorlds extends JavaPlugin {
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Event.Type.ENTITY_PORTAL_ENTER, entityListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.CREATURE_SPAWN, entityListener, Priority.Lowest, this);
-        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Normal, this);
         pm.registerEvent(Event.Type.BLOCK_PLACE, blockListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.BLOCK_PHYSICS, blockListener, Priority.Highest, this); 
         pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
         pm.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
-        pm.registerEvent(Event.Type.PLAYER_INTERACT, playerListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);  
+        pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLAYER_CHANGED_WORLD, playerListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.PLAYER_INTERACT, playerListener, Priority.Lowest, this);
+        pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Normal, this);  
         pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_UNLOAD, worldListener, Priority.Monitor, this);  
         pm.registerEvent(Event.Type.WORLD_INIT, worldListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.WEATHER_CHANGE, weatherListener, Priority.Highest, this); 
-        
-
+        pm.registerEvent(Event.Type.WEATHER_CHANGE, weatherListener, Priority.Highest, this);
         
         Configuration config = new Configuration(this);
         config.load();
@@ -77,8 +80,10 @@ public class MyWorlds extends JavaPlugin {
         usePortalTeleportPermissions = config.parse("usePortalTeleportPermissions", false);
         useWorldBuildPermissions = config.parse("useWorldBuildPermissions", false);
         useWorldUsePermissions = config.parse("useWorldUsePermissions", false);
+        useWorldChatPermissions = config.parse("useWorldChatPermissions", false);
         allowPortalNameOverride = config.parse("allowPortalNameOverride", false);
         useWorldOperators = config.parse("useWorldOperators", false);
+        onlyObsidianPortals = config.parse("onlyObsidianPortals", false);
         String locale = config.parse("locale", "default");
         config.save();
         
@@ -97,6 +102,9 @@ public class MyWorlds extends JavaPlugin {
         //Commands
         getCommand("tpp").setExecutor(this);
         getCommand("world").setExecutor(this);  
+        
+        //init chunk loader
+        LoadChunksTask.init();
         
         //Chunk cache
         WorldManager.init();

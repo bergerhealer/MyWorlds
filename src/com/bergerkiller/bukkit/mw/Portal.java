@@ -9,8 +9,10 @@ import java.util.logging.Level;
 
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -244,6 +246,27 @@ public class Portal {
     /*
      * Teleportation and teleport defaults
      */
+	public static boolean isPortal(Block main, BlockFace direction) {
+		for (int counter = 0; counter < 20; counter++) {
+			Material type = main.getType();
+			if (type == Material.PORTAL) {
+				main = main.getRelative(direction);
+			} else if (type == Material.OBSIDIAN) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	}
+	public static boolean isPortal(Block main) {
+		if (isPortal(main, BlockFace.UP) && isPortal(main, BlockFace.DOWN)) {
+			if (isPortal(main, BlockFace.NORTH) && isPortal(main, BlockFace.SOUTH)) return true;
+			if (isPortal(main, BlockFace.EAST) && isPortal(main, BlockFace.WEST)) return true;
+		}
+		return false;
+	}
+	
     private static WeakHashMap<Entity, Long> portaltimes = new WeakHashMap<Entity, Long>();
     private static ArrayList<TeleportCommand> teleportations = new ArrayList<TeleportCommand>();  
     public static void handlePortalEnter(Entity e) {
@@ -320,6 +343,7 @@ public class Portal {
      * Loading and saving
      */
 	public static void init(String filename) {
+		portallocations = new HashMap<String, HashMap<String, Position>>();
 		for (String textline : SafeReader.readAll(filename, true)) {
 			String[] args = Util.convertArgs(textline.split(" "));
 			if (args.length == 7) {
@@ -346,7 +370,7 @@ public class Portal {
 		portallocations = null;
 	}
 	
-	private static HashMap<String, HashMap<String, Position>> portallocations = new HashMap<String, HashMap<String, Position>>();
+	private static HashMap<String, HashMap<String, Position>> portallocations;
 	private static HashMap<String, Position> getPortalLocations(String worldname) {
 		worldname = worldname.toLowerCase();
 		HashMap<String, Position> rval = portallocations.get(worldname);

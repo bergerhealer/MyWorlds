@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw;
 
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityListener;
@@ -9,6 +11,12 @@ public class MWEntityListener extends EntityListener {
 
     @Override
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
+    	if (MyWorlds.onlyObsidianPortals) {
+    		Block b = event.getLocation().getBlock();
+    		if (b.getType() == Material.PORTAL) {
+    			if (!Portal.isPortal(b)) return;
+    		}
+    	}
     	Portal.handlePortalEnter(event.getEntity());
     }
     

@@ -6,19 +6,14 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.TreeSet;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import net.minecraft.server.CompressedStreamTools;
+import net.minecraft.server.NBTBase;
 import net.minecraft.server.NBTTagCompound;
-import net.minecraft.server.NextTickListEntry;
 import net.minecraft.server.RegionFile;
 
 import org.bukkit.Bukkit;
@@ -32,10 +27,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.getspout.spout.chunkstore.ChunkStore;
-import org.getspout.spout.chunkstore.SimpleChunkDataManager;
-import org.getspout.spout.chunkstore.SimpleRegionFile;
-import org.getspout.spoutapi.SpoutManager;
 
 import com.bergerkiller.bukkit.mw.Tag.Type;
 
@@ -64,11 +55,8 @@ public class WorldManager {
 		regionfiles = null;
 		rafField = null;
 		serverfolder = null;
-		redstoneInfo = null;
-		tickListField = null;
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static boolean clearWorldReference(World world) {
 		String worldname = world.getName();
 		if (regionfiles == null) return false;
@@ -96,31 +84,6 @@ public class WorldManager {
 			MyWorlds.log(Level.WARNING, "Exception while removing world reference for '" + worldname + "'!");
 			ex.printStackTrace();
 		}
-		try {
-			//Spout
-			if (Bukkit.getServer().getPluginManager().isPluginEnabled("Spout")) {
-				//Close the friggin' meta streams!
-				SimpleChunkDataManager manager = (SimpleChunkDataManager) SpoutManager.getChunkDataManager();
-				Field chunkstore = SimpleChunkDataManager.class.getDeclaredField("chunkStore");
-				chunkstore.setAccessible(true);
-				ChunkStore store = (ChunkStore) chunkstore.get(manager);
-				Field regionfiles = ChunkStore.class.getDeclaredField("regionFiles");
-				regionfiles.setAccessible(true);
-				HashMap<UUID, HashMap<Long, SimpleRegionFile>> regionFiles;
-				regionFiles = (HashMap<UUID, HashMap<Long, SimpleRegionFile>>) regionfiles.get(store);
-				//operate on region files
-				HashMap<Long, SimpleRegionFile> data = regionFiles.remove(world.getUID());
-				if (data != null) {
-					//close streams...
-					for (SimpleRegionFile file : data.values()) {
-						file.close();
-					}
-				}
-			}
-		} catch (Exception ex) {
-			MyWorlds.log(Level.WARNING, "Exception while removing Spout world reference for '" + worldname + "'!");
-			ex.printStackTrace();
-		}
 		for (Object key : removedKeys) {
 			regionfiles.remove(key);
 		}
@@ -128,7 +91,7 @@ public class WorldManager {
 	}
 	
 	/*
-	 * World spawn points
+	 * Get or set the respawn point of a world
 	 */
 	public static void setSpawnLocation(String forWorld, Location destination) {
 		setSpawn(forWorld, new Position(destination));
@@ -136,11 +99,11 @@ public class WorldManager {
 	public static void setSpawn(String forWorld, Position destination) {
 		WorldConfig.get(forWorld).spawnPoint = destination;
 	}
-	public static Position getSpawn(String ofWorld) {
+	public static Position getRespawn(String ofWorld) {
 		return WorldConfig.get(ofWorld).spawnPoint;
 	}
-	public static Location getSpawnLocation(String ofWorld) {
-		Position pos = getSpawn(ofWorld);
+	public static Location getRespawnLocation(String ofWorld) {
+		Position pos = getRespawn(ofWorld);
 		if (pos != null) {
 			Location loc = pos.toLocation();
 			if (loc.getWorld() != null) {
@@ -149,8 +112,17 @@ public class WorldManager {
 		}
 		return null;
 	}
-	public static Location getSpawnLocation(World ofWorld) {
-		return getSpawnLocation(ofWorld.getName());
+	public static Location getRespawnLocation(World ofWorld) {
+		return getRespawnLocation(ofWorld.getName());
+	}
+	
+	/*
+	 * Gets a possible teleport position on a certain world
+	 */
+	public static Location getSpawnLocation(World onWorld) {
+		Position[] pos = getSpawnPoints(onWorld);
+		if (pos.length > 0) return pos[0].toLocation();
+		return onWorld.getSpawnLocation();
 	}
 	public static Position[] getSpawnPoints() {
 		Collection<WorldConfig> all = WorldConfig.all();
@@ -189,9 +161,7 @@ public class WorldManager {
 				if (cmain.getMethod("getDefaultWorldGenerator", String.class, String.class).getDeclaringClass() != JavaPlugin.class) {
 					gens.add(plugin.getDescription().getName());
 				}
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
+			} catch (Throwable t) {}
 		}
 		return gens.toArray(new String[0]);
 	}
@@ -437,7 +407,8 @@ public class WorldManager {
 	}
 	
 	public static boolean unload(World world) {
-		return Bukkit.getServer().unloadWorld(world, false);
+		if (world == null) return false;
+		return Bukkit.getServer().unloadWorld(world, world.isAutoSave());
 	}
 
 	public static World createWorld(String worldname, long seed) {
@@ -491,34 +462,9 @@ public class WorldManager {
 		return w;
 	}
 	
-	private static List redstoneInfo;	
-	private static Field tickListField;
-	private static boolean initFields = false;
 	public static void setTime(World world, long time) {
-		long timedif = time - world.getFullTime();
 		net.minecraft.server.World w = ((CraftWorld) world).getHandle();
 		w.setTimeAndFixTicklists(time);
-		try {
-			if (!initFields) {
-				Field info = net.minecraft.server.BlockRedstoneTorch.class.getDeclaredField("b");
-				info.setAccessible(true);
-				redstoneInfo = (List) info.get(null);
-				tickListField = net.minecraft.server.World.class.getDeclaredField("N");
-				tickListField.setAccessible(true);
-			}
-			if (redstoneInfo != null && tickListField != null) {
-				TreeSet ticklist = (TreeSet) tickListField.get(w);
-		        NextTickListEntry nextticklistentry;
-
-		        for (Iterator iterator = ticklist.iterator(); iterator.hasNext(); nextticklistentry.e += timedif) {
-		            nextticklistentry = (NextTickListEntry) iterator.next();
-		        }
-				redstoneInfo.clear();
-			}
-		} catch (Exception ex) {
-			MyWorlds.log(Level.SEVERE, "Failed to fix redstone while setting time!");
-			ex.printStackTrace();
-		}
 	}
 	
 	private static boolean delete(File folder) {
@@ -710,14 +656,21 @@ public class WorldManager {
 						if (stream != null) {
 							//Validate the stream and close
 							try {
-								NBTTagCompound nbttagcompound = CompressedStreamTools.a((DataInput) stream);
-								if (nbttagcompound == null) {
-									MyWorlds.log(Level.WARNING, "Damaged data at chunk " + i);
+								NBTBase base = NBTTagCompound.b((DataInput) stream);
+								if (base == null) {
 									editcount++;
 									locations[i] = 0;
+									MyWorlds.log(Level.WARNING, "Invalid tag compount at chunk " + i);
+								} else if (!(base instanceof NBTTagCompound)) {
+									editcount++;
+									locations[i] = 0;
+									MyWorlds.log(Level.WARNING, "Invalid tag compount at chunk " + i);
 								}
 							} catch (Exception ex) {
 								//Invalid.
+								editcount++;
+								locations[i] = 0;
+								MyWorlds.log(Level.WARNING, "Stream  " + i);
 								ex.printStackTrace();
 							}
 							stream.close();

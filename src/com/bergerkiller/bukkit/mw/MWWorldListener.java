@@ -29,8 +29,7 @@ public class MWWorldListener extends WorldListener {
     
     @Override
     public void onWorldInit(WorldInitEvent event) {
-    	if (initIgnoreWorlds.contains(event.getWorld().getName())) {
-    		initIgnoreWorlds.remove(event.getWorld().getName());
+    	if (initIgnoreWorlds.remove(event.getWorld().getName())) {
     		event.getWorld().setKeepSpawnInMemory(false);
     	} else {
     		WorldConfig.get(event.getWorld()).update(event.getWorld());

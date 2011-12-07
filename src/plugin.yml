@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.29
+version: 1.32
 author: bergerkiller
 commands:
     world:
@@ -101,6 +101,12 @@ permissions:
         default: op;
     myworlds.world.build.*:
         description: Sets if the player can build in a certain world
+        default: op
+    myworlds.world.chat.*:
+        description: Sets if the player can chat while being in a certain world
+        default: true
+    myworlds.world.chatglobal:
+        description: Sets if chat messages of the player are seen globally
         default: op
     myworlds.world.use.*:
         description: Sets if the player can interact with blocks in a certain world

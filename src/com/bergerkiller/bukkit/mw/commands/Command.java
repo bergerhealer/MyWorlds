@@ -276,6 +276,14 @@ public class Command {
 					rval = new WorldConfig(sender, args);
 				} else if (cmdLabel.equalsIgnoreCase("cfg")) {
 					rval = new WorldConfig(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("reloadwhenempty")) {
+					rval = new WorldReloadWE(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("reloadwe")) {
+					rval = new WorldReloadWE(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("reloadempty")) {
+					rval = new WorldReloadWE(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("reloadnoplayers")) {
+					rval = new WorldReloadWE(sender, args);
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {
@@ -305,6 +313,7 @@ public class Command {
 		if (showUsage("world.save")) hac = true;
 		if (showUsage("world.load")) hac = true;
 		if (showUsage("world.unload")) hac = true;
+		if (showUsage("world.reloadwhenempty")) hac = true;
 		if (showUsage("world.create")) hac = true;
 		if (showUsage("world.listgenerators")) hac = true;
 		if (showUsage("world.weather")) hac = true;

@@ -23,7 +23,7 @@ public class WorldCreate extends Command {
 	public void execute() {
 		this.removeArg(0);
 		if (args.length != 0) {
-			worldname = args[1];
+			worldname = args[0];
 			String gen = null;
 			if (worldname.contains(":")) {
 				String[] parts = worldname.split(":");
@@ -37,7 +37,7 @@ public class WorldCreate extends Command {
 			}
 			if (!WorldManager.worldExists(worldname)) {
 				String seed = "";
-				for (int i = 2;i < args.length;i++) {
+				for (int i = 1;i < args.length;i++) {
 					if (seed != "") seed += " ";
 					seed += args[i];
 				}

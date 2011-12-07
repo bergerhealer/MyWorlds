@@ -40,6 +40,9 @@ public class Permission {
 			return player.hasPermission("myworlds." + command);
 		}
 	}
+	public static boolean hasGlobal(Player player, String node, String name) {
+		return has(player, node + name) || has(player, node + "*");
+	}
 		
 	public static boolean handleTeleport(Entity entity, Portal portal) {
 		return handleTeleport(entity, portal.getName(), portal.getDestinationName(), portal.getDestinationDisplayName(), portal.getDestination());
@@ -88,20 +91,20 @@ public class Permission {
 	public static boolean canEnterPortal(Player player, String portalname) {
 		if (!has(player, "portal.use")) return false;
 		if (!MyWorlds.usePortalEnterPermissions) return true;	
-		return has(player, "portal.enter." + portalname) || has(player, "portal.enter.*");
+		return hasGlobal(player, "portal.enter.", portalname);
 	}
 	public static boolean canEnterWorld(Player player, String worldname) {
 		if (!MyWorlds.useWorldEnterPermissions) return true;
-		return has(player, "world.enter." + worldname) || has(player, "world.enter.*");
+		return hasGlobal(player, "world.enter.", worldname);
 	}
 	
 	public static boolean canTeleportPortal(Player player, String portalname) {
 		if (!MyWorlds.usePortalTeleportPermissions) return true;
-		return has(player, "portal.teleport." + portalname) || has(player, "portal.teleport.*");
+		return hasGlobal(player, "portal.teleport.", portalname);
 	}
 	public static boolean canTeleportWorld(Player player, String worldname) {
 		if (!MyWorlds.useWorldTeleportPermissions) return true;
-		return has(player, "world.teleport." + worldname) || has(player, "world.teleport.*");
+		return hasGlobal(player, "world.teleport.", worldname);
 	}
 
 	public static boolean canBuild(Player player) {
@@ -115,11 +118,24 @@ public class Permission {
 	public static boolean canBuild(Player player, String worldname) {
 		if (player == null) return true;
 		if (!MyWorlds.useWorldBuildPermissions) return true;
-		return has(player, "world.build." + worldname) || has(player, "world.build.*");
+		return hasGlobal(player, "world.build.", worldname);
 	}
 	public static boolean canUse(Player player, String worldname) {
 		if (player == null) return true;
 		if (!MyWorlds.useWorldUsePermissions) return true;
-		return has(player, "world.use." + worldname) || has(player, "world.use.*");
+		return hasGlobal(player, "world.use.", worldname);
+	}
+	
+	public static boolean canChat(Player player) {
+		return canChat(player, player);
+	}
+	public static boolean canChat(Player player, Player with) {
+		if (player == null) return true;
+		if (!MyWorlds.useWorldChatPermissions) return true;
+		if (hasGlobal(player, "world.chat.", with.getWorld().getName())) {
+			if (player.getWorld() == with.getWorld()) return true;
+			return has(player, "world.chatglobal");
+		}
+		return false;
 	}
 }

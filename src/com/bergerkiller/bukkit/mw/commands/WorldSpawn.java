@@ -1,12 +1,10 @@
 package com.bergerkiller.bukkit.mw.commands;
 
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
-import com.bergerkiller.bukkit.mw.Position;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldSpawn extends Command {
@@ -22,12 +20,7 @@ public class WorldSpawn extends Command {
 		if (this.handleWorld()) {
 			World world = WorldManager.getWorld(worldname);
 			if (world != null) {
-				Location loc = world.getSpawnLocation();
-				for (Position pos : WorldManager.getSpawnPoints(world)) {
-					loc = pos.toLocation();
-					break;
-				}
-				if (Permission.handleTeleport(player, loc)) {
+				if (Permission.handleTeleport(player, WorldManager.getSpawnLocation(world))) {
 					//Success
 				}
 			} else {

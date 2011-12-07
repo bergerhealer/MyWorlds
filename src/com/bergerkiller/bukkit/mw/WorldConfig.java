@@ -43,24 +43,18 @@ public class WorldConfig {
 	public static void init(String filename) {
 		Configuration config = new Configuration(filename);
 		config.load();
-		String[] worlds = WorldManager.getWorlds();
 		for (String worldname : config.getKeys(false)) {
-			for (String world : worlds) {
-				if (world.equalsIgnoreCase(worldname)) {
-					new WorldConfig(worldname, config);
-					
-					if (config.getBoolean(worldname + ".loaded", false)) {
-						if (WorldManager.worldExists(worldname)) {
-							if (WorldManager.getOrCreateWorld(worldname) == null) {
-								MyWorlds.log(Level.SEVERE, "Failed to (pre)load world: " + worldname);
-							}
-						} else {
-							MyWorlds.log(Level.WARNING, "World: " + worldname + " no longer exists and has not been loaded!");
-						}
-					}
-					break;
+			WorldConfig wc = new WorldConfig(worldname, config);
+			if (WorldManager.worldExists(worldname)) {
+				if (config.getBoolean(worldname + ".loaded", false)) {
+					wc.loadWorld();
 				}
+			} else {
+				MyWorlds.log(Level.WARNING, "World: " + worldname + " no longer exists!");
 			}
+		}
+		for (World world : Bukkit.getServer().getWorlds()) {
+			get(world).update(world);
 		}
 	}
 	public static void saveAll(String filename) {
@@ -71,6 +65,7 @@ public class WorldConfig {
 		for (WorldConfig wc : all()) {
 			wc.save(cfg);
 		}
+		cfg.save();
 	}
 	public static void deinit(String filename) {
 		saveAll(filename);
@@ -101,6 +96,7 @@ public class WorldConfig {
 		}
 		this.holdWeather = config.getBoolean(worldname + "holdWeather", false);
 		this.pvp = config.getBoolean(worldname + "pvp", this.pvp);
+		this.reloadWhenEmpty = config.getBoolean(worldname + "reloadWhenEmpty", this.reloadWhenEmpty);
 		for (String type : config.getListOf(worldname + "deniedCreatures", new ArrayList<String>())) {
 			type = type.toUpperCase();
 			if (type.equals("ANIMALS")) {
@@ -162,7 +158,56 @@ public class WorldConfig {
 	public String defaultPortal;
 	public List<String> OPlist = new ArrayList<String>();
 	public boolean autosave = true;
+	public boolean reloadWhenEmpty = false;
 	
+	public World loadWorld() {
+		if (WorldManager.worldExists(this.worldname)) {
+			World w = WorldManager.getOrCreateWorld(this.worldname);
+			if (w == null) {
+				MyWorlds.log(Level.SEVERE, "Failed to (pre)load world: " + worldname);
+			}
+			return w;
+		} else {
+			MyWorlds.log(Level.WARNING, "World: " + worldname + " could not be loaded because it no longer exists!");
+		}
+		return null;
+	}
+	public boolean unloadWorld() {
+		return WorldManager.unload(this.getWorld());
+	}
+	
+	public static void updateReload(Player player) {
+		updateReload(player.getWorld());
+	}
+	public static void updateReload(Location loc) {
+		updateReload(loc.getWorld());
+	}
+	public static void updateReload(World world) {
+		updateReload(world.getName());
+	}
+	public static void updateReload(String worldname) {
+		new Task(worldname) {
+			public void run() {
+				get(getStringArg(0)).updateReload();
+			}
+		}.startDelayed(1);
+	}
+	
+	public void updateReload() {
+		World world = this.getWorld();
+		if (world == null) return;
+		if (!this.reloadWhenEmpty) return;
+		if (world.getPlayers().size() > 0) return;
+		//reload world
+		MyWorlds.log(Level.INFO, "Reloading world '" + worldname + "' - world became empty");
+		if (!this.unloadWorld()) {
+			MyWorlds.log(Level.WARNING, "Failed to unload world: " + worldname + " for reload purposes");
+		} else if (this.loadWorld() == null) {
+			MyWorlds.log(Level.WARNING, "Failed to load world: " + worldname + " for reload purposes");
+		} else {
+			MyWorlds.log(Level.INFO, "World reloaded successfully");
+		}
+	}
 	public void updateAutoSave(World world) {
 		if (world != null && world.isAutoSave() != this.autosave) {
 			world.setAutoSave(this.autosave);
@@ -253,7 +298,7 @@ public class WorldConfig {
 		}
 		
 		String worldname = this.worldname + ".";
-		config.set(worldname + "loaded", WorldManager.isLoaded(this.worldname));
+		config.set(worldname + "loaded", w != null);
 		config.set(worldname + "keepSpawnLoaded", this.keepSpawnInMemory);
 		config.set(worldname + "environment", this.environment.toString());
 		config.set(worldname + "chunkGenerator", this.chunkGeneratorName);
@@ -278,10 +323,13 @@ public class WorldConfig {
 		config.set(worldname + "deniedCreatures", creatures);
 		config.set(worldname + "holdWeather", this.holdWeather);
 		config.set(worldname + "difficulty", this.difficulty.toString());
+		config.set(worldname + "reloadWhenEmpty", this.reloadWhenEmpty);
 		config.set(worldname + "spawn.world", this.spawnPoint.getWorldName());
 		config.set(worldname + "spawn.x", this.spawnPoint.getX());
 		config.set(worldname + "spawn.y", this.spawnPoint.getY());
 		config.set(worldname + "spawn.z", this.spawnPoint.getZ());
+		config.set(worldname + "spawn.yaw", (double) this.spawnPoint.getYaw());
+		config.set(worldname + "spawn.pitch", (double) this.spawnPoint.getPitch());
 	}
 	
 }
