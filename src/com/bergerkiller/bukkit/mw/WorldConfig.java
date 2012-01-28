@@ -15,9 +15,18 @@ import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
+import org.bukkit.block.Block;
 import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.generator.ChunkGenerator;
+import org.getspout.spoutapi.SpoutManager;
+import org.getspout.spoutapi.block.SpoutWeather;
+import org.getspout.spoutapi.player.SpoutPlayer;
+
+import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.config.ConfigurationNode;
+import com.bergerkiller.bukkit.config.FileConfiguration;
 
 public class WorldConfig {	
 	private static HashMap<String, WorldConfig> config = new HashMap<String, WorldConfig>();
@@ -37,20 +46,23 @@ public class WorldConfig {
 	public static WorldConfig get(Location location) {
 		return get(location.getWorld());
 	}
+	public static WorldConfig get(Block block) {
+		return get(block.getWorld());
+	}
 	public static Collection<WorldConfig> all() {
 		return config.values();
 	}
 	public static void init(String filename) {
-		Configuration config = new Configuration(filename);
+		FileConfiguration config = new FileConfiguration(filename);
 		config.load();
-		for (String worldname : config.getKeys(false)) {
-			WorldConfig wc = new WorldConfig(worldname, config);
-			if (WorldManager.worldExists(worldname)) {
-				if (config.getBoolean(worldname + ".loaded", false)) {
+		for (ConfigurationNode node : config.getNodes()) {
+			WorldConfig wc = new WorldConfig(node);
+			if (WorldManager.worldExists(wc.worldname)) {
+				if (node.get("loaded", false)) {
 					wc.loadWorld();
 				}
 			} else {
-				MyWorlds.log(Level.WARNING, "World: " + worldname + " no longer exists!");
+				MyWorlds.log(Level.WARNING, "World: " + wc.worldname + " no longer exists!");
 			}
 		}
 		for (World world : Bukkit.getServer().getWorlds()) {
@@ -58,12 +70,9 @@ public class WorldConfig {
 		}
 	}
 	public static void saveAll(String filename) {
-		Configuration cfg = new Configuration(new File(filename));
-		for (String key : cfg.getKeys(false)) {
-			cfg.set(key, null);
-		}
+		FileConfiguration cfg = new FileConfiguration(new File(filename));
 		for (WorldConfig wc : all()) {
-			wc.save(cfg);
+			wc.save(cfg.getNode(wc.worldname));
 		}
 		cfg.save();
 	}
@@ -77,27 +86,30 @@ public class WorldConfig {
 		config.remove(worldname.toLowerCase());
 	}
 	
-	public WorldConfig(String worldname, Configuration config) {
-		this(worldname);
-		worldname += ".";
-		this.keepSpawnInMemory = config.getBoolean(worldname + "keepSpawnLoaded", this.keepSpawnInMemory);
-		this.environment = Util.parseEnvironment(config.getString(worldname + "environment"), this.environment);
-		this.chunkGeneratorName = config.getString(worldname + "chunkGenerator", null);
-		this.difficulty = Util.parseDifficulty(config.getString(worldname + "difficulty"), this.difficulty);
-		this.gameMode = Util.parseGameMode(config.getString(worldname + "gamemode", null), null);
-		String worldspawn = config.getString(worldname + "spawn.world", null);
+	public WorldConfig(ConfigurationNode node) {
+		this(node.getName());
+		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
+		this.environment = Util.parseEnvironment(node.get("environment", String.class), this.environment);
+		this.chunkGeneratorName = node.get("chunkGenerator", String.class);
+		this.difficulty = Util.parseDifficulty(node.get("difficulty", String.class), this.difficulty);
+		this.gameMode = Util.parseGameMode(node.get("gamemode", String.class), null);
+		String worldspawn = node.get("spawn.world", String.class);
 		if (worldspawn != null) {
-			double x = config.getDouble(worldname + "spawn.x", 0);
-			double y = config.getDouble(worldname + "spawn.y", 64);
-			double z = config.getDouble(worldname + "spawn.z", 0);
-			float yaw = (float) config.getDouble(worldname + "spawn.yaw", 0);
-			float pitch = (float) config.getDouble(worldname + "spawn.pitch", 0);
-			this.spawnPoint = new Position(worldspawn, x, y, z, yaw, pitch);
+			double x = node.get("spawn.x", 0.0);
+			double y = node.get("spawn.y", 64.0);
+			double z = node.get("spawn.z", 0.0);
+			double yaw = node.get("spawn.yaw", 0.0);
+			double pitch = node.get("spawn.pitch", 0.0);
+			this.spawnPoint = new Position(worldspawn, x, y, z, (float) yaw, (float) pitch);
 		}
-		this.holdWeather = config.getBoolean(worldname + "holdWeather", false);
-		this.pvp = config.getBoolean(worldname + "pvp", this.pvp);
-		this.reloadWhenEmpty = config.getBoolean(worldname + "reloadWhenEmpty", this.reloadWhenEmpty);
-		for (String type : config.getListOf(worldname + "deniedCreatures", new ArrayList<String>())) {
+		this.holdWeather = node.get("holdWeather", false);
+		this.formIce = node.get("formIce", true);
+		this.formSnow = node.get("formSnow", true);
+		this.showRain = node.get("showRain", true);
+		this.showSnow = node.get("showSnow", true);
+		this.pvp = node.get("pvp", this.pvp);
+		this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
+		for (String type : node.getList("deniedCreatures", String.class)) {
 			type = type.toUpperCase();
 			if (type.equals("ANIMALS")) {
 				this.spawnControl.setAnimals(true);
@@ -109,13 +121,13 @@ public class WorldConfig {
 				} catch (Exception ex) {}
 			}
 		}
-    	long time = config.getInt(worldname + "lockedtime", Integer.MIN_VALUE);
+    	long time = node.get("lockedtime", Integer.MIN_VALUE);
     	if (time != Integer.MIN_VALUE) {
 			this.timeControl.lockTime(time);
 			this.timeControl.setLocking(true);
     	}
-    	this.defaultPortal = config.getString(worldname + "defaultPortal", null);
-    	this.OPlist = config.getListOf(worldname + "operators", this.OPlist);
+    	this.defaultPortal = node.get("defaultPortal", String.class);
+    	this.OPlist = node.getList("operators", String.class, this.OPlist);
 	}
 	public WorldConfig(String worldname) {
 		this.worldname = worldname;
@@ -143,6 +155,62 @@ public class WorldConfig {
 		}
 		this.gameMode = Bukkit.getServer().getDefaultGameMode();
 	}
+	public void save(ConfigurationNode node) {
+		//Set if the world can be directly accessed
+		World w = this.getWorld();
+		if (w != null) {
+	        this.difficulty = w.getDifficulty();
+	        this.keepSpawnInMemory = w.getKeepSpawnInMemory();
+	        this.autosave = w.isAutoSave();
+	        if (this.chunkGeneratorName == null) {
+	        	ChunkGenerator gen = ((org.bukkit.craftbukkit.CraftWorld) w).getHandle().generator;
+	        	if (gen != null) {
+	        		String name = gen.getClass().getName();
+	        		if (name.equals("bukkit.techguard.christmas.world.ChristmasGenerator")) {
+	        			this.chunkGeneratorName = "Christmas";
+	        		}
+	        	}
+	        }
+		}
+		
+		node.set("loaded", w != null);
+		node.set("keepSpawnLoaded", this.keepSpawnInMemory);
+		node.set("environment", this.environment.toString());
+		node.set("chunkGenerator", this.chunkGeneratorName);
+		if (this.gameMode == null) {
+			node.set("gamemode", "NONE");
+		} else {
+			node.set("gamemode", this.gameMode.toString());
+		}
+		
+		if (this.timeControl.locker != null && this.timeControl.locker.isRunning()) {
+			node.set("lockedtime", this.timeControl.locker.time);
+		} else {
+			node.remove("lockedtime");
+		}
+
+		ArrayList<String> creatures = new ArrayList<String>();
+		for (CreatureType type : this.spawnControl.deniedCreatures) {
+			creatures.add(type.name());
+		}
+		node.set("pvp", this.pvp);
+		node.set("defaultPortal", this.defaultPortal);
+		node.set("operators", this.OPlist);
+		node.set("deniedCreatures", creatures);
+		node.set("holdWeather", this.holdWeather);
+		node.set("formIce", this.formIce);
+		node.set("formSnow", this.formSnow);
+		node.set("showRain", this.showRain);
+		node.set("showSnow", this.showSnow);
+		node.set("difficulty", this.difficulty.toString());
+		node.set("reloadWhenEmpty", this.reloadWhenEmpty);
+		node.set("spawn.world", this.spawnPoint.getWorldName());
+		node.set("spawn.x", this.spawnPoint.getX());
+		node.set("spawn.y", this.spawnPoint.getY());
+		node.set("spawn.z", this.spawnPoint.getZ());
+		node.set("spawn.yaw", (double) this.spawnPoint.getYaw());
+		node.set("spawn.pitch", (double) this.spawnPoint.getPitch());
+	}
 	
 	public String worldname;
 	public boolean keepSpawnInMemory;
@@ -159,6 +227,10 @@ public class WorldConfig {
 	public List<String> OPlist = new ArrayList<String>();
 	public boolean autosave = true;
 	public boolean reloadWhenEmpty = false;
+	public boolean formSnow = true;
+	public boolean formIce = true;
+	public boolean showRain = true;
+	public boolean showSnow = true;
 	
 	public World loadWorld() {
 		if (WorldManager.worldExists(this.worldname)) {
@@ -186,13 +258,40 @@ public class WorldConfig {
 		updateReload(world.getName());
 	}
 	public static void updateReload(String worldname) {
-		new Task(worldname) {
+		new Task(MyWorlds.plugin, worldname) {
 			public void run() {
-				get(getStringArg(0)).updateReload();
+				get(arg(0, String.class)).updateReload();
 			}
-		}.startDelayed(1);
+		}.start(1);
 	}
-	
+	public void updateSpoutWeather(World world) {
+		if (!MyWorlds.isSpoutEnabled) return;
+		for (Player p : world.getPlayers()) updateSpoutWeather(p);
+	}
+	public void updateSpoutWeather(Player player) {
+		if (MyWorlds.isSpoutEnabled) {
+			try {
+				SpoutPlayer sp = SpoutManager.getPlayer(player);
+				if (sp.isSpoutCraftEnabled()) {
+					SpoutWeather w = SpoutWeather.NONE;
+					if (player.getWorld().hasStorm()) {
+						if (this.showRain && this.showSnow) {
+							w = SpoutWeather.RESET;
+						} else if (this.showRain) {
+							w = SpoutWeather.RAIN;
+						} else if (this.showSnow) {
+							w = SpoutWeather.SNOW;
+						}
+					}
+					SpoutManager.getBiomeManager().setPlayerWeather(SpoutManager.getPlayer(player), w);
+				}
+			} catch (Throwable t) {
+				MyWorlds.isSpoutEnabled = false;
+				MyWorlds.log(Level.SEVERE, "An error occured while using Spout, Spout is no longer used in MyWorlds from now on:");
+				t.printStackTrace();
+			}
+		}
+	}
 	public void updateReload() {
 		World world = this.getWorld();
 		if (world == null) return;
@@ -232,7 +331,7 @@ public class WorldConfig {
 		}
 	}
 	public void updateGamemode(Player player) {
-		if (this.gameMode != null) {
+		if (this.gameMode != null && !Permission.has(player, "world.ignoregamemode")) {
 			player.setGameMode(this.gameMode);
 		}
 	}
@@ -261,6 +360,7 @@ public class WorldConfig {
 	public void update(Player player) {
 		updateOP(player);
 		updateGamemode(player);
+		updateSpoutWeather(player);
 	}
 	
 	public World getWorld() {
@@ -287,49 +387,5 @@ public class WorldConfig {
 			}
 		}
 	}
-	
-	public void save(Configuration config) {
-		//Set if the world can be directly accessed
-		World w = this.getWorld();
-		if (w != null) {
-	        this.difficulty = w.getDifficulty();
-	        this.keepSpawnInMemory = w.getKeepSpawnInMemory();
-	        this.autosave = w.isAutoSave();
-		}
 		
-		String worldname = this.worldname + ".";
-		config.set(worldname + "loaded", w != null);
-		config.set(worldname + "keepSpawnLoaded", this.keepSpawnInMemory);
-		config.set(worldname + "environment", this.environment.toString());
-		config.set(worldname + "chunkGenerator", this.chunkGeneratorName);
-		if (this.gameMode == null) {
-			config.set(worldname + "gamemode", "NONE");
-		} else {
-			config.set(worldname + "gamemode", this.gameMode.toString());
-		}
-		
-		if (this.timeControl.locker != null && this.timeControl.locker.isRunning()) {
-			config.set(worldname + "lockedtime", this.timeControl.locker.time);
-		} else {
-			config.set(worldname + "lockedtime", null);
-		}
-
-		ArrayList<String> creatures = new ArrayList<String>();
-		for (CreatureType type : this.spawnControl.deniedCreatures) {
-			creatures.add(type.name());
-		}
-		config.set(worldname + "defaultPortal", this.defaultPortal);
-	    config.set(worldname + "operators", this.OPlist);
-		config.set(worldname + "deniedCreatures", creatures);
-		config.set(worldname + "holdWeather", this.holdWeather);
-		config.set(worldname + "difficulty", this.difficulty.toString());
-		config.set(worldname + "reloadWhenEmpty", this.reloadWhenEmpty);
-		config.set(worldname + "spawn.world", this.spawnPoint.getWorldName());
-		config.set(worldname + "spawn.x", this.spawnPoint.getX());
-		config.set(worldname + "spawn.y", this.spawnPoint.getY());
-		config.set(worldname + "spawn.z", this.spawnPoint.getZ());
-		config.set(worldname + "spawn.yaw", (double) this.spawnPoint.getYaw());
-		config.set(worldname + "spawn.pitch", (double) this.spawnPoint.getPitch());
-	}
-	
 }

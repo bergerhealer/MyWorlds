@@ -1,7 +1,8 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.32
+version: 1.4
 author: bergerkiller
+softdepend: [Spout]
 commands:
     world:
         description: Cross-world commands to manage your worlds
@@ -105,9 +106,12 @@ permissions:
     myworlds.world.chat.*:
         description: Sets if the player can chat while being in a certain world
         default: true
-    myworlds.world.chatglobal:
-        description: Sets if chat messages of the player are seen globally
+    myworlds.world.chat.*.*:
+        description: Sets if the player can chat from every world to every world
         default: op
+    myworlds.world.ignoregamemode:
+        description: Sets if the player game mode is not changed by the world game mode
+        default: false
     myworlds.world.use.*:
         description: Sets if the player can interact with blocks in a certain world
         default: op

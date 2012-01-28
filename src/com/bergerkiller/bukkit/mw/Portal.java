@@ -268,7 +268,6 @@ public class Portal {
 	}
 	
     private static WeakHashMap<Entity, Long> portaltimes = new WeakHashMap<Entity, Long>();
-    private static ArrayList<TeleportCommand> teleportations = new ArrayList<TeleportCommand>();  
     public static void handlePortalEnter(Entity e) {
         long currtime = System.currentTimeMillis();
     	long lastteleport;
@@ -303,36 +302,23 @@ public class Portal {
         	}
     	}
     }
-    private static class TeleportCommand {
-    	public Entity e;
-    	public Portal portal;
-    	public Location dest;
-    	public String name;
-    	public TeleportCommand(Entity e, Portal portal, Location dest, String name) {
-    		this.e = e;
-    		this.portal = portal;
-    		this.dest = dest;
-    		this.name = name;
-    	}
-    }
-    public static void delayedTeleport(Portal portal, Location dest, String destname, Entity e) {
-    	teleportations.add(new TeleportCommand(e, portal, dest, destname));
+
+    public static void delayedTeleport(final Portal portal, final Location dest, final String destname, final Entity e) {
     	MyWorlds.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MyWorlds.plugin, new Runnable() {
     	    public void run() {
-    	    	TeleportCommand telec = teleportations.remove(0);
-    	    	if (telec.portal == null) {
-    	    		if (telec.name == null) {
-    	    			Permission.handleTeleport(telec.e, telec.dest);
+    	    	if (portal == null) {
+    	    		if (destname == null) {
+    	    			Permission.handleTeleport(e, dest);
     	    		} else {
-    	    			Permission.handleTeleport(telec.e, telec.name, telec.dest);
+    	    			Permission.handleTeleport(e, destname, dest);
     	    		}
     	    	} else {
-    	    		if (telec.portal.hasDestination()) {
-    	    			if (Permission.handleTeleport(telec.e, telec.portal)) {
+    	    		if (portal.hasDestination()) {
+    	    			if (Permission.handleTeleport(e, portal)) {
     	    				//Success
     	    			}
         			} else {
-        				Util.message(telec.e, Localization.get("portal.nodestination"));
+        				Util.message(e, Localization.get("portal.nodestination"));
         			}
     	    	}
     	    }

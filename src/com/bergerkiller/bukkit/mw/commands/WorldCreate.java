@@ -6,10 +6,10 @@ import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 
+import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
-import com.bergerkiller.bukkit.mw.MWWorldListener;
+import com.bergerkiller.bukkit.mw.MWListener;
 import com.bergerkiller.bukkit.mw.MyWorlds;
-import com.bergerkiller.bukkit.mw.Task;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
@@ -56,7 +56,7 @@ public class WorldCreate extends Command {
 					}
 				}
 		        message(ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
-		        MWWorldListener.ignoreWorld(worldname);
+		        MWListener.ignoreWorld(worldname);
 		        World world = WorldManager.createWorld(worldname, seedval);
 				if (world != null) {
 					//load chunks
@@ -74,9 +74,9 @@ public class WorldCreate extends Command {
 							if (first || (current + 2) == total) {
 								int per = 100;
 								if (first) per = 100 * current / total;
-								t = new Task(per) {
+								t = new Task(MyWorlds.plugin, per) {
 									public void run() {
-										int percent = getIntArg(0);
+										int percent = arg(0, int.class);
 									    message(ChatColor.YELLOW + "Preparing spawn area (" + percent + "%)...");
 									    MyWorlds.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
 									}
@@ -84,9 +84,9 @@ public class WorldCreate extends Command {
 								first = false;
 							}
 							if (++current == total) {
-								t = new Task(world) {
+								t = new Task(MyWorlds.plugin, world) {
 									public void run() {
-										World world = (World) getArg(0);
+										World world = arg(0, World.class);
 										world.setKeepSpawnInMemory(true);
 									    message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
 									    MyWorlds.log(Level.INFO, "World '"+ world.getName() + "' loaded.");

@@ -95,6 +95,7 @@ public class Permission {
 	}
 	public static boolean canEnterWorld(Player player, String worldname) {
 		if (!MyWorlds.useWorldEnterPermissions) return true;
+		if (player.getWorld().getName().equalsIgnoreCase(worldname)) return true;
 		return hasGlobal(player, "world.enter.", worldname);
 	}
 	
@@ -104,6 +105,7 @@ public class Permission {
 	}
 	public static boolean canTeleportWorld(Player player, String worldname) {
 		if (!MyWorlds.useWorldTeleportPermissions) return true;
+		if (player.getWorld().getName().equalsIgnoreCase(worldname)) return true;
 		return hasGlobal(player, "world.teleport.", worldname);
 	}
 
@@ -132,10 +134,17 @@ public class Permission {
 	public static boolean canChat(Player player, Player with) {
 		if (player == null) return true;
 		if (!MyWorlds.useWorldChatPermissions) return true;
-		if (hasGlobal(player, "world.chat.", with.getWorld().getName())) {
-			if (player.getWorld() == with.getWorld()) return true;
-			return has(player, "world.chatglobal");
+		final String from = player.getWorld().getName().toLowerCase();
+		final String to = with.getWorld().getName().toLowerCase();
+		if (has(player, "world.chat.*.*")) return true;
+		if (has(player, "world.chat." + from + "." + to)) return true;
+		if (has(player, "world.chat." + from + ".*")) return true;
+		if (has(player, "world.chat.*." + to)) return true;
+		if (from.equals(to)) {
+			if (has(player, "world.chat.*")) return true;
+			return has(player, "world.chat." + from);
+		} else {
+			return false;
 		}
-		return false;
 	}
 }

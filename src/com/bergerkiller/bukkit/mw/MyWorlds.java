@@ -6,11 +6,11 @@ import java.util.logging.Logger;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import com.bergerkiller.bukkit.config.FileConfiguration;
 
 public class MyWorlds extends JavaPlugin {
 	public static boolean usePermissions;
@@ -27,6 +27,7 @@ public class MyWorlds extends JavaPlugin {
 	public static boolean allowPortalNameOverride;
 	public static boolean useWorldOperators;
 	public static boolean onlyObsidianPortals = false;
+	public static boolean isSpoutEnabled = false;
 	
 	public static MyWorlds plugin;
 	private static Logger logger = Logger.getLogger("Minecraft");
@@ -34,11 +35,7 @@ public class MyWorlds extends JavaPlugin {
 		logger.log(level, "[MyWorlds] " + message);
 	}
 	
-	private final MWEntityListener entityListener = new MWEntityListener();
-	private final MWBlockListener blockListener = new MWBlockListener();
-	private final MWWorldListener worldListener = new MWWorldListener();
-	private final MWPlayerListener playerListener = new MWPlayerListener();
-	private final MWWeatherListener weatherListener = new MWWeatherListener();
+	private final MWListener listener = new MWListener();
 	
 	public String root() {
 		return getDataFolder() + File.separator;
@@ -49,44 +46,27 @@ public class MyWorlds extends JavaPlugin {
 
 		//Event registering
         PluginManager pm = getServer().getPluginManager();
-        pm.registerEvent(Event.Type.ENTITY_PORTAL_ENTER, entityListener, Priority.Monitor, this);
-        pm.registerEvent(Event.Type.CREATURE_SPAWN, entityListener, Priority.Lowest, this);
-        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.BLOCK_PLACE, blockListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.BLOCK_PHYSICS, blockListener, Priority.Highest, this); 
-        pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Monitor, this);
-        pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Priority.Monitor, this);
-        pm.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
-        pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
-        pm.registerEvent(Event.Type.PLAYER_CHANGED_WORLD, playerListener, Priority.Monitor, this);
-        pm.registerEvent(Event.Type.PLAYER_INTERACT, playerListener, Priority.Lowest, this);
-        pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Normal, this);  
-        pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);  
-        pm.registerEvent(Event.Type.WORLD_UNLOAD, worldListener, Priority.Monitor, this);  
-        pm.registerEvent(Event.Type.WORLD_INIT, worldListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.WEATHER_CHANGE, weatherListener, Priority.Highest, this);
+        pm.registerEvents(this.listener, this);
+        isSpoutEnabled = pm.isPluginEnabled("Spout");
         
-        Configuration config = new Configuration(this);
+        FileConfiguration config = new FileConfiguration(this);
         config.load();
-        usePermissions = config.parse("usePermissions", false);
-        teleportInterval = config.parse("teleportInterval", 2000);
-        useWaterTeleport = config.parse("useWaterTeleport", true);
-        timeLockInterval = config.parse("timeLockInterval", 20);
-        useWorldEnterPermissions = config.parse("useWorldEnterPermissions", false);
-        usePortalEnterPermissions = config.parse("usePortalEnterPermissions", false);
-        useWorldTeleportPermissions = config.parse("useWorldTeleportPermissions", false);
-        usePortalTeleportPermissions = config.parse("usePortalTeleportPermissions", false);
-        useWorldBuildPermissions = config.parse("useWorldBuildPermissions", false);
-        useWorldUsePermissions = config.parse("useWorldUsePermissions", false);
-        useWorldChatPermissions = config.parse("useWorldChatPermissions", false);
-        allowPortalNameOverride = config.parse("allowPortalNameOverride", false);
-        useWorldOperators = config.parse("useWorldOperators", false);
-        onlyObsidianPortals = config.parse("onlyObsidianPortals", false);
-        String locale = config.parse("locale", "default");
+        usePermissions = config.get("usePermissions", false);
+        teleportInterval = config.get("teleportInterval", 2000);
+        useWaterTeleport = config.get("useWaterTeleport", true);
+        timeLockInterval = config.get("timeLockInterval", 20);
+        useWorldEnterPermissions = config.get("useWorldEnterPermissions", false);
+        usePortalEnterPermissions = config.get("usePortalEnterPermissions", false);
+        useWorldTeleportPermissions = config.get("useWorldTeleportPermissions", false);
+        usePortalTeleportPermissions = config.get("usePortalTeleportPermissions", false);
+        useWorldBuildPermissions = config.get("useWorldBuildPermissions", false);
+        useWorldUsePermissions = config.get("useWorldUsePermissions", false);
+        useWorldChatPermissions = config.get("useWorldChatPermissions", false);
+        allowPortalNameOverride = config.get("allowPortalNameOverride", false);
+        useWorldOperators = config.get("useWorldOperators", false);
+        onlyObsidianPortals = config.get("onlyObsidianPortals", false);
+        String locale = config.get("locale", "default");
         config.save();
-        
         //Localization
         Localization.init(this, locale);
         

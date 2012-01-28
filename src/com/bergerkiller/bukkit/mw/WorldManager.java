@@ -427,9 +427,11 @@ public class WorldManager {
 				cgen = getGenerator(worldname, gen);
 			}
 		} catch (Exception ex) {}
-		if (gen != null && cgen == null) {
-			MyWorlds.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
-			return null;
+		if (cgen == null) {
+			if (gen != null) {
+				MyWorlds.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
+				return null;
+			}
 		}
 		WorldConfig wc = WorldConfig.get(worldname);
 		wc.chunkGeneratorName = gen;
@@ -446,10 +448,10 @@ public class WorldManager {
 			if (w != null) break;
 		}
 		if (w != null) {
-			wc.updatePVP(w);
+			wc.update(w);
 			//Data file is made?
 			if (!worldExists(worldname)) {
-				w.save();
+				//w.save();
 			}
 		}
 		if (w == null) {

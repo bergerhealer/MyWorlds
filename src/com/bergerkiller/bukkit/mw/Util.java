@@ -7,11 +7,25 @@ import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
 import org.bukkit.GameMode;
 import org.bukkit.World.Environment;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class Util {
 
+	public static boolean isSolid(Block b, BlockFace direction) {
+		int maxwidth = 10;
+		while (true) {
+			int id = b.getTypeId();
+			if (id == 0) return false;
+			if (id != 9 && id != 8) return true;
+			b = b.getRelative(direction);
+			--maxwidth;
+			if (maxwidth <= 0) return false;
+		}
+	}
+	
 	public static <E extends Enum<E>> E parse(E[] enumeration, String name, E def, boolean contain) {
 		if (name == null) return def;
 		name = name.toLowerCase();

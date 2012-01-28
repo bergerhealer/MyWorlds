@@ -7,6 +7,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.mw.Localization;
+import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.Util;
@@ -66,6 +67,10 @@ public class Command {
 		return this.worldname != null;
 	}
 	
+	public void messageNoSpout() {
+		if (MyWorlds.isSpoutEnabled) return;
+		this.message(ChatColor.YELLOW + "Note that Spout is not installed right now!");
+	}
 	public void message(String msg) {
 		if (msg == null) return;
 		Util.message(this.sender, msg);
@@ -284,6 +289,14 @@ public class Command {
 					rval = new WorldReloadWE(sender, args);
 				} else if (cmdLabel.equalsIgnoreCase("reloadnoplayers")) {
 					rval = new WorldReloadWE(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("formsnow")) {
+					rval = new WorldFormSnow(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("formice")) {
+					rval = new WorldFormIce(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("showsnow")) {
+					rval = new WorldShowSnow(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("showrain")) {
+					rval = new WorldShowRain(sender, args);
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {
@@ -329,6 +342,8 @@ public class Command {
 		if (showUsage("world.deop")) hac = true;
 		if (showUsage("world.allowspawn")) hac = true;
 		if (showUsage("world.denyspawn")) hac = true;
+		if (showUsage("world.formsnow")) hac = true;
+		if (showUsage("world.formoce")) hac = true;
 		if (showUsage("tpp")) hac = true;
 		if (hac) {
 			message(ChatColor.RED + "Unknown command: " + args[0]);

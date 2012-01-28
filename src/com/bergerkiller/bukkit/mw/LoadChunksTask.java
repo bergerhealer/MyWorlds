@@ -5,6 +5,8 @@ import java.util.Queue;
 
 import org.bukkit.World;
 
+import com.bergerkiller.bukkit.common.Task;
+
 public class LoadChunksTask implements Runnable {
 	
 	private static class ChunkCoord {
