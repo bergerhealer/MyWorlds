@@ -1,7 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.util.logging.Level;
@@ -13,14 +12,12 @@ public class SafeWriter {
 	public SafeWriter(String filename) {
 		this.filename = filename;
 		try {
-			File f = new File(filename);
-			if (!f.exists()) f.createNewFile();
 			w = new BufferedWriter(new FileWriter(filename));
 		} catch (FileNotFoundException ex) {
-			MyWorlds.log(Level.SEVERE, "Failed to write to: " + filename);
+			MyWorlds.plugin.log(Level.SEVERE, "Failed to write to: " + filename);
 			ex.printStackTrace();
 		} catch (Exception ex) {
-			MyWorlds.log(Level.SEVERE, "Failed to open a write stream to: " + this.filename);
+			MyWorlds.plugin.log(Level.SEVERE, "Failed to open a write stream to: " + this.filename);
 			ex.printStackTrace();
 		}
 	}
@@ -31,7 +28,7 @@ public class SafeWriter {
 				w.write(line);
 				w.newLine();
 			} catch (Exception ex) {
-				MyWorlds.log(Level.SEVERE, "Error while writing data to file: " + this.filename);
+				MyWorlds.plugin.log(Level.SEVERE, "Error while writing data to file: " + this.filename);
 				this.close();
 			}
 		}
@@ -43,7 +40,7 @@ public class SafeWriter {
 			this.w.close();
 			this.w = null;
 		} catch (Exception ex) {
-			MyWorlds.log(Level.SEVERE, "Error while closing stream: " + this.filename);
+			MyWorlds.plugin.log(Level.SEVERE, "Error while closing stream: " + this.filename);
 			ex.printStackTrace();
 		}
 	}

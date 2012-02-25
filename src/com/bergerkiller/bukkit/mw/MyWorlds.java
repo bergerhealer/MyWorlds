@@ -1,18 +1,19 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.Plugin;
 
-import com.bergerkiller.bukkit.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.PluginBase;
 
-public class MyWorlds extends JavaPlugin {
+public class MyWorlds extends PluginBase {
+	
+	public MyWorlds() {
+		super(1595, 2000);
+	}
+
 	public static boolean usePermissions;
 	public static int teleportInterval;
 	public static boolean useWaterTeleport;
@@ -30,25 +31,25 @@ public class MyWorlds extends JavaPlugin {
 	public static boolean isSpoutEnabled = false;
 	
 	public static MyWorlds plugin;
-	private static Logger logger = Logger.getLogger("Minecraft");
-	public static void log(Level level, String message) {
-		logger.log(level, "[MyWorlds] " + message);
-	}
-	
-	private final MWListener listener = new MWListener();
-	
+		
 	public String root() {
 		return getDataFolder() + File.separator;
 	}
 	
-	public void onEnable() {
+	@Override
+	public void updateDependency(Plugin plugin, String pluginName, boolean enabled) {
+		if (pluginName.equals("Spout")) {
+			isSpoutEnabled = enabled;
+		}
+	}
+	
+	public void enable() {
 		plugin = this;
 
 		//Event registering
-        PluginManager pm = getServer().getPluginManager();
-        pm.registerEvents(this.listener, this);
-        isSpoutEnabled = pm.isPluginEnabled("Spout");
-        
+		this.register(MWListener.class);
+		this.register("tpp", "world");  
+		
         FileConfiguration config = new FileConfiguration(this);
         config.load();
         usePermissions = config.get("usePermissions", false);
@@ -67,6 +68,7 @@ public class MyWorlds extends JavaPlugin {
         onlyObsidianPortals = config.get("onlyObsidianPortals", false);
         String locale = config.get("locale", "default");
         config.save();
+        
         //Localization
         Localization.init(this, locale);
         
@@ -79,21 +81,13 @@ public class MyWorlds extends JavaPlugin {
 		//World info
 		WorldConfig.init(root() + "worlds.yml");
 		
-        //Commands
-        getCommand("tpp").setExecutor(this);
-        getCommand("world").setExecutor(this);  
-        
         //init chunk loader
         LoadChunksTask.init();
         
         //Chunk cache
         WorldManager.init();
-        
-        //final msg
-        PluginDescriptionFile pdfFile = this.getDescription();
-        System.out.println("[MyWorlds] version " + pdfFile.getVersion() + " is enabled!" );
 	}
-	public void onDisable() {
+	public void disable() {
 		//Portals
 		Portal.deinit(root() + "portals.txt");
 		
@@ -108,13 +102,16 @@ public class MyWorlds extends JavaPlugin {
 		LoadChunksTask.deinit();
 		
 		plugin = null;
-		
-		System.out.println("My Worlds disabled!");
 	}
 	
-	public boolean onCommand(CommandSender sender, Command cmd, String cmdLabel, String[] args) {
+	public boolean command(CommandSender sender, String cmdLabel, String[] args) {
 		com.bergerkiller.bukkit.mw.commands.Command.execute(sender, cmdLabel, args);
 		return true;
+	}
+
+	@Override
+	public void permissions() {
+		this.loadPermissions(Permission.class);
 	}
 
 }

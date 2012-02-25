@@ -76,9 +76,9 @@ public class WorldCreate extends Command {
 								if (first) per = 100 * current / total;
 								t = new Task(MyWorlds.plugin, per) {
 									public void run() {
-										int percent = arg(0, int.class);
+										int percent = arg(0, Integer.class);
 									    message(ChatColor.YELLOW + "Preparing spawn area (" + percent + "%)...");
-									    MyWorlds.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
+									    MyWorlds.plugin.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
 									}
 								};
 								first = false;
@@ -89,7 +89,7 @@ public class WorldCreate extends Command {
 										World world = arg(0, World.class);
 										world.setKeepSpawnInMemory(true);
 									    message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
-									    MyWorlds.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
+									    MyWorlds.plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
 									}
 								};
 							}

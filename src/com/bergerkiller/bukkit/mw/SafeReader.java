@@ -16,9 +16,9 @@ public class SafeReader {
 		try {
 			 r = new BufferedReader(new FileReader(filename));
 		} catch (FileNotFoundException ex) {
-			MyWorlds.log(Level.INFO, "File not found, it is not loaded: " + this.filename);
+			MyWorlds.plugin.log(Level.INFO, "File not found, it is not loaded: " + this.filename);
 		} catch (Exception ex) {
-			MyWorlds.log(Level.SEVERE, "Error while loading file: " + this.filename);
+			MyWorlds.plugin.log(Level.SEVERE, "Error while loading file: " + this.filename);
 			ex.printStackTrace();
 		}
 	}
@@ -38,7 +38,7 @@ public class SafeReader {
 		try {
 			return r.readLine();
 		} catch (Exception ex) {
-			MyWorlds.log(Level.SEVERE, "Error while reading: " + this.filename);
+			MyWorlds.plugin.log(Level.SEVERE, "Error while reading: " + this.filename);
 			ex.printStackTrace();
 			return null;
 		}
@@ -49,7 +49,7 @@ public class SafeReader {
 			this.r.close();
 			this.r = null;
 		} catch (Exception ex) {
-			MyWorlds.log(Level.SEVERE, "Error while closing stream: " + this.filename);
+			MyWorlds.plugin.log(Level.SEVERE, "Error while closing stream: " + this.filename);
 			ex.printStackTrace();
 		}
 	}

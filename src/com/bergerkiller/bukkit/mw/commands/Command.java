@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
@@ -73,7 +74,7 @@ public class Command {
 	}
 	public void message(String msg) {
 		if (msg == null) return;
-		Util.message(this.sender, msg);
+		CommonUtil.sendMessage(this.sender, msg);
 	}
 	public void locmessage(String node) {
 		Localization.message(this.sender, node);
@@ -141,7 +142,7 @@ public class Command {
 				index++;
 			}
 		}
-		Util.list(sender, ", ", portals);
+		CommonUtil.sendListMessage(sender, ", ", portals);
 	}
 	
 	public void genWorldname(int argindex) {
@@ -157,8 +158,6 @@ public class Command {
 	}
 			
 	public static void execute(CommandSender sender, String cmdLabel, String[] args) {
-		//convert args
-		args = Util.convertArgs(args);
 		//generate a node from this command
 		Command rval = null;
 		if (cmdLabel.equalsIgnoreCase("world")

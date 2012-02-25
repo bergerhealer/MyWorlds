@@ -40,12 +40,12 @@ public class WorldOpping extends Command {
 					if (node == "world.op") {
 						message(ChatColor.YELLOW + "Everyone is now an operator on all worlds!");
 						if (sender instanceof Player) {
-							MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped everyone on all worlds!");
+							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped everyone on all worlds!");
 						}
 					} else {
 						message(ChatColor.YELLOW + "Everyone is no longer an operator on any world!");
 						if (sender instanceof Player) {
-							MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped everyone on all worlds!");
+							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped everyone on all worlds!");
 						}
 					}
 				} else {
@@ -60,12 +60,12 @@ public class WorldOpping extends Command {
 					if (node == "world.op") {
 						message(ChatColor.WHITE + playername + ChatColor.YELLOW + " is now an operator on all worlds!");
 						if (sender instanceof Player) {
-							MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped '" + playername + "' on all worlds!");
+							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped '" + playername + "' on all worlds!");
 						}
 					} else {
 						message(ChatColor.WHITE + playername + ChatColor.YELLOW + " is no longer an operator on any world!");
 						if (sender instanceof Player) {
-							MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped '" + playername + "' on all worlds!");
+							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped '" + playername + "' on all worlds!");
 						}
 					}
 				}
@@ -78,12 +78,12 @@ public class WorldOpping extends Command {
 						wc.OPlist.add("*");
 						message(ChatColor.YELLOW + "Everyone on world '" + worldname + "' is an operator now!");
 						if (sender instanceof Player) {
-							MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped everyone on world '" + worldname + "'!");
+							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped everyone on world '" + worldname + "'!");
 						}
 					} else {
 						message(ChatColor.YELLOW + "Operators on world '" + worldname + "' have been cleared!");
 						if (sender instanceof Player) {
-							MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped everyone on world '" + worldname + "'!");
+							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped everyone on world '" + worldname + "'!");
 						}
 					}
 				} else {
@@ -91,13 +91,13 @@ public class WorldOpping extends Command {
 						wc.OPlist.add(playername.toLowerCase());
 						message(ChatColor.WHITE + playername + ChatColor.YELLOW + " is now an operator on world '" + worldname + "'!");
 						if (sender instanceof Player) {
-							MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped '" + playername + "' on world '" + worldname + "'!");
+							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped '" + playername + "' on world '" + worldname + "'!");
 						}
 					} else {
 						wc.OPlist.remove(playername.toLowerCase());
 						message(ChatColor.WHITE + playername + ChatColor.YELLOW + " is no longer an operator on world '" + worldname + "'!");
 						if (sender instanceof Player) {
-							MyWorlds.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped '" + playername + "' on world '" + worldname + "'!");
+							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " de-opped '" + playername + "' on world '" + worldname + "'!");
 						}
 					}
 				}

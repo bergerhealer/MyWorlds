@@ -4,7 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
 import org.bukkit.command.CommandSender;
 
-import com.bergerkiller.bukkit.mw.Util;
+import com.bergerkiller.bukkit.common.utils.EnumUtil;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldDifficulty extends Command {
@@ -23,7 +23,7 @@ public class WorldDifficulty extends Command {
 		    	String diff = wc.difficulty.toString().toLowerCase();
 		    	message(ChatColor.YELLOW + "Difficulty of world '" + worldname + "' is set at " + ChatColor.WHITE + diff);
 		    } else {
-		    	Difficulty diff = Util.parseDifficulty(args[0], Difficulty.NORMAL);
+		    	Difficulty diff = EnumUtil.parseDifficulty(args[0], Difficulty.NORMAL);
 		    	if (diff != null) {
 					wc.difficulty = diff;
 					wc.updateDifficulty(wc.getWorld());

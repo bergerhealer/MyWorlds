@@ -9,10 +9,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 import net.minecraft.server.NBTBase;
+import net.minecraft.server.NBTCompressedStreamTools;
 import net.minecraft.server.NBTTagCompound;
 import net.minecraft.server.RegionFile;
 
@@ -41,12 +43,12 @@ public class WorldManager {
 			regionfiles = (HashMap) a.get(null);
 			rafField = net.minecraft.server.RegionFile.class.getDeclaredField("c");
 			rafField.setAccessible(true);
-        	MyWorlds.log(Level.INFO, "Successfully bound variable to region file cache.");
-			MyWorlds.log(Level.INFO, "File references to unloaded worlds will be cleared!");
+        	MyWorlds.plugin.log(Level.INFO, "Successfully bound variable to region file cache.");
+			MyWorlds.plugin.log(Level.INFO, "File references to unloaded worlds will be cleared!");
 			return true;
 		} catch (Throwable t) {
-			MyWorlds.log(Level.WARNING, "Failed to bind to region file cache.");
-			MyWorlds.log(Level.WARNING, "Files will stay referenced after being unloaded!");
+			MyWorlds.plugin.log(Level.WARNING, "Failed to bind to region file cache.");
+			MyWorlds.plugin.log(Level.WARNING, "Files will stay referenced after being unloaded!");
 			t.printStackTrace();
 			return false;
 		}
@@ -81,7 +83,7 @@ public class WorldManager {
 				}
 			}
 		} catch (Exception ex) {
-			MyWorlds.log(Level.WARNING, "Exception while removing world reference for '" + worldname + "'!");
+			MyWorlds.plugin.log(Level.WARNING, "Exception while removing world reference for '" + worldname + "'!");
 			ex.printStackTrace();
 		}
 		for (Object key : removedKeys) {
@@ -413,11 +415,19 @@ public class WorldManager {
 
 	public static World createWorld(String worldname, long seed) {
 		String gen = getGeneratorPlugin(worldname);
-		if (gen == null) {
-			MyWorlds.log(Level.INFO, "Loading or creating world: '" + worldname + "' using seed " + seed);
+		StringBuilder msg = new StringBuilder().append("Loading or creating world '").append(worldname).append("'");
+		if (seed == 0) {
+			if (gen != null) {
+				msg.append(" using chunk generator: '").append(gen).append("'");
+			}
 		} else {
-			MyWorlds.log(Level.INFO, "Loading or creating world: '" + worldname + "' using seed " + seed + " and chunk generator: '" + gen + "'");
+			msg.append(" using seed ").append(seed);
+			if (gen != null) {
+				msg.append(" and chunk generator: '").append(gen).append("'");
+			}
 		}
+		MyWorlds.plugin.log(Level.INFO, msg.toString());
+		
 		final int retrycount = 3;
 		World w = null;
 		int i = 0;
@@ -429,7 +439,7 @@ public class WorldManager {
 		} catch (Exception ex) {}
 		if (cgen == null) {
 			if (gen != null) {
-				MyWorlds.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
+				MyWorlds.plugin.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
 				return null;
 			}
 		}
@@ -439,11 +449,11 @@ public class WorldManager {
 			try {
 				WorldCreator c = new WorldCreator(worldname);
 				c.environment(wc.environment);
-				c.seed(seed);
+				if (seed != 0) c.seed(seed);
 				c.generator(cgen);
 				w = c.createWorld();
 			} catch (Exception ex) {
-				MyWorlds.log(Level.WARNING, "World load issue: " + ex.getMessage());
+				MyWorlds.plugin.log(Level.WARNING, "World load issue: " + ex.getMessage());
 			}
 			if (w != null) break;
 		}
@@ -455,11 +465,11 @@ public class WorldManager {
 			}
 		}
 		if (w == null) {
-			MyWorlds.log(Level.WARNING, "Operation failed after " + i + " retries!");
+			MyWorlds.plugin.log(Level.WARNING, "Operation failed after " + i + " retries!");
 		} else if (i == 1) {
-			MyWorlds.log(Level.INFO, "Operation succeeded after 1 retry!");
+			MyWorlds.plugin.log(Level.INFO, "Operation succeeded after 1 retry!");
 		} else if (i > 0) {
-			MyWorlds.log(Level.INFO, "Operation succeeded after " + i + " retries!");
+			MyWorlds.plugin.log(Level.INFO, "Operation succeeded after " + i + " retries!");
 		}
 		return w;
 	}
@@ -614,9 +624,17 @@ public class WorldManager {
 	 * @return
 	 */
 	public static int repairRegion(File chunkfile, File backupfolder) {
-		MyWorlds.log(Level.INFO, "Performing repairs on region file: " + chunkfile.getName());
+		MyWorlds.plugin.log(Level.INFO, "Performing repairs on region file: " + chunkfile.getName());
 		RandomAccessFile raf = null;
 		try {
+			String name = chunkfile.getName().substring(2);
+			String xname = name.substring(0, name.indexOf('.'));
+			name = name.substring(xname.length() + 1);
+			String zname = name.substring(0, name.indexOf('.'));
+			
+			int xOffset = 32 * Integer.parseInt(xname);
+			int zOffset = 32 * Integer.parseInt(zname);
+			
 			raf = new RandomAccessFile(chunkfile, "rw");
 			File backupfile = new File(backupfolder + File.separator + chunkfile.getName());
 			int[] locations = new int[1024];
@@ -625,54 +643,102 @@ public class WorldManager {
 			}
 			//Validate the data
 			int editcount = 0;
+			int chunkX = 0;
+			int chunkZ = 0;
+			
+			//x = 5
+			//z = 14
+			//i = 5 + 14 * 32 = 453
+			//x = i % 32 = 5
+			//z = [(453 - 5)]  448 / 32 = 
+			
+			byte[] data = new byte[8096];
 			for (int i = 0; i < locations.length; i++) {
+				chunkX = i % 32;
+				chunkZ = (i - chunkX) >> 5;
+				chunkX += xOffset;
+				chunkZ += zOffset;
 				int location = locations[i];
 				if (location == 0) continue;
 				try {
 					int offset = location >> 8;
                     int size = location & 255;
-					raf.seek((long) (offset * 4096));
+                    long seekindex = (long) (offset * 4096);
+					raf.seek(seekindex);
 					int length = raf.readInt();
 					//Read and test the data
 					if (length > 4096 * size) {
 						editcount++;
 						locations[i] = 0;
-						MyWorlds.log(Level.WARNING, "Invalid length: " + length + " > 4096 * " + size);
+						MyWorlds.plugin.log(Level.WARNING, "Invalid length: " + length + " > 4096 * " + size);
 						//Invalid length
 					} else if (size > 0 && length > 0) {
 						byte version = raf.readByte();
-						byte[] data = new byte[length - 1];
+						if (data.length < length + 10) {
+							data = new byte[length - 1];
+						}
 						raf.read(data);
 						ByteArrayInputStream bais = new ByteArrayInputStream(data);
 						//Try to load it all...
 						DataInputStream stream;
 						if (version == 1) {
-							stream = new DataInputStream(new GZIPInputStream(bais));
+							stream = new DataInputStream(new BufferedInputStream(new GZIPInputStream(bais)));
 						} else if (version == 2) {
-							stream = new DataInputStream(new InflaterInputStream(bais));
+							stream = new DataInputStream(new BufferedInputStream(new InflaterInputStream(bais)));
 						} else {
 							stream = null;
 							//Unknown version
-							MyWorlds.log(Level.WARNING, "Unknown region version: " + version + " (we probably need an update here!)");
+							MyWorlds.plugin.log(Level.WARNING, "Unknown region version: " + version + " (we probably need an update here!)");
 						}
 						if (stream != null) {
+							
 							//Validate the stream and close
 							try {
 								NBTBase base = NBTTagCompound.b((DataInput) stream);
 								if (base == null) {
 									editcount++;
 									locations[i] = 0;
-									MyWorlds.log(Level.WARNING, "Invalid tag compount at chunk " + i);
+									MyWorlds.plugin.log(Level.WARNING, "Invalid tag compound at chunk " + chunkX + "/" + chunkZ);
 								} else if (!(base instanceof NBTTagCompound)) {
 									editcount++;
 									locations[i] = 0;
-									MyWorlds.log(Level.WARNING, "Invalid tag compount at chunk " + i);
+									MyWorlds.plugin.log(Level.WARNING, "Invalid tag compound at chunk " + chunkX + "/" + chunkZ);
+								} else {
+									//correct location?
+									NBTTagCompound comp = (NBTTagCompound) base;
+									if (comp.hasKey("Level")) {
+										NBTTagCompound level = comp.getCompound("Level");
+										int xPos = level.getInt("xPos");
+										int zPos = level.getInt("zPos");
+										//valid coordinates?
+										if (xPos != chunkX || zPos != chunkZ) {
+											MyWorlds.plugin.log(Level.WARNING, "Chunk [" + xPos + "/" + zPos + "] was stored at [" + chunkX + "/" + chunkZ + "], moving...");
+											level.setInt("xPos", chunkX);
+											level.setInt("zPos", chunkZ);
+											//rewrite to stream
+											ByteArrayOutputStream baos = new ByteArrayOutputStream(8096);
+									        DataOutputStream dataoutputstream = new DataOutputStream(new DeflaterOutputStream(baos));
+									        NBTCompressedStreamTools.a(level, (DataOutput) dataoutputstream);
+									        dataoutputstream.close();
+									        //write to region file
+									        raf.seek(seekindex);
+									        byte[] newdata = baos.toByteArray();
+									        raf.writeInt(newdata.length + 1);
+									        raf.writeByte(2);
+									        raf.write(newdata, 0, newdata.length);
+									        editcount++;
+										}
+									} else {
+										editcount++;
+										locations[i] = 0;
+										MyWorlds.plugin.log(Level.WARNING, "Invalid tag compound at chunk " + chunkX + "/" + chunkZ);
+									}
 								}
 							} catch (Exception ex) {
 								//Invalid.
 								editcount++;
 								locations[i] = 0;
-								MyWorlds.log(Level.WARNING, "Stream  " + i);
+								MyWorlds.plugin.log(Level.WARNING, "Stream  " + i);
 								ex.printStackTrace();
 							}
 							stream.close();
@@ -692,7 +758,7 @@ public class WorldManager {
 						raf.writeInt(location);
 					}
 				} else {
-					MyWorlds.log(Level.WARNING, "Failed to make a copy of the file, no changes are made.");
+					MyWorlds.plugin.log(Level.WARNING, "Failed to make a copy of the file, no changes are made.");
 					return -2;
 				}
 			}

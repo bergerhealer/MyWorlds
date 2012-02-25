@@ -7,6 +7,8 @@ import java.util.Map;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
+
 public class Localization {
 	private static HashMap<String, String> messages = new HashMap<String, String>();
 	private static String getRaw(String message) {
@@ -79,10 +81,10 @@ public class Localization {
 	}
 	
 	public static void message(Object sender, String key) {
-		Util.message(sender, get(key, ""));
+		CommonUtil.sendMessage(sender, get(key, ""));
 	}
 	public static void message(Object sender, String key, String def) {
-		Util.message(sender, get(key, def));
+		CommonUtil.sendMessage(sender, get(key, def));
 	}
 		
 	public static String get(String key) {

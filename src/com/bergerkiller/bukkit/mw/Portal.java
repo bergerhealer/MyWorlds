@@ -19,6 +19,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.StringUtil;
+
 public class Portal {
 	private String name;
 	private String destination;
@@ -115,7 +118,7 @@ public class Portal {
 						//In loaded chunk and NOT found!
 						//Remove it
 						positions.remove(portalname);
-						MyWorlds.log(Level.WARNING, "Removed portal '" + portalname + "' because it is no longer there!");
+						MyWorlds.plugin.log(Level.WARNING, "Removed portal '" + portalname + "' because it is no longer there!");
 						//End the loop and call the function again
 						return get(signloc, radius);
 					}
@@ -318,7 +321,7 @@ public class Portal {
     	    				//Success
     	    			}
         			} else {
-        				Util.message(e, Localization.get("portal.nodestination"));
+        				CommonUtil.sendMessage(e, Localization.get("portal.nodestination"));
         			}
     	    	}
     	    }
@@ -331,14 +334,14 @@ public class Portal {
 	public static void init(String filename) {
 		portallocations = new HashMap<String, HashMap<String, Position>>();
 		for (String textline : SafeReader.readAll(filename, true)) {
-			String[] args = Util.convertArgs(textline.split(" "));
+			String[] args = StringUtil.convertArgs(textline.split(" "));
 			if (args.length == 7) {
 				String name = args[0];
 				try {
 					Position pos = new Position(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
 					getPortalLocations(args[1]).put(name, pos);
 				} catch (Exception ex) {
-					MyWorlds.log(Level.SEVERE, "Failed to load portal: " + name);
+					MyWorlds.plugin.log(Level.SEVERE, "Failed to load portal: " + name);
 				}
 			}
 		}

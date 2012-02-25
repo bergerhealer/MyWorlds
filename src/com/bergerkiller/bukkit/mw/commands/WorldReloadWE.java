@@ -3,7 +3,7 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
-import com.bergerkiller.bukkit.mw.Util;
+import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldReloadWE extends Command {
@@ -19,8 +19,8 @@ public class WorldReloadWE extends Command {
 			this.genWorldname(1);
 			if (this.handleWorld()) {
 				WorldConfig wc = WorldConfig.get(worldname);
-				if (Util.isBool(args[0])) {
-					wc.reloadWhenEmpty = Util.getBool(args[0]);
+				if (StringUtil.isBool(args[0])) {
+					wc.reloadWhenEmpty = StringUtil.getBool(args[0]);
 					if (wc.reloadWhenEmpty) {
 						message(ChatColor.YELLOW + "The world '" + worldname + "' will now reload when it has no players.");
 					} else {

@@ -5,6 +5,8 @@ import java.util.HashSet;
 import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
 
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
+
 public class SpawnControl {
 	
 	public HashSet<CreatureType> deniedCreatures = new HashSet<CreatureType>();
@@ -26,7 +28,7 @@ public class SpawnControl {
 	}
 	public void setAnimals(boolean deny) {
 		for (CreatureType type : CreatureType.values()) {
-			if (isAnimal(type)) {
+			if (EntityUtil.isAnimal(type.toString().toLowerCase().replace("_", ""))) {
 				if (deny) {
 					deniedCreatures.add(type);
 				} else {
@@ -37,7 +39,7 @@ public class SpawnControl {
 	}
 	public void setMonsters(boolean deny) {
 		for (CreatureType type : CreatureType.values()) {
-			if (isMonster(type)) {
+			if (EntityUtil.isMonster(type.toString().toLowerCase().replace("_", ""))) {
 				if (deny) {
 					deniedCreatures.add(type);
 				} else {
@@ -45,36 +47,6 @@ public class SpawnControl {
 				}
 			}
 		}
-	}
-	
-	public static boolean isMonster(CreatureType type) {
-		if (type == null) return false;
-		switch (type) {
-		case CREEPER : return true;
-		case GHAST : return true;
-		case GIANT : return true;
-		case MONSTER : return true;
-		case PIG_ZOMBIE : return true;
-		case SKELETON : return true;
-		case SLIME : return true;
-		case SPIDER : return true;
-		case ZOMBIE : return true;
-		case ENDERMAN : return true;
-		case CAVE_SPIDER : return true;
-		}
-		return false;
-	}
-	public static boolean isAnimal(CreatureType type) {
-		if (type == null) return false;
-		switch (type) {
-		case CHICKEN : return true;
-		case COW : return true;
-		case SHEEP : return true;
-		case SQUID : return true;
-		case WOLF : return true;
-		case PIG : return true;
-		}
-		return false;
 	}
 	
 	public static CreatureType getCreature(String name) {

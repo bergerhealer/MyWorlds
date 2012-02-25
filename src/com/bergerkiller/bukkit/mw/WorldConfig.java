@@ -24,9 +24,10 @@ import org.getspout.spoutapi.SpoutManager;
 import org.getspout.spoutapi.block.SpoutWeather;
 import org.getspout.spoutapi.player.SpoutPlayer;
 
+import com.bergerkiller.bukkit.common.config.ConfigurationNode;
+import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.Task;
-import com.bergerkiller.bukkit.config.ConfigurationNode;
-import com.bergerkiller.bukkit.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.utils.EnumUtil;
 
 public class WorldConfig {	
 	private static HashMap<String, WorldConfig> config = new HashMap<String, WorldConfig>();
@@ -56,13 +57,13 @@ public class WorldConfig {
 		FileConfiguration config = new FileConfiguration(filename);
 		config.load();
 		for (ConfigurationNode node : config.getNodes()) {
-			WorldConfig wc = new WorldConfig(node);
-			if (WorldManager.worldExists(wc.worldname)) {
+			if (WorldManager.worldExists(node.getName())) {
+				WorldConfig wc = new WorldConfig(node);
 				if (node.get("loaded", false)) {
 					wc.loadWorld();
 				}
 			} else {
-				MyWorlds.log(Level.WARNING, "World: " + wc.worldname + " no longer exists!");
+				MyWorlds.plugin.log(Level.WARNING, "World: " + node.getName() + " no longer exists, data will be wiped when disabling!");
 			}
 		}
 		for (World world : Bukkit.getServer().getWorlds()) {
@@ -89,10 +90,10 @@ public class WorldConfig {
 	public WorldConfig(ConfigurationNode node) {
 		this(node.getName());
 		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
-		this.environment = Util.parseEnvironment(node.get("environment", String.class), this.environment);
+		this.environment = EnumUtil.parseEnvironment(node.get("environment", String.class), this.environment);
 		this.chunkGeneratorName = node.get("chunkGenerator", String.class);
-		this.difficulty = Util.parseDifficulty(node.get("difficulty", String.class), this.difficulty);
-		this.gameMode = Util.parseGameMode(node.get("gamemode", String.class), null);
+		this.difficulty = EnumUtil.parseDifficulty(node.get("difficulty", String.class), this.difficulty);
+		this.gameMode = EnumUtil.parseGameMode(node.get("gamemode", String.class), null);
 		String worldspawn = node.get("spawn.world", String.class);
 		if (worldspawn != null) {
 			double x = node.get("spawn.x", 0.0);
@@ -116,9 +117,10 @@ public class WorldConfig {
 			} else if (type.equals("MONSTERS")) {
 				this.spawnControl.setMonsters(true);
 			} else {
-				try {
-					this.spawnControl.deniedCreatures.add(CreatureType.valueOf(type));
-				} catch (Exception ex) {}
+				CreatureType t = EnumUtil.parse(CreatureType.class, type, null);
+				if (t != null) {
+					this.spawnControl.deniedCreatures.add(t);
+				}
 			}
 		}
     	long time = node.get("lockedtime", Integer.MIN_VALUE);
@@ -143,15 +145,17 @@ public class WorldConfig {
 			this.autosave = world.isAutoSave();
 		} else {
 			this.keepSpawnInMemory = true;
-			this.environment = Util.parseEnvironment(worldname, Environment.NORMAL);
+			this.environment = EnumUtil.parseEnvironment(worldname, Environment.NORMAL);
 			this.difficulty = Difficulty.NORMAL;
 			this.spawnPoint = new Position(worldname, 0, 64, 0);
 			this.pvp = true;
 		}
 		this.spawnControl = new SpawnControl();
 		this.timeControl = new TimeControl(this.worldname);
-		for (OfflinePlayer op : Bukkit.getServer().getOperators()) {
-			this.OPlist.add(op.getName());
+		if (MyWorlds.useWorldOperators) {
+			for (OfflinePlayer op : Bukkit.getServer().getOperators()) {
+				this.OPlist.add(op.getName());
+			}
 		}
 		this.gameMode = Bukkit.getServer().getDefaultGameMode();
 	}
@@ -236,11 +240,11 @@ public class WorldConfig {
 		if (WorldManager.worldExists(this.worldname)) {
 			World w = WorldManager.getOrCreateWorld(this.worldname);
 			if (w == null) {
-				MyWorlds.log(Level.SEVERE, "Failed to (pre)load world: " + worldname);
+				MyWorlds.plugin.log(Level.SEVERE, "Failed to (pre)load world: " + worldname);
 			}
 			return w;
 		} else {
-			MyWorlds.log(Level.WARNING, "World: " + worldname + " could not be loaded because it no longer exists!");
+			MyWorlds.plugin.log(Level.WARNING, "World: " + worldname + " could not be loaded because it no longer exists!");
 		}
 		return null;
 	}
@@ -287,7 +291,7 @@ public class WorldConfig {
 				}
 			} catch (Throwable t) {
 				MyWorlds.isSpoutEnabled = false;
-				MyWorlds.log(Level.SEVERE, "An error occured while using Spout, Spout is no longer used in MyWorlds from now on:");
+				MyWorlds.plugin.log(Level.SEVERE, "An error occured while using Spout, Spout is no longer used in MyWorlds from now on:");
 				t.printStackTrace();
 			}
 		}
@@ -298,13 +302,13 @@ public class WorldConfig {
 		if (!this.reloadWhenEmpty) return;
 		if (world.getPlayers().size() > 0) return;
 		//reload world
-		MyWorlds.log(Level.INFO, "Reloading world '" + worldname + "' - world became empty");
+		MyWorlds.plugin.log(Level.INFO, "Reloading world '" + worldname + "' - world became empty");
 		if (!this.unloadWorld()) {
-			MyWorlds.log(Level.WARNING, "Failed to unload world: " + worldname + " for reload purposes");
+			MyWorlds.plugin.log(Level.WARNING, "Failed to unload world: " + worldname + " for reload purposes");
 		} else if (this.loadWorld() == null) {
-			MyWorlds.log(Level.WARNING, "Failed to load world: " + worldname + " for reload purposes");
+			MyWorlds.plugin.log(Level.WARNING, "Failed to load world: " + worldname + " for reload purposes");
 		} else {
-			MyWorlds.log(Level.INFO, "World reloaded successfully");
+			MyWorlds.plugin.log(Level.INFO, "World reloaded successfully");
 		}
 	}
 	public void updateAutoSave(World world) {

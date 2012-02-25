@@ -34,12 +34,12 @@ public class WorldWeather extends Command {
 					setSun = true;
 				} else if (command.equalsIgnoreCase("sunny")) { 
 					setSun = true;
-				} else if (command.equalsIgnoreCase("endless")) {
-					setSun = true;
 				} else if (command.equalsIgnoreCase("storm")) {
 					setStorm = true;
+					setThunder = true;
 				} else if (command.equalsIgnoreCase("stormy")) {
 					setStorm = true;
+					setThunder = true;
 				} else if (command.equalsIgnoreCase("rain")) {
 					setStorm = true;
 				} else if (command.equalsIgnoreCase("rainy")) {
@@ -76,13 +76,19 @@ public class WorldWeather extends Command {
 						if (setThunder) {
 							 w.setThundering(true);
 						}
-						String a = "";
-						if (setThunder) a = "rumbling ";
 						if (setHold) {
-							if (setThunder) w.setThunderDuration(Integer.MAX_VALUE);
-							message(ChatColor.GREEN + "You started an endless " +  a + "storm on world: '" + worldname + "'!");
+							if (setThunder) {
+								w.setThunderDuration(Integer.MAX_VALUE);
+								message(ChatColor.GREEN + "You started an endless storm on world: '" + worldname + "'!");
+							} else {
+								message(ChatColor.GREEN + "You started a never ending rainfall and snowfall on world: '" + worldname + "'!");
+							}
 						} else {
-							message(ChatColor.GREEN + "You started a " +  a + "storm on world: '" + worldname + "'!");
+							if (setThunder) {
+								message(ChatColor.GREEN + "You started a storm on world: '" + worldname + "'!");
+							} else {
+								message(ChatColor.GREEN + "You started rainfall and snowfall on world: '" + worldname + "'!");
+							}
 						}
 					} else if (setSun && (w.hasStorm() || holdchange)) {
 						MWListener.setWeather(w, false);

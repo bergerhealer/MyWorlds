@@ -6,25 +6,94 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.bergerkiller.bukkit.common.permissions.IPermissionDefault;
 import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijiko.permissions.PermissionHandler;
 
-public class Permission {
+public enum Permission implements IPermissionDefault {
+	COMMAND_LIST("world.list", PermissionDefault.OP, "Sets if the player can list all worlds on the server"),
+    COMMAND_INFO("world.info", PermissionDefault.OP, "Sets if the player can see world information, such as the seed and size"),
+    COMMAND_CONFIG("world.config", PermissionDefault.OP, "Sets if the player can manually load and save the world configuration"),
+    COMMAND_PORTALS("world.portals", PermissionDefault.OP, "Sets if the player can list all portals on the server"),
+    COMMAND_LISTGEN("world.listgenerators", PermissionDefault.OP, "Sets if the player can list all chunk generators on the server"),
+    COMMAND_SETPORTAL("world.setportal", PermissionDefault.OP, "Sets if the player can change the default portal destination on the world"),
+    COMMAND_LOAD("world.load", PermissionDefault.OP, "Sets if the player can load unloaded worlds (not create)"),
+    COMMAND_UNLOAD("world.unload", PermissionDefault.OP, "Sets if the player can unload loaded worlds (not create)"),
+    COMMAND_CREATE("world.create", PermissionDefault.OP, "Sets if the player can create worlds (not replace)"),
+    COMMAND_SPAWN("world.spawn", PermissionDefault.OP, "Sets if the player can teleport to world spawn points"),
+    COMMAND_EVACUATE("world.evacuate", PermissionDefault.OP, "Sets if the player can clear a world from its players"),
+    COMMAND_REPAIR("world.repair", PermissionDefault.OP, "Sets if the player can repair damaged worlds (only if broken)"),
+    COMMAND_SAVE("world.save", PermissionDefault.OP, "Sets if the player can save worlds"),
+    COMMAND_SETSAVING("world.setsaving", PermissionDefault.OP, "Sets if the player can toggle world auto-saving on or off"),
+    COMMAND_DELETE("world.delete", PermissionDefault.OP, "Sets if the player can permanently delete worlds"),
+    COMMAND_COPY("world.copy", PermissionDefault.FALSE, "Sets if the player can clone worlds"),
+    COMMAND_DIFFICULTY("world.difficulty", PermissionDefault.OP, "Sets if the player can change the difficulty setting of worlds"),
+    COMMAND_TOGGLEPVP("world.togglepvp", PermissionDefault.OP, "Sets if the player can change the PvP setting of worlds"),
+    COMMAND_OP("world.op", PermissionDefault.OP, "Sets if the player can add operators to a world"),
+    COMMAND_DEOP("world.deop", PermissionDefault.OP, "Sets if the player can remove operator from a world"),
+    COMMAND_TOGGLESPAWNLOADED("world.togglespawnloaded", PermissionDefault.OP, "Sets if the player can toggle spawn chunk loading on or off"),
+    COMMAND_ALLOWSPAWN("world.allowspawn", PermissionDefault.OP, "Sets if the player can start mobs spawning"),
+    COMMAND_DENYSPAWN("world.denyspawn", PermissionDefault.OP, "Sets if the player can stop mobs from spawning"),
+    COMMAND_WEATHER("world.weather", PermissionDefault.OP, "Sets if the player can change the weather on worlds"),
+    COMMAND_TIME("world.time", PermissionDefault.OP, "Sets if the player can change the time on worlds"),
+    COMMAND_GAMEMODE("world.gamemode", PermissionDefault.OP, "Sets if the player can change the gamemode of a world"),
+    COMMAND_SETSPAWN("world.setspawn", PermissionDefault.OP, "Sets if the player can change the spawn point of a world"),
+    GENERAL_TELEPORTALL("world.teleport.*", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn"),
+    GENERAL_ENTERALL("world.enter.*", PermissionDefault.OP, "Sets if the player can enter a certain world through portals"),
+    GENERAL_BUILDALL("world.build.*", PermissionDefault.OP, "Sets if the player can build in a certain world"),
+    GENERAL_CHATALL("world.chat.*", PermissionDefault.TRUE, "Sets if the player can chat while being in a certain world"),
+    GENERAL_CHATALLWORLDS("world.chat.*.*", PermissionDefault.OP, "Sets if the player can chat from every world to every world"),
+    GENERAL_IGNOREGM("world.ignoregamemode", PermissionDefault.FALSE, "Sets if the player game mode is not changed by the world game mode"),
+    GENERAL_USEALL("world.use.*", PermissionDefault.OP, "Sets if the player can interact with blocks in a certain world"),
+    PORTAL_CREATE("portal.create", PermissionDefault.OP, "Sets if the player can create teleport signs"),
+    PORTAL_OVERRIDE("portal.override", PermissionDefault.OP, "Sets if the player can replace existing portals"),
+    PORTAL_USE("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals"),
+    PORTAL_TELEPORTALL("portal.teleport.*", PermissionDefault.OP, "Sets the portals a player can teleport to using /tpp"),
+    PORTAL_ENTERALL("portal.enter.*", PermissionDefault.OP, "Sets if the player can enter a certain portal"),
+    COMMAND_TPP("tpp", PermissionDefault.OP, "Sets if the player can teleport to worlds or portals");
+
+	private final String name;
+	private final PermissionDefault def;
+	private final String desc;
+	private Permission(final String name, final PermissionDefault def, final String desc) {
+		this.name = name;
+		this.def = def;
+		this.desc = desc;
+	}
+	
+	@Override
+	public String getName() {
+		return "myworlds." + this.name;
+	}
+	@Override
+	public PermissionDefault getDefault() {
+		return this.def;
+	}
+	@Override
+	public String getDescription() {
+		return this.desc;
+	}
+	
+	public String toString() {
+		return this.name;
+	}
+	
 	private static PermissionHandler permissionHandler = null; //Permissions 3.* ONLY
 	public static void init(JavaPlugin plugin) {
 		if (MyWorlds.usePermissions) {
 			Plugin permissionsPlugin = plugin.getServer().getPluginManager().getPlugin("Permissions");
 			if (permissionsPlugin == null) {
-				MyWorlds.log(Level.WARNING, "Permission system not detected, defaulting to build-in permissions!");
+				MyWorlds.plugin.log(Level.WARNING, "Permission system not detected, defaulting to build-in permissions!");
 			} else {
 				permissionHandler = ((Permissions) permissionsPlugin).getHandler();
-				MyWorlds.log(Level.INFO, "Found and will use permissions plugin "+((Permissions)permissionsPlugin).getDescription().getFullName());
+				MyWorlds.plugin.log(Level.INFO, "Found and will use permissions plugin "+((Permissions)permissionsPlugin).getDescription().getFullName());
 			}
 		} else {
-			MyWorlds.log(Level.INFO, "Using build-in 'Bukkit SuperPerms' as permissions plugin!");;
+			MyWorlds.plugin.log(Level.INFO, "Using build-in 'Bukkit SuperPerms' as permissions plugin!");;
 		}
 	}
 	public static void deinit() {
@@ -147,4 +216,5 @@ public class Permission {
 			return false;
 		}
 	}
+
 }

@@ -3,7 +3,7 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
-import com.bergerkiller.bukkit.mw.Util;
+import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldShowSnow extends Command {
@@ -19,8 +19,8 @@ public class WorldShowSnow extends Command {
 			this.genWorldname(1);
 			if (this.handleWorld()) {
 				WorldConfig wc = WorldConfig.get(worldname);
-				if (Util.isBool(args[0])) {
-					wc.showSnow = Util.getBool(args[0]);
+				if (StringUtil.isBool(args[0])) {
+					wc.showSnow = StringUtil.getBool(args[0]);
 					if (wc.showSnow) {
 						message(ChatColor.YELLOW + "Snow will be seen by Spoutcraft players on world '" + worldname + "'!");
 					} else {

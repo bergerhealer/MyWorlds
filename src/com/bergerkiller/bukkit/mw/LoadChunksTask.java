@@ -7,7 +7,7 @@ import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.Task;
 
-public class LoadChunksTask implements Runnable {
+public class LoadChunksTask extends Task {
 	
 	private static class ChunkCoord {
 		public int x, z;
@@ -17,10 +17,7 @@ public class LoadChunksTask implements Runnable {
 	
 	public static void abort() {
 		remaining = new LinkedList<ChunkCoord>();
-		if (taskid != -1) {
-			MyWorlds.plugin.getServer().getScheduler().cancelTask(taskid);
-			taskid = -1;
-		}
+		Task.stop(task);
 	}
 	
 	public static void init() {
@@ -44,13 +41,15 @@ public class LoadChunksTask implements Runnable {
 		coord.world = world;
 		coord.taskWhenFinished = taskWhenFinished;
 		remaining.offer(coord);
-		if (taskid == -1) {
-			taskid = MyWorlds.plugin.getServer().getScheduler().scheduleSyncRepeatingTask(MyWorlds.plugin, new LoadChunksTask(), 0, 1);
-		}
+		Task.stop(task);
+		task = new LoadChunksTask().start(0, 1);
 	}
-	private static int taskid = -1;
 	
-	private LoadChunksTask() {}
+	private static Task task;
+	
+	private LoadChunksTask() {
+		super(MyWorlds.plugin);
+	}
 	
 	@Override
 	public void run() {
