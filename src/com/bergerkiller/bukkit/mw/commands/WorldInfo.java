@@ -27,7 +27,7 @@ public class WorldInfo extends Command {
 				WorldConfig wc = WorldConfig.get(worldname);
 				message(ChatColor.YELLOW + "Information about the world: " + worldname);
 				message(ChatColor.WHITE + "Internal name: " + ChatColor.YELLOW + info.name);
-				message(ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + wc.environment.name().toLowerCase());
+				message(ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + wc.worldmode.toString());
 				if (wc.chunkGeneratorName == null) {
 					message(ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + "Default");
 				} else {

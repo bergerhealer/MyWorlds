@@ -4,6 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldList extends Command {
@@ -16,30 +17,20 @@ public class WorldList extends Command {
 	public void execute() {
 		if (sender instanceof Player) {
 			//perform some nice layout coloring
-			sender.sendMessage("");
-			sender.sendMessage(ChatColor.GREEN + "[Loaded/Online] " + ChatColor.RED + "[Unloaded/Offline] " + ChatColor.DARK_RED + "[Broken/Dead]");
-			sender.sendMessage(ChatColor.YELLOW + "Available worlds: ");
-			String msgpart = "";
+			MessageBuilder builder = new MessageBuilder();
+			builder.newLine().green("[Loaded/Online] ").red("[Unloaded/Offline] ").dark_red("[Broken/Dead]");
+			builder.newLine().yellow("Available worlds: ").newLine();
+			builder.setIndent(2).setSeparator(ChatColor.WHITE, " / ");
 			for (String world : WorldManager.getWorlds()) {
-				//prepare it
 				if (WorldManager.isLoaded(world)) {
-					world = ChatColor.GREEN + world;
+					builder.green(world);
 				} else if (WorldManager.getData(world) == null) {
-					world = ChatColor.DARK_RED + world;
+					builder.dark_red(world);
 				} else {
-					world = ChatColor.RED + world;
-				}
-				//display it
-				if (msgpart.length() + world.length() < 70) {
-					if (msgpart != "") msgpart += ChatColor.WHITE + " / ";
-					msgpart += world;
-				} else {
-					sender.sendMessage(msgpart);
-					msgpart = world;
+					builder.red(world);
 				}
 			}
-			//possibly forgot one?
-			if (msgpart != "") sender.sendMessage(msgpart);
+			builder.send(sender);
 		} else {
 			//plain world per line
 			sender.sendMessage("Available worlds:");

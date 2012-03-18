@@ -9,10 +9,6 @@ import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.PluginBase;
 
 public class MyWorlds extends PluginBase {
-	
-	public MyWorlds() {
-		super(1595, 2000);
-	}
 
 	public static boolean usePermissions;
 	public static int teleportInterval;
@@ -88,6 +84,7 @@ public class MyWorlds extends PluginBase {
         WorldManager.init();
 	}
 	public void disable() {
+		
 		//Portals
 		Portal.deinit(root() + "portals.txt");
 		

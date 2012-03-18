@@ -11,6 +11,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.common.permissions.IPermissionDefault;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijiko.permissions.PermissionHandler;
 
@@ -147,7 +148,10 @@ public enum Permission implements IPermissionDefault {
 				p.sendMessage(Localization.getWorldEnter(to.getWorld()));
 			}
 		}
-		entity.teleport(to);
+		EntityUtil.teleport(MyWorlds.plugin, entity, to);
+		if (entity instanceof Player) {
+			Portal.notifyNoMove((Player) entity);
+		}
 		return true;
 	}
 		

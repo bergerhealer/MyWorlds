@@ -448,7 +448,7 @@ public class WorldManager {
 		for (i = 0; i < retrycount + 1; i++) {
 			try {
 				WorldCreator c = new WorldCreator(worldname);
-				c.environment(wc.environment);
+				wc.worldmode.apply(c);
 				if (seed != 0) c.seed(seed);
 				c.generator(cgen);
 				w = c.createWorld();

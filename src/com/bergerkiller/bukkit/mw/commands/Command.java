@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MyWorlds;
@@ -107,42 +108,40 @@ public class Command {
 	}
 	
 	public void listPortals(String[] portals) {
-		if (sender instanceof Player) {
-			message(ChatColor.GREEN + "[Very near] " + 
-		            ChatColor.DARK_GREEN + "[Near] " + 
-					ChatColor.YELLOW + "[Far] " + 
-		            ChatColor.RED + "[Other world] " + 
-					ChatColor.DARK_RED + "[Unavailable]");
-		}
-		message(ChatColor.YELLOW + "Available portals: " + 
-				portals.length + " Portal" + ((portals.length == 1) ? "" : "s"));
+		MessageBuilder builder = new MessageBuilder();
+		builder.green("[Very near] ").dark_green("[Near] ").yellow("[Far] ");
+		builder.red("[Other world] ").dark_red("[Unavailable]").newLine();
+		builder.yellow("Available portals: ").white(portals.length, " Portal");
+		if (portals.length != 1) builder.append('s');
 		if (portals.length > 0) {
-			int index = 0;
+			builder.newLine().setIndent(2).setSeparator(ChatColor.WHITE, " / ");
+			final Location ploc;
+			if (sender instanceof Player) {
+				ploc = ((Player) sender).getLocation();
+			} else {
+				ploc = null;
+			}
 			for (String portal : portals) {
 				Location loc = Portal.getPortalLocation(portal, null);
-				ChatColor color = ChatColor.DARK_RED;
-				if (loc != null) {
-					if (sender instanceof Player) {
-						Location ploc = ((Player) sender).getLocation();
-						if (ploc.getWorld() == loc.getWorld()) {
-							double d = ploc.distance(loc);
-							if (d <= 10) {
-								color = ChatColor.GREEN;
-							} else if (d <= 100) {
-								color = ChatColor.DARK_GREEN;
-							} else {
-								color = ChatColor.YELLOW;
-							}
+				if (loc != null && ploc != null) {
+					if (ploc.getWorld() == loc.getWorld()) {
+						double d = ploc.distance(loc);
+						if (d <= 10) {
+							builder.green(portal);
+						} else if (d <= 100) {
+							builder.dark_green(portal);
 						} else {
-							color = ChatColor.RED;
+							builder.yellow(portal);
 						}
+					} else {
+						builder.red(portal);
 					}
+				} else {
+					builder.dark_red(portal);
 				}
-				portals[index] = color + portal;
-				index++;
 			}
 		}
-		CommonUtil.sendListMessage(sender, ", ", portals);
+		builder.send(sender);
 	}
 	
 	public void genWorldname(int argindex) {

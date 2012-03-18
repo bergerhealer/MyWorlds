@@ -1,6 +1,5 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,10 +13,9 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
-import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
-import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.getspout.spoutapi.SpoutManager;
@@ -71,7 +69,7 @@ public class WorldConfig {
 		}
 	}
 	public static void saveAll(String filename) {
-		FileConfiguration cfg = new FileConfiguration(new File(filename));
+		FileConfiguration cfg = new FileConfiguration(filename);
 		for (WorldConfig wc : all()) {
 			wc.save(cfg.getNode(wc.worldname));
 		}
@@ -90,7 +88,7 @@ public class WorldConfig {
 	public WorldConfig(ConfigurationNode node) {
 		this(node.getName());
 		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
-		this.environment = EnumUtil.parseEnvironment(node.get("environment", String.class), this.environment);
+		this.worldmode = EnumUtil.parse(node.get("environment", String.class), this.worldmode);
 		this.chunkGeneratorName = node.get("chunkGenerator", String.class);
 		this.difficulty = EnumUtil.parseDifficulty(node.get("difficulty", String.class), this.difficulty);
 		this.gameMode = EnumUtil.parseGameMode(node.get("gamemode", String.class), null);
@@ -117,7 +115,7 @@ public class WorldConfig {
 			} else if (type.equals("MONSTERS")) {
 				this.spawnControl.setMonsters(true);
 			} else {
-				CreatureType t = EnumUtil.parse(CreatureType.class, type, null);
+				EntityType t = EnumUtil.parse(EntityType.class, type, null);
 				if (t != null) {
 					this.spawnControl.deniedCreatures.add(t);
 				}
@@ -138,14 +136,14 @@ public class WorldConfig {
 		World world = this.getWorld();
 		if (world != null) {
 			this.keepSpawnInMemory = world.getKeepSpawnInMemory();
-			this.environment = world.getEnvironment();
+			this.worldmode = WorldMode.get(world);
 			this.difficulty = world.getDifficulty();
 			this.spawnPoint = new Position(world.getSpawnLocation());
 			this.pvp = world.getPVP();
 			this.autosave = world.isAutoSave();
 		} else {
 			this.keepSpawnInMemory = true;
-			this.environment = EnumUtil.parseEnvironment(worldname, Environment.NORMAL);
+			this.worldmode = WorldMode.get(worldname);
 			this.difficulty = Difficulty.NORMAL;
 			this.spawnPoint = new Position(worldname, 0, 64, 0);
 			this.pvp = true;
@@ -179,7 +177,7 @@ public class WorldConfig {
 		
 		node.set("loaded", w != null);
 		node.set("keepSpawnLoaded", this.keepSpawnInMemory);
-		node.set("environment", this.environment.toString());
+		node.set("environment", this.worldmode.toString());
 		node.set("chunkGenerator", this.chunkGeneratorName);
 		if (this.gameMode == null) {
 			node.set("gamemode", "NONE");
@@ -194,7 +192,7 @@ public class WorldConfig {
 		}
 
 		ArrayList<String> creatures = new ArrayList<String>();
-		for (CreatureType type : this.spawnControl.deniedCreatures) {
+		for (EntityType type : this.spawnControl.deniedCreatures) {
 			creatures.add(type.name());
 		}
 		node.set("pvp", this.pvp);
@@ -218,7 +216,7 @@ public class WorldConfig {
 	
 	public String worldname;
 	public boolean keepSpawnInMemory;
-	public Environment environment;
+	public WorldMode worldmode;
 	public String chunkGeneratorName;
 	public Difficulty difficulty;
 	public Position spawnPoint;

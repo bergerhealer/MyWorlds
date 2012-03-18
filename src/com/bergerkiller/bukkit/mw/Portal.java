@@ -19,6 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
+import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 
@@ -270,8 +271,25 @@ public class Portal {
 		return false;
 	}
 	
+	public static void handlePlayerMove(Player player, Location to) {
+		Location loc = walkDistanceCheckMap.get(player);
+		if (loc != null) {
+			if (loc.getWorld() != to.getWorld() || loc.distanceSquared(to) > 1.0) {
+				walkDistanceCheckMap.remove(player);
+			}
+		}
+	}
+	
+	public static void notifyNoMove(Player player) {
+		walkDistanceCheckMap.put(player, player.getLocation());
+	}
+	
+	private static WeakHashMap<Player, Location> walkDistanceCheckMap = new WeakHashMap<Player, Location>();
     private static WeakHashMap<Entity, Long> portaltimes = new WeakHashMap<Entity, Long>();
     public static void handlePortalEnter(Entity e) {
+    	if (walkDistanceCheckMap.containsKey(e)) {
+    		return;
+    	}
         long currtime = System.currentTimeMillis();
     	long lastteleport;
     	if (portaltimes.containsKey(e)) {
@@ -307,8 +325,8 @@ public class Portal {
     }
 
     public static void delayedTeleport(final Portal portal, final Location dest, final String destname, final Entity e) {
-    	MyWorlds.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MyWorlds.plugin, new Runnable() {
-    	    public void run() {
+    	new Task(MyWorlds.plugin) {
+    		public void run() {
     	    	if (portal == null) {
     	    		if (destname == null) {
     	    			Permission.handleTeleport(e, dest);
@@ -324,8 +342,8 @@ public class Portal {
         				CommonUtil.sendMessage(e, Localization.get("portal.nodestination"));
         			}
     	    	}
-    	    }
-    	}, 0L);
+    		}
+    	}.start();
     }
 	
     /*

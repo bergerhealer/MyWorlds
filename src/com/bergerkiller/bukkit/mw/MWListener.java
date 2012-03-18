@@ -148,6 +148,7 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerMove(PlayerMoveEvent event) {
 		if (!event.isCancelled()) {
+			Portal.handlePlayerMove(event.getPlayer(), event.getTo());
 			Block b = event.getTo().getBlock();
 			if (MyWorlds.useWaterTeleport && b.getTypeId() == 9) {
 				if (b.getRelative(BlockFace.UP).getTypeId() == 9 ||

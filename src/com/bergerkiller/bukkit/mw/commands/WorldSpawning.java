@@ -3,8 +3,8 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 
 import com.bergerkiller.bukkit.mw.SpawnControl;
 import com.bergerkiller.bukkit.mw.WorldConfig;
@@ -49,13 +49,13 @@ public class WorldSpawning extends Command {
 					type = "mob";
 				} else {
 					type = args[0].toUpperCase();
-					CreatureType ctype = null;
+					EntityType ctype = null;
 					try {
-						ctype = CreatureType.valueOf(type);
+						ctype = EntityType.valueOf(type);
 					} catch (Exception e) {}
 					if (ctype == null && type.endsWith("S")) {
 						try {
-							ctype = CreatureType.valueOf(type.substring(0, type.length() - 2));
+							ctype = EntityType.valueOf(type.substring(0, type.length() - 2));
 						} catch (Exception e) {}
 					}
 					if (ctype != null) {
@@ -74,7 +74,7 @@ public class WorldSpawning extends Command {
 						} else if (type.equals("mob")) {
 							sc.deniedCreatures.clear();
 						} else {
-							sc.deniedCreatures.remove(CreatureType.valueOf(type.toUpperCase()));
+							sc.deniedCreatures.remove(EntityType.valueOf(type.toUpperCase()));
 						}
 						if (WorldManager.isLoaded(worldname)) {
 							message(ChatColor.GREEN + type + "s are now allowed to spawn on world: '" + worldname + "'!");
@@ -90,7 +90,7 @@ public class WorldSpawning extends Command {
 							sc.setAnimals(true);
 							sc.setMonsters(true);
 						} else {
-							sc.deniedCreatures.add(CreatureType.valueOf(type.toUpperCase()));
+							sc.deniedCreatures.add(EntityType.valueOf(type.toUpperCase()));
 						}
 						//Capitalize
 						type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
@@ -120,7 +120,7 @@ public class WorldSpawning extends Command {
 				message(ChatColor.WHITE + "The following mobs are denied from spawning:");
 				String message = ChatColor.YELLOW.toString();
 				boolean first = true;
-				for (CreatureType type : sc.deniedCreatures) {
+				for (EntityType type : sc.deniedCreatures) {
 					if (first) {
 						message += type.getName();
 						first = false;
