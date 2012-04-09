@@ -233,6 +233,16 @@ public class WorldManager {
 		return serverfolder;
 	}
 	
+	public static File getPlayerDataFile(Player player) {
+		return getPlayerDataFile(player.getName());
+	}
+	public static File getPlayerDataFile(String playerName) {
+		return new File(getPlayerDataFolder(), playerName + ".dat");
+	}
+	public static File getPlayerDataFolder() {
+		return new File(getServerFolder(), Bukkit.getWorlds().get(0).getName() + File.separator + "players");
+	}
+	
 	public static long getSeed(String seed) {
 		if (seed == null) return 0;
 		long seedval = 0;

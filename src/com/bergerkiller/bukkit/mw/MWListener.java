@@ -118,14 +118,25 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
 		if (!event.isCancelled()) {
+			if (MyWorlds.useAllTeleportPermissions) {
+				if (!Permission.canEnter(event.getPlayer(), event.getTo().getWorld())) {
+					Localization.message(event.getPlayer(), "world.noaccess");
+					event.setCancelled(true);
+				}
+			}
 			if (event.getFrom().getWorld() != event.getTo().getWorld()) {
 				WorldConfig.get(event.getTo()).update(event.getPlayer());
 			}
 		}
 	}
 	
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
+		//Is this a new player? Check if the player has a settings file
+		if (!WorldManager.getPlayerDataFile(event.getPlayer()).exists()) {
+			//fix to use the default world to spawn instead
+			event.getPlayer().teleport(WorldManager.getSpawnLocation(event.getPlayer().getWorld()));
+		}
 		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
 	}
 	

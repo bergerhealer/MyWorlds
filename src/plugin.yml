@@ -1,9 +1,10 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.44
+version: 1.45
 author: bergerkiller
 softdepend: [Spout]
 depend: [BKCommonLib]
+dev-url: http://dev.bukkit.org/server-mods/my-worlds/
 commands:
     world:
         description: Cross-world commands to manage your worlds

@@ -56,16 +56,16 @@ public class MyWorlds extends PluginBase {
         config.addHeader("http://forums.bukkit.org/threads/myworlds.31718");
         config.addHeader("http://wiki.bukkit.org/MyWorlds-Plugin");
         
-        config.setHeader("usePermissions", "/nWhether the Permissions 3.* plugin should be used for permissions");
+        config.setHeader("usePermissions", "\nWhether the Permissions 3.* plugin should be used for permissions");
         usePermissions = config.get("usePermissions", false);
         
-        config.setHeader("teleportInterval", "/nThe interval in miliseconds a player has to wait before being teleported again");
+        config.setHeader("teleportInterval", "\nThe interval in miliseconds a player has to wait before being teleported again");
         teleportInterval = config.get("teleportInterval", 2000);
         
-        config.setHeader("useWaterTeleport", "/nWhether water stream portals are allowed");
+        config.setHeader("useWaterTeleport", "\nWhether water stream portals are allowed");
         useWaterTeleport = config.get("useWaterTeleport", true);
         
-        config.setHeader("timeLockInterval", "/nThe tick interval at which time is kept locked");
+        config.setHeader("timeLockInterval", "\nThe tick interval at which time is kept locked");
         timeLockInterval = config.get("timeLockInterval", 20);
         
         useWorldEnterPermissions = config.get("useWorldEnterPermissions", false);
@@ -76,19 +76,19 @@ public class MyWorlds extends PluginBase {
         useWorldUsePermissions = config.get("useWorldUsePermissions", false);
         useWorldChatPermissions = config.get("useWorldChatPermissions", false);
         
-        config.setHeader("allowPortalNameOverride", "/nWhether portals can be replaced by other portals with the same name on the same world");
+        config.setHeader("allowPortalNameOverride", "\nWhether portals can be replaced by other portals with the same name on the same world");
         allowPortalNameOverride = config.get("allowPortalNameOverride", true);
         
-        config.setHeader("useAllTeleportPermissions", "/nWhether world and portal enter and teleport permissions are also applied to other teleport plugins");
+        config.setHeader("useAllTeleportPermissions", "\nWhether world and portal enter and teleport permissions are also applied to other teleport plugins");
         useAllTeleportPermissions = config.get("useAllTeleportPermissions", true);
         
-        config.setHeader("useWorldOperators", "/nWhether each world has it's own operator list");
+        config.setHeader("useWorldOperators", "\nWhether each world has it's own operator list");
         useWorldOperators = config.get("useWorldOperators", false);
         
-        config.setHeader("onlyObsidianPortals", "/nWhether only portal blocks surrounded by obsidian can teleport players");
+        config.setHeader("onlyObsidianPortals", "\nWhether only portal blocks surrounded by obsidian can teleport players");
         onlyObsidianPortals = config.get("onlyObsidianPortals", false);
         
-        config.setHeader("locale", "/nThe locale text file name to use (excluding .txt extension)");
+        config.setHeader("locale", "\nThe locale text file name to use (excluding .txt extension)");
         String locale = config.get("locale", "default");
         config.save();
         

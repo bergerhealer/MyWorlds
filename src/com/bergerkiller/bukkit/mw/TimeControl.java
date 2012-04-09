@@ -2,6 +2,8 @@ package com.bergerkiller.bukkit.mw;
 
 import org.bukkit.World;
 
+import com.bergerkiller.bukkit.common.Task;
+
 public class TimeControl {
 	
 	/**
@@ -100,7 +102,7 @@ public class TimeControl {
     	}
     }
     public boolean isLocked() {
-    	return this.locker != null && this.locker.isRunning();
+    	return this.locker != null;
     }
     
     /*
@@ -111,7 +113,7 @@ public class TimeControl {
     	if (this.locker != null) {
     		if (this.locker.isRunning() != locking) {
             	if (locking) { 
-            		return this.locker.start();
+            		return this.locker.startTask();
             	} else {
             		this.locker.stop();
             		return true;
@@ -121,37 +123,33 @@ public class TimeControl {
     	return false;
     }
     
-    public static class Locker implements Runnable {
+    public static class Locker extends Task {
 
     	public Locker(String worldname, long time) {
+    		super(MyWorlds.plugin);
     		this.worldname = worldname;
     		this.time = time;
+    		this.realtime = time;
     	}
     	
-    	private int id = -1;
     	private String worldname;
     	private World w;
     	public long time;
+    	public long realtime;
     	
-    	public boolean isRunning() {
-    		return this.id != -1;
-    	}
 		@Override
 		public void run() {
-			WorldManager.setTime(this.w, time);
+			WorldManager.setTime(this.w, realtime);
+			this.realtime += 24000L;
 		}
 		
-		public void stop() {
-			MyWorlds.plugin.getServer().getScheduler().cancelTask(this.id);
-			this.id = -1;
+		public boolean startTask() {
+			return this.startTask(MyWorlds.timeLockInterval);
 		}
-		public boolean start() {
-			return this.start(MyWorlds.timeLockInterval);
-		}
-		public boolean start(long interval) {
+		public boolean startTask(long interval) {
 			this.w = WorldManager.getWorld(this.worldname);
 			if (this.w == null) return false;
-			this.id = MyWorlds.plugin.getServer().getScheduler().scheduleSyncRepeatingTask(MyWorlds.plugin, this, 0, interval);
+			super.start(0, interval);
 			return true;
 		}
 
