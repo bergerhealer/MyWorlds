@@ -22,7 +22,6 @@ public class WorldSpawning extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		this.genWorldname(1);
 		if (this.handleWorld()) {
 			if (args.length != 0) {

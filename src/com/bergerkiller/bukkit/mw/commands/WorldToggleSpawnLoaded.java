@@ -14,7 +14,6 @@ public class WorldToggleSpawnLoaded extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		this.genWorldname(0);
 		if (this.handleWorld()) {
 			WorldConfig wc = WorldConfig.get(worldname);

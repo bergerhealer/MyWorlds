@@ -21,7 +21,6 @@ public class WorldCreate extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length != 0) {
 			worldname = args[0];
 			String gen = null;

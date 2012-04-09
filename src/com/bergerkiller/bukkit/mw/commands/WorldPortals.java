@@ -15,7 +15,6 @@ public class WorldPortals extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length == 1) {
 			World w = WorldManager.getWorld(WorldManager.matchWorld(args[0]));
 			if (w != null) {

@@ -14,7 +14,6 @@ public class WorldCopy extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length == 2) {
 			worldname = args[0];
 			if (!WorldManager.worldExists(worldname)) worldname = null;

@@ -15,7 +15,6 @@ public class WorldDelete extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length == 1) {
 			worldname = args[0];
 			if (!WorldManager.worldExists(worldname)) worldname = null;

@@ -13,7 +13,6 @@ public class WorldConfig extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length == 1) {
 			if (args[0].equalsIgnoreCase("load")) {
 				com.bergerkiller.bukkit.mw.WorldConfig.init(MyWorlds.plugin.root() + "worlds.yml");

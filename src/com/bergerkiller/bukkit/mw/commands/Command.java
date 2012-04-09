@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
@@ -165,6 +166,7 @@ public class Command {
 				|| cmdLabel.equalsIgnoreCase("mw")) {
 			if (args.length >= 1) {
 				cmdLabel = args[0];
+				args = StringUtil.remove(args, 0);
 				if (cmdLabel.equalsIgnoreCase("list")) {
 					rval = new WorldList(sender, args);
 				} else if (cmdLabel.equalsIgnoreCase("info")) {
@@ -295,6 +297,10 @@ public class Command {
 					rval = new WorldShowSnow(sender, args);
 				} else if (cmdLabel.equalsIgnoreCase("showrain")) {
 					rval = new WorldShowRain(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("teleport")) {
+					rval = new TeleportPortal(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("tp")) {
+					rval = new TeleportPortal(sender, args);
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {

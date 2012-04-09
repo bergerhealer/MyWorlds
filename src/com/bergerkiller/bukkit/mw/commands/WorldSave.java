@@ -16,7 +16,6 @@ public class WorldSave extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length != 0 && (args[0].equals("*") || args[0].equalsIgnoreCase("all"))) {
 			//save all worlds
 			message(ChatColor.YELLOW + "Forcing a global world save...");	

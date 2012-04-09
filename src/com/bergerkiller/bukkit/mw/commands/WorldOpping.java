@@ -23,7 +23,6 @@ public class WorldOpping extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length >= 2) {
 			boolean all = args.length == 2 && (args[1].startsWith("*") || args[1].equalsIgnoreCase("all"));
 			this.genWorldname(1);

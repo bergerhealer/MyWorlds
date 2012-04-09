@@ -454,6 +454,10 @@ public class WorldManager {
 				w = c.createWorld();
 			} catch (Exception ex) {
 				MyWorlds.plugin.log(Level.WARNING, "World load issue: " + ex.getMessage());
+				for (StackTraceElement el : ex.getStackTrace()) {
+					if (el.getClassName().equals("com.bergerkiller.bukkit.mw.WorldManager")) break;
+					System.out.println("    at " + el.toString());
+				}
 			}
 			if (w != null) break;
 		}

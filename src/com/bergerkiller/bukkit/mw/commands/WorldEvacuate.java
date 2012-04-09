@@ -15,7 +15,6 @@ public class WorldEvacuate extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length != 0) {
 			worldname = WorldManager.matchWorld(args[0]);
 			if (this.handleWorld()) {

@@ -15,7 +15,6 @@ public class WorldSetPortal extends Command {
 	}
 		
 	public void execute() {
-		this.removeArg(0);
 		if (args.length != 0) {
 			String dest = args[0];
 			this.genWorldname(1);

@@ -14,7 +14,6 @@ public class WorldSetSpawn extends Command {
 	}
 		
 	public void execute() {
-		this.removeArg(0);
 		Position pos = new Position(player.getLocation());
 		this.genWorldname(0);
 		if (this.handleWorld()) {

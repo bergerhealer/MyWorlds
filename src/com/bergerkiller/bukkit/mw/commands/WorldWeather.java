@@ -16,7 +16,6 @@ public class WorldWeather extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		if (args.length != 0) {
 			boolean setStorm = false;
 			boolean setSun = false;

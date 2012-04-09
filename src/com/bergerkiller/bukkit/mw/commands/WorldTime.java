@@ -18,7 +18,6 @@ public class WorldTime extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		boolean lock = false;
 		boolean useWorld = false;
 		long time = -1;

@@ -15,7 +15,6 @@ public class WorldSpawn extends Command {
 	}
 		
 	public void execute() {
-		this.removeArg(0);
 		this.genWorldname(0);
 		if (this.handleWorld()) {
 			World world = WorldManager.getWorld(worldname);

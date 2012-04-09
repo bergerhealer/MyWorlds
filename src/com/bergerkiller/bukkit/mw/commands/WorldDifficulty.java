@@ -15,7 +15,6 @@ public class WorldDifficulty extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		this.genWorldname(1);
 		if (this.handleWorld()) {
 			WorldConfig wc = WorldConfig.get(worldname);

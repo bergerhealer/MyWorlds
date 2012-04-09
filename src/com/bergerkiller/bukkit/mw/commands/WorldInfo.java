@@ -17,7 +17,6 @@ public class WorldInfo extends Command {
 	}
 	
 	public void execute() {
-		this.removeArg(0);
 		this.genWorldname(0);
 		if (worldname != null) {
 			com.bergerkiller.bukkit.mw.WorldInfo info = WorldManager.getInfo(worldname);
