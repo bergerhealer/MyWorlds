@@ -52,8 +52,12 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldUnload(WorldUnloadEvent event) {
     	if (!event.isCancelled()) {
-    		WorldConfig.get(event.getWorld()).timeControl.updateWorld(null);
+    		WorldConfig config = WorldConfig.get(event.getWorld());
+    		config.timeControl.updateWorld(null);
         	WorldManager.clearWorldReference(event.getWorld());
+        	for (Player player : event.getWorld().getPlayers()) {
+        		config.remove(player);
+        	}
     	}
     }
     
@@ -125,6 +129,7 @@ public class MWListener implements Listener {
 				}
 			}
 			if (event.getFrom().getWorld() != event.getTo().getWorld()) {
+				WorldConfig.get(event.getFrom()).remove(event.getPlayer());
 				WorldConfig.get(event.getTo()).update(event.getPlayer());
 			}
 		}
@@ -148,11 +153,15 @@ public class MWListener implements Listener {
 				event.setRespawnLocation(loc);
 			}
 		}
-		WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
+		if (event.getRespawnLocation().getWorld() != event.getPlayer().getWorld()) {
+			WorldConfig.get(event.getPlayer()).remove(event.getPlayer());
+			WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
+		}
 	}
 	
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
+		WorldConfig.get(event.getPlayer()).remove(event.getPlayer()); 
 		WorldConfig.updateReload(event.getPlayer());
 	}
 	
@@ -181,6 +190,7 @@ public class MWListener implements Listener {
 				}
 			}
 			if (event.getFrom().getWorld() != event.getTo().getWorld()) {
+				WorldConfig.get(event.getFrom()).remove(event.getPlayer());
 				WorldConfig.updateReload(event.getFrom());
 			}
 		}
@@ -204,6 +214,7 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
 		WorldConfig.updateReload(event.getFrom());
+		WorldConfig.get(event.getFrom()).remove(event.getPlayer());
 		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
 	}
 	
@@ -233,7 +244,6 @@ public class MWListener implements Listener {
         	}
     	}
     }
-	
 	
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onBlockForm(BlockFormEvent event) {
@@ -320,6 +330,5 @@ public class MWListener implements Listener {
     		}
     	}
     }
-    
     
 }

@@ -6,6 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 
+import net.minecraft.server.EntityHuman;
+import net.minecraft.server.EntityPlayer;
+import net.minecraft.server.IDataManager;
+import net.minecraft.server.NBTTagCompound;
+import net.minecraft.server.NBTTagList;
+import net.minecraft.server.Packet104WindowItems;
+import net.minecraft.server.WorldNBTStorage;
+import net.minecraft.server.WorldServer;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
@@ -25,7 +34,9 @@ import org.getspout.spoutapi.player.SpoutPlayer;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.EnumUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldConfig {	
 	private static HashMap<String, WorldConfig> config = new HashMap<String, WorldConfig>();
@@ -83,11 +94,11 @@ public class WorldConfig {
 		config.clear();
 		config = null;
 	}
-	
+
 	public static void remove(String worldname) {
 		config.remove(worldname.toLowerCase());
 	}
-	
+
 	public WorldConfig(ConfigurationNode node) {
 		this(node.getName());
 		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
@@ -153,6 +164,7 @@ public class WorldConfig {
 		}
 		this.spawnControl = new SpawnControl();
 		this.timeControl = new TimeControl(this);
+		this.inventory = new WorldInventory(this.worldname).add(worldname);
 		if (MyWorlds.useWorldOperators) {
 			for (OfflinePlayer op : Bukkit.getServer().getOperators()) {
 				this.OPlist.add(op.getName());
@@ -236,6 +248,7 @@ public class WorldConfig {
 	public boolean formIce = true;
 	public boolean showRain = true;
 	public boolean showSnow = true;
+	public WorldInventory inventory;
 	
 	public World loadWorld() {
 		if (WorldManager.worldExists(this.worldname)) {
@@ -355,6 +368,22 @@ public class WorldConfig {
 			world.setDifficulty(this.difficulty);
 		}
 	}
+	public void updateInventory(final WorldServer world, final Player bukkitPlayer) {
+		EntityPlayer player = EntityUtil.getNative(bukkitPlayer);
+		if (world != null && player != null) {
+			IDataManager man = world.getDataManager();
+			if (man instanceof WorldNBTStorage) {
+				NBTTagCompound data = ((WorldNBTStorage) man).getPlayerData(player.name);
+				if (data != null) {
+					NBTTagList list = data.getList("Inventory");
+					player.inventory.b(list);
+					Packet104WindowItems packet = new Packet104WindowItems();
+					packet.b = player.inventory.getContents();
+					player.netServerHandler.sendPacket(packet); //needed?
+				}
+			}
+		}
+	}
 	public void update(World world) {
 		if (world == null) return;
 		updatePVP(world);
@@ -363,11 +392,17 @@ public class WorldConfig {
 		updateAutoSave(world);
 	}
 	public void update(Player player) {
+		this.inventory.resetSave();
 		updateOP(player);
 		updateGamemode(player);
 		updateSpoutWeather(player);
+		updateInventory(WorldUtil.getNative(this.getWorld()), player);
 	}
-	
+
+	public void remove(Player player) {
+		this.inventory.save(this.getWorld(), player);
+	}
+
 	public World getWorld() {
 		return WorldManager.getWorld(this.worldname);
 	}

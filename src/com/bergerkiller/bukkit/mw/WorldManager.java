@@ -390,10 +390,10 @@ public class WorldManager {
 		}
 		return null;
 	}
-	public static World getWorld(String worldname) {
+	public static CraftWorld getWorld(String worldname) {
 		if (worldname == null) return null;
 		try {
-			return Bukkit.getServer().getWorld(worldname);
+			return (CraftWorld) Bukkit.getServer().getWorld(worldname);
 		} catch (Exception ex) {
 			return null;
 		}
