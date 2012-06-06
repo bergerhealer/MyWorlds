@@ -51,6 +51,7 @@ public enum Permission implements IPermissionDefault {
     GENERAL_CHATALLWORLDS("world.chat.*.*", PermissionDefault.OP, "Sets if the player can chat from every world to every world"),
     GENERAL_IGNOREGM("world.ignoregamemode", PermissionDefault.FALSE, "Sets if the player game mode is not changed by the world game mode"),
     GENERAL_USEALL("world.use.*", PermissionDefault.OP, "Sets if the player can interact with blocks in a certain world"),
+    GENERAL_KEEPINV("world.keepinventory", PermissionDefault.OP, "Sets if the player keeps his inventory while switching worlds"),
     PORTAL_CREATE("portal.create", PermissionDefault.OP, "Sets if the player can create teleport signs"),
     PORTAL_OVERRIDE("portal.override", PermissionDefault.OP, "Sets if the player can replace existing portals"),
     PORTAL_USE("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals"),
@@ -78,6 +79,10 @@ public enum Permission implements IPermissionDefault {
 	@Override
 	public String getDescription() {
 		return this.desc;
+	}
+	
+	public boolean has(Player player) {
+		return has(player, this.name);
 	}
 	
 	public String toString() {

@@ -6,12 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 
-import net.minecraft.server.EntityHuman;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.IDataManager;
 import net.minecraft.server.NBTTagCompound;
-import net.minecraft.server.NBTTagList;
-import net.minecraft.server.Packet104WindowItems;
 import net.minecraft.server.WorldNBTStorage;
 import net.minecraft.server.WorldServer;
 
@@ -369,17 +366,16 @@ public class WorldConfig {
 		}
 	}
 	public void updateInventory(final WorldServer world, final Player bukkitPlayer) {
+		if (Permission.GENERAL_KEEPINV.has(bukkitPlayer)) {
+			return;
+		}
 		EntityPlayer player = EntityUtil.getNative(bukkitPlayer);
 		if (world != null && player != null) {
 			IDataManager man = world.getDataManager();
 			if (man instanceof WorldNBTStorage) {
 				NBTTagCompound data = ((WorldNBTStorage) man).getPlayerData(player.name);
 				if (data != null) {
-					NBTTagList list = data.getList("Inventory");
-					player.inventory.b(list);
-					Packet104WindowItems packet = new Packet104WindowItems();
-					packet.b = player.inventory.getContents();
-					player.netServerHandler.sendPacket(packet); //needed?
+					player.inventory.b(data.getList("Inventory"));
 				}
 			}
 		}
@@ -427,5 +423,5 @@ public class WorldConfig {
 			}
 		}
 	}
-		
+
 }
