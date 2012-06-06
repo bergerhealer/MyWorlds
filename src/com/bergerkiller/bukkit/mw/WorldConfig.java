@@ -77,6 +77,9 @@ public class WorldConfig {
 	}
 	public static void deinit(String filename) {
 		saveAll(filename);
+		for (WorldConfig world : all()) {
+			world.timeControl.setLocking(false);
+		}
 		config.clear();
 		config = null;
 	}
@@ -123,7 +126,7 @@ public class WorldConfig {
 		}
     	long time = node.get("lockedtime", Integer.MIN_VALUE);
     	if (time != Integer.MIN_VALUE) {
-			this.timeControl.lockTime(time);
+			this.timeControl.setTime(time);
 			this.timeControl.setLocking(true);
     	}
     	this.defaultPortal = node.get("defaultPortal", String.class);
@@ -149,7 +152,7 @@ public class WorldConfig {
 			this.pvp = true;
 		}
 		this.spawnControl = new SpawnControl();
-		this.timeControl = new TimeControl(this.worldname);
+		this.timeControl = new TimeControl(this);
 		if (MyWorlds.useWorldOperators) {
 			for (OfflinePlayer op : Bukkit.getServer().getOperators()) {
 				this.OPlist.add(op.getName());
@@ -185,8 +188,8 @@ public class WorldConfig {
 			node.set("gamemode", this.gameMode.toString());
 		}
 		
-		if (this.timeControl.locker != null && this.timeControl.locker.isRunning()) {
-			node.set("lockedtime", this.timeControl.locker.time);
+		if (this.timeControl.isLocked()) {
+			node.set("lockedtime", this.timeControl.getTime());
 		} else {
 			node.remove("lockedtime");
 		}

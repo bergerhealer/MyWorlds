@@ -70,7 +70,7 @@ public class WorldTime extends Command {
 			} else {
 				TimeControl tc = WorldConfig.get(worldname).timeControl;
 				if (lock) {
-					tc.lockTime(time);
+					tc.setTime(time);
 					if (!WorldManager.isLoaded(worldname)) {
 						tc.setLocking(false);
 						message(Localization.getWorldNotLoaded(worldname));
@@ -85,7 +85,7 @@ public class WorldTime extends Command {
 					World w = WorldManager.getWorld(worldname);
 					if (w != null) {
 						if (tc.isLocked()) {
-							tc.unlockTime();
+							tc.setLocking(false);
 							WorldManager.setTime(w, time);
 							message(ChatColor.GREEN + "Time of world '" + worldname + "' unlocked and set to " + 
 							        TimeControl.getTimeString(time) + "!");

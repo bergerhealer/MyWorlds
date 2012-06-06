@@ -301,6 +301,10 @@ public class Command {
 					rval = new TeleportPortal(sender, args);
 				} else if (cmdLabel.equalsIgnoreCase("tp")) {
 					rval = new TeleportPortal(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("inventory")) {
+					rval = new WorldInventory(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("inv")) {
+					rval = new WorldInventory(sender, args);
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {

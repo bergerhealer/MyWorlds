@@ -48,6 +48,17 @@ public class SpawnControl {
 			}
 		}
 	}
+	public void setNPC(boolean deny) {
+		for (EntityType type : EntityType.values()) {
+			if (EntityUtil.isNPC(type.toString().toLowerCase().replace("_", ""))) {
+				if (deny) {
+					deniedCreatures.add(type);
+				} else {
+					deniedCreatures.remove(type);
+				}
+			}
+		}
+	}
 	
 	public static EntityType getCreature(String name) {
 		for (EntityType ctype : EntityType.values()) {

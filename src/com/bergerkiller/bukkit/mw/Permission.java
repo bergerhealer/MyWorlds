@@ -43,6 +43,7 @@ public enum Permission implements IPermissionDefault {
     COMMAND_TIME("world.time", PermissionDefault.OP, "Sets if the player can change the time on worlds"),
     COMMAND_GAMEMODE("world.gamemode", PermissionDefault.OP, "Sets if the player can change the gamemode of a world"),
     COMMAND_SETSPAWN("world.setspawn", PermissionDefault.OP, "Sets if the player can change the spawn point of a world"),
+    COMMAND_INVENTORY("world.inventory", PermissionDefault.OP, "Sets if the player can alter the inventory states of a world"),
     GENERAL_TELEPORTALL("world.teleport.*", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn"),
     GENERAL_ENTERALL("world.enter.*", PermissionDefault.OP, "Sets if the player can enter a certain world through portals"),
     GENERAL_BUILDALL("world.build.*", PermissionDefault.OP, "Sets if the player can build in a certain world"),

@@ -46,13 +46,13 @@ public class MWListener implements Listener {
     
 	@EventHandler(priority = EventPriority.MONITOR)
     public void onWorldLoad(WorldLoadEvent event) {
-    	WorldConfig.get(event.getWorld()).timeControl.setLocking(true);
+    	WorldConfig.get(event.getWorld()).timeControl.updateWorld(event.getWorld());
     }
     
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldUnload(WorldUnloadEvent event) {
     	if (!event.isCancelled()) {
-    		WorldConfig.get(event.getWorld()).timeControl.setLocking(false);
+    		WorldConfig.get(event.getWorld()).timeControl.updateWorld(null);
         	WorldManager.clearWorldReference(event.getWorld());
     	}
     }
@@ -209,6 +209,11 @@ public class MWListener implements Listener {
 	
 	@EventHandler(priority = EventPriority.MONITOR)
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
+		if (MyWorlds.onlyPlayerTeleportation) {
+			if (!(event.getEntity() instanceof Player)) {
+				return;
+			}
+		}
     	if (MyWorlds.onlyObsidianPortals) {
     		Block b = event.getLocation().getBlock();
     		if (b.getType() == Material.PORTAL) {

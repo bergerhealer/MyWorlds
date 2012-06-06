@@ -26,6 +26,7 @@ public class MyWorlds extends PluginBase {
 	public static boolean onlyObsidianPortals = false;
 	public static boolean useAllTeleportPermissions = true;
 	public static boolean isSpoutEnabled = false;
+	public static boolean onlyPlayerTeleportation = true;
 		
 	public static MyWorlds plugin;
 		
@@ -75,6 +76,9 @@ public class MyWorlds extends PluginBase {
         useWorldBuildPermissions = config.get("useWorldBuildPermissions", false);
         useWorldUsePermissions = config.get("useWorldUsePermissions", false);
         useWorldChatPermissions = config.get("useWorldChatPermissions", false);
+        
+        config.setHeader("onlyPlayerTeleportation", "\nWhether only players are allowed to teleport through portals");
+        onlyPlayerTeleportation = config.get("onlyPlayerTeleportation", true);
         
         config.setHeader("allowPortalNameOverride", "\nWhether portals can be replaced by other portals with the same name on the same world");
         allowPortalNameOverride = config.get("allowPortalNameOverride", true);

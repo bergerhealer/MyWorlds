@@ -4,7 +4,7 @@ import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.Task;
 
-public class TimeControl {
+public class TimeControl extends Task {
 	
 	/**
 	 * Returns the time value based on a name
@@ -65,94 +65,82 @@ public class TimeControl {
                 hours, minutes, (hours % 12) == 0 ? 12 : hours % 12, minutes,
                 hours < 12 ? "am" : "pm");
     }
-    
+
     public String getTime(long backup) {
-    	if (this.locker == null) {
-    		World w = WorldManager.getWorld(worldname);
+    	if (!this.locking) {
+    		World w = config.getWorld();
     		if (w == null) {
     			return getTimeString(backup);
     		} else {
         		return getTimeString(w.getTime());
     		}
     	} else {
-    		return getTimeString(this.locker.time);
+    		return getTimeString(this.lockedTime);
     	}
     }
-            
-    public TimeControl(String worldname) {
-    	this.worldname = worldname;
-    }
-    
-    public String worldname;
-    public Locker locker;
 
-    public void lockTime(long time) {
-    	if (this.locker == null) {
-    		this.locker = new Locker(worldname, time);
-    		this.locker.start();
-    	} else {
-        	this.locker.time = time;
-        	this.locker.run();
+    public TimeControl(WorldConfig owner) {
+    	super(MyWorlds.plugin);
+    	this.config = owner;
+    }
+
+    public final WorldConfig config;
+    public boolean locking = false;
+    private long lockedTime;
+    private long realtime;
+    private World world;
+
+    public void setTime(long time) {
+    	this.lockedTime = this.realtime = time;
+    	this.updateWorld(config.getWorld());
+    	if (world != null) {
+    		this.run();
     	}
     }
-    public void unlockTime() {
-    	if (this.locker != null) {
-    		this.locker.stop();
-    		this.locker = null;
-    	}
+    public long getTime() {
+    	return lockedTime;
     }
     public boolean isLocked() {
-    	return this.locker != null;
+    	return this.locking;
     }
-    
     /*
      * Sets if the time update task should be running
      * See also: World/Plugin load and unload
      */
-    public boolean setLocking(boolean locking) {
-    	if (this.locker != null) {
-    		if (this.locker.isRunning() != locking) {
-            	if (locking) { 
-            		return this.locker.startTask();
-            	} else {
-            		this.locker.stop();
-            		return true;
-            	}
+    public void setLocking(boolean locking) {
+		if (this.locking != locking) {
+			this.locking = locking;
+        	if (locking) {
+        		this.updateWorld(config.getWorld());
+        	} else {
+        		this.stop();
+        	}
+		}
+    }
+    public void updateWorld(World world) {
+		this.world = world;
+    	if (this.locking) {
+    		if (this.world == null) {
+    			if (this.isRunning()) {
+    				this.stop();
+    			}
+    		} else {
+    			if (!this.isRunning()) {
+    				this.start();
+    			}
     		}
     	}
-    	return false;
     }
-    
-    public static class Locker extends Task {
 
-    	public Locker(String worldname, long time) {
-    		super(MyWorlds.plugin);
-    		this.worldname = worldname;
-    		this.time = time;
-    		this.realtime = time;
-    	}
-    	
-    	private String worldname;
-    	private World w;
-    	public long time;
-    	public long realtime;
-    	
-		@Override
-		public void run() {
-			WorldManager.setTime(this.w, realtime);
-			this.realtime += 24000L;
-		}
-		
-		public boolean startTask() {
-			return this.startTask(MyWorlds.timeLockInterval);
-		}
-		public boolean startTask(long interval) {
-			this.w = WorldManager.getWorld(this.worldname);
-			if (this.w == null) return false;
-			super.start(0, interval);
-			return true;
-		}
+	@Override
+	public void run() {
+		WorldManager.setTime(this.world, realtime);
+		this.realtime += 24000L;
+	}
 
-    }
-    
+	@Override
+	public Task start() {
+		this.start(MyWorlds.timeLockInterval, MyWorlds.timeLockInterval);
+		return this;
+	}
 }
