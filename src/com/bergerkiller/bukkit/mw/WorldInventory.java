@@ -59,7 +59,7 @@ public class WorldInventory {
 
 	public static void detach(Collection<String> worldnames) {
 		for (String world : worldnames) {
-			WorldConfig.get(world).inventory.remove(world);
+			WorldConfig.get(world).inventory.remove(world, true);
 		}
 	}
 
@@ -100,7 +100,7 @@ public class WorldInventory {
 	}
 
 	public void save(WorldServer world, EntityPlayer player) {
-		if (world != null && player != null) {
+		if (world != null && player != null && MyWorlds.useWorldInventories) {
 			if (this.lastSavedPlayer != null && lastSavedPlayer.equalsIgnoreCase(player.name)) {
 				return;
 			}
@@ -116,10 +116,12 @@ public class WorldInventory {
 		this.lastSavedPlayer = null;
 	}
 
-	public WorldInventory remove(String worldname) {
+	public WorldInventory remove(String worldname, boolean createNew) {
 		if (this.worlds.remove(worldname.toLowerCase())) {
 			//constructor handles world config update
-			new WorldInventory(worldname).add(worldname);
+			if (createNew) {
+				new WorldInventory(worldname).add(worldname);
+			}
 		}
 		if (this.worlds.isEmpty()) {
 			inventories.remove(this);
@@ -130,7 +132,7 @@ public class WorldInventory {
 	public WorldInventory add(String worldname) {
 		WorldConfig config = WorldConfig.get(worldname);
 		if (config.inventory != null) {
-			config.inventory.remove(config.worldname);
+			config.inventory.remove(config.worldname, false);
 		}
 		config.inventory = this;
 		this.worlds.add(worldname.toLowerCase());
@@ -139,7 +141,7 @@ public class WorldInventory {
 	}
 
 	public void updateFolder(WorldServer world) {
-		if (this.updateFolder() && world != null) {
+		if (this.updateFolder() && world != null && MyWorlds.useWorldInventories) {
 			playerField.set(world.getDataManager(), this.folder);
 		}
 	}

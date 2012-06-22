@@ -366,7 +366,7 @@ public class WorldConfig {
 		}
 	}
 	public void updateInventory(final WorldServer world, final Player bukkitPlayer) {
-		if (Permission.GENERAL_KEEPINV.has(bukkitPlayer)) {
+		if (Permission.GENERAL_KEEPINV.has(bukkitPlayer) || !MyWorlds.useWorldInventories) {
 			return;
 		}
 		EntityPlayer player = EntityUtil.getNative(bukkitPlayer);
@@ -375,6 +375,7 @@ public class WorldConfig {
 			if (man instanceof WorldNBTStorage) {
 				NBTTagCompound data = ((WorldNBTStorage) man).getPlayerData(player.name);
 				if (data != null) {
+					System.out.println("LOADING: " + player.name);
 					player.inventory.b(data.getList("Inventory"));
 				}
 			}

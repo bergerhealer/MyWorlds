@@ -380,6 +380,9 @@ public class WorldManager {
 		return rval.toArray(new String[0]);
 	}
 	public static String matchWorld(String matchname) {
+		if (matchname == null || matchname.isEmpty()) {
+			return null;
+		}
 		String[] worldnames = getWorlds();
 		for (String worldname : worldnames) {
 			if (worldname.equalsIgnoreCase(matchname)) return worldname;

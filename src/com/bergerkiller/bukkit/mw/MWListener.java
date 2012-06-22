@@ -121,7 +121,7 @@ public class MWListener implements Listener {
 	
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		if (!event.isCancelled()) {
+		if (!event.isCancelled() && event.getTo() != null && event.getTo().getWorld() != null) {
 			if (MyWorlds.useAllTeleportPermissions) {
 				if (!Permission.canEnter(event.getPlayer(), event.getTo().getWorld())) {
 					Localization.message(event.getPlayer(), "world.noaccess");

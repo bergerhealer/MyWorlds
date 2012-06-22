@@ -27,7 +27,8 @@ public class MyWorlds extends PluginBase {
 	public static boolean useAllTeleportPermissions = true;
 	public static boolean isSpoutEnabled = false;
 	public static boolean onlyPlayerTeleportation = true;
-		
+	public static boolean useWorldInventories;
+
 	public static MyWorlds plugin;
 		
 	public String root() {
@@ -69,6 +70,9 @@ public class MyWorlds extends PluginBase {
         config.setHeader("timeLockInterval", "\nThe tick interval at which time is kept locked");
         timeLockInterval = config.get("timeLockInterval", 20);
         
+        config.setHeader("useWorldInventories", "\nWhether or not world inventories are being separated using the settings");
+        useWorldInventories = config.get("useWorldInventories", true);
+
         useWorldEnterPermissions = config.get("useWorldEnterPermissions", false);
         usePortalEnterPermissions = config.get("usePortalEnterPermissions", false);
         useWorldTeleportPermissions = config.get("useWorldTeleportPermissions", false);
@@ -101,16 +105,16 @@ public class MyWorlds extends PluginBase {
         
         //Permissions
 		Permission.init(this);
-		
+
 		//Portals
 		Portal.init(root() + "portals.txt");
 
 		//World info
 		WorldConfig.init(root() + "worlds.yml");
-		
+
 		//World inventories
 		WorldInventory.init(root() + "inventories.yml");
-		
+
         //init chunk loader
         LoadChunksTask.init();
         

@@ -134,8 +134,12 @@ public class TimeControl extends Task {
 
 	@Override
 	public void run() {
-		WorldManager.setTime(this.world, realtime);
-		this.realtime += 24000L;
+		if (this.world == null) {
+			this.stop();
+		} else {
+			WorldManager.setTime(this.world, realtime);
+			this.realtime += 24000L;
+		}
 	}
 
 	@Override
