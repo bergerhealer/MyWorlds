@@ -1,8 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -19,8 +17,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
@@ -29,72 +25,12 @@ import org.getspout.spoutapi.block.SpoutWeather;
 import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
-import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.EnumUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
-public class WorldConfig {	
-	private static HashMap<String, WorldConfig> config = new HashMap<String, WorldConfig>();
-	public static WorldConfig get(String worldname) {
-		WorldConfig c = config.get(worldname.toLowerCase());
-		if (c == null) {
-			c = new WorldConfig(worldname);
-		}
-		return c;
-	}
-	public static WorldConfig get(World world) {
-		return get(world.getName());
-	}
-	public static WorldConfig get(Entity entity) {
-		return get(entity.getWorld());
-	}
-	public static WorldConfig get(Location location) {
-		return get(location.getWorld());
-	}
-	public static WorldConfig get(Block block) {
-		return get(block.getWorld());
-	}
-	public static Collection<WorldConfig> all() {
-		return config.values();
-	}
-	public static void init(String filename) {
-		FileConfiguration config = new FileConfiguration(filename);
-		config.load();
-		for (ConfigurationNode node : config.getNodes()) {
-			if (WorldManager.worldExists(node.getName())) {
-				WorldConfig wc = new WorldConfig(node);
-				if (node.get("loaded", false)) {
-					wc.loadWorld();
-				}
-			} else {
-				MyWorlds.plugin.log(Level.WARNING, "World: " + node.getName() + " no longer exists, data will be wiped when disabling!");
-			}
-		}
-		for (World world : Bukkit.getServer().getWorlds()) {
-			get(world).update(world);
-		}
-	}
-	public static void saveAll(String filename) {
-		FileConfiguration cfg = new FileConfiguration(filename);
-		for (WorldConfig wc : all()) {
-			wc.save(cfg.getNode(wc.worldname));
-		}
-		cfg.save();
-	}
-	public static void deinit(String filename) {
-		saveAll(filename);
-		for (WorldConfig world : all()) {
-			world.timeControl.setLocking(false);
-		}
-		config.clear();
-		config = null;
-	}
-
-	public static void remove(String worldname) {
-		config.remove(worldname.toLowerCase());
-	}
+public class WorldConfig extends WorldConfigStore {	
 
 	public WorldConfig(ConfigurationNode node) {
 		this(node.getName());
@@ -143,7 +79,7 @@ public class WorldConfig {
 	public WorldConfig(String worldname) {
 		this.worldname = worldname;
 		worldname = worldname.toLowerCase();
-		config.put(worldname, this);
+		worldConfigs.put(worldname, this);
 		World world = this.getWorld();
 		if (world != null) {
 			this.keepSpawnInMemory = world.getKeepSpawnInMemory();
@@ -424,5 +360,4 @@ public class WorldConfig {
 			}
 		}
 	}
-
 }

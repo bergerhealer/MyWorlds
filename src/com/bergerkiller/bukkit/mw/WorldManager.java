@@ -2,7 +2,6 @@ package com.bergerkiller.bukkit.mw;
 
 import java.io.*;
 import java.lang.ref.SoftReference;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,6 +16,7 @@ import net.minecraft.server.NBTBase;
 import net.minecraft.server.NBTCompressedStreamTools;
 import net.minecraft.server.NBTTagCompound;
 import net.minecraft.server.RegionFile;
+import net.minecraft.server.RegionFileCache;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -30,28 +30,33 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.bergerkiller.bukkit.common.SafeField;
 import com.bergerkiller.bukkit.mw.Tag.Type;
 
 @SuppressWarnings("rawtypes")
 public class WorldManager {
 	private static HashMap regionfiles;
-	private static Field rafField;
+	private static SafeField<RandomAccessFile> rafField;
 	public static boolean init() {
+		Throwable tt = null;
 		try {
-        	Field a = net.minecraft.server.RegionFileCache.class.getDeclaredField("a");
-        	a.setAccessible(true);
-			regionfiles = (HashMap) a.get(null);
-			rafField = net.minecraft.server.RegionFile.class.getDeclaredField("c");
-			rafField.setAccessible(true);
-        	MyWorlds.plugin.log(Level.INFO, "Successfully bound variable to region file cache.");
-			MyWorlds.plugin.log(Level.INFO, "File references to unloaded worlds will be cleared!");
-			return true;
+			SafeField<HashMap> a = new SafeField<HashMap>(RegionFileCache.class, "a");
+			rafField = new SafeField<RandomAccessFile>(RegionFile.class, "c");
+			if (a.isValid() && rafField.isValid()) {
+				regionfiles = a.get(null);
+	        	MyWorlds.plugin.log(Level.INFO, "Successfully bound variable to region file cache.");
+				MyWorlds.plugin.log(Level.INFO, "File references to unloaded worlds will be cleared!");
+				return true;
+			}
 		} catch (Throwable t) {
-			MyWorlds.plugin.log(Level.WARNING, "Failed to bind to region file cache.");
-			MyWorlds.plugin.log(Level.WARNING, "Files will stay referenced after being unloaded!");
-			t.printStackTrace();
-			return false;
+			tt = t;
 		}
+		MyWorlds.plugin.log(Level.WARNING, "Failed to bind to region file cache.");
+		MyWorlds.plugin.log(Level.WARNING, "Files will stay referenced after being unloaded!");
+		if (tt != null) {
+			tt.printStackTrace();
+		}
+		return false;
 	}
 	public static void deinit() {
 		regionfiles = null;
@@ -73,7 +78,7 @@ public class WorldManager {
 					try {
 						RegionFile file = (RegionFile) ref.get();
 						if (file != null) {
-							RandomAccessFile raf = (RandomAccessFile) rafField.get(file);
+							RandomAccessFile raf = rafField.get(file);
 							raf.close();
 							removedKeys.add(f);
 						}
@@ -493,7 +498,7 @@ public class WorldManager {
 	
 	public static void setTime(World world, long time) {
 		net.minecraft.server.World w = ((CraftWorld) world).getHandle();
-		w.setTimeAndFixTicklists(time);
+		w.setTime(time); //fix tick lists?
 	}
 	
 	private static boolean delete(File folder) {

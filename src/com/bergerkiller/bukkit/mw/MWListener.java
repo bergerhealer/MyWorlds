@@ -24,7 +24,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerChatEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -37,8 +37,6 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 public class MWListener implements Listener {
-
-	
 	private static HashSet<String> initIgnoreWorlds = new HashSet<String>();
 	public static void ignoreWorld(String worldname) {
 		initIgnoreWorlds.add(worldname);
@@ -48,7 +46,7 @@ public class MWListener implements Listener {
     public void onWorldLoad(WorldLoadEvent event) {
     	WorldConfig.get(event.getWorld()).timeControl.updateWorld(event.getWorld());
     }
-    
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldUnload(WorldUnloadEvent event) {
     	if (!event.isCancelled()) {
@@ -197,7 +195,7 @@ public class MWListener implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onPlayerChat(PlayerChatEvent event) {
+	public void onPlayerChat(AsyncPlayerChatEvent event) {
 		if (!Permission.canChat(event.getPlayer())) {
 			event.setCancelled(true);
 			event.getPlayer().sendMessage(Localization.get("world.nochataccess"));

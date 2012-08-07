@@ -35,12 +35,19 @@ public class WorldInventory {
 		FileConfiguration config = new FileConfiguration(filename);
 		config.load();
 		for (ConfigurationNode node : config.getNodes()) {
+			String worldFolder = node.get("folder", String.class, null);
+			if (worldFolder == null || !WorldManager.worldExists(worldFolder)) {
+				continue;
+			}
 			List<String> worlds = node.getList("worlds", String.class);
 			if (worlds.isEmpty()) {
 				continue;
 			}
-			WorldInventory inv = new WorldInventory(node.get("folder", String.class, null));
+			WorldInventory inv = new WorldInventory(worldFolder);
 			for (String world : worlds) {
+				if (world == null || !WorldManager.worldExists(world)) {
+					continue;
+				}
 				inv.add(world);
 			}
 		}
