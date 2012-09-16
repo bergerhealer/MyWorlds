@@ -9,7 +9,6 @@ import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.PluginBase;
 
 public class MyWorlds extends PluginBase {
-
 	public static boolean usePermissions;
 	public static int teleportInterval;
 	public static boolean useWaterTeleport;
@@ -30,7 +29,12 @@ public class MyWorlds extends PluginBase {
 	public static boolean useWorldInventories;
 
 	public static MyWorlds plugin;
-		
+
+	@Override
+	public int getMinimumLibVersion() {
+		return 1;
+	}
+
 	public String root() {
 		return getDataFolder() + File.separator;
 	}

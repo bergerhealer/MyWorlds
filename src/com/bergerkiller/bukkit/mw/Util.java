@@ -8,7 +8,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class Util {
-
 	public static boolean isSolid(Block b, BlockFace direction) {
 		int maxwidth = 10;
 		while (true) {
@@ -26,7 +25,4 @@ public class Util {
 			MyWorlds.plugin.log(Level.INFO, ((Player) sender).getName() + " " + message);
 		}
 	}
-	
-
-
 }

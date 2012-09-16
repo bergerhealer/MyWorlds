@@ -4,6 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 
+import com.bergerkiller.bukkit.common.utils.TimeUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.TimeControl;
 import com.bergerkiller.bukkit.mw.WorldConfig;
@@ -40,7 +41,7 @@ public class WorldTime extends Command {
 			} else if (command.equalsIgnoreCase("freeze")) {
 				lock = true;
 			} else {
-				long newtime = TimeControl.getTime(command);
+				long newtime = TimeUtil.getTime(command);
 				if (newtime != -1) {
 					time = newtime;
 				} else {
@@ -66,7 +67,7 @@ public class WorldTime extends Command {
 			}
 			if (args.length == 0) {
 				message(ChatColor.YELLOW + "The current time of world '" + 
-						worldname + "' is " + TimeControl.getTimeString(time));
+						worldname + "' is " + TimeUtil.getTimeString(time));
 			} else {
 				TimeControl tc = WorldConfig.get(worldname).timeControl;
 				if (lock) {
@@ -75,11 +76,11 @@ public class WorldTime extends Command {
 						tc.setLocking(false);
 						message(Localization.getWorldNotLoaded(worldname));
 						message(ChatColor.YELLOW + "Time will be locked to " + 
-								TimeControl.getTimeString(time) + " as soon it is loaded!");
+								TimeUtil.getTimeString(time) + " as soon it is loaded!");
 					} else {
 						tc.setLocking(true);
 						message(ChatColor.GREEN + "Time of world '" + worldname + "' locked to " + 
-						        TimeControl.getTimeString(time) + "!");
+								TimeUtil.getTimeString(time) + "!");
 					}
 				} else {
 					World w = WorldManager.getWorld(worldname);
@@ -88,11 +89,11 @@ public class WorldTime extends Command {
 							tc.setLocking(false);
 							WorldManager.setTime(w, time);
 							message(ChatColor.GREEN + "Time of world '" + worldname + "' unlocked and set to " + 
-							        TimeControl.getTimeString(time) + "!");
+									TimeUtil.getTimeString(time) + "!");
 						} else {
 							WorldManager.setTime(w, time);
 							message(ChatColor.GREEN + "Time of world '" + worldname + "' set to " + 
-							        TimeControl.getTimeString(time) + "!");
+									TimeUtil.getTimeString(time) + "!");
 						}
 					} else {
 						message(Localization.getWorldNotLoaded(worldname));
