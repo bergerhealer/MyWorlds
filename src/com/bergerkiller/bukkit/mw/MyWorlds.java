@@ -117,9 +117,6 @@ public class MyWorlds extends PluginBase {
 
         //init chunk loader
         LoadChunksTask.init();
-        
-        //Chunk cache
-        WorldManager.init();
 	}
 	public void disable() {
 		
@@ -131,8 +128,7 @@ public class MyWorlds extends PluginBase {
 		
 		//World inventories
 		WorldInventory.deinit(root() + "inventories.yml");
-		
-        WorldManager.deinit();
+
         Localization.deinit();
         Permission.deinit();
         

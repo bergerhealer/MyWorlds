@@ -1,11 +1,10 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.*;
-import java.lang.ref.SoftReference;
+import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.zip.DeflaterOutputStream;
@@ -16,7 +15,6 @@ import net.minecraft.server.NBTBase;
 import net.minecraft.server.NBTCompressedStreamTools;
 import net.minecraft.server.NBTTagCompound;
 import net.minecraft.server.RegionFile;
-import net.minecraft.server.RegionFileCache;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -30,57 +28,25 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.bergerkiller.bukkit.common.SafeField;
+import com.bergerkiller.bukkit.common.reflection.RegionFileCacheRef;
+import com.bergerkiller.bukkit.common.reflection.RegionFileRef;
 import com.bergerkiller.bukkit.mw.Tag.Type;
 
 @SuppressWarnings("rawtypes")
 public class WorldManager {
-	private static HashMap regionfiles;
-	private static SafeField<RandomAccessFile> rafField;
-	public static boolean init() {
-		Throwable tt = null;
-		try {
-			SafeField<HashMap> a = new SafeField<HashMap>(RegionFileCache.class, "a");
-			rafField = new SafeField<RandomAccessFile>(RegionFile.class, "c");
-			if (a.isValid() && rafField.isValid()) {
-				regionfiles = a.get(null);
-	        	MyWorlds.plugin.log(Level.INFO, "Successfully bound variable to region file cache.");
-				MyWorlds.plugin.log(Level.INFO, "File references to unloaded worlds will be cleared!");
-				return true;
-			}
-		} catch (Throwable t) {
-			tt = t;
-		}
-		MyWorlds.plugin.log(Level.WARNING, "Failed to bind to region file cache.");
-		MyWorlds.plugin.log(Level.WARNING, "Files will stay referenced after being unloaded!");
-		if (tt != null) {
-			tt.printStackTrace();
-		}
-		return false;
-	}
-	public static void deinit() {
-		regionfiles = null;
-		rafField = null;
-		serverfolder = null;
-	}
-	
 	public static boolean clearWorldReference(World world) {
 		String worldname = world.getName();
-		if (regionfiles == null) return false;
-		if (rafField == null) return false;
 		ArrayList<Object> removedKeys = new ArrayList<Object>();
 		try {
-			for (Object o : regionfiles.entrySet()) {
-				Map.Entry e = (Map.Entry) o;
-				File f = (File) e.getKey();
-				if (f.toString().startsWith("." + File.separator + worldname)) {
-					SoftReference ref = (SoftReference) e.getValue();
+			for (Entry<File, Reference<RegionFile>> entry : RegionFileCacheRef.FILES.entrySet()) {
+				if (entry.getKey().toString().startsWith("." + File.separator + worldname)) {
+					Reference ref = entry.getValue();
 					try {
 						RegionFile file = (RegionFile) ref.get();
 						if (file != null) {
-							RandomAccessFile raf = rafField.get(file);
+							RandomAccessFile raf = RegionFileRef.stream.get(file);
 							raf.close();
-							removedKeys.add(f);
+							removedKeys.add(entry.getKey());
 						}
 					} catch (Exception ex) {
 						ex.printStackTrace();
@@ -92,11 +58,11 @@ public class WorldManager {
 			ex.printStackTrace();
 		}
 		for (Object key : removedKeys) {
-			regionfiles.remove(key);
+			RegionFileCacheRef.FILES.remove(key);
 		}
 		return true;
 	}
-	
+
 	/*
 	 * Get or set the respawn point of a world
 	 */
