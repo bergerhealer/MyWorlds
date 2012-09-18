@@ -28,8 +28,8 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.bergerkiller.bukkit.common.reflection.RegionFileCacheRef;
-import com.bergerkiller.bukkit.common.reflection.RegionFileRef;
+import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
+import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
 import com.bergerkiller.bukkit.mw.Tag.Type;
 
 @SuppressWarnings("rawtypes")

@@ -208,10 +208,10 @@ public class WorldConfig extends WorldConfigStore {
 	public static void updateReload(World world) {
 		updateReload(world.getName());
 	}
-	public static void updateReload(String worldname) {
-		new Task(MyWorlds.plugin, worldname) {
+	public static void updateReload(final String worldname) {
+		new Task(MyWorlds.plugin) {
 			public void run() {
-				get(arg(0, String.class)).updateReload();
+				get(worldname).updateReload();
 			}
 		}.start(1);
 	}
@@ -311,7 +311,6 @@ public class WorldConfig extends WorldConfigStore {
 			if (man instanceof WorldNBTStorage) {
 				NBTTagCompound data = ((WorldNBTStorage) man).getPlayerData(player.name);
 				if (data != null) {
-					System.out.println("LOADING: " + player.name);
 					player.inventory.b(data.getList("Inventory"));
 				}
 			}

@@ -56,7 +56,7 @@ public class WorldCreate extends Command {
 				}
 		        message(ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
 		        MWListener.ignoreWorld(worldname);
-		        World world = WorldManager.createWorld(worldname, seedval);
+		        final World world = WorldManager.createWorld(worldname, seedval);
 				if (world != null) {
 					//load chunks
 					final int keepdimension = 14;
@@ -71,11 +71,9 @@ public class WorldCreate extends Command {
 							int cz = spawnz + z;
 							Task t = null;
 							if (first || (current + 2) == total) {
-								int per = 100;
-								if (first) per = 100 * current / total;
-								t = new Task(MyWorlds.plugin, per) {
+								final int percent = first ? (100 * current / total) : 100;
+								t = new Task(MyWorlds.plugin) {
 									public void run() {
-										int percent = arg(0, Integer.class);
 									    message(ChatColor.YELLOW + "Preparing spawn area (" + percent + "%)...");
 									    MyWorlds.plugin.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
 									}
@@ -83,9 +81,8 @@ public class WorldCreate extends Command {
 								first = false;
 							}
 							if (++current == total) {
-								t = new Task(MyWorlds.plugin, world) {
+								t = new Task(MyWorlds.plugin) {
 									public void run() {
-										World world = arg(0, World.class);
 										world.setKeepSpawnInMemory(true);
 									    message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
 									    MyWorlds.plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
