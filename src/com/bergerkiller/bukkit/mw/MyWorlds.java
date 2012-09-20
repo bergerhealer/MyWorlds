@@ -117,7 +117,8 @@ public class MyWorlds extends PluginBase {
 		WorldConfig.init(root() + "worlds.yml");
 
 		//World inventories
-		WorldInventory.init(root() + "inventories.yml");
+		WorldInventory.load(root() + "inventories.yml");
+		PlayerData.init();
 
         //init chunk loader
         LoadChunksTask.init();
@@ -131,7 +132,7 @@ public class MyWorlds extends PluginBase {
 		WorldConfig.deinit(root() + "worlds.yml");
 		
 		//World inventories
-		WorldInventory.deinit(root() + "inventories.yml");
+		WorldInventory.save(root() + "inventories.yml");
 
         Localization.deinit();
         Permission.deinit();

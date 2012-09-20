@@ -4,12 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-import net.minecraft.server.EntityPlayer;
-import net.minecraft.server.IDataManager;
-import net.minecraft.server.NBTTagCompound;
-import net.minecraft.server.WorldNBTStorage;
-import net.minecraft.server.WorldServer;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
@@ -26,9 +20,7 @@ import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.Task;
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.EnumUtil;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldConfig extends WorldConfigStore {	
 
@@ -301,21 +293,6 @@ public class WorldConfig extends WorldConfigStore {
 			world.setDifficulty(this.difficulty);
 		}
 	}
-	public void updateInventory(final WorldServer world, final Player bukkitPlayer) {
-		if (Permission.GENERAL_KEEPINV.has(bukkitPlayer) || !MyWorlds.useWorldInventories) {
-			return;
-		}
-		EntityPlayer player = EntityUtil.getNative(bukkitPlayer);
-		if (world != null && player != null) {
-			IDataManager man = world.getDataManager();
-			if (man instanceof WorldNBTStorage) {
-				NBTTagCompound data = ((WorldNBTStorage) man).getPlayerData(player.name);
-				if (data != null) {
-					player.inventory.b(data.getList("Inventory"));
-				}
-			}
-		}
-	}
 	public void update(World world) {
 		if (world == null) return;
 		updatePVP(world);
@@ -324,15 +301,9 @@ public class WorldConfig extends WorldConfigStore {
 		updateAutoSave(world);
 	}
 	public void update(Player player) {
-		this.inventory.resetSave();
 		updateOP(player);
 		updateGamemode(player);
 		updateSpoutWeather(player);
-		updateInventory(WorldUtil.getNative(this.getWorld()), player);
-	}
-
-	public void remove(Player player) {
-		this.inventory.save(this.getWorld(), player);
 	}
 
 	public World getWorld() {

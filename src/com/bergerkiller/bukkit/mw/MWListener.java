@@ -3,6 +3,9 @@ package com.bergerkiller.bukkit.mw;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import net.minecraft.server.EntityPlayer;
+import net.minecraft.server.PlayerFileData;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,6 +24,7 @@ import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -35,6 +39,10 @@ import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
+
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class MWListener implements Listener {
 	private static HashSet<String> initIgnoreWorlds = new HashSet<String>();
@@ -53,9 +61,6 @@ public class MWListener implements Listener {
     		WorldConfig config = WorldConfig.get(event.getWorld());
     		config.timeControl.updateWorld(null);
         	WorldManager.clearWorldReference(event.getWorld());
-        	for (Player player : event.getWorld().getPlayers()) {
-        		config.remove(player);
-        	}
     	}
     }
     
@@ -126,10 +131,6 @@ public class MWListener implements Listener {
 					event.setCancelled(true);
 				}
 			}
-			if (event.getFrom().getWorld() != event.getTo().getWorld()) {
-				WorldConfig.get(event.getFrom()).remove(event.getPlayer());
-				WorldConfig.get(event.getTo()).update(event.getPlayer());
-			}
 		}
 	}
 	
@@ -142,7 +143,14 @@ public class MWListener implements Listener {
 		}
 		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
 	}
-	
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onEntityDeath(EntityDeathEvent event) {
+		if (event.getEntity() instanceof Player) {
+			//WorldConfig.get(event.getEntity().getWorld()).remove((Player) event.getEntity());
+		}
+	}
+
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
 		if (!event.isBedSpawn()) {
@@ -151,15 +159,11 @@ public class MWListener implements Listener {
 				event.setRespawnLocation(loc);
 			}
 		}
-		if (event.getRespawnLocation().getWorld() != event.getPlayer().getWorld()) {
-			WorldConfig.get(event.getPlayer()).remove(event.getPlayer());
-			WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
-		}
+		WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
 	}
 	
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		WorldConfig.get(event.getPlayer()).remove(event.getPlayer()); 
 		WorldConfig.updateReload(event.getPlayer());
 	}
 	
@@ -188,7 +192,6 @@ public class MWListener implements Listener {
 				}
 			}
 			if (event.getFrom().getWorld() != event.getTo().getWorld()) {
-				WorldConfig.get(event.getFrom()).remove(event.getPlayer());
 				WorldConfig.updateReload(event.getFrom());
 			}
 		}
@@ -212,8 +215,16 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
 		WorldConfig.updateReload(event.getFrom());
-		WorldConfig.get(event.getFrom()).remove(event.getPlayer());
 		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
+		if (MyWorlds.useWorldInventories && !Permission.GENERAL_KEEPINV.has(event.getPlayer())) {
+			EntityPlayer ep = EntityUtil.getNative(event.getPlayer());
+			PlayerFileData data = CommonUtil.getServerConfig().playerFileData;
+			net.minecraft.server.World newWorld = ep.world;
+			ep.world = WorldUtil.getNative(event.getFrom());
+			data.save(ep);
+			ep.world = newWorld;
+			PlayerData.refreshState(ep);
+		}
 	}
 	
 	@EventHandler(priority = EventPriority.MONITOR)

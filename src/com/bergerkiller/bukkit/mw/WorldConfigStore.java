@@ -69,8 +69,6 @@ public class WorldConfigStore {
 		for (WorldConfig world : all()) {
 			world.timeControl.setLocking(false);
 		}
-		worldConfigs.clear();
-		worldConfigs = null;
 	}
 
 	public static void remove(String worldname) {

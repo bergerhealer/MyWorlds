@@ -7,31 +7,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.minecraft.server.EntityPlayer;
-import net.minecraft.server.IDataManager;
-import net.minecraft.server.WorldNBTStorage;
-import net.minecraft.server.WorldServer;
-
 import org.bukkit.Bukkit;
-import org.bukkit.World;
-import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.entity.Player;
 
-import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldInventory {
-	private static final SafeField<File> playerField = new SafeField<File>(WorldNBTStorage.class, "playerDir");
 	private static final Set<WorldInventory> inventories = new HashSet<WorldInventory>();
 
 	public static Collection<WorldInventory> getAll() {
 		return inventories;
 	}
 
-	public static void init(String filename) {
+	public static void load(String filename) {
 		FileConfiguration config = new FileConfiguration(filename);
 		config.load();
 		for (ConfigurationNode node : config.getNodes()) {
@@ -53,7 +41,7 @@ public class WorldInventory {
 		}
 	}
 
-	public static void deinit(String filename) {
+	public static void save(String filename) {
 		FileConfiguration config = new FileConfiguration(filename);
 		int i = 0;
 		for (WorldInventory inventory : inventories) {
@@ -77,50 +65,38 @@ public class WorldInventory {
 		}
 	}
 
-	public WorldInventory() {
+	private WorldInventory() {
 		inventories.add(this);
 	}
 
 	public WorldInventory(String worldFolder) {
 		this();
 		worldFolder = WorldManager.matchWorld(worldFolder);
-		this.setFolder(worldFolder);
+		if (worldFolder == null) {
+			this.worldname = null;
+			this.folder = null;
+		} else {
+			this.worldname = worldFolder;
+			this.folder = new File(Bukkit.getWorldContainer(), worldFolder);
+			this.folder = new File(this.folder, "players");
+		}
 	}
 
 	private final Set<String> worlds = new HashSet<String>();
 	private File folder;
 	private String worldname;
-	private String lastSavedPlayer;
 
 	public Collection<String> getWorlds() {
 		return this.worlds;
 	}
 
+	/**
+	 * Gets the World name in which all the inventories of this bundle are saved
+	 * 
+	 * @return shared world name
+	 */
 	public String getSharedWorldName() {
 		return this.worldname;
-	}
-
-	public void save(World world, Player player) {
-		if (world != null && player != null) {
-			save(WorldUtil.getNative(world), EntityUtil.getNative(player));
-		}
-	}
-
-	public void save(WorldServer world, EntityPlayer player) {
-		if (world != null && player != null && MyWorlds.useWorldInventories) {
-			if (this.lastSavedPlayer != null && lastSavedPlayer.equalsIgnoreCase(player.name)) {
-				return;
-			}
-			this.lastSavedPlayer = player.name;
-			IDataManager man = world.getDataManager();
-			if (man instanceof WorldNBTStorage) {
-				((WorldNBTStorage) man).save(player);
-			}
-		}
-	}
-
-	public void resetSave() {
-		this.lastSavedPlayer = null;
 	}
 
 	public WorldInventory remove(String worldname, boolean createNew) {
@@ -143,55 +119,6 @@ public class WorldInventory {
 		}
 		config.inventory = this;
 		this.worlds.add(worldname.toLowerCase());
-		this.updateFolder(WorldManager.getWorld(worldname));
 		return this;
-	}
-
-	public void updateFolder(WorldServer world) {
-		if (this.updateFolder() && world != null && MyWorlds.useWorldInventories) {
-			playerField.set(world.getDataManager(), this.folder);
-		}
-	}
-
-	public void updateFolder(World world) {
-		if (world != null) {
-			updateFolder(((CraftWorld) world).getHandle());
-		}
-	}
-
-	private void setFolder(String worldname) {
-		if (worldname == null) {
-			this.worldname = null;
-			this.folder = null;
-		} else {
-			this.worldname = worldname;
-			this.folder = new File(Bukkit.getWorldContainer(), worldname);
-			this.folder = new File(this.folder, "players");
-		}
-	}
-
-	public boolean updateFolder() {
-		if (this.folder == null || !this.folder.exists()) {
-			this.refreshFolder();
-			for (String worldname : this.worlds) {
-				worldname = WorldManager.matchWorld(worldname);
-				if (worldname != null) {
-					this.setFolder(worldname);
-				}
-			}
-			if (this.folder == null) {
-				return false;
-			} else {
-				for (String worldname : this.worlds) {
-					this.updateFolder(WorldManager.getWorld(worldname));
-				}
-			}
-		}
-		return true;
-	}
-
-	public void refreshFolder() {
-		this.folder = null;
-		this.worldname = null;
 	}
 }
