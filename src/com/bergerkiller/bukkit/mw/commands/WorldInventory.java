@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -34,6 +35,16 @@ public class WorldInventory extends Command {
 		}
 	}
 
+	public void sendWorldsMessage(Collection<String> worlds, String text) {
+		MessageBuilder builder = new MessageBuilder();
+		builder.green("Worlds ").setSeparator(ChatColor.WHITE, "/");
+		for (String world : worlds) {
+			builder.yellow(world);
+		}
+		builder.setSeparator(null).green(" " + text);
+		builder.send(this.sender);
+	}
+
 	public void execute() {
 		if (args.length > 1) {
 			if (args[0].equalsIgnoreCase("merge")) {
@@ -47,13 +58,7 @@ public class WorldInventory extends Command {
 						message(ChatColor.RED + "You need to specify more than one world to merge!");
 					} else {
 						com.bergerkiller.bukkit.mw.WorldInventory.merge(invWorlds);
-						MessageBuilder builder = new MessageBuilder();
-						builder.green("Worlds ").setSeparator(ChatColor.WHITE, "/");
-						for (String world : invWorlds) {
-							builder.yellow(world);
-						}
-						builder.setSeparator(null).green(" now share the same player inventory!");
-						builder.send(this.sender);
+						sendWorldsMessage(invWorlds, "now share the same player inventory!");
 					}
 				}
 				return;
@@ -61,26 +66,43 @@ public class WorldInventory extends Command {
 				if (this.prepareWorlds()) {
 					com.bergerkiller.bukkit.mw.WorldInventory.detach(this.worlds);
 					if (this.worlds.size() > 1) {
-						MessageBuilder builder = new MessageBuilder();
-						builder.green("Worlds ").setSeparator(ChatColor.WHITE, "/");
-						for (String world : worlds) {
-							builder.yellow(world);
-						}
-						builder.setSeparator(null).green(" now have their own player inventories!");
-						builder.send(this.sender);
+						sendWorldsMessage(worlds, "now have their own player inventories!");
 					} else {
 						for (String world : this.worlds) {
-							message(ChatColor.GREEN + "World " + ChatColor.WHITE + world + ChatColor.GREEN + " now has it's own player inventory!");
+							message(ChatColor.GREEN + "World " + ChatColor.WHITE + world + ChatColor.GREEN + " now has its own player inventory!");
+						}
+					}
+				}
+				return;
+			} else if (args[0].equalsIgnoreCase("enable") || args[0].equalsIgnoreCase("disable")) {
+				boolean enable = args[0].equalsIgnoreCase("enable");
+				if (this.prepareWorlds()) {
+					for (String world : worlds) {
+						com.bergerkiller.bukkit.mw.WorldConfig.get(world).clearInventory = !enable;
+					}
+					if (this.worlds.size() > 1) {
+						if (enable) {
+							sendWorldsMessage(worlds, "now allow inventories to be loaded when players join!");
+						} else {
+							sendWorldsMessage(worlds, "now deny inventories from being loaded when players join!");
+						}
+					} else {
+						for (String world : this.worlds) {
+							if (enable) {
+								message(ChatColor.GREEN + "World " + ChatColor.WHITE + world + ChatColor.GREEN + " now allows the inventory to be loaded when players join!");
+							} else {
+								message(ChatColor.GREEN + "World " + ChatColor.WHITE + world + ChatColor.GREEN + " now denies the inventory from being loaded when players join!");
+							}
 						}
 					}
 				}
 				return;
 			} else {
-				message(ChatColor.RED + "Unknown command: \\inventory " + args[0]);
+				message(ChatColor.RED + "Unknown command: /world inventory " + args[0]);
 			}
 		}
 		//usage
-		message(ChatColor.YELLOW + "/world inventory [split/merge] [worldnames]");
+		message(ChatColor.YELLOW + "/world inventory [split/merge/enable/disable] [worldnames]");
 	}
 
 }

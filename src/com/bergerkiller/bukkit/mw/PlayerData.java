@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -26,9 +27,7 @@ public class PlayerData implements PlayerFileData {
 	private Map<String, File> playerFileLoc = new HashMap<String, File>();
 
 	public static void init() {
-		if (MyWorlds.useWorldInventories) {
-			CommonUtil.getServerConfig().playerFileData = new PlayerData();
-		}
+		CommonUtil.getServerConfig().playerFileData = new PlayerData();
 	}
 
 	@Override
@@ -48,6 +47,9 @@ public class PlayerData implements PlayerFileData {
 	 * @return save file
 	 */
 	public static File getSaveFile(EntityHuman player) {
+		if (!MyWorlds.useWorldInventories) {
+			return getMainFile(player.name);
+		}
 		return getSaveFile(null, WorldConfig.get(player.world.getWorld()).inventory.getSharedWorldName(), player.name);
 	}
 
@@ -106,6 +108,17 @@ public class PlayerData implements PlayerFileData {
 	}
 
 	/**
+	 * Handles post loading of an Entity
+	 * 
+	 * @param entityhuman that got loaded
+	 */
+	private static void postLoad(EntityHuman entityhuman) {
+		if (WorldConfig.get(entityhuman.world.getWorld()).clearInventory) {
+			Arrays.fill(entityhuman.inventory.items, null);
+		}
+	}
+
+	/**
 	 * Applies the player states in the world to the player specified
 	 * 
 	 * @param world to get the states for
@@ -122,6 +135,7 @@ public class PlayerData implements PlayerFileData {
 			player.expTotal = data.getInt("XpTotal");
 			player.setHealth(data.getShort("Health"));
 			player.getFoodData().a(data);
+			postLoad(player);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to load player data for " + player.name);
 		}
@@ -155,6 +169,7 @@ public class PlayerData implements PlayerFileData {
 				player.setFirstPlayed(main.lastModified());
 			}
 			entityhuman.e(nbttagcompound);
+			postLoad(entityhuman);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to load player data for " + entityhuman.name);
 		}

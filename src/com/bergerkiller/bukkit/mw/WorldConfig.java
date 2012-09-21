@@ -31,6 +31,7 @@ public class WorldConfig extends WorldConfigStore {
 		this.chunkGeneratorName = node.get("chunkGenerator", String.class);
 		this.difficulty = EnumUtil.parseDifficulty(node.get("difficulty", String.class), this.difficulty);
 		this.gameMode = EnumUtil.parseGameMode(node.get("gamemode", String.class), null);
+		this.clearInventory = node.get("clearInventory", false);
 		String worldspawn = node.get("spawn.world", String.class);
 		if (worldspawn != null) {
 			double x = node.get("spawn.x", 0.0);
@@ -119,6 +120,7 @@ public class WorldConfig extends WorldConfigStore {
 		node.set("keepSpawnLoaded", this.keepSpawnInMemory);
 		node.set("environment", this.worldmode.toString());
 		node.set("chunkGenerator", this.chunkGeneratorName);
+		node.set("clearInventory", this.clearInventory ? true : null);
 		if (this.gameMode == null) {
 			node.set("gamemode", "NONE");
 		} else {
@@ -173,8 +175,9 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean formIce = true;
 	public boolean showRain = true;
 	public boolean showSnow = true;
+	public boolean clearInventory = false;
 	public WorldInventory inventory;
-	
+
 	public World loadWorld() {
 		if (WorldManager.worldExists(this.worldname)) {
 			World w = WorldManager.getOrCreateWorld(this.worldname);
