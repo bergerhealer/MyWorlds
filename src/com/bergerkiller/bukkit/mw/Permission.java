@@ -154,7 +154,7 @@ public enum Permission implements IPermissionDefault {
 				p.sendMessage(Localization.getWorldEnter(to.getWorld()));
 			}
 		}
-		EntityUtil.teleport(MyWorlds.plugin, entity, to);
+		EntityUtil.teleport(entity, to);
 		if (entity instanceof Player) {
 			Portal.notifyNoMove((Player) entity);
 		}

@@ -75,7 +75,7 @@ public class MyWorlds extends PluginBase {
         timeLockInterval = config.get("timeLockInterval", 20);
         
         config.setHeader("useWorldInventories", "\nWhether or not world inventories are being separated using the settings");
-        useWorldInventories = config.get("useWorldInventories", true);
+        useWorldInventories = config.get("useWorldInventories", false);
 
         useWorldEnterPermissions = config.get("useWorldEnterPermissions", false);
         usePortalEnterPermissions = config.get("usePortalEnterPermissions", false);

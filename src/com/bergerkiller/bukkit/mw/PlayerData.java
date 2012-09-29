@@ -47,9 +47,6 @@ public class PlayerData implements PlayerFileData {
 	 * @return save file
 	 */
 	public static File getSaveFile(EntityHuman player) {
-		if (!MyWorlds.useWorldInventories) {
-			return getMainFile(player.name);
-		}
 		return getSaveFile(null, WorldConfig.get(player.world.getWorld()).inventory.getSharedWorldName(), player.name);
 	}
 
@@ -72,7 +69,7 @@ public class PlayerData implements PlayerFileData {
 	 */
 	public static File getSaveFile(World world, String worldName, String playerName) {
 		if (world == null) {
-			org.bukkit.World bworld =  Bukkit.getWorld(worldName);
+			org.bukkit.World bworld = Bukkit.getWorld(worldName);
 			if (bworld != null) {
 				world = WorldUtil.getNative(bworld);
 			}
@@ -108,6 +105,34 @@ public class PlayerData implements PlayerFileData {
 	}
 
 	/**
+	 * Tries to read the saved data from a source file
+	 * 
+	 * @param sourceFile to read from
+	 * @return the data in the file, or the empty data constant if the file does not exist
+	 * @throws Exception
+	 */
+	public static NBTTagCompound read(File sourceFile, EntityHuman human) throws Exception {
+		if (sourceFile.exists()) {
+			return NBTCompressedStreamTools.a(new FileInputStream(sourceFile));
+		} else {
+			NBTTagCompound empty = new NBTTagCompound();
+			empty.setShort("Health", (short) 20);
+			empty.setShort("HurtTime", (short) 0);
+			empty.setShort("DeathTime", (short) 0);
+			empty.setShort("AttackTime", (short) 0);
+			empty.set("Pos", Util.doubleArrayToList(human.locX, human.locY, human.locZ));
+			empty.set("Motion", Util.doubleArrayToList(human.motX, human.motY, human.motZ));
+			empty.set("Rotation", Util.floatArrayToList(human.yaw, human.pitch));
+			UUID worldUUID = human.world.getWorld().getUID();
+			empty.setLong("WorldUUIDLeast", worldUUID.getLeastSignificantBits());
+			empty.setLong("WorldUUIDMost", worldUUID.getMostSignificantBits());
+			empty.setInt("Dimension", human.dimension);
+			empty.setString("SpawnWorld", human.spawnWorld);
+			return empty;
+		}
+	}
+
+	/**
 	 * Handles post loading of an Entity
 	 * 
 	 * @param entityhuman that got loaded
@@ -125,9 +150,14 @@ public class PlayerData implements PlayerFileData {
 	 * @param player to set the states for
 	 */
 	public static void refreshState(EntityPlayer player) {
+		if (!MyWorlds.useWorldInventories) {
+			// If not enabled, only do the post-load logic
+			postLoad(player);
+			return;
+		}
 		try {
 			File source = getSaveFile(player);
-			NBTTagCompound data = NBTCompressedStreamTools.a(new FileInputStream(source));
+			NBTTagCompound data = read(source, player);
 			// Load the inventory for that world
 			player.inventory.b(data.getList("Inventory"));
 			player.exp = data.getFloat("XpP");
@@ -143,28 +173,35 @@ public class PlayerData implements PlayerFileData {
 
 	@Override
 	public void load(EntityHuman entityhuman) {
-		// Find out where to find the save file
-		File main = playerFileLoc.get(entityhuman.name);
-		if (main == null) {
-			main = getMainFile(entityhuman.name);
-			try {
-				if (main.exists()) {
-					NBTTagCompound nbttagcompound = NBTCompressedStreamTools.a(new FileInputStream(main));
-					long least = nbttagcompound.getLong("WorldUUIDLeast");
-					long most = nbttagcompound.getLong("WorldUUIDMost");
-					org.bukkit.World world = Bukkit.getWorld(new UUID(most, least));
-					if (world != null) {
-						main = getSaveFile(WorldUtil.getNative(world), world.getName(), entityhuman.name);
+		File main;
+		// Get the source file to use for loading
+		if (MyWorlds.useWorldInventories) {
+			// Find out where to find the save file
+			main = playerFileLoc.get(entityhuman.name);
+			if (main == null) {
+				main = getMainFile(entityhuman.name);
+				try {
+					if (main.exists()) {
+						NBTTagCompound nbttagcompound = NBTCompressedStreamTools.a(new FileInputStream(main));
+						long least = nbttagcompound.getLong("WorldUUIDLeast");
+						long most = nbttagcompound.getLong("WorldUUIDMost");
+						org.bukkit.World world = Bukkit.getWorld(new UUID(most, least));
+						if (world != null) {
+							main = getSaveFile(WorldUtil.getNative(world), world.getName(), entityhuman.name);
+						}
 					}
+				} catch (Exception exception) {
 				}
-			} catch (Exception exception) {
+				playerFileLoc.put(entityhuman.name, main);
 			}
-			playerFileLoc.put(entityhuman.name, main);
+		} else {
+			// Just use the main world file
+			main = getMainFile(entityhuman.name);
 		}
 		// Load the save file
 		try {
-			NBTTagCompound nbttagcompound = NBTCompressedStreamTools.a(new FileInputStream(main));
-			if (entityhuman instanceof EntityPlayer) {
+			NBTTagCompound nbttagcompound = read(main, entityhuman);
+			if (entityhuman instanceof EntityPlayer && main.exists()) {
 				CraftPlayer player = (CraftPlayer) entityhuman.getBukkitEntity();
 				player.setFirstPlayed(main.lastModified());
 			}
@@ -172,6 +209,7 @@ public class PlayerData implements PlayerFileData {
 			postLoad(entityhuman);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to load player data for " + entityhuman.name);
+			exception.printStackTrace();
 		}
 	}
 
@@ -181,7 +219,14 @@ public class PlayerData implements PlayerFileData {
 			NBTTagCompound nbttagcompound = new NBTTagCompound();
 			entityhuman.d(nbttagcompound);
 			File mainDest = getMainFile(entityhuman.name);
-			File dest = getSaveFile(entityhuman);
+			File dest;
+			if (MyWorlds.useWorldInventories) {
+				// Use world specific save file
+				dest = getSaveFile(entityhuman);
+			} else {
+				// Use main world save file
+				dest = mainDest;
+			}
 			// Set the saved file location to quicken loading the next time
 			playerFileLoc.put(entityhuman.name, dest);
 			// Write to the source

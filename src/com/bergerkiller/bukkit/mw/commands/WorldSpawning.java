@@ -6,6 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
+import com.bergerkiller.bukkit.common.utils.EnumUtil;
 import com.bergerkiller.bukkit.mw.SpawnControl;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
@@ -50,14 +51,9 @@ public class WorldSpawning extends Command {
 					type = "npc";
 				} else {
 					type = args[0].toUpperCase();
-					EntityType ctype = null;
-					try {
-						ctype = EntityType.valueOf(type);
-					} catch (Exception e) {}
+					EntityType ctype = EnumUtil.parse(EntityType.class, type, null);
 					if (ctype == null && type.endsWith("S")) {
-						try {
-							ctype = EntityType.valueOf(type.substring(0, type.length() - 2));
-						} catch (Exception e) {}
+						ctype = EnumUtil.parse(EntityType.class, type.substring(0, type.length() - 2), null);
 					}
 					if (ctype != null) {
 						type = ctype.name().toLowerCase();
