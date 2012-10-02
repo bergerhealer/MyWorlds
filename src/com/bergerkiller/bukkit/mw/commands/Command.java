@@ -305,6 +305,10 @@ public class Command {
 					rval = new WorldInventory(sender, args);
 				} else if (cmdLabel.equalsIgnoreCase("inv")) {
 					rval = new WorldInventory(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("togglerespawn")) {
+					rval = new WorldToggleRespawn(sender, args);
+				} else if (cmdLabel.equalsIgnoreCase("respawn")) {
+					rval = new WorldToggleRespawn(sender, args);
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {

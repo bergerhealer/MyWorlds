@@ -47,6 +47,7 @@ public class WorldConfig extends WorldConfigStore {
 		this.showRain = node.get("showRain", true);
 		this.showSnow = node.get("showSnow", true);
 		this.pvp = node.get("pvp", this.pvp);
+		this.forcedRespawn = node.get("forcedRespawn", true);
 		this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
 		for (String type : node.getList("deniedCreatures", String.class)) {
 			type = type.toUpperCase();
@@ -137,6 +138,7 @@ public class WorldConfig extends WorldConfigStore {
 		for (EntityType type : this.spawnControl.deniedCreatures) {
 			creatures.add(type.name());
 		}
+		node.set("forcedRespawn", this.forcedRespawn);
 		node.set("pvp", this.pvp);
 		node.set("defaultPortal", this.defaultPortal);
 		node.set("operators", this.OPlist);
@@ -176,6 +178,7 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean showRain = true;
 	public boolean showSnow = true;
 	public boolean clearInventory = false;
+	public boolean forcedRespawn = true;
 	public WorldInventory inventory;
 
 	public World loadWorld() {

@@ -24,7 +24,6 @@ import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -144,24 +143,22 @@ public class MWListener implements Listener {
 		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
-	public void onEntityDeath(EntityDeathEvent event) {
-		if (event.getEntity() instanceof Player) {
-			//WorldConfig.get(event.getEntity().getWorld()).remove((Player) event.getEntity());
-		}
-	}
-
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
-		if (!event.isBedSpawn()) {
+		WorldConfig config = WorldConfig.get(event.getRespawnLocation());
+		if (event.isBedSpawn()) {
+			if (!config.forcedRespawn) {
+				return;
+			}
+		} else {
 			Location loc = WorldManager.getRespawnLocation(event.getPlayer().getWorld());
 			if (loc != null) {
 				event.setRespawnLocation(loc);
 			}
 		}
-		WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
+		config.update(event.getPlayer());
 	}
-	
+
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		WorldConfig.updateReload(event.getPlayer());
