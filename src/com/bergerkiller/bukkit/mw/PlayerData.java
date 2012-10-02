@@ -168,6 +168,7 @@ public class PlayerData implements PlayerFileData {
 			postLoad(player);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to load player data for " + player.name);
+			exception.printStackTrace();
 		}
 	}
 
@@ -244,6 +245,7 @@ public class PlayerData implements PlayerFileData {
 			write(nbttagcompound, mainDest);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player data for " + entityhuman.name);
+			exception.printStackTrace();
 		}
 	}
 }

@@ -71,11 +71,10 @@ public class WorldInventory {
 
 	public WorldInventory(String worldFolder) {
 		this();
+		this.worldname = worldFolder;
+		this.folder = null;
 		worldFolder = WorldManager.matchWorld(worldFolder);
-		if (worldFolder == null) {
-			this.worldname = null;
-			this.folder = null;
-		} else {
+		if (worldFolder != null) {
 			this.worldname = worldFolder;
 			this.folder = new File(Bukkit.getWorldContainer(), worldFolder);
 			this.folder = new File(this.folder, "players");
@@ -108,6 +107,11 @@ public class WorldInventory {
 		}
 		if (this.worlds.isEmpty()) {
 			inventories.remove(this);
+		} else if (this.worldname.equalsIgnoreCase(worldname)) {
+			for (String world : this.worlds) {
+				this.worldname = world;
+				break;
+			}
 		}
 		return this;
 	}
@@ -119,6 +123,9 @@ public class WorldInventory {
 		}
 		config.inventory = this;
 		this.worlds.add(worldname.toLowerCase());
+		if (this.worldname == null) {
+			this.worldname = worldname;
+		}
 		return this;
 	}
 }
