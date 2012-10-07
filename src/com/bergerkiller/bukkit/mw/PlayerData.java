@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 
+import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
@@ -202,11 +203,17 @@ public class PlayerData implements PlayerFileData {
 		// Load the save file
 		try {
 			NBTTagCompound nbttagcompound = read(main, entityhuman);
-			if (entityhuman instanceof EntityPlayer && main.exists()) {
-				CraftPlayer player = (CraftPlayer) entityhuman.getBukkitEntity();
-				player.setFirstPlayed(main.lastModified());
-			}
 			entityhuman.e(nbttagcompound);
+			if (entityhuman instanceof EntityPlayer) {
+				CraftPlayer player = (CraftPlayer) entityhuman.getBukkitEntity();
+				if (main.exists()) {
+					player.setFirstPlayed(main.lastModified());
+				} else {
+					// Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
+					// Make sure the player is marked as being new
+					SafeField.set(player, "hasPlayedBefore", false);
+				}
+			}
 			postLoad(entityhuman);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to load player data for " + entityhuman.name);
