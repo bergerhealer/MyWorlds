@@ -84,7 +84,6 @@ public class TimeControl extends Task {
 
 	@Override
 	public Task start() {
-		this.start(MyWorlds.timeLockInterval, MyWorlds.timeLockInterval);
-		return this;
+		return this.start(MyWorlds.timeLockInterval, MyWorlds.timeLockInterval);
 	}
 }

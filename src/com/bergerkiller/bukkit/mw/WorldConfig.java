@@ -23,15 +23,65 @@ import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.utils.EnumUtil;
 
 public class WorldConfig extends WorldConfigStore {	
+	public String worldname;
+	public boolean keepSpawnInMemory = true;
+	public WorldMode worldmode;
+	public String chunkGeneratorName;
+	public Difficulty difficulty = Difficulty.NORMAL;
+	public Position spawnPoint;
+	public GameMode gameMode = Bukkit.getServer().getDefaultGameMode();
+	public boolean holdWeather = false;
+	public boolean pvp = true;
+	public SpawnControl spawnControl;
+	public TimeControl timeControl;
+	public String defaultPortal;
+	public List<String> OPlist = new ArrayList<String>();
+	public boolean autosave = true;
+	public boolean reloadWhenEmpty = false;
+	public boolean formSnow = true;
+	public boolean formIce = true;
+	public boolean showRain = true;
+	public boolean showSnow = true;
+	public boolean clearInventory = false;
+	public boolean forcedRespawn = true;
+	public WorldInventory inventory;
 
-	public WorldConfig(ConfigurationNode node) {
-		this(node.getName());
+	public WorldConfig(String worldname) {
+		this.worldname = worldname;
+		this.spawnControl = new SpawnControl();
+		this.timeControl = new TimeControl(this);
+		if (worldname == null) {
+			return;
+		}
+		worldname = worldname.toLowerCase();
+		worldConfigs.put(worldname, this);
+		World world = this.getWorld();
+		if (world != null) {
+			this.keepSpawnInMemory = world.getKeepSpawnInMemory();
+			this.worldmode = WorldMode.get(world);
+			this.difficulty = world.getDifficulty();
+			this.spawnPoint = new Position(world.getSpawnLocation());
+			this.pvp = world.getPVP();
+			this.autosave = world.isAutoSave();
+		} else {
+			this.worldmode = WorldMode.get(worldname);
+			this.spawnPoint = new Position(worldname, 0, 64, 0);
+		}
+		if (MyWorlds.useWorldOperators) {
+			for (OfflinePlayer op : Bukkit.getServer().getOperators()) {
+				this.OPlist.add(op.getName());
+			}
+		}
+		this.inventory = new WorldInventory(this.worldname).add(worldname);
+	}
+
+	public void load(ConfigurationNode node) {
 		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
 		this.worldmode = EnumUtil.parse(node.get("environment", String.class), this.worldmode);
-		this.chunkGeneratorName = node.get("chunkGenerator", String.class);
+		this.chunkGeneratorName = node.get("chunkGenerator", String.class, this.chunkGeneratorName);
 		this.difficulty = EnumUtil.parseDifficulty(node.get("difficulty", String.class), this.difficulty);
-		this.gameMode = EnumUtil.parseGameMode(node.get("gamemode", String.class), null);
-		this.clearInventory = node.get("clearInventory", false);
+		this.gameMode = EnumUtil.parseGameMode(node.get("gamemode", String.class), this.gameMode);
+		this.clearInventory = node.get("clearInventory", this.clearInventory);
 		String worldspawn = node.get("spawn.world", String.class);
 		if (worldspawn != null) {
 			double x = node.get("spawn.x", 0.0);
@@ -41,13 +91,13 @@ public class WorldConfig extends WorldConfigStore {
 			double pitch = node.get("spawn.pitch", 0.0);
 			this.spawnPoint = new Position(worldspawn, x, y, z, (float) yaw, (float) pitch);
 		}
-		this.holdWeather = node.get("holdWeather", false);
-		this.formIce = node.get("formIce", true);
-		this.formSnow = node.get("formSnow", true);
-		this.showRain = node.get("showRain", true);
-		this.showSnow = node.get("showSnow", true);
+		this.holdWeather = node.get("holdWeather", this.holdWeather);
+		this.formIce = node.get("formIce", this.formIce);
+		this.formSnow = node.get("formSnow", this.formSnow);
+		this.showRain = node.get("showRain", this.showRain);
+		this.showSnow = node.get("showSnow", this.showSnow);
 		this.pvp = node.get("pvp", this.pvp);
-		this.forcedRespawn = node.get("forcedRespawn", true);
+		this.forcedRespawn = node.get("forcedRespawn", this.forcedRespawn);
 		this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
 		for (String type : node.getList("deniedCreatures", String.class)) {
 			type = type.toUpperCase();
@@ -67,38 +117,10 @@ public class WorldConfig extends WorldConfigStore {
 			this.timeControl.setTime(time);
 			this.timeControl.setLocking(true);
     	}
-    	this.defaultPortal = node.get("defaultPortal", String.class);
+    	this.defaultPortal = node.get("defaultPortal", String.class, this.defaultPortal);
     	this.OPlist = node.getList("operators", String.class, this.OPlist);
 	}
-	public WorldConfig(String worldname) {
-		this.worldname = worldname;
-		worldname = worldname.toLowerCase();
-		worldConfigs.put(worldname, this);
-		World world = this.getWorld();
-		if (world != null) {
-			this.keepSpawnInMemory = world.getKeepSpawnInMemory();
-			this.worldmode = WorldMode.get(world);
-			this.difficulty = world.getDifficulty();
-			this.spawnPoint = new Position(world.getSpawnLocation());
-			this.pvp = world.getPVP();
-			this.autosave = world.isAutoSave();
-		} else {
-			this.keepSpawnInMemory = true;
-			this.worldmode = WorldMode.get(worldname);
-			this.difficulty = Difficulty.NORMAL;
-			this.spawnPoint = new Position(worldname, 0, 64, 0);
-			this.pvp = true;
-		}
-		this.spawnControl = new SpawnControl();
-		this.timeControl = new TimeControl(this);
-		this.inventory = new WorldInventory(this.worldname).add(worldname);
-		if (MyWorlds.useWorldOperators) {
-			for (OfflinePlayer op : Bukkit.getServer().getOperators()) {
-				this.OPlist.add(op.getName());
-			}
-		}
-		this.gameMode = Bukkit.getServer().getDefaultGameMode();
-	}
+
 	public void save(ConfigurationNode node) {
 		//Set if the world can be directly accessed
 		World w = this.getWorld();
@@ -116,10 +138,14 @@ public class WorldConfig extends WorldConfigStore {
 	        	}
 	        }
 		}
-		
+		if (this.worldname == null || this.worldname.equals(this.getConfigName())) {
+			node.remove("name");
+		} else {
+			node.set("name", this.worldname);
+		}
 		node.set("loaded", w != null);
 		node.set("keepSpawnLoaded", this.keepSpawnInMemory);
-		node.set("environment", this.worldmode.toString());
+		node.set("environment", this.worldmode == null ? null : this.worldmode.toString());
 		node.set("chunkGenerator", this.chunkGeneratorName);
 		node.set("clearInventory", this.clearInventory ? true : null);
 		if (this.gameMode == null) {
@@ -127,7 +153,7 @@ public class WorldConfig extends WorldConfigStore {
 		} else {
 			node.set("gamemode", this.gameMode.toString());
 		}
-		
+
 		if (this.timeControl.isLocked()) {
 			node.set("lockedtime", this.timeControl.getTime());
 		} else {
@@ -150,36 +176,17 @@ public class WorldConfig extends WorldConfigStore {
 		node.set("showSnow", this.showSnow);
 		node.set("difficulty", this.difficulty.toString());
 		node.set("reloadWhenEmpty", this.reloadWhenEmpty);
-		node.set("spawn.world", this.spawnPoint.getWorldName());
-		node.set("spawn.x", this.spawnPoint.getX());
-		node.set("spawn.y", this.spawnPoint.getY());
-		node.set("spawn.z", this.spawnPoint.getZ());
-		node.set("spawn.yaw", (double) this.spawnPoint.getYaw());
-		node.set("spawn.pitch", (double) this.spawnPoint.getPitch());
+		if (this.spawnPoint == null) {
+			node.remove("spawn");
+		} else {
+			node.set("spawn.world", this.spawnPoint.getWorldName());
+			node.set("spawn.x", this.spawnPoint.getX());
+			node.set("spawn.y", this.spawnPoint.getY());
+			node.set("spawn.z", this.spawnPoint.getZ());
+			node.set("spawn.yaw", (double) this.spawnPoint.getYaw());
+			node.set("spawn.pitch", (double) this.spawnPoint.getPitch());
+		}
 	}
-	
-	public String worldname;
-	public boolean keepSpawnInMemory;
-	public WorldMode worldmode;
-	public String chunkGeneratorName;
-	public Difficulty difficulty;
-	public Position spawnPoint;
-	public GameMode gameMode;
-	public boolean holdWeather = false;
-	public boolean pvp = false;
-	public SpawnControl spawnControl;
-	public TimeControl timeControl;
-	public String defaultPortal;
-	public List<String> OPlist = new ArrayList<String>();
-	public boolean autosave = true;
-	public boolean reloadWhenEmpty = false;
-	public boolean formSnow = true;
-	public boolean formIce = true;
-	public boolean showRain = true;
-	public boolean showSnow = true;
-	public boolean clearInventory = false;
-	public boolean forcedRespawn = true;
-	public WorldInventory inventory;
 
 	public World loadWorld() {
 		if (WorldManager.worldExists(this.worldname)) {
@@ -312,10 +319,29 @@ public class WorldConfig extends WorldConfigStore {
 		updateSpoutWeather(player);
 	}
 
-	public World getWorld() {
-		return WorldManager.getWorld(this.worldname);
+	/**
+	 * Gets a safe configuration name for this World Configuration<br>
+	 * Unsafe characters, such as dots, are replaced
+	 * 
+	 * @return Safe config world name
+	 */
+	public String getConfigName() {
+		if (this.worldname == null) {
+			return "";
+		}
+		return this.worldname.replace('.', '_').replace(':', '_');
 	}
-	
+
+	/**
+	 * Gets the loaded World of this world configuration<br>
+	 * If the world is not loaded, null is returned
+	 * 
+	 * @return the World
+	 */
+	public World getWorld() {
+		return this.worldname == null ? null : WorldManager.getWorld(this.worldname);
+	}
+
 	public boolean isOP(Player player) {
 		for (String playername : OPlist) {
 			if (playername.equals("\\*")) return true;

@@ -114,7 +114,7 @@ public class MyWorlds extends PluginBase {
 		Portal.init(root() + "portals.txt");
 
 		//World info
-		WorldConfig.init(root() + "worlds.yml");
+		WorldConfig.init();
 
 		//World inventories
 		WorldInventory.load(root() + "inventories.yml");
