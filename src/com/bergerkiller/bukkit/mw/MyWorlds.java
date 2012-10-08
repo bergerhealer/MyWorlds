@@ -2,10 +2,13 @@ package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
 
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.PluginBase;
 
 public class MyWorlds extends PluginBase {
@@ -28,6 +31,8 @@ public class MyWorlds extends PluginBase {
 	public static boolean onlyPlayerTeleportation = true;
 	public static boolean useWorldInventories;
 	public static boolean calculateWorldSize;
+	private static String mainWorld;
+	public static boolean forceMainWorldSpawn;
 
 	public static MyWorlds plugin;
 
@@ -105,13 +110,19 @@ public class MyWorlds extends PluginBase {
         config.addHeader("calculateWorldSize", "If this process takes too long, disable it to prevent possible server freezes");
         calculateWorldSize = config.get("calculateWorldSize", true);
 
+        config.setHeader("mainWorld", "\nThe main world in which new players spawn");
+        mainWorld = config.get("mainWorld", WorldUtil.getWorlds().get(0).getWorld().getName());
+
+        config.setHeader("forceMainWorldSpawn", "\nWhether all players respawn on the main world at all times");
+        forceMainWorldSpawn = config.get("forceMainWorldSpawn", false);
+
         config.setHeader("locale", "\nThe locale text file name to use (excluding .txt extension)");
         String locale = config.get("locale", "default");
         config.save();
-        
+
         //Localization
         Localization.init(this, locale);
-        
+
         //Permissions
 		Permission.init(this);
 
@@ -158,4 +169,13 @@ public class MyWorlds extends PluginBase {
 		this.loadPermissions(Permission.class);
 	}
 
+	/**
+	 * Gets the main world
+	 * 
+	 * @return Main world
+	 */
+	public static World getMainWorld() {
+		World world = Bukkit.getWorld(mainWorld);
+		return world == null ? WorldUtil.getWorlds().get(0).getWorld() : world;
+	}
 }
