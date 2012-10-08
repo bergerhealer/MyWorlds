@@ -77,7 +77,7 @@ public class TeleportPortal extends Command {
 							int succcount = 0;
 							for (Player target : targets) {
 								if (Permission.canTeleportWorld(target, w.getName())) {
-									if (Permission.handleTeleport(target, w.getSpawnLocation())) {
+									if (Permission.handleTeleport(target, WorldManager.getSpawnLocation(w))) {
 										//Success
 										succcount++;
 									}

@@ -111,7 +111,8 @@ public class MyWorlds extends PluginBase {
         calculateWorldSize = config.get("calculateWorldSize", true);
 
         config.setHeader("mainWorld", "\nThe main world in which new players spawn");
-        mainWorld = config.get("mainWorld", WorldUtil.getWorlds().get(0).getWorld().getName());
+        config.addHeader("mainWorld", "If left empty, the main world defined in the server.properties is used");
+        mainWorld = config.get("mainWorld", "");
 
         config.setHeader("forceMainWorldSpawn", "\nWhether all players respawn on the main world at all times");
         forceMainWorldSpawn = config.get("forceMainWorldSpawn", false);
@@ -175,7 +176,12 @@ public class MyWorlds extends PluginBase {
 	 * @return Main world
 	 */
 	public static World getMainWorld() {
-		World world = Bukkit.getWorld(mainWorld);
-		return world == null ? WorldUtil.getWorlds().get(0).getWorld() : world;
+		if (!mainWorld.isEmpty()) {
+			World world = Bukkit.getWorld(mainWorld);
+			if (world != null) {
+				return world;
+			}
+		}
+		return WorldUtil.getWorlds().get(0).getWorld();
 	}
 }
