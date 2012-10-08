@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 
 import com.bergerkiller.bukkit.common.reflection.SafeField;
@@ -21,9 +22,24 @@ import net.minecraft.server.IDataManager;
 import net.minecraft.server.NBTCompressedStreamTools;
 import net.minecraft.server.NBTTagCompound;
 import net.minecraft.server.PlayerFileData;
-import net.minecraft.server.World;
 import net.minecraft.server.WorldNBTStorage;
 
+/**
+ * A player file data implementation that supports inventory sharing between worlds<br>
+ * - The main world player data file contains the world the player joins in<br>
+ * - The world defined by the inventory bundle contains all other data<br><br>
+ * 
+ * <b>When a player joins</b><br>
+ * The main file is read to find out the save file. This save file is then read and 
+ * applied on the player<br><br>
+ * 
+ * <b>When a player leaves</b><br>
+ * The player data is written to the save file. If he was not on the main world, 
+ * the main world file is updated with the current world the player is in<br><br>
+ * 
+ * <b>When a player teleports between worlds</b><br>
+ * The old data is saved appropriately and the new data is applied again (not all data)
+ */
 public class PlayerData implements PlayerFileData {
 	private Map<String, File> playerFileLoc = new HashMap<String, File>();
 
@@ -42,24 +58,24 @@ public class PlayerData implements PlayerFileData {
 	}
 
 	/**
-	 * Gets the save file for the player in the current world
-	 * 
-	 * @param player to get the save file for
-	 * @return save file
-	 */
-	public static File getSaveFile(EntityHuman player) {
-		return getSaveFile(null, WorldConfig.get(player.world.getWorld()).inventory.getSharedWorldName(), player.name);
-	}
-
-	/**
 	 * Gets the Main world save file for the playerName specified
 	 * 
 	 * @param playerName
 	 * @return Save file
 	 */
 	public static File getMainFile(String playerName) {
-		World world = WorldUtil.getWorlds().get(0);
-		return getSaveFile(world, world.getWorld().getName(), playerName);
+		World world = WorldUtil.getWorlds().get(0).getWorld();
+		return getPlayerData(world.getName(), world, playerName);
+	}
+
+	/**
+	 * Gets the save file for the player in the current world
+	 * 
+	 * @param player to get the save file for
+	 * @return save file
+	 */
+	public static File getSaveFile(EntityHuman player) {
+		return getSaveFile(player.world.getWorld().getName(), player.name);
 	}
 
 	/**
@@ -68,16 +84,23 @@ public class PlayerData implements PlayerFileData {
 	 * @param worldname
 	 * @return playername
 	 */
-	public static File getSaveFile(World world, String worldName, String playerName) {
-		if (world == null) {
-			org.bukkit.World bworld = Bukkit.getWorld(worldName);
-			if (bworld != null) {
-				world = WorldUtil.getNative(bworld);
-			}
-		}
+	public static File getSaveFile(String worldName, String playerName) {
+		worldName = WorldConfig.get(worldName).inventory.getSharedWorldName();
+		return getPlayerData(worldName, Bukkit.getWorld(worldName), playerName);
+	}
+
+	/**
+	 * Gets the player data folder for a player in a certain world
+	 * 
+	 * @param worldName to use as backup
+	 * @param world to use as main goal (can be null)
+	 * @param playerName for the data
+	 * @return Player data file
+	 */
+	private static File getPlayerData(String worldName, World world, String playerName) {
 		File playersFolder = null;
 		if (world != null) {
-			IDataManager man = world.getDataManager();
+			IDataManager man = WorldUtil.getNative(world).getDataManager();
 			if (man instanceof WorldNBTStorage) {
 				playersFolder = ((WorldNBTStorage) man).getPlayerDir();
 			}
@@ -189,7 +212,7 @@ public class PlayerData implements PlayerFileData {
 						long most = nbttagcompound.getLong("WorldUUIDMost");
 						org.bukkit.World world = Bukkit.getWorld(new UUID(most, least));
 						if (world != null) {
-							main = getSaveFile(WorldUtil.getNative(world), world.getName(), entityhuman.name);
+							main = getSaveFile(world.getName(), entityhuman.name);
 						}
 					}
 				} catch (Exception exception) {
