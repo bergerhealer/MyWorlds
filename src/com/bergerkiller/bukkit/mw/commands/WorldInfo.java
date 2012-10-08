@@ -39,8 +39,10 @@ public class WorldInfo extends Command {
 					message(ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size / 1000000) + " Megabytes");
 				} else if (info.size > 1000) {
 					message(ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size / 1000) + " Kilobytes");
-				} else {
+				} else if (info.size > 1) {
 					message(ChatColor.WHITE + "World size: " + ChatColor.YELLOW + (info.size) + " Bytes");
+				} else {
+					message(ChatColor.WHITE + "World size: " + ChatColor.YELLOW + "Unknown (calculation is disabled)");
 				}
 				//PvP
 				if (wc.pvp) { 

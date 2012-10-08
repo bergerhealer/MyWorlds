@@ -320,24 +320,24 @@ public class WorldManager {
 				info = new WorldInfo();
 				info.name = t.findTagByName("LevelName").getValue().toString();
 				info.seed = (Long) t.findTagByName("RandomSeed").getValue();
-				info.size = (Long) t.findTagByName("SizeOnDisk").getValue();
 				info.time = (Long) t.findTagByName("Time").getValue();
 				info.raining = ((Byte) t.findTagByName("raining").getValue()) != 0;
 		        info.thundering = ((Byte) t.findTagByName("thundering").getValue()) != 0;
-				if (info.size == 0) info.size = getWorldSize(worldname);
 			}
 		} catch (Exception ex) {}
 		World w = getWorld(worldname);
 		if (w != null) {
 			if (info == null) {
 				info = new WorldInfo();
-				info.size = getWorldSize(worldname);
 			}
 			info.name = w.getName();
 			info.seed = w.getSeed();
 			info.time = w.getFullTime();
 			info.raining = w.hasStorm();
 	        info.thundering = w.isThundering();
+		}
+		if (info != null && MyWorlds.calculateWorldSize) {
+			info.size = getWorldSize(worldname);
 		}
 		return info;
 	}
@@ -503,10 +503,6 @@ public class WorldManager {
     		ex.printStackTrace();
     		return false;
     	}
-    }
-    @SuppressWarnings("unused")
-	private static boolean rename(File sourceLocation, File targetLocation) {
-    	return sourceLocation.renameTo(targetLocation);
     }
 	private static long getFolderSize(File folder) {
 		if (!folder.exists()) return 0;

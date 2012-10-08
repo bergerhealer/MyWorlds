@@ -27,6 +27,7 @@ public class MyWorlds extends PluginBase {
 	public static boolean isSpoutEnabled = false;
 	public static boolean onlyPlayerTeleportation = true;
 	public static boolean useWorldInventories;
+	public static boolean calculateWorldSize;
 
 	public static MyWorlds plugin;
 
@@ -99,7 +100,11 @@ public class MyWorlds extends PluginBase {
         
         config.setHeader("onlyObsidianPortals", "\nWhether only portal blocks surrounded by obsidian can teleport players");
         onlyObsidianPortals = config.get("onlyObsidianPortals", false);
-        
+
+        config.setHeader("calculateWorldSize", "\nWhether the world info command will calculate the world size on disk");
+        config.addHeader("calculateWorldSize", "If this process takes too long, disable it to prevent possible server freezes");
+        calculateWorldSize = config.get("calculateWorldSize", true);
+
         config.setHeader("locale", "\nThe locale text file name to use (excluding .txt extension)");
         String locale = config.get("locale", "default");
         config.save();
