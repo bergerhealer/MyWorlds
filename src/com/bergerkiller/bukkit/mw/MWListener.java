@@ -132,31 +132,22 @@ public class MWListener implements Listener {
 			}
 		}
 	}
-	
+
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
-		//Is this a new player? Check if the player has a settings file
-		if (!WorldManager.getPlayerDataFile(event.getPlayer()).exists()) {
-			//fix to use the default world to spawn instead
-			event.getPlayer().teleport(WorldManager.getSpawnLocation(event.getPlayer().getWorld()));
-		}
 		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
 	}
 
-	@EventHandler(priority = EventPriority.NORMAL)
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
-		WorldConfig config = WorldConfig.get(event.getRespawnLocation());
-		if (event.isBedSpawn()) {
-			if (!config.forcedRespawn) {
-				return;
-			}
-		} else {
-			Location loc = WorldManager.getRespawnLocation(event.getPlayer().getWorld());
-			if (loc != null) {
-				event.setRespawnLocation(loc);
-			}
+		if (event.isBedSpawn() && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
+			return; // Ignore bed spawns that are not overrided
 		}
-		config.update(event.getPlayer());
+		Location loc = WorldManager.getRespawnLocation(event.getPlayer().getWorld());
+		if (loc != null) {
+			event.setRespawnLocation(loc);
+		}
+		WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
