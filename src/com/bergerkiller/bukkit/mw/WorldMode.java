@@ -11,8 +11,9 @@ public enum WorldMode {
 	NORMAL(Environment.NORMAL, WorldType.NORMAL, "normal"),
 	NETHER(Environment.NETHER, WorldType.NORMAL, "nether"),
 	THE_END(Environment.THE_END, WorldType.NORMAL, "the_end"),
-	FLAT(Environment.NORMAL, WorldType.FLAT, "flat");
-	
+	FLAT(Environment.NORMAL, WorldType.FLAT, "flat"),
+	LARGEBIOMES(Environment.NORMAL, WorldType.LARGE_BIOMES, "largebiomes");
+
 	private WorldMode(Environment env, WorldType wtype, String name) {
 		this.env = env;
 		this.wtype = wtype;

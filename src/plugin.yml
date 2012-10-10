@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.52
+version: 1.53
 author: bergerkiller
 softdepend: [Spout]
 depend: [BKCommonLib]
