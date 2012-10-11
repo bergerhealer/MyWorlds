@@ -17,6 +17,7 @@ import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
+import net.minecraft.server.ChunkCoordinates;
 import net.minecraft.server.EntityHuman;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.IDataManager;
@@ -193,6 +194,12 @@ public class PlayerData implements PlayerFileData {
 			player.expLevel = data.getInt("XpLevel");
 			player.expTotal = data.getInt("XpTotal");
 			player.setHealth(data.getShort("Health"));
+			player.spawnWorld = data.getString("SpawnWorld");
+			if (player.spawnWorld == null || player.spawnWorld.isEmpty()) {
+				player.setRespawnPosition(null);
+			} else if (data.hasKey("SpawnX") && data.hasKey("SpawnY") && data.hasKey("SpawnZ")) {
+				player.setRespawnPosition(new ChunkCoordinates(data.getInt("SpawnX"), data.getInt("SpawnY"), data.getInt("SpawnZ")));
+			}
 			player.getFoodData().a(data);
 			postLoad(player);
 		} catch (Exception exception) {
