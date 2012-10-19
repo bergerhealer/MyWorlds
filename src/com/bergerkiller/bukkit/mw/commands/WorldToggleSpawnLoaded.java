@@ -1,18 +1,17 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldToggleSpawnLoaded extends Command {
 
-	public WorldToggleSpawnLoaded(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.togglespawnloaded";
+	public WorldToggleSpawnLoaded() {
+		super(Permission.COMMAND_TOGGLESPAWNLOADED, "world.togglespawnloaded");
 	}
-	
+
 	public void execute() {
 		this.genWorldname(0);
 		if (this.handleWorld()) {
@@ -29,5 +28,4 @@ public class WorldToggleSpawnLoaded extends Command {
 			}
 		}
 	}
-	
 }

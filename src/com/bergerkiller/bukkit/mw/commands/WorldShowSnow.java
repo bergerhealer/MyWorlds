@@ -1,16 +1,15 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldShowSnow extends Command {
 
-	public WorldShowSnow(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.showsnow";
+	public WorldShowSnow() {
+		super(Permission.COMMAND_SPOUTWEATHER, "world.showsnow");
 	}
 
 	public void execute() {

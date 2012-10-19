@@ -67,6 +67,99 @@ commands:
         description: List all world generators
         aliases: [world generators, world gen, world listgen]
         usage: /world listgenerators
+    world setspawn:
+        description: Sets the spawn point of the world to your position
+        usage: |
+            /world setspawn - set spawn of current world
+            /world setspawn [worldname] - set spawn of a world
+    world spawn:
+        description: Teleports you or players specified to the world spawn
+        usage: |
+            /world spawn - Teleport to current world spawn
+            /world spawn [world] - Teleport to world spawn
+            /world spawn [world] [playernames] - Teleport players
+    world time:
+        description: Sets the time of a world
+        usage: |
+            /world time [time]
+            /world time [time] [world]
+            /world time always 12:45
+            /world time night world1
+    world weather:
+        description: Sets the weather of a world
+        usage: |
+            /world weather [state]
+            /world weather [state] [world]
+            /world weather always raining
+            /world weather sunny world2
+    world gamemode:
+        description: Sets the game mode of a world
+        usage: |
+            /world gamemode [mode]
+            /world gamemode [mode] [world]
+            /world gamemode creative
+            /world gamemode survival world3
+    world difficulty:
+        description: Sets the difficulty of a world
+        usage: |
+            /world difficulty [mode]
+            /world difficulty [mode] [world]
+            /world difficulty hard
+            /world difficulty normal world3
+    world togglepvp:
+        description: Toggles PVP on or off
+        usage: |
+            /world togglepvp
+            /world togglepvp [world]
+    world allowspawn:
+        description: Allows certain mobs to spawn
+        usage: |
+            /world allowspawn [mob]
+            /world allowspawn [mob] [world]
+            /world allowspawn animal
+            /world allowspawn creeper world2
+    world denyspawn:
+        description: Denies certain mobs from spawning
+        usage: |
+            /world denyspawn [mob]
+            /world denyspawn [mob] [world]
+            /world denyspawn animal
+            /world denyspawn creeper world2
+    world inventory:
+        description: Changes world inventory settings
+        usage: |
+            /world inventory enable
+            /world inventory enable [world]
+            /world inventory disable
+            /world inventory disable [world]
+            /world inventory split [world...]
+            /world inventory merge [world1] [world...]
+    world saving:
+        description: Turns world saving on or off
+        usage: |
+            /world saving [enable/disable]
+            /world saving [enable/disable] [world]
+            /world saving off
+            /world saving enable world2
+    world spawnloaded:
+        description: Toggles if the world spawn is kept loaded
+        usage: |
+            /world spawnloaded
+            /world spawnloaded [world]
+    world evacuate:
+        description: Clears a world of players
+        usage: |
+            /world evacuate
+            /world evacuate [world]
+    world delete:
+        description: Deletes an unloaded world
+        usage: /world delete [world]
+    world copy:
+        description: Copies a world
+        usage: /world copy [world_from] [world_to]
+    world repair:
+        description: Repairs an unloaded world
+        usage: /world repair [world]
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World

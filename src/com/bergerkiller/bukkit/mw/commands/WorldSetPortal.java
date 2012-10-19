@@ -1,19 +1,18 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldSetPortal extends Command {
 
-	public WorldSetPortal(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.setportal";
+	public WorldSetPortal() {
+		super(Permission.COMMAND_SETPORTAL, "world.setportal");
 	}
-		
+
 	public void execute() {
 		if (args.length != 0) {
 			String dest = args[0];
@@ -39,5 +38,4 @@ public class WorldSetPortal extends Command {
 			showInv();
 		}
 	}
-
 }

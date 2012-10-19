@@ -17,30 +17,38 @@ import com.bergerkiller.bukkit.mw.Util;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class Command {
-		
-	public String node;
+	public Permission permission;
+	public String commandNode;
+	public String command;
 	public Player player;
 	public CommandSender sender;
 	public String[] args;
 	public String worldname;
 
-	public Command(String node) {
-		this.node = node;
+	private static String[] commandNodes = new String[] {"world.repair", "world.delete", "world.rename", "world.copy",
+		"world.save", "world.load", "world.unload", "world.reloadwhenempty", "world.create", "world.listgenerators",
+		"world.weather", "world.time", "world.spawn", "world.setspawn", "world.list", "world.info", "world.portals",
+		"world.gamemode", "world.togglepvp", "world.op", "world.deop",  "world.allowspawn", "tpp"};
+
+	public Command(Permission permission, String commandNode) {
+		this.permission = permission;
+		this.commandNode = commandNode;
 	}
-	
+
+	public void init(CommandSender sender, String[] args) {
+		this.args = args;
+		this.sender = sender;
+		if (sender instanceof Player) {
+			this.player = (Player) sender;
+		}
+	}
+
 	public static boolean allowConsole(String node) {
 		if (node.equals("world.setspawn")) return false;
 		if (node.equals("world.spawn")) return false;
 		return true;
 	}
-		
-	public Command(CommandSender sender, String[] args) {
-		this.args = args;
-		this.sender = sender;
-		if (sender instanceof Player) this.player = (Player) sender;
-		this.node = null;
-	}
-	
+
 	public void removeArg(int index) {
 		String[] newargs = new String[args.length - 1];
 		int ni = 0;
@@ -51,10 +59,11 @@ public class Command {
 		}
 		this.args = newargs;
 	}
-	
+
 	public boolean hasPermission() {
-		return this.hasPermission(this.node);
+		return this.hasPermission(this.permission.getName());
 	}
+
 	public boolean hasPermission(String node) {
 		if (this.player == null) {
 			return allowConsole(node);
@@ -62,7 +71,7 @@ public class Command {
 			return Permission.has(this.player, node);
 		}
 	}
-	
+
 	public boolean handleWorld() {
 		if (this.worldname == null) {
 			locmessage(Localization.WORLD_NOTFOUND);
@@ -86,26 +95,29 @@ public class Command {
 	public void notifyConsole(String message) {
 		Util.notifyConsole(sender, message);
 	}
-	
-	public void showInv() {
-		this.showInv(this.node);
+
+	public boolean showInv() {
+		return this.showInv(this.commandNode);
 	}
+
 	public boolean showInv(String node) {
 		message(ChatColor.RED + "Invalid arguments for this command!");
 		return showUsage(node);
 	}
-	public void showUsage() {
-		this.showUsage(this.node);
+
+	public boolean showUsage() {
+		return showUsage(this.commandNode);
 	}
-	public boolean showUsage(String node) {
-		if (hasPermission(node)) {
-			this.sender.sendMessage(MyWorlds.plugin.getCommandUsage(node));
+
+	public boolean showUsage(String commandNode) {
+		if (hasPermission()) {
+			this.sender.sendMessage(MyWorlds.plugin.getCommandUsage(commandNode));
 			return true;
 		} else {
 			return false;
 		}
 	}
-	
+
 	public void listPortals(String[] portals) {
 		MessageBuilder builder = new MessageBuilder();
 		builder.green("[Very near] ").dark_green("[Near] ").yellow("[Far] ");
@@ -166,199 +178,180 @@ public class Command {
 				cmdLabel = args[0];
 				args = StringUtil.remove(args, 0);
 				if (cmdLabel.equalsIgnoreCase("list")) {
-					rval = new WorldList(sender, args);
+					rval = new WorldList();
 				} else if (cmdLabel.equalsIgnoreCase("info")) {
-					rval = new WorldInfo(sender, args);
+					rval = new WorldInfo();
 				} else if (cmdLabel.equalsIgnoreCase("i")) {
-					rval = new WorldInfo(sender, args);
+					rval = new WorldInfo();
 				} else if (cmdLabel.equalsIgnoreCase("portals")) {
-					rval = new WorldPortals(sender, args);
+					rval = new WorldPortals();
 				} else if (cmdLabel.equalsIgnoreCase("portal")) {
-					rval = new WorldPortals(sender, args);
+					rval = new WorldPortals();
 				} else if (cmdLabel.equalsIgnoreCase("load")) {
-					rval = new WorldLoad(sender, args);
+					rval = new WorldLoad();
 				} else if (cmdLabel.equalsIgnoreCase("unload")) {
-					rval = new WorldUnload(sender, args);
+					rval = new WorldUnload();
 				} else if (cmdLabel.equalsIgnoreCase("create")) {
-					rval = new WorldCreate(sender, args);
+					rval = new WorldCreate();
 				} else if (cmdLabel.equalsIgnoreCase("spawn")) {
-					rval = new WorldSpawn(sender, args);
+					rval = new WorldSpawn();
 				} else if (cmdLabel.equalsIgnoreCase("evacuate")) {
-					rval = new WorldEvacuate(sender, args);
+					rval = new WorldEvacuate();
 				} else if (cmdLabel.equalsIgnoreCase("evac")) {
-					rval = new WorldEvacuate(sender, args);
+					rval = new WorldEvacuate();
 				} else if (cmdLabel.equalsIgnoreCase("repair")) {
-					rval = new WorldRepair(sender, args);
+					rval = new WorldRepair();
 				} else if (cmdLabel.equalsIgnoreCase("rep")) {
-					rval = new WorldRepair(sender, args);
+					rval = new WorldRepair();
 				} else if (cmdLabel.equalsIgnoreCase("save")) {
-					rval = new WorldSave(sender, args);
+					rval = new WorldSave();
 				} else if (cmdLabel.equalsIgnoreCase("delete")) {
-					rval = new WorldDelete(sender, args);
+					rval = new WorldDelete();
 				} else if (cmdLabel.equalsIgnoreCase("del")) {
-					rval = new WorldDelete(sender, args);
+					rval = new WorldDelete();
 				} else if (cmdLabel.equalsIgnoreCase("copy")) {
-					rval = new WorldCopy(sender, args);
+					rval = new WorldCopy();
 				} else if (cmdLabel.equalsIgnoreCase("togglepvp")) {
-					rval = new WorldTogglePVP(sender, args);
+					rval = new WorldTogglePVP();
 				} else if (cmdLabel.equalsIgnoreCase("tpvp")) {
-					rval = new WorldTogglePVP(sender, args);
+					rval = new WorldTogglePVP();
 				} else if (cmdLabel.equalsIgnoreCase("pvp")) {
-					rval = new WorldTogglePVP(sender, args);		
+					rval = new WorldTogglePVP();		
 				} else if (cmdLabel.equalsIgnoreCase("weather")) {
-					rval = new WorldWeather(sender, args);
+					rval = new WorldWeather();
 				} else if (cmdLabel.equalsIgnoreCase("w")) {
-					rval = new WorldWeather(sender, args);
+					rval = new WorldWeather();
 				} else if (cmdLabel.equalsIgnoreCase("time")) {
-					rval = new WorldTime(sender, args);
+					rval = new WorldTime();
 				} else if (cmdLabel.equalsIgnoreCase("t")) {
-					rval = new WorldTime(sender, args);
+					rval = new WorldTime();
 				} else if (cmdLabel.equalsIgnoreCase("allowspawn")) {
-					rval = new WorldSpawning(sender, args, true);
+					rval = new WorldSpawning(true);
 				} else if (cmdLabel.equalsIgnoreCase("denyspawn")) {
-					rval = new WorldSpawning(sender, args, false);
+					rval = new WorldSpawning(false);
 				} else if (cmdLabel.equalsIgnoreCase("spawnallow")) {
-					rval = new WorldSpawning(sender, args, true);
+					rval = new WorldSpawning(true);
 				} else if (cmdLabel.equalsIgnoreCase("spawndeny")) {
-					rval = new WorldSpawning(sender, args, false);
+					rval = new WorldSpawning(false);
 				} else if (cmdLabel.equalsIgnoreCase("allowspawning")) {
-					rval = new WorldSpawning(sender, args, true);
+					rval = new WorldSpawning(true);
 				} else if (cmdLabel.equalsIgnoreCase("denyspawning")) {
-					rval = new WorldSpawning(sender, args, false);
+					rval = new WorldSpawning(false);
 				} else if (cmdLabel.equalsIgnoreCase("setportal")) {
-					rval = new WorldSetPortal(sender, args);
+					rval = new WorldSetPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setdefaultportal")) {
-					rval = new WorldSetPortal(sender, args);
+					rval = new WorldSetPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setdefportal")) {
-					rval = new WorldSetPortal(sender, args);
+					rval = new WorldSetPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setdefport")) {
-					rval = new WorldSetPortal(sender, args);
+					rval = new WorldSetPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setspawn")) {
-					rval = new WorldSetSpawn(sender, args);
+					rval = new WorldSetSpawn();
 				} else if (cmdLabel.equalsIgnoreCase("gamemode")) {
-					rval = new WorldGamemode(sender, args);
+					rval = new WorldGamemode();
 				} else if (cmdLabel.equalsIgnoreCase("setgamemode")) {
-					rval = new WorldGamemode(sender, args);
+					rval = new WorldGamemode();
 				} else if (cmdLabel.equalsIgnoreCase("gm")) {
-					rval = new WorldGamemode(sender, args);
+					rval = new WorldGamemode();
 				} else if (cmdLabel.equalsIgnoreCase("setgm")) {
-					rval = new WorldGamemode(sender, args);
+					rval = new WorldGamemode();
 				} else if (cmdLabel.equalsIgnoreCase("generators")) {
-					rval = new WorldListGenerators(sender, args);
+					rval = new WorldListGenerators();
 				} else if (cmdLabel.equalsIgnoreCase("gen")) {
-					rval = new WorldListGenerators(sender, args);
+					rval = new WorldListGenerators();
 				} else if (cmdLabel.equalsIgnoreCase("listgenerators")) {
-					rval = new WorldListGenerators(sender, args);
+					rval = new WorldListGenerators();
 				} else if (cmdLabel.equalsIgnoreCase("listgen")) {
-					rval = new WorldListGenerators(sender, args);
+					rval = new WorldListGenerators();
 				} else if (cmdLabel.equalsIgnoreCase("togglespawnloaded")) {
-					rval = new WorldToggleSpawnLoaded(sender, args);
+					rval = new WorldToggleSpawnLoaded();
 				} else if (cmdLabel.equalsIgnoreCase("spawnloaded")) {
-					rval = new WorldToggleSpawnLoaded(sender, args);
+					rval = new WorldToggleSpawnLoaded();
 				} else if (cmdLabel.equalsIgnoreCase("keepspawnloaded")) {
-					rval = new WorldToggleSpawnLoaded(sender, args);
+					rval = new WorldToggleSpawnLoaded();
 				} else if (cmdLabel.equalsIgnoreCase("difficulty")) {
-					rval = new WorldDifficulty(sender, args);
+					rval = new WorldDifficulty();
 				} else if (cmdLabel.equalsIgnoreCase("difficult")) {
-					rval = new WorldDifficulty(sender, args);
+					rval = new WorldDifficulty();
 				} else if (cmdLabel.equalsIgnoreCase("diff")) {
-					rval = new WorldDifficulty(sender, args);
+					rval = new WorldDifficulty();
 				} else if (cmdLabel.equalsIgnoreCase("op")) {
-					rval = new WorldOpping(sender, args, true);
+					rval = new WorldOpping(true);
 				} else if (cmdLabel.equalsIgnoreCase("deop")) {
-					rval = new WorldOpping(sender, args, false);
+					rval = new WorldOpping(false);
 				} else if (cmdLabel.equalsIgnoreCase("setsave")) {
-					rval = new WorldSetSaving(sender, args);
+					rval = new WorldSetSaving();
 				} else if (cmdLabel.equalsIgnoreCase("setsaving")) {
-					rval = new WorldSetSaving(sender, args);
+					rval = new WorldSetSaving();
 				} else if (cmdLabel.equalsIgnoreCase("saving")) {
-					rval = new WorldSetSaving(sender, args);
+					rval = new WorldSetSaving();
 				} else if (cmdLabel.equalsIgnoreCase("autosave")) {
-					rval = new WorldSetSaving(sender, args);
+					rval = new WorldSetSaving();
 				} else if (cmdLabel.equalsIgnoreCase("config")) {
-					rval = new WorldConfig(sender, args);
+					rval = new WorldConfig();
 				} else if (cmdLabel.equalsIgnoreCase("cfg")) {
-					rval = new WorldConfig(sender, args);
+					rval = new WorldConfig();
 				} else if (cmdLabel.equalsIgnoreCase("reloadwhenempty")) {
-					rval = new WorldReloadWE(sender, args);
+					rval = new WorldReloadWE();
 				} else if (cmdLabel.equalsIgnoreCase("reloadwe")) {
-					rval = new WorldReloadWE(sender, args);
+					rval = new WorldReloadWE();
 				} else if (cmdLabel.equalsIgnoreCase("reloadempty")) {
-					rval = new WorldReloadWE(sender, args);
+					rval = new WorldReloadWE();
 				} else if (cmdLabel.equalsIgnoreCase("reloadnoplayers")) {
-					rval = new WorldReloadWE(sender, args);
+					rval = new WorldReloadWE();
 				} else if (cmdLabel.equalsIgnoreCase("formsnow")) {
-					rval = new WorldFormSnow(sender, args);
+					rval = new WorldFormSnow();
 				} else if (cmdLabel.equalsIgnoreCase("formice")) {
-					rval = new WorldFormIce(sender, args);
+					rval = new WorldFormIce();
 				} else if (cmdLabel.equalsIgnoreCase("showsnow")) {
-					rval = new WorldShowSnow(sender, args);
+					rval = new WorldShowSnow();
 				} else if (cmdLabel.equalsIgnoreCase("showrain")) {
-					rval = new WorldShowRain(sender, args);
+					rval = new WorldShowRain();
 				} else if (cmdLabel.equalsIgnoreCase("teleport")) {
-					rval = new TeleportPortal(sender, args);
+					rval = new TeleportPortal();
 				} else if (cmdLabel.equalsIgnoreCase("tp")) {
-					rval = new TeleportPortal(sender, args);
+					rval = new TeleportPortal();
 				} else if (cmdLabel.equalsIgnoreCase("inventory")) {
-					rval = new WorldInventory(sender, args);
+					rval = new WorldInventory();
 				} else if (cmdLabel.equalsIgnoreCase("inv")) {
-					rval = new WorldInventory(sender, args);
+					rval = new WorldInventory();
 				} else if (cmdLabel.equalsIgnoreCase("togglerespawn")) {
-					rval = new WorldToggleRespawn(sender, args);
+					rval = new WorldToggleRespawn();
 				} else if (cmdLabel.equalsIgnoreCase("respawn")) {
-					rval = new WorldToggleRespawn(sender, args);
+					rval = new WorldToggleRespawn();
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {
-			rval = new TeleportPortal(sender, args);
+			rval = new TeleportPortal();
 		}
 		if (rval == null) {
-			rval = new Command(sender, new String[] {cmdLabel});
+			rval = new Command(null, null);
+			rval.init(sender, new String[] {cmdLabel});
 			rval.execute();
-		} else if (!rval.hasPermission()) {
-			if (rval.player == null) {
-				rval.sender.sendMessage("This command is only for players!");
-			} else {
-				rval.locmessage("command.nopermission");
-			}
 		} else {
-			rval.execute();
+			rval.init(sender, args);
+			if (!rval.hasPermission()) {
+				if (rval.player == null) {
+					rval.sender.sendMessage("This command is only for players!");
+				} else {
+					rval.locmessage(Localization.COMMAND_NOPERM);
+				}
+			} else {
+				rval.execute();
+			}
 		}
 	}		
 	
 	public void execute() {
 		//This is executed when no command was found
 		boolean hac = false; //has available commands
-		if (showUsage("world.repair")) hac = true;
-		if (showUsage("world.delete")) hac = true;
-		if (showUsage("world.rename")) hac = true;
-		if (showUsage("world.copy")) hac = true;
-		if (showUsage("world.save")) hac = true;
-		if (showUsage("world.load")) hac = true;
-		if (showUsage("world.unload")) hac = true;
-		if (showUsage("world.reloadwhenempty")) hac = true;
-		if (showUsage("world.create")) hac = true;
-		if (showUsage("world.listgenerators")) hac = true;
-		if (showUsage("world.weather")) hac = true;
-		if (showUsage("world.time")) hac = true;
-		if (showUsage("world.spawn")) hac = true;
-		if (showUsage("world.setspawn")) hac = true;
-		if (showUsage("world.list")) hac = true;
-		if (showUsage("world.info")) hac = true;
-		if (showUsage("world.portals")) hac = true;
-		if (showUsage("world.gamemode")) hac = true;
-		if (showUsage("world.togglepvp")) hac = true;
-		if (showUsage("world.op")) hac = true;
-		if (showUsage("world.deop")) hac = true;
-		if (showUsage("world.allowspawn")) hac = true;
-		if (showUsage("world.denyspawn")) hac = true;
-		if (showUsage("world.formsnow")) hac = true;
-		if (showUsage("world.formoce")) hac = true;
-		if (showUsage("tpp")) hac = true;
+		for (String command : commandNodes) {
+			hac |= showUsage(command);
+		}
 		if (hac) {
 			message(ChatColor.RED + "Unknown command: " + args[0]);
 		} else {
-			locmessage("command.nopermission");
+			locmessage(Localization.COMMAND_NOPERM);
 		}
 	}
 

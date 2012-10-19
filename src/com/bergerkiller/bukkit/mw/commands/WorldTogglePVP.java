@@ -1,18 +1,17 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldTogglePVP extends Command {
 
-	public WorldTogglePVP(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.togglepvp";
+	public WorldTogglePVP() {
+		super(Permission.COMMAND_TOGGLEPVP, "world.togglepvp");
 	}
-	
+
 	public void execute() {
 		this.genWorldname(0);
 		if (this.handleWorld()) {
@@ -29,5 +28,4 @@ public class WorldTogglePVP extends Command {
 			}
 		}
 	}
-	
 }

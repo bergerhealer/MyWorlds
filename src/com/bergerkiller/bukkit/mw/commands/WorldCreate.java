@@ -4,22 +4,21 @@ import java.util.logging.Level;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
 import com.bergerkiller.bukkit.mw.MWListener;
 import com.bergerkiller.bukkit.mw.MyWorlds;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldCreate extends Command {
-	
-	public WorldCreate(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.create";
+
+	public WorldCreate() {
+		super(Permission.COMMAND_CREATE, "world.create");
 	}
-	
+
 	public void execute() {
 		if (args.length != 0) {
 			worldname = args[0];

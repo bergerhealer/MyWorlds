@@ -2,18 +2,17 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldDifficulty extends Command {
-	
-	public WorldDifficulty(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.difficulty";
+
+	public WorldDifficulty() {
+		super(Permission.COMMAND_DIFFICULTY, "world.difficulty");
 	}
-	
+
 	public void execute() {
 		this.genWorldname(1);
 		if (this.handleWorld()) {

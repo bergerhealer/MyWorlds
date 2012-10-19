@@ -2,19 +2,18 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.mw.MWListener;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldWeather extends Command {
 
-	public WorldWeather(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.weather";
+	public WorldWeather() {
+		super(Permission.COMMAND_WEATHER, "world.weather");
 	}
-	
+
 	public void execute() {
 		if (args.length != 0) {
 			boolean setStorm = false;
@@ -111,5 +110,4 @@ public class WorldWeather extends Command {
 			showInv();
 		}
 	}
-	
 }

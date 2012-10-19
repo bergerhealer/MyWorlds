@@ -1,17 +1,16 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldList extends Command {
 
-	public WorldList(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.list";
+	public WorldList() {
+		super(Permission.COMMAND_LIST, "world.list");
 	}
 	
 	public void execute() {

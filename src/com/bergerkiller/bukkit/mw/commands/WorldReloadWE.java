@@ -1,16 +1,15 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldReloadWE extends Command {
 	
-	public WorldReloadWE(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.reloadwhenempty";
+	public WorldReloadWE() {
+		super(Permission.COMMAND_RELOADWE, "world.reloadwhenempty");
 	}
 	
 	public void execute() {

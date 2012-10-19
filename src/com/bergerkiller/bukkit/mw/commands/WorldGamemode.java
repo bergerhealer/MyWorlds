@@ -2,18 +2,17 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldGamemode extends Command {
 
-	public WorldGamemode(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.gamemode";
+	public WorldGamemode() {
+		super(Permission.COMMAND_GAMEMODE, "world.gamemode");
 	}
-	
+
 	public void execute() {
 		this.genWorldname(1);
 		if (this.handleWorld()) {

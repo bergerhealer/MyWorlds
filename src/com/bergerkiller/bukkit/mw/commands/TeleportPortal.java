@@ -6,7 +6,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.mw.Localization;
@@ -16,11 +15,10 @@ import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class TeleportPortal extends Command {
 
-	public TeleportPortal(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "tpp";
+	public TeleportPortal() {
+		super(Permission.COMMAND_TPP, "tpp");
 	}
-	
+
 	public void execute() {
 		if (args.length >= 1) {
 			Player[] targets = null;
@@ -60,7 +58,7 @@ public class TeleportPortal extends Command {
 								succcount++;
 							}
 						} else {
-							Localization.message(target, "portal.noaccess");
+							Localization.PORTAL_NOACCESS.message(target);
 						}
 					}
 					if (targets.length > 1 || targets[0] != sender) {
@@ -82,7 +80,7 @@ public class TeleportPortal extends Command {
 										succcount++;
 									}
 								} else {
-									Localization.message(target, "world.noaccess");
+									Localization.WORLD_NOACCESS.message(target);
 								}
 							}
 							if (targets.length > 1 || targets[0] != sender) {
@@ -93,13 +91,13 @@ public class TeleportPortal extends Command {
 							message(ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
 						}
 					} else {
-						Localization.message(sender, "portal.notfound");
+						Localization.PORTAL_NOTFOUND.message(sender);
 						listPortals(Portal.getPortals());
 					}
 				}
 			}
 		} else {
-			showInv(node);
+			showInv();
 		}	
 	}
 	

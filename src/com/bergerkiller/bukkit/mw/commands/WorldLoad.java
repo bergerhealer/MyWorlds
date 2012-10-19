@@ -1,17 +1,16 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldLoad extends Command {
 
-	public WorldLoad(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.load";
+	public WorldLoad() {
+		super(Permission.COMMAND_LOAD, "world.load");
 	}
-	
+
 	public void execute() {
 		if (args.length != 0) {
 			worldname = WorldManager.matchWorld(args[0]);
@@ -32,5 +31,4 @@ public class WorldLoad extends Command {
 			showInv();
 		}
 	}
-	
 }

@@ -1,15 +1,14 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldToggleRespawn extends Command {
 
-	public WorldToggleRespawn(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.togglerespawn";
+	public WorldToggleRespawn() {
+		super(Permission.COMMAND_TOGGLERESPAWN, "world.togglerespawn");
 	}
 
 	public void execute() {

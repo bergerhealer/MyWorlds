@@ -2,10 +2,10 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.utils.TimeUtil;
 import com.bergerkiller.bukkit.mw.Localization;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.TimeControl;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldInfo;
@@ -13,11 +13,10 @@ import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldTime extends Command {
 
-	public WorldTime(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.time";
+	public WorldTime() {
+		super(Permission.COMMAND_TIME, "world.time");
 	}
-	
+
 	public void execute() {
 		boolean lock = false;
 		boolean useWorld = false;
@@ -74,7 +73,7 @@ public class WorldTime extends Command {
 					tc.setTime(time);
 					if (!WorldManager.isLoaded(worldname)) {
 						tc.setLocking(false);
-						message(Localization.getWorldNotLoaded(worldname));
+						Localization.WORLD_NOTLOADED.message(sender, worldname);
 						message(ChatColor.YELLOW + "Time will be locked to " + 
 								TimeUtil.getTimeString(time) + " as soon it is loaded!");
 					} else {
@@ -96,12 +95,11 @@ public class WorldTime extends Command {
 									TimeUtil.getTimeString(time) + "!");
 						}
 					} else {
-						message(Localization.getWorldNotLoaded(worldname));
+						Localization.WORLD_NOTLOADED.message(sender, worldname);
 						message(ChatColor.YELLOW + "Time has not been changed!");
 					}
 				}
 			}
 		}
 	}
-	
 }

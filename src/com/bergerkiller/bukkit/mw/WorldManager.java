@@ -223,7 +223,8 @@ public class WorldManager {
 	}
 		
 	public static String getWorldName(CommandSender sender, String[] args, boolean useAlternative) {
-		return getWorldName(sender, args[args.length - 1], useAlternative);
+		String alternative = (args == null || args.length == 0) ? null : args[args.length - 1];
+		return getWorldName(sender, alternative, useAlternative);
 	}
 	public static String getWorldName(CommandSender sender, String alternative, boolean useAlternative) {
 		String worldname = null;

@@ -3,18 +3,17 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.mw.Localization;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldUnload extends Command {
 	
-	public WorldUnload(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.unload";
+	public WorldUnload() {
+		super(Permission.COMMAND_UNLOAD, "world.unload");
 	}
-	
+
 	public void execute() {
 		if (args.length != 0) {
 			worldname = WorldManager.matchWorld(args[0]);
@@ -28,12 +27,11 @@ public class WorldUnload extends Command {
 						message(ChatColor.RED + "Failed to unload the world (main world or online players?)");
 					}
 				} else {
-					message(Localization.getWorldNotLoaded(worldname));
+					Localization.WORLD_NOTLOADED.message(sender, worldname);
 				}
 			}
 		} else {
 			showInv();
 		}
 	}
-	
 }

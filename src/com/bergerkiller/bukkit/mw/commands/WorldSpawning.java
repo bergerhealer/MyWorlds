@@ -2,26 +2,21 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.SpawnControl;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldSpawning extends Command {
 
-	public WorldSpawning(CommandSender sender, String[] args, boolean allow) {
-		super(sender, args);
-		if (allow) {
-			this.node = "world.allowspawn";
-		} else {
-			this.node = "world.denyspawn";
-		}
+	public WorldSpawning(boolean allow) {
+		super(Permission.COMMAND_SPAWNING, allow ? "world.allowspawn" : "world.denyspawn");
 	}
-	
+
 	public void execute() {
 		this.genWorldname(1);
 		if (this.handleWorld()) {
@@ -63,7 +58,7 @@ public class WorldSpawning extends Command {
 				}
 				//Set it, of course
 				if (type != null) {
-					if (node == "world.allowspawn") {
+					if (commandNode.equals("world.allowspawn")) {
 						if (type.equals("animal")) {
 							sc.setAnimals(false);
 						} else if (type.equals("monster")) {
@@ -133,5 +128,4 @@ public class WorldSpawning extends Command {
 			}
 		}	
 	}
-	
 }

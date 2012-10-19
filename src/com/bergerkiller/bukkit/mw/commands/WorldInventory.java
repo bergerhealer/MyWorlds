@@ -5,16 +5,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldInventory extends Command {
 
-	public WorldInventory(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.inventory";
+	public WorldInventory() {
+		super(Permission.COMMAND_INVENTORY, "world.inventory");
 	}
 	
 	public Set<String> worlds = new HashSet<String>();

@@ -4,16 +4,15 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldInfo extends Command {
 	
-	public WorldInfo(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.info";
+	public WorldInfo() {
+		super(Permission.COMMAND_INFO, "world.info");
 	}
 	
 	public void execute() {

@@ -4,24 +4,19 @@ import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.mw.MyWorlds;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldOpping extends Command {
-	
-	public WorldOpping(CommandSender sender, String[] args, boolean op) {
-		super(sender, args);
-		if (op) {
-			this.node = "world.op";
-		} else {
-			this.node = "world.deop";
-		}
+
+	public WorldOpping(boolean op) {
+		super(Permission.COMMAND_OPPING, op ? "world.op" : "world.deop");
 	}
-	
+
 	public void execute() {
 		if (args.length >= 2) {
 			boolean all = args.length == 2 && (args[1].startsWith("*") || args[1].equalsIgnoreCase("all"));
@@ -31,12 +26,12 @@ public class WorldOpping extends Command {
 				if (playername.startsWith("*")) {
 					for (WorldConfig wc : WorldConfig.all()) {
 						wc.OPlist.clear();
-						if (node == "world.op") {
+						if (commandNode.equals("world.op")) {
 							wc.OPlist.add("*");
 						}
 						wc.updateOP(wc.getWorld());
 					}
-					if (node == "world.op") {
+					if (commandNode.equals("world.op")) {
 						message(ChatColor.YELLOW + "Everyone is now an operator on all worlds!");
 						if (sender instanceof Player) {
 							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped everyone on all worlds!");
@@ -49,14 +44,14 @@ public class WorldOpping extends Command {
 					}
 				} else {
 					for (WorldConfig wc : WorldConfig.all()) {
-						if (node == "world.op") {
+						if (commandNode.equals("world.op")) {
 							wc.OPlist.add(playername.toLowerCase());
 						} else {
 							wc.OPlist.remove(playername.toLowerCase());
 						}
 						wc.updateOP(wc.getWorld());
 					}
-					if (node == "world.op") {
+					if (commandNode.equals("world.op")) {
 						message(ChatColor.WHITE + playername + ChatColor.YELLOW + " is now an operator on all worlds!");
 						if (sender instanceof Player) {
 							MyWorlds.plugin.log(Level.INFO, "Player '" + ((Player) sender).getName() + " opped '" + playername + "' on all worlds!");
@@ -73,7 +68,7 @@ public class WorldOpping extends Command {
 				String playername = args[0];
 				if (playername.startsWith("*")) {
 					wc.OPlist.clear();
-					if (node == "world.op") {
+					if (commandNode.equals("world.op")) {
 						wc.OPlist.add("*");
 						message(ChatColor.YELLOW + "Everyone on world '" + worldname + "' is an operator now!");
 						if (sender instanceof Player) {
@@ -86,7 +81,7 @@ public class WorldOpping extends Command {
 						}
 					}
 				} else {
-					if (node == "world.op") {
+					if (commandNode.equals("world.op")) {
 						wc.OPlist.add(playername.toLowerCase());
 						message(ChatColor.WHITE + playername + ChatColor.YELLOW + " is now an operator on world '" + worldname + "'!");
 						if (sender instanceof Player) {

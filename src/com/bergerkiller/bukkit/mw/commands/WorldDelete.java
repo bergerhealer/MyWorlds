@@ -1,19 +1,18 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.mw.AsyncHandler;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldDelete extends Command {
 
-	public WorldDelete(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.delete";
+	public WorldDelete() {
+		super(Permission.COMMAND_DELETE, "world.delete");
 	}
-	
+
 	public void execute() {
 		if (args.length == 1) {
 			worldname = args[0];

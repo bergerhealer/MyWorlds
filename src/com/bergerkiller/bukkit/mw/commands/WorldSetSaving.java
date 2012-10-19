@@ -1,18 +1,17 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldSetSaving extends Command {
 
-	public WorldSetSaving(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.setsaving";
+	public WorldSetSaving() {
+		super(Permission.COMMAND_SETSAVING, "world.setsaving");
 	}
-	
+
 	public void execute() {
 		if (args.length != 0) {
 			this.genWorldname(1);
@@ -39,5 +38,4 @@ public class WorldSetSaving extends Command {
 			showInv();
 		}
 	}
-	
 }

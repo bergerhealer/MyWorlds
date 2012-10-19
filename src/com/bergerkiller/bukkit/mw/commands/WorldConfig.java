@@ -1,15 +1,14 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.mw.MyWorlds;
+import com.bergerkiller.bukkit.mw.Permission;
 
 public class WorldConfig extends Command {
 
-	public WorldConfig(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.config";
+	public WorldConfig() {
+		super(Permission.COMMAND_CONFIG, "world.config");
 	}
 
 	public void execute() {

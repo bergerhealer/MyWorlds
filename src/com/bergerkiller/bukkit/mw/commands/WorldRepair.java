@@ -1,18 +1,17 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.mw.AsyncHandler;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldRepair extends Command {
 
-	public WorldRepair(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.repair";
+	public WorldRepair() {
+		super(Permission.COMMAND_REPAIR, "world.repair");
 	}
-	
+
 	public void execute() {
 		if (args.length != 0) {
 			worldname = WorldManager.matchWorld(args[0]);
@@ -33,5 +32,4 @@ public class WorldRepair extends Command {
 			showInv();
 		}
 	}
-	
 }

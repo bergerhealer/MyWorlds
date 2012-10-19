@@ -1,16 +1,15 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.mw.AsyncHandler;
+import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldCopy extends Command {
 
-	public WorldCopy(CommandSender sender, String[] args) {
-		super(sender, args);
-		this.node = "world.copy";
+	public WorldCopy() {
+		super(Permission.COMMAND_COPY, "world.copy");
 	}
 	
 	public void execute() {
