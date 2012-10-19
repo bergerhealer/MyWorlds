@@ -9,7 +9,7 @@ import com.bergerkiller.bukkit.mw.WorldConfig;
 public class WorldFormIce extends Command {
 
 	public WorldFormIce() {
-		super(Permission.COMMAND_SPOUTWEATHER, "world.formice");
+		super(Permission.COMMAND_FORMING, "world.formice");
 	}
 
 	public void execute() {
@@ -36,5 +36,4 @@ public class WorldFormIce extends Command {
 			showInv();
 		}
 	}
-	
 }

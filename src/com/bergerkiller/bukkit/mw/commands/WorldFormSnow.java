@@ -9,7 +9,7 @@ import com.bergerkiller.bukkit.mw.WorldConfig;
 public class WorldFormSnow extends Command {
 
 	public WorldFormSnow() {
-		super(Permission.COMMAND_SPOUTWEATHER, "world.formsnow");
+		super(Permission.COMMAND_FORMING, "world.formsnow");
 	}
 
 	public void execute() {
@@ -36,5 +36,4 @@ public class WorldFormSnow extends Command {
 			showInv();
 		}
 	}
-	
 }

@@ -6,6 +6,8 @@ import net.minecraft.server.NBTTagDouble;
 import net.minecraft.server.NBTTagFloat;
 import net.minecraft.server.NBTTagList;
 
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
@@ -65,5 +67,49 @@ public class Util {
 		}
 
 		return nbttaglist;
+	}
+
+	private static boolean isObsidianPortal(Block main, BlockFace direction) {
+		for (int counter = 0; counter < 20; counter++) {
+			Material type = main.getType();
+			if (type == Material.PORTAL) {
+				main = main.getRelative(direction);
+			} else if (type == Material.OBSIDIAN) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if a given portal block is surrounded by obsidian
+	 * 
+	 * @param main portal block
+	 * @return True if it is an Obsidian Portal, False if not
+	 */
+	public static boolean isObsidianPortal(Block main) {
+		if (isObsidianPortal(main, BlockFace.UP) && isObsidianPortal(main, BlockFace.DOWN)) {
+			if (isObsidianPortal(main, BlockFace.NORTH) && isObsidianPortal(main, BlockFace.SOUTH)) return true;
+			if (isObsidianPortal(main, BlockFace.EAST) && isObsidianPortal(main, BlockFace.WEST)) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Gets the Location from a Position
+	 * 
+	 * @param position to convert
+	 * @return the Location, or null on failure
+	 */
+	public static Location getLocation(Position position) {
+		if (position != null) {
+			Location loc = position.toLocation();
+	    	if (loc.getWorld() != null) {
+	    		return loc;
+	    	}
+		}
+		return null;
 	}
 }

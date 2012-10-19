@@ -43,7 +43,8 @@ public enum Permission implements IPermissionDefault {
     COMMAND_SETSPAWN("world.setspawn", PermissionDefault.OP, "Sets if the player can change the spawn point of a world"),
     COMMAND_INVENTORY("world.inventory", PermissionDefault.OP, "Sets if the player can alter the inventory states of a world"),
     COMMAND_TOGGLERESPAWN("world.togglerespawn", PermissionDefault.OP, "Sets if the player can toggle the forced respawn to the world spawn"),
-    COMMAND_SPOUTWEATHER("world.spoutweather", PermissionDefault.OP, "Sets if players can toggle virtual weather changes using Spout Plugin"),
+    COMMAND_SPOUTWEATHER("world.spoutweather", PermissionDefault.OP, "Sets if player can toggle virtual weather changes using Spout Plugin"),
+    COMMAND_FORMING("world.forming", PermissionDefault.OP, "Sets if the player can toggle snow and ice forming on or off"),
     COMMAND_RELOADWE("world.reloadwe", PermissionDefault.OP, "Sets if players can toggle if worlds reload when empty"),
     GENERAL_TELEPORTALL("world.teleport.*", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn"),
     GENERAL_ENTERALL("world.enter.*", PermissionDefault.OP, "Sets if the player can enter a certain world through portals"),
@@ -156,9 +157,6 @@ public enum Permission implements IPermissionDefault {
 			}
 		}
 		EntityUtil.teleport(entity, to);
-		if (entity instanceof Player) {
-			Portal.notifyNoMove((Player) entity);
-		}
 		return true;
 	}
 		
