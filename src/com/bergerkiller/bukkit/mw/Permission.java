@@ -2,16 +2,13 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.logging.Level;
 
-import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.common.permissions.IPermissionDefault;
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijiko.permissions.PermissionHandler;
 
@@ -121,45 +118,7 @@ public enum Permission implements IPermissionDefault {
 	public static boolean hasGlobal(Player player, String node, String name) {
 		return has(player, node + name) || has(player, node + "*");
 	}
-		
-	public static boolean handleTeleport(Entity entity, Portal portal) {
-		return handleTeleport(entity, portal.getName(), portal.getDestinationName(), portal.getDestinationDisplayName(), portal.getDestination());
-	}
-	public static boolean handleTeleport(Entity entity, String toportalname, Location portalloc) {
-		return handleTeleport(entity, null, toportalname, toportalname, portalloc);
-	}
-	public static boolean handleTeleport(Entity entity, String fromportalname, String toportalname, String toportaldispname, Location portalloc) {
-		if (toportaldispname == null || portalloc == null) return false;
-		if (entity instanceof Player) {
-			Player p = (Player) entity;
-			if (fromportalname != null && !canEnterPortal(p, fromportalname)) {
-				Localization.PORTAL_NOACCESS.message(p);
-				return false;
-			} else {
-				Localization.PORTAL_ENTER.message(p, toportaldispname);
-			}
-		}
-		return handleTeleport(entity, portalloc, false);
-	}
-	
-	public static boolean handleTeleport(Entity entity, Location to) {
-		return handleTeleport(entity, to, true);
-	}
-	public static boolean handleTeleport(Entity entity, Location to, boolean showworld) {
-		if (to == null) return false;
-		if (entity instanceof Player) {
-			Player p = (Player) entity;
-			if (!canEnter(p, to.getWorld())) {
-				Localization.WORLD_NOACCESS.message(p);
-				return false;
-			} else if (showworld) {
-				Localization.WORLD_ENTER.message(p, to.getWorld().getName());
-			}
-		}
-		EntityUtil.teleport(entity, to);
-		return true;
-	}
-		
+
 	public static boolean canEnter(Player player, Portal portal) {
 		return canEnterPortal(player, portal.getName());
 	}
@@ -168,23 +127,13 @@ public enum Permission implements IPermissionDefault {
 	}
 	public static boolean canEnterPortal(Player player, String portalname) {
 		if (!has(player, "portal.use")) return false;
-		if (!MyWorlds.usePortalEnterPermissions) return true;	
+		if (!MyWorlds.usePortalEnterPermissions) return true;
 		return hasGlobal(player, "portal.enter.", portalname);
 	}
 	public static boolean canEnterWorld(Player player, String worldname) {
 		if (!MyWorlds.useWorldEnterPermissions) return true;
 		if (player.getWorld().getName().equalsIgnoreCase(worldname)) return true;
 		return hasGlobal(player, "world.enter.", worldname);
-	}
-	
-	public static boolean canTeleportPortal(Player player, String portalname) {
-		if (!MyWorlds.usePortalTeleportPermissions) return true;
-		return hasGlobal(player, "portal.teleport.", portalname);
-	}
-	public static boolean canTeleportWorld(Player player, String worldname) {
-		if (!MyWorlds.useWorldTeleportPermissions) return true;
-		if (player.getWorld().getName().equalsIgnoreCase(worldname)) return true;
-		return hasGlobal(player, "world.teleport.", worldname);
 	}
 
 	public static boolean canBuild(Player player) {
@@ -225,5 +174,4 @@ public enum Permission implements IPermissionDefault {
 			return false;
 		}
 	}
-
 }

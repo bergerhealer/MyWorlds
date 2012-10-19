@@ -77,7 +77,7 @@ public class WorldConfig extends WorldConfigStore {
 
 	public void load(ConfigurationNode node) {
 		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
-		this.worldmode = node.get("environment",  this.worldmode);
+		this.worldmode = node.get("environment", this.worldmode);
 		this.chunkGeneratorName = node.get("chunkGenerator", String.class, this.chunkGeneratorName);
 		this.difficulty = node.get("difficulty", Difficulty.class, this.difficulty);
 		this.gameMode = node.get("gamemode", GameMode.class, this.gameMode);

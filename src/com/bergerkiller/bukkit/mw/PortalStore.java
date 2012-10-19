@@ -33,12 +33,17 @@ public class PortalStore {
 
 	public static Location getPortalLocation(String portalname, String world, boolean spawnlocation) {
 		Location loc = getPortalLocation(portalname, world);
-		if (loc != null && spawnlocation) return loc.add(0.5, 2, 0.5);
-		return loc;
+		if (spawnlocation) {
+			return Util.spawnOffset(loc);
+		} else {
+			return loc;
+		}
 	}
 
 	public static Location getPortalLocation(String portalname, String world) {
-		if (portalname == null) return null;
+		if (portalname == null) {
+			return null;
+		}
 		int dotindex = portalname.indexOf(".");
 		if (dotindex != -1) {
 			world = WorldManager.matchWorld(portalname.substring(0, dotindex));
@@ -48,17 +53,19 @@ public class PortalStore {
 			Position pos = getPortalLocations(world).get(portalname);
 			if (pos != null) {
 				Location loc = Util.getLocation(pos);
-			    if (loc != null) return loc;
+				if (loc != null) {
+					return loc;
+				}
 			}
 		}
-    	for (HashMap<String, Position> positions : portallocations.values()) {
+		for (HashMap<String, Position> positions : portallocations.values()) {
 			for (Map.Entry<String, Position> entry : positions.entrySet()) {
 				if (entry.getKey().equalsIgnoreCase(portalname)) {
 					return Util.getLocation(entry.getValue());
 				}
 			}
-    	}
-    	return null;
+		}
+		return null;
 	}
 
 	public static String[] getPortals(Chunk c) {

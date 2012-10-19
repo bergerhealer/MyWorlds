@@ -98,6 +98,19 @@ public class Util {
 	}
 
 	/**
+	 * Adds the spawn offset to a given Location
+	 * 
+	 * @param location to add to, can be null
+	 * @return Location with the spawn offset
+	 */
+	public static Location spawnOffset(Location location) {
+		if (location == null) {
+			return null;
+		}
+		return location.clone().add(0.5, 2, 0.5);
+	}
+
+	/**
 	 * Gets the Location from a Position
 	 * 
 	 * @param position to convert

@@ -12,7 +12,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
-import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
@@ -94,13 +93,43 @@ public class Portal extends PortalStore {
 	}
 
 	/**
+	 * Teleports an Entity to the location of this Portal
+	 * 
+	 * @param entity to teleport
+	 * @return True if successful, False if not
+	 */
+	public boolean teleportSelf(Entity entity) {
+		MWPermissionListener.lastSelfPortal = this;
+		boolean rval = EntityUtil.teleport(entity, Util.spawnOffset(this.getLocation()));
+		MWPermissionListener.lastSelfPortal = null;
+		return rval;
+	}
+
+	/**
+	 * Teleports an Entity to the destination of this Portal in the next tick
+	 * 
+	 * @param entity to teleport
+	 */
+	public void teleportNextTick(final Entity entity) {
+		CommonUtil.nextTick(new Runnable() {
+			public void run() {
+	    		if (Portal.this.hasDestination()) {
+	    			Portal.this.teleport(entity);
+    			} else {
+    				CommonUtil.sendMessage(entity, Localization.PORTAL_NODESTINATION.get());
+    			}
+			}
+		});
+	}
+
+	/**
 	 * Teleports an Entity to the destination of this Portal
 	 * 
 	 * @param entity to teleport
 	 * @return True if successful, False if not
 	 */
 	public boolean teleport(Entity entity) {
-		Location dest = getDestination();
+		Location dest = this.getDestination();
 		if (dest != null && entity != null) {
 			MWPermissionListener.lastPortal = this;
 			boolean rval = EntityUtil.teleport(entity, dest);
@@ -221,43 +250,19 @@ public class Portal extends PortalStore {
 			// Default portals
 			String def = WorldConfig.get(e).defaultPortal;
 			if (def != null) {
-				Location loc = getPortalLocation(def, e.getWorld().getName(), true);
-				if (loc == null) {
-					// world spawn?
+				portal = get(getPortalLocation(def, e.getWorld().getName()));
+				if (portal != null) {
+					// Is it a world spawn?
 					World w = WorldManager.getWorld(def);
 					if (w != null) {
-						delayedTeleport(null, WorldManager.getSpawnLocation(w), null, e);
-					} else {
-						// Additional destinations??
+						EntityUtil.teleportNextTick(e, WorldManager.getSpawnLocation(w));
 					}
-				} else {
-					delayedTeleport(null, loc, def, e);
 				}
 			}
-		} else {
-			delayedTeleport(portal, null, null, e);
+		}
+		// If a portal was found, teleport using it
+		if (portal != null) {
+			portal.teleportNextTick(e);
 		}
 	}
-
-    public static void delayedTeleport(final Portal portal, final Location dest, final String destname, final Entity e) {
-    	new Task(MyWorlds.plugin) {
-    		public void run() {
-    	    	if (portal == null) {
-    	    		if (destname == null) {
-    	    			Permission.handleTeleport(e, dest);
-    	    		} else {
-    	    			Permission.handleTeleport(e, destname, dest);
-    	    		}
-    	    	} else {
-    	    		if (portal.hasDestination()) {
-    	    			if (Permission.handleTeleport(e, portal)) {
-    	    				//Success
-    	    			}
-        			} else {
-        				CommonUtil.sendMessage(e, Localization.PORTAL_NODESTINATION.get());
-        			}
-    	    	}
-    		}
-    	}.start();
-    }
 }

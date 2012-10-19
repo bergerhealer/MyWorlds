@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.World;
 
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
@@ -17,9 +18,7 @@ public class WorldSpawn extends Command {
 		if (this.handleWorld()) {
 			World world = WorldManager.getWorld(worldname);
 			if (world != null) {
-				if (Permission.handleTeleport(player, WorldManager.getSpawnLocation(world))) {
-					//Success
-				}
+				EntityUtil.teleport(player, WorldManager.getSpawnLocation(world));
 			} else {
 				Localization.WORLD_NOTLOADED.message(sender, worldname);
 			}

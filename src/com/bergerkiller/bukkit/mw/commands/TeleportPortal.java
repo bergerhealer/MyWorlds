@@ -8,6 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
@@ -48,22 +49,23 @@ public class TeleportPortal extends Command {
 				if (player != null) world = player.getWorld();
 				//Get portal
 				Location tele = Portal.getPortalLocation(dest, world.getName(), true);
-				if (tele != null && Portal.get(tele, 3) != null) {
-					//Perform portal teleports
-					int succcount = 0;
-					for (Player target : targets) {
-						if (Permission.canTeleportPortal(target, dest)) {
-							if (Permission.handleTeleport(target, dest, tele)) {
+				if (tele != null) {
+					Portal portal = Portal.get(tele, 3);
+					if (portal != null) {
+						//Perform portal teleports
+						int succcount = 0;
+						for (Player target : targets) {
+							if (portal.teleportSelf(target)) {
 								//Success
 								succcount++;
 							}
-						} else {
-							Localization.PORTAL_NOACCESS.message(target);
 						}
-					}
-					if (targets.length > 1 || targets[0] != sender) {
-						message(ChatColor.YELLOW.toString() + succcount + "/" + targets.length + 
-								" Players have been teleported to portal '" + dest + "'!");
+						if (targets.length > 1 || targets[0] != sender) {
+							message(ChatColor.YELLOW.toString() + succcount + "/" + targets.length + 
+									" Players have been teleported to portal '" + dest + "'!");
+						}
+					} else {
+						message(ChatColor.RED + "The portal world is not loaded!");
 					}
 				} else {
 					//Match world
@@ -74,13 +76,9 @@ public class TeleportPortal extends Command {
 							//Perform world teleports
 							int succcount = 0;
 							for (Player target : targets) {
-								if (Permission.canTeleportWorld(target, w.getName())) {
-									if (Permission.handleTeleport(target, WorldManager.getSpawnLocation(w))) {
-										//Success
-										succcount++;
-									}
-								} else {
-									Localization.WORLD_NOACCESS.message(target);
+								if (EntityUtil.teleport(target, WorldManager.getSpawnLocation(w))) {
+									//Success
+									succcount++;
 								}
 							}
 							if (targets.length > 1 || targets[0] != sender) {

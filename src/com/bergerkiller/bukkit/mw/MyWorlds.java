@@ -18,8 +18,6 @@ public class MyWorlds extends PluginBase {
 	public static int timeLockInterval;
 	public static boolean useWorldEnterPermissions;
 	public static boolean usePortalEnterPermissions;
-	public static boolean useWorldTeleportPermissions;
-	public static boolean usePortalTeleportPermissions;
 	public static boolean useWorldBuildPermissions;
 	public static boolean useWorldUsePermissions;
 	public static boolean useWorldChatPermissions;
@@ -86,8 +84,6 @@ public class MyWorlds extends PluginBase {
 
 		useWorldEnterPermissions = config.get("useWorldEnterPermissions", false);
 		usePortalEnterPermissions = config.get("usePortalEnterPermissions", false);
-		useWorldTeleportPermissions = config.get("useWorldTeleportPermissions", false);
-		usePortalTeleportPermissions = config.get("usePortalTeleportPermissions", false);
 		useWorldBuildPermissions = config.get("useWorldBuildPermissions", false);
 		useWorldUsePermissions = config.get("useWorldUsePermissions", false);
 		useWorldChatPermissions = config.get("useWorldChatPermissions", false);

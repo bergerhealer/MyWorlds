@@ -17,31 +17,7 @@ import com.bergerkiller.bukkit.common.utils.BlockUtil;
  */
 public class MWPermissionListener implements Listener {
 	public static Portal lastPortal = null; // Last portal used by a player
-
-	@EventHandler(priority = EventPriority.MONITOR)
-	public void onPlayerTeleportMsg(PlayerTeleportEvent event) {
-		if (!event.isCancelled()) {
-			if (lastPortal != null) {
-				// Show portal enter message
-				Localization.PORTAL_ENTER.message(event.getPlayer(), lastPortal.getDestinationDisplayName());
-			} else if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
-				// Show world enter message
-				Localization.WORLD_ENTER.message(event.getPlayer(), event.getTo().getWorld().getName());
-			}
-		}
-	}
-
-	@EventHandler(priority = EventPriority.LOWEST)
-	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		if (!event.isCancelled() && event.getTo() != null && event.getTo().getWorld() != null) {
-			if (Permission.canEnter(event.getPlayer(), event.getTo().getWorld())) {
-
-			} else {
-				Localization.WORLD_NOACCESS.message(event.getPlayer());
-				event.setCancelled(true);
-			}
-		}
-	}
+	public static Portal lastSelfPortal = null; // Last portal directly teleported to
 
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerTeleportPerm(PlayerTeleportEvent event) {
@@ -60,6 +36,22 @@ public class MWPermissionListener implements Listener {
 			} else {
 				Localization.WORLD_NOACCESS.message(event.getPlayer());
 				event.setCancelled(true);
+			}
+		}
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onPlayerTeleportMsg(PlayerTeleportEvent event) {
+		if (!event.isCancelled()) {
+			if (lastSelfPortal != null) {
+				// Show the portal name directly
+				Localization.PORTAL_ENTER.message(event.getPlayer(), lastSelfPortal.getName());
+			} else if (lastPortal != null) {
+				// Show portal enter message
+				Localization.PORTAL_ENTER.message(event.getPlayer(), lastPortal.getDestinationDisplayName());
+			} else if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
+				// Show world enter message
+				Localization.WORLD_ENTER.message(event.getPlayer(), event.getTo().getWorld().getName());
 			}
 		}
 	}
