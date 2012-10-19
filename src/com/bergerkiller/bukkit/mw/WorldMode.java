@@ -5,7 +5,7 @@ import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 
-import com.bergerkiller.bukkit.common.utils.EnumUtil;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 
 public enum WorldMode {
 	NORMAL(Environment.NORMAL, WorldType.NORMAL, "normal"),
@@ -42,7 +42,7 @@ public enum WorldMode {
 	}
 	
 	public static WorldMode get(String worldname) {
-		return EnumUtil.parse(worldname, NORMAL);
+		return ParseUtil.parseEnum(worldname, NORMAL);
 	}
 	
 	public static WorldMode get(World world) {

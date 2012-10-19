@@ -132,10 +132,10 @@ public enum Permission implements IPermissionDefault {
 		if (entity instanceof Player) {
 			Player p = (Player) entity;
 			if (fromportalname != null && !canEnterPortal(p, fromportalname)) {
-				Localization.message(p, "portal.noaccess");
+				Localization.PORTAL_NOACCESS.message(p);
 				return false;
 			} else {
-				p.sendMessage(Localization.getPortalEnter(toportalname, toportaldispname));
+				Localization.PORTAL_ENTER.message(p, toportaldispname);
 			}
 		}
 		return handleTeleport(entity, portalloc, false);
@@ -149,10 +149,10 @@ public enum Permission implements IPermissionDefault {
 		if (entity instanceof Player) {
 			Player p = (Player) entity;
 			if (!canEnter(p, to.getWorld())) {
-				Localization.message(p, "world.noaccess");
+				Localization.WORLD_NOACCESS.message(p);
 				return false;
 			} else if (showworld) {
-				p.sendMessage(Localization.getWorldEnter(to.getWorld()));
+				Localization.WORLD_ENTER.message(p, to.getWorld().getName());
 			}
 		}
 		EntityUtil.teleport(entity, to);

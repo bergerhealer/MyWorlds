@@ -38,7 +38,7 @@ public class MyWorlds extends PluginBase {
 
 	@Override
 	public int getMinimumLibVersion() {
-		return 1;
+		return 5;
 	}
 
 	public String root() {
@@ -117,12 +117,7 @@ public class MyWorlds extends PluginBase {
         config.setHeader("forceMainWorldSpawn", "\nWhether all players respawn on the main world at all times");
         forceMainWorldSpawn = config.get("forceMainWorldSpawn", false);
 
-        config.setHeader("locale", "\nThe locale text file name to use (excluding .txt extension)");
-        String locale = config.get("locale", "default");
         config.save();
-
-        //Localization
-        Localization.init(this, locale);
 
         //Permissions
 		Permission.init(this);
@@ -151,7 +146,6 @@ public class MyWorlds extends PluginBase {
 		//World inventories
 		WorldInventory.save(root() + "inventories.yml");
 
-        Localization.deinit();
         Permission.deinit();
         
 		//Abort chunk loader
@@ -163,6 +157,11 @@ public class MyWorlds extends PluginBase {
 	public boolean command(CommandSender sender, String cmdLabel, String[] args) {
 		com.bergerkiller.bukkit.mw.commands.Command.execute(sender, cmdLabel, args);
 		return true;
+	}
+
+	@Override
+	public void localization() {
+		this.loadLocales(Localization.class);
 	}
 
 	@Override

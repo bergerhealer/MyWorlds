@@ -3,7 +3,7 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
-import com.bergerkiller.bukkit.common.utils.StringUtil;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldSetSaving extends Command {
@@ -18,8 +18,8 @@ public class WorldSetSaving extends Command {
 			this.genWorldname(1);
 			if (this.handleWorld()) {
 				WorldConfig wc = WorldConfig.get(worldname);
-				if (StringUtil.isBool(args[0])) {
-					boolean set = StringUtil.getBool(args[0]);
+				if (ParseUtil.isBool(args[0])) {
+					boolean set = ParseUtil.parseBool(args[0]);
 					wc.autosave = set;
 					wc.updateAutoSave(wc.getWorld());
 					if (set) {

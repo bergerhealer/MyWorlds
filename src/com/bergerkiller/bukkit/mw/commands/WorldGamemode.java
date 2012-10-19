@@ -4,7 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.command.CommandSender;
 
-import com.bergerkiller.bukkit.common.utils.EnumUtil;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldGamemode extends Command {
@@ -28,7 +28,7 @@ public class WorldGamemode extends Command {
 				}
 			} else {
 				//Parse the gamemode
-				GameMode mode = EnumUtil.parseGameMode(args[0], null);
+				GameMode mode = ParseUtil.parseEnum(GameMode.class, args[0], null);
 				WorldConfig wc = WorldConfig.get(worldname);
 				wc.setGameMode(mode);
 				if (mode == null) {

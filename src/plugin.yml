@@ -7,10 +7,66 @@ depend: [BKCommonLib]
 dev-url: http://dev.bukkit.org/server-mods/my-worlds/
 commands:
     world:
-        description: Cross-world commands to manage your worlds
+        description: Commands to manage your worlds
         aliases: [myworlds, mw, worlds]
         usage: |
-            /world ? for usage
+            Use /help world [subcommand] for more information
+            /world info - Show world information
+            /world list - List all worlds
+            /world load - Load an existing world
+            /world unload - Unload a loaded world
+            /world save - Save a loaded world
+            /world create - Create a new world
+            /world listgenerators - List world generators
+            /world setspawn - Set the spawn point of a world
+            /world spawn - Teleport to world spawn
+            /world time - Set the time of a world
+            /world weather - Set the weather of a world
+            /world gamemode - Set the game mode of a world
+            /world difficulty - Set the difficulty of a world
+            /world togglepvp - Toggle PVP mode on/off
+            /world allowspawn - Allow mobs to spawn
+            /world denyspawn - Deny mobs from spawning
+            /world inventory - Manage world inventories
+            /world saving - Toggle world saving on/off
+            /world spawnloaded - Toggle spawn loaded on/off
+            /world evacuate - Evacuate all players of a world
+            /world delete - Delete a world permanently
+            /world copy - Copy a world to a new name
+            /world repair - Repair a world
+    world info:
+        description: Shows detailed information of a world
+        aliases: [world i]
+        usage: |
+            /world info
+            /world info [worldname]
+    world list:
+        description: Lists all the worlds of the server
+        usage: /world list
+    world load:
+        description: Loads a world
+        usage: /world load [worldname]
+    world unload:
+        description: Unloads a world
+        usage: /world unload [worldname]
+    world save:
+        description: Save a world
+        usage: |
+            /world save - Save the world you are in
+            /world save [worldname] - Save worldname
+            /world save [all/*] - Save all worlds
+    world create:
+        description: Create a new world
+        usage: |
+            /world create [world]_[env]:[gen]:[genarg] [seed]
+            /world create NormalWorld1 SomeSeed
+            /world create world2_nether MySeed
+            /world create world3:Plots:64 -45245253
+            /world create someworld_the_end
+    world listgenerators:
+        description: List all world generators
+        aliases: [world generators, world gen, world listgen]
+        usage: /world listgenerators
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World

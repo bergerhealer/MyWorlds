@@ -39,6 +39,7 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -95,28 +96,32 @@ public class MWListener implements Listener {
 		if (event.isCancelled()) return;
 		if (event.useInteractedBlock() == Result.DENY) return;
 		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-			Material type = event.getClickedBlock().getType();
-			switch (type) {
-			case LEVER : break;
-			case WOODEN_DOOR : break;
-			case IRON_DOOR : break;
-			case TRAP_DOOR : break;
-			case CHEST : break;
-			case FURNACE : break;
-			case BURNING_FURNACE : break;
-			case DISPENSER : break;
-			case WORKBENCH : break;
-			case DIODE_BLOCK_ON : break;
-			case DIODE_BLOCK_OFF : break;	
-			case BED : break;
-			case CAKE : break;
-			case NOTE_BLOCK : break;
-			case JUKEBOX : break;
-			default : return;
-			}
-			if (!Permission.canUse(event.getPlayer())) {
-				event.getPlayer().sendMessage(ChatColor.RED + "You are not allowed to use this in this world!");
-				event.setUseInteractedBlock(Result.DENY);
+			if (event.hasItem() && BlockUtil.isType(event.getItem().getTypeId(), Material.BUCKET, Material.LAVA_BUCKET, Material.WATER_BUCKET)) {
+				
+			} else {
+				Material type = event.getClickedBlock().getType();
+				switch (type) {
+				case LEVER : break;
+				case WOODEN_DOOR : break;
+				case IRON_DOOR : break;
+				case TRAP_DOOR : break;
+				case CHEST : break;
+				case FURNACE : break;
+				case BURNING_FURNACE : break;
+				case DISPENSER : break;
+				case WORKBENCH : break;
+				case DIODE_BLOCK_ON : break;
+				case DIODE_BLOCK_OFF : break;	
+				case BED : break;
+				case CAKE : break;
+				case NOTE_BLOCK : break;
+				case JUKEBOX : break;
+				default : return;
+				}
+				if (!Permission.canUse(event.getPlayer())) {
+					event.getPlayer().sendMessage(ChatColor.RED + "You are not allowed to use this in this world!");
+					event.setUseInteractedBlock(Result.DENY);
+				}
 			}
 		}
 	}
@@ -126,7 +131,7 @@ public class MWListener implements Listener {
 		if (!event.isCancelled() && event.getTo() != null && event.getTo().getWorld() != null) {
 			if (MyWorlds.useAllTeleportPermissions) {
 				if (!Permission.canEnter(event.getPlayer(), event.getTo().getWorld())) {
-					Localization.message(event.getPlayer(), "world.noaccess");
+					Localization.WORLD_NOACCESS.message(event.getPlayer());
 					event.setCancelled(true);
 				}
 			}
@@ -189,7 +194,7 @@ public class MWListener implements Listener {
 	public void onPlayerChat(AsyncPlayerChatEvent event) {
 		if (!Permission.canChat(event.getPlayer())) {
 			event.setCancelled(true);
-			event.getPlayer().sendMessage(Localization.get("world.nochataccess"));
+			Localization.WORLD_NOCHATACCESS.message(event.getPlayer());
 			return;
 		}
 		Iterator<Player> iterator = event.getRecipients().iterator();

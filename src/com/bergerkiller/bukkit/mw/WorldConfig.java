@@ -20,7 +20,7 @@ import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.Task;
-import com.bergerkiller.bukkit.common.utils.EnumUtil;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 
 public class WorldConfig extends WorldConfigStore {	
 	public String worldname;
@@ -77,10 +77,10 @@ public class WorldConfig extends WorldConfigStore {
 
 	public void load(ConfigurationNode node) {
 		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
-		this.worldmode = EnumUtil.parse(node.get("environment", String.class), this.worldmode);
+		this.worldmode = node.get("environment",  this.worldmode);
 		this.chunkGeneratorName = node.get("chunkGenerator", String.class, this.chunkGeneratorName);
-		this.difficulty = EnumUtil.parseDifficulty(node.get("difficulty", String.class), this.difficulty);
-		this.gameMode = EnumUtil.parseGameMode(node.get("gamemode", String.class), this.gameMode);
+		this.difficulty = node.get("difficulty", Difficulty.class, this.difficulty);
+		this.gameMode = node.get("gamemode", GameMode.class, this.gameMode);
 		this.clearInventory = node.get("clearInventory", this.clearInventory);
 		String worldspawn = node.get("spawn.world", String.class);
 		if (worldspawn != null) {
@@ -106,7 +106,7 @@ public class WorldConfig extends WorldConfigStore {
 			} else if (type.equals("MONSTERS")) {
 				this.spawnControl.setMonsters(true);
 			} else {
-				EntityType t = EnumUtil.parse(EntityType.class, type, null);
+				EntityType t = ParseUtil.parseEnum(EntityType.class, type, null);
 				if (t != null) {
 					this.spawnControl.deniedCreatures.add(t);
 				}

@@ -3,7 +3,7 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
-import com.bergerkiller.bukkit.common.utils.StringUtil;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldFormSnow extends Command {
@@ -18,8 +18,8 @@ public class WorldFormSnow extends Command {
 			this.genWorldname(1);
 			if (this.handleWorld()) {
 				WorldConfig wc = WorldConfig.get(worldname);
-				if (StringUtil.isBool(args[0])) {
-					wc.formSnow = StringUtil.getBool(args[0]);
+				if (ParseUtil.isBool(args[0])) {
+					wc.formSnow = ParseUtil.parseBool(args[0]);
 					if (wc.formSnow) {
 						message(ChatColor.YELLOW + "Snow will now form on world '" + worldname + "'!");
 					} else {

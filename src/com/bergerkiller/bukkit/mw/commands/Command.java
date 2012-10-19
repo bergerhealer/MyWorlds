@@ -65,7 +65,7 @@ public class Command {
 	
 	public boolean handleWorld() {
 		if (this.worldname == null) {
-			locmessage("world.notfound");
+			locmessage(Localization.WORLD_NOTFOUND);
 		}
 		return this.worldname != null;
 	}
@@ -78,13 +78,11 @@ public class Command {
 		if (msg == null) return;
 		CommonUtil.sendMessage(this.sender, msg);
 	}
-	public void locmessage(String node) {
-		Localization.message(this.sender, node);
+
+	public void locmessage(Localization node, String... arguments) {
+		node.message(this.sender, arguments);
 	}
-	public void locmessage(String node, String def) {
-		Localization.message(this.sender, node, def);
-	}
-	
+
 	public void notifyConsole(String message) {
 		Util.notifyConsole(sender, message);
 	}
@@ -101,7 +99,7 @@ public class Command {
 	}
 	public boolean showUsage(String node) {
 		if (hasPermission(node)) {
-			locmessage("help." + node, "");
+			this.sender.sendMessage(MyWorlds.plugin.getCommandUsage(node));
 			return true;
 		} else {
 			return false;

@@ -339,7 +339,7 @@ public class Portal {
     	    				//Success
     	    			}
         			} else {
-        				CommonUtil.sendMessage(e, Localization.get("portal.nodestination"));
+        				CommonUtil.sendMessage(e, Localization.PORTAL_NODESTINATION.get());
         			}
     	    	}
     		}
