@@ -75,6 +75,17 @@ public class WorldConfig extends WorldConfigStore {
 		this.inventory = new WorldInventory(this.worldname).add(worldname);
 	}
 
+	/**
+	 * Handles the case of this configuration being made for a new world
+	 */
+	public void loadNew() {
+		if (this.worldmode == WorldMode.NETHER && this.worldname.toLowerCase().endsWith("_nether")) {
+			this.defaultPortal = this.worldname.substring(0, this.worldname.length() - 7);
+		} else if (this.worldmode == WorldMode.NORMAL) {
+			this.defaultPortal = this.worldname + "_nether";
+		}
+	}
+
 	public void load(ConfigurationNode node) {
 		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
 		this.worldmode = node.get("environment", this.worldmode);

@@ -24,6 +24,7 @@ public class WorldConfigStore {
 			if (defaultProperties != null) {
 				c.load(defaultProperties);
 			}
+			c.loadNew();
 		}
 		return c;
 	}
