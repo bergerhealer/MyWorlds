@@ -4,6 +4,7 @@ version: 1.53
 author: bergerkiller
 softdepend: [Spout]
 depend: [BKCommonLib]
+loadbefore: [MobArena, RegionForSale]
 dev-url: http://dev.bukkit.org/server-mods/my-worlds/
 commands:
     world:

@@ -29,7 +29,7 @@ public class WorldConfig extends WorldConfigStore {
 	public String chunkGeneratorName;
 	public Difficulty difficulty = Difficulty.NORMAL;
 	public Position spawnPoint;
-	public GameMode gameMode = Bukkit.getServer().getDefaultGameMode();
+	public GameMode gameMode;
 	public boolean holdWeather = false;
 	public boolean pvp = true;
 	public SpawnControl spawnControl;
@@ -47,6 +47,7 @@ public class WorldConfig extends WorldConfigStore {
 	public WorldInventory inventory;
 
 	public WorldConfig(String worldname) {
+		this.gameMode = Bukkit.getServer().getDefaultGameMode();
 		this.worldname = worldname;
 		this.spawnControl = new SpawnControl();
 		this.timeControl = new TimeControl(this);
