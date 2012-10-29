@@ -10,7 +10,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
-import com.bergerkiller.bukkit.common.utils.BlockUtil;
+import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 
 /**
  * Handles events to manage plugin-defined permissions and messages
@@ -62,12 +62,12 @@ public class MWPermissionListener implements Listener {
 			return;
 		}
 		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-			if (event.hasItem() && BlockUtil.isBucket(event.getItem().getTypeId())) {
+			if (MaterialUtil.ISBUCKET.get(event.getItem())) {
 				if (!Permission.canBuild(event.getPlayer())) {
 					Localization.WORLD_NOBUILD.message(event.getPlayer());
 					event.setUseInteractedBlock(Result.DENY);
 				}
-			} else if (BlockUtil.isInteractable(event.getClickedBlock().getTypeId())) {
+			} else if (MaterialUtil.ISINTERACTABLE.get(event.getClickedBlock())) {
 				if (!Permission.canUse(event.getPlayer())) {
 					Localization.WORLD_NOUSE.message(event.getPlayer());
 					event.setUseInteractedBlock(Result.DENY);

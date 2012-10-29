@@ -195,10 +195,11 @@ public class PlayerData implements PlayerFileData {
 			player.expTotal = data.getInt("XpTotal");
 			player.setHealth(data.getShort("Health"));
 			player.spawnWorld = data.getString("SpawnWorld");
+			boolean spawnForced = data.getBoolean("SpawnForced");
 			if (player.spawnWorld == null || player.spawnWorld.isEmpty()) {
-				player.setRespawnPosition(null);
+				player.setRespawnPosition(null, spawnForced);
 			} else if (data.hasKey("SpawnX") && data.hasKey("SpawnY") && data.hasKey("SpawnZ")) {
-				player.setRespawnPosition(new ChunkCoordinates(data.getInt("SpawnX"), data.getInt("SpawnY"), data.getInt("SpawnZ")));
+				player.setRespawnPosition(new ChunkCoordinates(data.getInt("SpawnX"), data.getInt("SpawnY"), data.getInt("SpawnZ")), spawnForced);
 			}
 			player.getFoodData().a(data);
 			postLoad(player);

@@ -35,7 +35,7 @@ public class MyWorlds extends PluginBase {
 
 	@Override
 	public int getMinimumLibVersion() {
-		return 5;
+		return 7;
 	}
 
 	public String root() {
@@ -56,6 +56,7 @@ public class MyWorlds extends PluginBase {
 		// Event registering
 		this.register(MWListener.class);
 		this.register(MWPermissionListener.class);
+		this.register(PortalBugHotfix.class);
 		this.register("tpp", "world");
 
 		FileConfiguration config = new FileConfiguration(this);
