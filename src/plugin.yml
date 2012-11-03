@@ -1,10 +1,10 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.53
+version: 1.54
 author: bergerkiller
 softdepend: [Spout]
 depend: [BKCommonLib]
-loadbefore: [MobArena, RegionForSale]
+loadbefore: [MobArena, RegionForSale, CreativeGates]
 dev-url: http://dev.bukkit.org/server-mods/my-worlds/
 commands:
     world:

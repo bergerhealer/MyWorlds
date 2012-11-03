@@ -61,7 +61,7 @@ public class Command {
 	}
 
 	public boolean hasPermission() {
-		return this.hasPermission(this.permission.getName());
+		return this.permission == null || this.hasPermission(this.permission.getName());
 	}
 
 	public boolean hasPermission(String node) {

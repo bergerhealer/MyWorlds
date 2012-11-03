@@ -50,18 +50,20 @@ public class LoadChunksTask extends Task {
 	private LoadChunksTask() {
 		super(MyWorlds.plugin);
 	}
-	
+
 	@Override
 	public void run() {
-		ChunkCoord next = remaining.poll();
-		if (next == null) {
-			abort();
-		} else {
-			if (!next.world.isChunkLoaded(next.x, next.z)) {
-				next.world.loadChunk(next.x, next.z);
-			}
-			if (next.taskWhenFinished != null) {
-				next.taskWhenFinished.run();
+		for (int i = 0; i < 10; i++) {
+			ChunkCoord next = remaining.poll();
+			if (next == null) {
+				abort();
+			} else {
+				if (!next.world.isChunkLoaded(next.x, next.z)) {
+					next.world.loadChunk(next.x, next.z);
+				}
+				if (next.taskWhenFinished != null) {
+					next.taskWhenFinished.run();
+				}
 			}
 		}
 	}

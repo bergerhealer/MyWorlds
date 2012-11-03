@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -15,6 +13,7 @@ import org.bukkit.craftbukkit.entity.CraftPlayer;
 
 import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 import net.minecraft.server.ChunkCoordinates;
@@ -43,8 +42,6 @@ import net.minecraft.server.WorldNBTStorage;
  * The old data is saved appropriately and the new data is applied again (not all data)
  */
 public class PlayerData implements PlayerFileData {
-	private Map<String, File> playerFileLoc = new HashMap<String, File>();
-
 	public static void init() {
 		CommonUtil.getServerConfig().playerFileData = new PlayerData();
 	}
@@ -194,12 +191,13 @@ public class PlayerData implements PlayerFileData {
 			player.expLevel = data.getInt("XpLevel");
 			player.expTotal = data.getInt("XpTotal");
 			player.setHealth(data.getShort("Health"));
-			player.spawnWorld = data.getString("SpawnWorld");
+			String spawnWorld = data.getString("SpawnWorld");
 			boolean spawnForced = data.getBoolean("SpawnForced");
-			if (player.spawnWorld == null || player.spawnWorld.isEmpty()) {
+			if (LogicUtil.nullOrEmpty(spawnWorld)) {
 				player.setRespawnPosition(null, spawnForced);
 			} else if (data.hasKey("SpawnX") && data.hasKey("SpawnY") && data.hasKey("SpawnZ")) {
 				player.setRespawnPosition(new ChunkCoordinates(data.getInt("SpawnX"), data.getInt("SpawnY"), data.getInt("SpawnZ")), spawnForced);
+				player.spawnWorld = spawnWorld;
 			}
 			player.getFoodData().a(data);
 			postLoad(player);
@@ -218,26 +216,18 @@ public class PlayerData implements PlayerFileData {
 			// Get the source file to use for loading
 			if (MyWorlds.useWorldInventories) {
 				// Find out where to find the save file
-				main = playerFileLoc.get(entityhuman.name);
-				if (main == null) {
-					main = getMainFile(entityhuman.name);
-					try {
-						hasPlayedBefore = main.exists();
-						if (hasPlayedBefore && !MyWorlds.forceMainWorldSpawn) {
-							// Allow switching worlds and positions
-							nbttagcompound = NBTCompressedStreamTools.a(new FileInputStream(main));
-							long least = nbttagcompound.getLong("WorldUUIDLeast");
-							long most = nbttagcompound.getLong("WorldUUIDMost");
-							org.bukkit.World world = Bukkit.getWorld(new UUID(most, least));
-							if (world != null) {
-								main = getSaveFile(world.getName(), entityhuman.name);
-							}
-						}
-					} catch (Exception exception) {
+				main = getMainFile(entityhuman.name);
+				hasPlayedBefore = main.exists();
+				if (hasPlayedBefore && !MyWorlds.forceMainWorldSpawn) {
+					// Allow switching worlds and positions
+					nbttagcompound = NBTCompressedStreamTools.a(new FileInputStream(main));
+					long least = nbttagcompound.getLong("WorldUUIDLeast");
+					long most = nbttagcompound.getLong("WorldUUIDMost");
+					org.bukkit.World world = Bukkit.getWorld(new UUID(most, least));
+					if (world != null) {
+						// Switch to the save file of the loaded world
+						main = getSaveFile(world.getName(), entityhuman.name);
 					}
-					playerFileLoc.put(entityhuman.name, main);
-				} else {
-					hasPlayedBefore = true;
 				}
 			} else {
 				// Just use the main world file
@@ -282,8 +272,6 @@ public class PlayerData implements PlayerFileData {
 				// Use main world save file
 				dest = mainDest;
 			}
-			// Set the saved file location to quicken loading the next time
-			playerFileLoc.put(entityhuman.name, dest);
 			// Write to the source
 			write(nbttagcompound, dest);
 			if (mainDest.equals(dest)) {
