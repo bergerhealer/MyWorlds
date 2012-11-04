@@ -5,8 +5,6 @@ import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 
-import com.bergerkiller.bukkit.common.utils.ParseUtil;
-
 public enum WorldMode {
 	NORMAL(Environment.NORMAL, WorldType.NORMAL, "normal"),
 	NETHER(Environment.NETHER, WorldType.NORMAL, "nether"),
@@ -23,11 +21,11 @@ public enum WorldMode {
 	private final Environment env;
 	private final WorldType wtype;
 	private final String name;
-	
-	public String toString() {
+
+	public String getName() {
 		return this.name;
 	}
-	
+
 	public Environment getEnvironment() {
 		return this.env;
 	}
@@ -35,14 +33,20 @@ public enum WorldMode {
 	public WorldType getType() {
 		return this.wtype;
 	}
-	
+
 	public void apply(WorldCreator creator) {
-		creator.environment(this.env);
 		creator.type(this.wtype);
+		creator.environment(this.env);
 	}
-	
+
 	public static WorldMode get(String worldname) {
-		return ParseUtil.parseEnum(worldname, NORMAL);
+		worldname = worldname.toLowerCase();
+		for (WorldMode mode : values()) {
+			if (worldname.endsWith("_" + mode.getName())) {
+				return mode;
+			}
+		}
+		return NORMAL;
 	}
 	
 	public static WorldMode get(World world) {

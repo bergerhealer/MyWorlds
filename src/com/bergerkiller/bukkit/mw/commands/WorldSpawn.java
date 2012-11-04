@@ -13,6 +13,11 @@ public class WorldSpawn extends Command {
 		super(Permission.COMMAND_SPAWN, "world.spawn");
 	}
 
+	@Override
+	public boolean allowConsole() {
+		return false;
+	}
+
 	public void execute() {
 		this.genWorldname(0);
 		if (this.handleWorld()) {

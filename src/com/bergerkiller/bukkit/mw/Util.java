@@ -13,6 +13,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import com.bergerkiller.bukkit.common.config.ConfigurationNode;
+
 public class Util {
 	public static boolean isSolid(Block b, BlockFace direction) {
 		int maxwidth = 10;
@@ -24,6 +26,19 @@ public class Util {
 			--maxwidth;
 			if (maxwidth <= 0) return false;
 		}
+	}
+
+	public static ConfigurationNode cloneNode(ConfigurationNode node) {
+		ConfigurationNode cloned = new ConfigurationNode();
+		cloned.setHeader(node.getHeader());
+		for (String key : node.getKeys()) {
+			if (node.isNode(key)) {
+				cloned.set(key, cloneNode(node.getNode(key)));
+			} else {
+				cloned.set(key, node.get(key));
+			}
+		}
+		return cloned;
 	}
 
 	public static void notifyConsole(CommandSender sender, String message) {

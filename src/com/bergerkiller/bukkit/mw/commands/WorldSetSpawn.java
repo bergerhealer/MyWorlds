@@ -12,6 +12,11 @@ public class WorldSetSpawn extends Command {
 		super(Permission.COMMAND_SETSPAWN, "world.setspawn");
 	}
 
+	@Override
+	public boolean allowConsole() {
+		return false;
+	}
+
 	public void execute() {
 		Position pos = new Position(player.getLocation());
 		this.genWorldname(0);

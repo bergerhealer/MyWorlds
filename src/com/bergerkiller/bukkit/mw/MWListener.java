@@ -98,7 +98,7 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onWorldInit(WorldInitEvent event) {
 		if (initIgnoreWorlds.remove(event.getWorld().getName())) {
-			event.getWorld().setKeepSpawnInMemory(false);
+			WorldUtil.getNative(event.getWorld()).keepSpawnInMemory = false;
 		} else {
 			WorldConfig.get(event.getWorld()).update(event.getWorld());
 		}
@@ -288,9 +288,9 @@ public class MWListener implements Listener {
 		if (!event.isCancelled()) {
 			Portal portal = Portal.get(event.getBlock(), event.getLines());
 			if (portal != null) {
-				if (Permission.has(event.getPlayer(), "portal.create")) {
+				if (Permission.PORTAL_CREATE.has(event.getPlayer())) {
 					if (Portal.exists(event.getPlayer().getWorld().getName(), portal.getName())) {
-						if (!MyWorlds.allowPortalNameOverride || !Permission.has(event.getPlayer(), "portal.override")) {
+						if (!MyWorlds.allowPortalNameOverride || !Permission.PORTAL_OVERRIDE.has(event.getPlayer())) {
 							event.getPlayer().sendMessage(ChatColor.RED + "This portal name is already used!");
 							event.setCancelled(true);
 							return;

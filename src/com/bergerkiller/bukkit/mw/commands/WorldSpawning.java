@@ -21,7 +21,8 @@ public class WorldSpawning extends Command {
 		this.genWorldname(1);
 		if (this.handleWorld()) {
 			if (args.length != 0) {
-				SpawnControl sc = WorldConfig.get(worldname).spawnControl;
+				WorldConfig wc = WorldConfig.get(worldname);
+				SpawnControl sc = wc.spawnControl;
 				//Get the type to set
 				String type = null;
 				if (args[0].equalsIgnoreCase("animal")) {
@@ -108,9 +109,9 @@ public class WorldSpawning extends Command {
 					message(ChatColor.RED + "Invalid creature type!");
 				}
 			}
-			//Mobs
+			// Display denied Mobs
 			SpawnControl sc = WorldConfig.get(worldname).spawnControl;
-			if (sc.deniedCreatures.size() == 0) {
+			if (sc.deniedCreatures.isEmpty()) {
 				message(ChatColor.WHITE + "All mobs are allowed to spawn right now.");
 			} else {
 				message(ChatColor.WHITE + "The following mobs are denied from spawning:");

@@ -30,6 +30,28 @@ public class SpawnControl {
 		return false;
 	}
 
+	public boolean getAnimals() {
+		for (EntityType type : EntityType.values()) {
+			if (EntityUtil.isAnimal(type.toString().toLowerCase().replace("_", ""))) {
+				if (!this.deniedCreatures.contains(type)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	public boolean getMonsters() {
+		for (EntityType type : EntityType.values()) {
+			if (EntityUtil.isMonster(type.toString().toLowerCase().replace("_", ""))) {
+				if (!this.deniedCreatures.contains(type)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	public void setAnimals(boolean deny) {
 		for (EntityType type : EntityType.values()) {
 			if (EntityUtil.isAnimal(type.toString().toLowerCase().replace("_", ""))) {

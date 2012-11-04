@@ -138,9 +138,6 @@ public class WorldManager {
 		}
 		return gens.toArray(new String[0]);
 	}
-	public static String getGeneratorPlugin(String forWorld) {
-		return WorldConfig.get(forWorld).chunkGeneratorName;
-	}
 	public static String fixGeneratorName(String name) {
 		if (name == null) return null;
 		String id = "";
@@ -389,16 +386,16 @@ public class WorldManager {
 	}
 
 	public static World createWorld(String worldname, long seed) {
-		String gen = getGeneratorPlugin(worldname);
+		WorldConfig wc = WorldConfig.get(worldname);
 		StringBuilder msg = new StringBuilder().append("Loading or creating world '").append(worldname).append("'");
 		if (seed == 0) {
-			if (gen != null) {
-				msg.append(" using chunk generator: '").append(gen).append("'");
+			if (wc.chunkGeneratorName != null) {
+				msg.append(" using chunk generator: '").append(wc.chunkGeneratorName).append("'");
 			}
 		} else {
 			msg.append(" using seed ").append(seed);
-			if (gen != null) {
-				msg.append(" and chunk generator: '").append(gen).append("'");
+			if (wc.chunkGeneratorName != null) {
+				msg.append(" and chunk generator: '").append(wc.chunkGeneratorName).append("'");
 			}
 		}
 		MyWorlds.plugin.log(Level.INFO, msg.toString());
@@ -408,23 +405,23 @@ public class WorldManager {
 		int i = 0;
 		ChunkGenerator cgen = null;
 		try {
-			if (gen != null) {
-				cgen = getGenerator(worldname, gen);
+			if (wc.chunkGeneratorName != null) {
+				cgen = getGenerator(worldname, wc.chunkGeneratorName);
 			}
 		} catch (Exception ex) {}
 		if (cgen == null) {
-			if (gen != null) {
-				MyWorlds.plugin.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + gen + "' was not found!");
+			if (wc.chunkGeneratorName != null) {
+				MyWorlds.plugin.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + wc.chunkGeneratorName + "' was not found!");
 				return null;
 			}
 		}
-		WorldConfig wc = WorldConfig.get(worldname);
-		wc.chunkGeneratorName = gen;
 		for (i = 0; i < retrycount + 1; i++) {
 			try {
 				WorldCreator c = new WorldCreator(worldname);
 				wc.worldmode.apply(c);
-				if (seed != 0) c.seed(seed);
+				if (seed != 0) {
+					c.seed(seed);
+				}
 				c.generator(cgen);
 				w = c.createWorld();
 			} catch (Exception ex) {
@@ -438,10 +435,6 @@ public class WorldManager {
 		}
 		if (w != null) {
 			wc.update(w);
-			//Data file is made?
-			if (!worldExists(worldname)) {
-				//w.save();
-			}
 		}
 		if (w == null) {
 			MyWorlds.plugin.log(Level.WARNING, "Operation failed after " + i + " retries!");
@@ -539,7 +532,7 @@ public class WorldManager {
 	public static Location getEvacuation(Player player) {
 		World world = player.getWorld();
 		String[] portalnames;
-		if (Permission.has(player, "world.spawn") || Permission.has(player, "tpp")) {
+		if (Permission.COMMAND_SPAWN.has(player) || Permission.COMMAND_TPP.has(player)) {
 			for (Position pos : getSpawnPoints()) {
 				Location loc = pos.toLocation();
 				if (loc.getWorld() == null) continue;

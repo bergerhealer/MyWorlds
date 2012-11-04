@@ -35,7 +35,7 @@ public class WorldCreate extends Command {
 			}
 			if (!WorldManager.worldExists(worldname)) {
 				String seed = "";
-				for (int i = 1;i < args.length;i++) {
+				for (int i = 1; i < args.length;i++) {
 					if (seed != "") seed += " ";
 					seed += args[i];
 				}
@@ -58,14 +58,15 @@ public class WorldCreate extends Command {
 		        final World world = WorldManager.createWorld(worldname, seedval);
 				if (world != null) {
 					//load chunks
-					final int keepdimension = 14;
-					final int total = 4 * keepdimension * keepdimension;
+					final int keepdimension = 15;
+					final int keepedgedim = 2 * keepdimension + 1;
+					final int total = keepedgedim * keepedgedim;
 					int current = 0;
 					int spawnx = world.getSpawnLocation().getBlockX() >> 4;
 				    int spawnz = world.getSpawnLocation().getBlockZ() >> 4;
-					for (int x = -keepdimension; x < keepdimension; x++) {
+					for (int x = -keepdimension; x <= keepdimension; x++) {
 						boolean first = true;
-						for (int z = -keepdimension; z < keepdimension; z++) {
+						for (int z = -keepdimension; z <= keepdimension; z++) {
 							int cx = spawnx + x;
 							int cz = spawnz + z;
 							Task t = null;

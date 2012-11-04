@@ -43,49 +43,89 @@ public enum Permission implements IPermissionDefault {
     COMMAND_SPOUTWEATHER("world.spoutweather", PermissionDefault.OP, "Sets if player can toggle virtual weather changes using Spout Plugin"),
     COMMAND_FORMING("world.forming", PermissionDefault.OP, "Sets if the player can toggle snow and ice forming on or off"),
     COMMAND_RELOADWE("world.reloadwe", PermissionDefault.OP, "Sets if players can toggle if worlds reload when empty"),
-    GENERAL_TELEPORTALL("world.teleport.*", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn"),
-    GENERAL_ENTERALL("world.enter.*", PermissionDefault.OP, "Sets if the player can enter a certain world through portals"),
-    GENERAL_BUILDALL("world.build.*", PermissionDefault.OP, "Sets if the player can build in a certain world"),
-    GENERAL_CHATALL("world.chat.*", PermissionDefault.TRUE, "Sets if the player can chat while being in a certain world"),
-    GENERAL_CHATALLWORLDS("world.chat.*.*", PermissionDefault.OP, "Sets if the player can chat from every world to every world"),
+    GENERAL_TELEPORT("world.teleport", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn", 1),
+    GENERAL_ENTER("world.enter", PermissionDefault.OP, "Sets if the player can enter a certain world through portals", 1),
+    GENERAL_BUILD("world.build", PermissionDefault.OP, "Sets if the player can build in a certain world", 1),
+    GENERAL_CHAT("world.chat", PermissionDefault.TRUE, "Sets if the player can chat while being in a certain world", 1),
+    GENERAL_CHATALLWORLDS("world.chat", PermissionDefault.OP, "Sets if the player can chat from every world to every world", 2),
     GENERAL_IGNOREGM("world.ignoregamemode", PermissionDefault.FALSE, "Sets if the player game mode is not changed by the world game mode"),
-    GENERAL_USEALL("world.use.*", PermissionDefault.OP, "Sets if the player can interact with blocks in a certain world"),
+    GENERAL_USE("world.use", PermissionDefault.OP, "Sets if the player can interact with blocks in a certain world", 1),
     GENERAL_KEEPINV("world.keepinventory", PermissionDefault.FALSE, "Sets if the player keeps his inventory while switching worlds"),
     PORTAL_CREATE("portal.create", PermissionDefault.OP, "Sets if the player can create teleport signs"),
     PORTAL_OVERRIDE("portal.override", PermissionDefault.OP, "Sets if the player can replace existing portals"),
-    PORTAL_USE("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals"),
-    PORTAL_TELEPORTALL("portal.teleport.*", PermissionDefault.OP, "Sets the portals a player can teleport to using /tpp"),
-    PORTAL_ENTERALL("portal.enter.*", PermissionDefault.OP, "Sets if the player can enter a certain portal"),
+    PORTAL_USE("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals", 1),
+    PORTAL_TELEPORT("portal.teleport", PermissionDefault.OP, "Sets the portals a player can teleport to using /tpp", 1),
+    PORTAL_ENTER("portal.enter", PermissionDefault.OP, "Sets if the player can enter a certain portal", 1),
     COMMAND_TPP("tpp", PermissionDefault.OP, "Sets if the player can teleport to worlds or portals");
 
+	private final String node;
 	private final String name;
 	private final PermissionDefault def;
 	private final String desc;
+
 	private Permission(final String name, final PermissionDefault def, final String desc) {
-		this.name = name;
+		this(name, def, desc, 0);
+	}
+
+	private Permission(final String name, final PermissionDefault def, final String desc, final int argCount) {
+		this.node = "myworlds." + name;
 		this.def = def;
 		this.desc = desc;
+		StringBuilder builder = new StringBuilder(this.node);
+		for (int i = 0; i < argCount; i++) {
+			builder.append(".*");
+		}
+		this.name = builder.toString();
 	}
-	
+
 	@Override
 	public String getName() {
-		return "myworlds." + this.name;
+		return this.name;
 	}
+
 	@Override
 	public PermissionDefault getDefault() {
 		return this.def;
 	}
+
 	@Override
 	public String getDescription() {
 		return this.desc;
 	}
-	
-	public boolean has(Player player) {
-		return has(player, this.name);
+
+	public boolean hasGlobal(Player player, String name) {
+		return has(player, name) || has(player, "*");
 	}
-	
+
+	public boolean hasGlobal(Player player, String name1, String name2) {
+		return has(player, name1, name2) || has(player, name1, "*") || has(player, "*", name2) || has(player, "*", "*");
+	}
+
+	public boolean has(Player player) {
+		return has(player, new String[0]);
+	}
+
+	public boolean has(Player player, String... args) {
+		String node = this.node;
+		if (args.length > 0) {
+			StringBuilder builder = new StringBuilder(node);
+			for (String arg : args) {
+				builder.append('.').append(arg);
+			}
+			node = builder.toString();
+		}
+		if (permissionHandler != null) {
+			//Permissions 3.*
+			return permissionHandler.has(player, node);
+		} else {
+			//Build-in permissions
+			return player.hasPermission(node);
+		}
+	}
+
+	@Override
 	public String toString() {
-		return this.name;
+		return this.getName();
 	}
 	
 	private static PermissionHandler permissionHandler = null; //Permissions 3.* ONLY
@@ -105,19 +145,6 @@ public enum Permission implements IPermissionDefault {
 	public static void deinit() {
 		permissionHandler = null;
 	}
-	
-	public static boolean has(Player player, String command) {
-		if (permissionHandler != null) {
-			//Permissions 3.*
-			return permissionHandler.has(player, "myworlds." + command);
-		} else {
-			//Build-in permissions
-			return player.hasPermission("myworlds." + command);
-		}
-	}
-	public static boolean hasGlobal(Player player, String node, String name) {
-		return has(player, node + name) || has(player, node + "*");
-	}
 
 	public static boolean canEnter(Player player, Portal portal) {
 		return canEnterPortal(player, portal.getName());
@@ -126,14 +153,22 @@ public enum Permission implements IPermissionDefault {
 		return canEnterWorld(player, world.getName());
 	}
 	public static boolean canEnterPortal(Player player, String portalname) {
-		if (!has(player, "portal.use")) return false;
-		if (!MyWorlds.usePortalEnterPermissions) return true;
-		return hasGlobal(player, "portal.enter.", portalname);
+		if (!Permission.PORTAL_USE.has(player)) {
+			return false;
+		}
+		if (!MyWorlds.usePortalEnterPermissions) {
+			return true;
+		}
+		return Permission.PORTAL_ENTER.hasGlobal(player, portalname);
 	}
 	public static boolean canEnterWorld(Player player, String worldname) {
-		if (!MyWorlds.useWorldEnterPermissions) return true;
-		if (player.getWorld().getName().equalsIgnoreCase(worldname)) return true;
-		return hasGlobal(player, "world.enter.", worldname);
+		if (!MyWorlds.useWorldEnterPermissions) {
+			return true;
+		}
+		if (player.getWorld().getName().equalsIgnoreCase(worldname)) {
+			return true;
+		}
+		return Permission.GENERAL_ENTER.hasGlobal(player, worldname);
 	}
 
 	public static boolean canBuild(Player player) {
@@ -147,12 +182,12 @@ public enum Permission implements IPermissionDefault {
 	public static boolean canBuild(Player player, String worldname) {
 		if (player == null) return true;
 		if (!MyWorlds.useWorldBuildPermissions) return true;
-		return hasGlobal(player, "world.build.", worldname);
+		return Permission.GENERAL_BUILD.hasGlobal(player, worldname);
 	}
 	public static boolean canUse(Player player, String worldname) {
 		if (player == null) return true;
 		if (!MyWorlds.useWorldUsePermissions) return true;
-		return hasGlobal(player, "world.use.", worldname);
+		return Permission.GENERAL_USE.hasGlobal(player, worldname);
 	}
 	
 	public static boolean canChat(Player player) {
@@ -163,13 +198,11 @@ public enum Permission implements IPermissionDefault {
 		if (!MyWorlds.useWorldChatPermissions) return true;
 		final String from = player.getWorld().getName().toLowerCase();
 		final String to = with.getWorld().getName().toLowerCase();
-		if (has(player, "world.chat.*.*")) return true;
-		if (has(player, "world.chat." + from + "." + to)) return true;
-		if (has(player, "world.chat." + from + ".*")) return true;
-		if (has(player, "world.chat.*." + to)) return true;
+		if (Permission.GENERAL_CHAT.hasGlobal(player, from, to)) {
+			return true;
+		}
 		if (from.equals(to)) {
-			if (has(player, "world.chat.*")) return true;
-			return has(player, "world.chat." + from);
+			return Permission.GENERAL_CHAT.hasGlobal(player, from);
 		} else {
 			return false;
 		}

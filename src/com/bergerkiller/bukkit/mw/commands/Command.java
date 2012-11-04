@@ -43,9 +43,12 @@ public class Command {
 		}
 	}
 
-	public static boolean allowConsole(String node) {
-		if (node.equals("world.setspawn")) return false;
-		if (node.equals("world.spawn")) return false;
+	/**
+	 * Whether the console can use this Command
+	 * 
+	 * @return True if the console can use it, False if not
+	 */
+	public boolean allowConsole() {
 		return true;
 	}
 
@@ -61,14 +64,13 @@ public class Command {
 	}
 
 	public boolean hasPermission() {
-		return this.permission == null || this.hasPermission(this.permission.getName());
-	}
-
-	public boolean hasPermission(String node) {
+		if (this.permission == null) {
+			return true;
+		}
 		if (this.player == null) {
-			return allowConsole(node);
+			return this.allowConsole();
 		} else {
-			return Permission.has(this.player, node);
+			return this.permission.has(this.player);
 		}
 	}
 

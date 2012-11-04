@@ -22,7 +22,7 @@ import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 
-public class WorldConfig extends WorldConfigStore {	
+public class WorldConfig extends WorldConfigStore {
 	public String worldname;
 	public boolean keepSpawnInMemory = true;
 	public WorldMode worldmode;
@@ -157,14 +157,10 @@ public class WorldConfig extends WorldConfigStore {
 		}
 		node.set("loaded", w != null);
 		node.set("keepSpawnLoaded", this.keepSpawnInMemory);
-		node.set("environment", this.worldmode == null ? null : this.worldmode.toString());
+		node.set("environment", this.worldmode);
 		node.set("chunkGenerator", this.chunkGeneratorName);
 		node.set("clearInventory", this.clearInventory ? true : null);
-		if (this.gameMode == null) {
-			node.set("gamemode", "NONE");
-		} else {
-			node.set("gamemode", this.gameMode.toString());
-		}
+		node.set("gamemode", this.gameMode);
 
 		if (this.timeControl.isLocked()) {
 			node.set("lockedtime", this.timeControl.getTime());
@@ -299,7 +295,7 @@ public class WorldConfig extends WorldConfigStore {
 		}
 	}
 	public void updateGamemode(Player player) {
-		if (this.gameMode != null && !Permission.has(player, "world.ignoregamemode")) {
+		if (this.gameMode != null && !Permission.GENERAL_IGNOREGM.has(player)) {
 			player.setGameMode(this.gameMode);
 		}
 	}
@@ -320,6 +316,9 @@ public class WorldConfig extends WorldConfigStore {
 	}
 	public void update(World world) {
 		if (world == null) return;
+		if (this.spawnPoint.getX() == 0.0 && this.spawnPoint.getY() == 64.0 && this.spawnPoint.getZ() == 0.0) {
+			this.spawnPoint = new Position(world.getSpawnLocation());
+		}
 		updatePVP(world);
 		updateKeepSpawnInMemory(world);
 		updateDifficulty(world);

@@ -22,7 +22,8 @@ public class WorldConfigStore {
 		if (c == null) {
 			c = new WorldConfig(worldname);
 			if (defaultProperties != null) {
-				c.load(defaultProperties);
+				// Load using a clone to prevent altering the original
+				c.load(Util.cloneNode(defaultProperties));
 			}
 			c.loadNew();
 		}
@@ -75,6 +76,8 @@ public class WorldConfigStore {
 				MyWorlds.plugin.log(Level.WARNING, "World: " + node.getName() + " no longer exists, data will be wiped when disabling!");
 			}
 		}
+
+		// Update any remaining worlds
 		for (World world : Bukkit.getServer().getWorlds()) {
 			get(world).update(world);
 		}
