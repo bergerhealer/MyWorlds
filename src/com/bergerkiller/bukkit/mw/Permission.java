@@ -153,7 +153,7 @@ public enum Permission implements IPermissionDefault {
 		return canEnterWorld(player, world.getName());
 	}
 	public static boolean canEnterPortal(Player player, String portalname) {
-		if (!Permission.PORTAL_USE.has(player)) {
+		if (!Permission.PORTAL_USE.hasGlobal(player, portalname)) {
 			return false;
 		}
 		if (!MyWorlds.usePortalEnterPermissions) {

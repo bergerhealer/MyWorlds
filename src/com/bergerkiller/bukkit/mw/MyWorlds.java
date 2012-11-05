@@ -56,7 +56,6 @@ public class MyWorlds extends PluginBase {
 		// Event registering
 		this.register(MWListener.class);
 		this.register(MWPermissionListener.class);
-		this.register(PortalBugHotfix.class);
 		this.register("tpp", "world");
 
 		FileConfiguration config = new FileConfiguration(this);

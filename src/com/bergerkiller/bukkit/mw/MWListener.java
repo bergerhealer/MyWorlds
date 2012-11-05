@@ -29,9 +29,11 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
@@ -176,6 +178,13 @@ public class MWListener implements Listener {
 		}
 	}
 
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void onPlayerPortal(PlayerPortalEvent event) {
+		if (event.getCause() == TeleportCause.NETHER_PORTAL) {
+			event.setCancelled(true);
+		}
+	}
+
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
 		if (!event.isCancelled()) {
@@ -219,9 +228,15 @@ public class MWListener implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
-	public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+	public void onPlayerChangedWorld(final PlayerChangedWorldEvent event) {
 		WorldConfig.updateReload(event.getFrom());
 		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
+		// Execute it again the next tick to ensure changes happened
+		CommonUtil.nextTick(new Runnable() {
+			public void run() {
+				WorldConfig.get(event.getPlayer()).update(event.getPlayer());
+			}
+		});
 		if (MyWorlds.useWorldInventories && !Permission.GENERAL_KEEPINV.has(event.getPlayer())) {
 			EntityPlayer ep = EntityUtil.getNative(event.getPlayer());
 			PlayerFileData data = CommonUtil.getServerConfig().playerFileData;

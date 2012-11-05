@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -20,8 +21,12 @@ import net.minecraft.server.ChunkCoordinates;
 import net.minecraft.server.EntityHuman;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.IDataManager;
+import net.minecraft.server.MobEffect;
 import net.minecraft.server.NBTCompressedStreamTools;
 import net.minecraft.server.NBTTagCompound;
+import net.minecraft.server.NBTTagList;
+import net.minecraft.server.Packet41MobEffect;
+import net.minecraft.server.Packet42RemoveMobEffect;
 import net.minecraft.server.PlayerFileData;
 import net.minecraft.server.WorldNBTStorage;
 
@@ -146,7 +151,14 @@ public class PlayerData implements PlayerFileData {
 			empty.set("Motion", Util.doubleArrayToList(human.motX, human.motY, human.motZ));
 			setLocation(empty, human.getBukkitEntity().getLocation());
 			empty.setInt("Dimension", human.dimension);
-			empty.setString("SpawnWorld", human.spawnWorld);
+			empty.setString("World", human.world.getWorld().getName());
+			ChunkCoordinates coord = human.getBed();
+			if (coord != null) {
+				empty.setString("SpawnWorld", human.spawnWorld);
+				empty.setInt("SpawnX", coord.x);
+				empty.setInt("SpawnY", coord.y);
+				empty.setInt("SpawnZ", coord.z);
+			}
 			return empty;
 		}
 	}
@@ -154,9 +166,25 @@ public class PlayerData implements PlayerFileData {
 	private static void setLocation(NBTTagCompound nbttagcompound, Location location) {
 		nbttagcompound.set("Pos", Util.doubleArrayToList(location.getX(), location.getY(), location.getZ()));
 		nbttagcompound.set("Rotation", Util.floatArrayToList(location.getYaw(), location.getPitch()));
-		UUID worldUUID = location.getWorld().getUID();
+		World world = location.getWorld();
+		nbttagcompound.setString("World", world.getName());
+		UUID worldUUID = world.getUID();
 		nbttagcompound.setLong("WorldUUIDLeast", worldUUID.getLeastSignificantBits());
 		nbttagcompound.setLong("WorldUUIDMost", worldUUID.getMostSignificantBits());
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void clearEffects(EntityHuman human) {
+		// Send remove messages for all previous effects
+		if (human instanceof EntityPlayer) {
+			EntityPlayer ep = (EntityPlayer) human;
+			if (ep.netServerHandler != null) {
+				for (MobEffect effect : (Collection<MobEffect>) human.effects.values()) {
+					ep.netServerHandler.sendPacket(new Packet42RemoveMobEffect(ep.id, effect));
+				}
+			}
+		}
+		human.effects.clear();
 	}
 
 	/**
@@ -168,6 +196,7 @@ public class PlayerData implements PlayerFileData {
 		if (WorldConfig.get(entityhuman.world.getWorld()).clearInventory) {
 			Arrays.fill(entityhuman.inventory.items, null);
 		}
+		clearEffects(entityhuman);
 	}
 
 	/**
@@ -176,6 +205,7 @@ public class PlayerData implements PlayerFileData {
 	 * @param world to get the states for
 	 * @param player to set the states for
 	 */
+	@SuppressWarnings("unchecked")
 	public static void refreshState(EntityPlayer player) {
 		if (!MyWorlds.useWorldInventories) {
 			// If not enabled, only do the post-load logic
@@ -200,6 +230,26 @@ public class PlayerData implements PlayerFileData {
 				player.spawnWorld = spawnWorld;
 			}
 			player.getFoodData().a(data);
+			// Effects
+			clearEffects(player);
+			if (data.hasKey("ActiveEffects")) {
+				NBTTagList nbttaglist = data.getList("ActiveEffects");
+				for (int i = 0; i < nbttaglist.size(); ++i) {
+					NBTTagCompound nbttagcompound1 = (NBTTagCompound) nbttaglist.get(i);
+					MobEffect mobeffect = MobEffect.b(nbttagcompound1);
+					player.effects.put(Integer.valueOf(mobeffect.getEffectId()), mobeffect);
+				}
+			}
+			// Send add messages for all new effects
+			if (player instanceof EntityPlayer) {
+				EntityPlayer ep = (EntityPlayer) player;
+				for (MobEffect effect : (Collection<MobEffect>) player.effects.values()) {
+					if (ep.netServerHandler != null) {
+						ep.netServerHandler.sendPacket(new Packet41MobEffect(ep.id, effect));
+					}
+				}
+			}
+			player.updateEffects = true;
 			postLoad(player);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to load player data for " + player.name);
