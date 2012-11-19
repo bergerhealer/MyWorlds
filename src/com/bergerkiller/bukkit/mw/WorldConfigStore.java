@@ -42,6 +42,19 @@ public class WorldConfigStore {
 		return get(block.getWorld());
 	}
 
+	/**
+	 * Copies all information from one world configuration to a (new?) world configuration
+	 * 
+	 * @param config to copy from
+	 * @param toWorldName to which has to be copied
+	 * @return The (new) world configuration to which was written
+	 */
+	public static WorldConfig copy(WorldConfig config, String toWorldName) {
+		WorldConfig newConfig = get(toWorldName);
+		newConfig.load(config);
+		return newConfig;
+	}
+
 	public static Collection<WorldConfig> all() {
 		return worldConfigs.values();
 	}

@@ -1,7 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.*;
-import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map.Entry;
@@ -20,9 +19,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.PortalTravelAgent;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -30,6 +31,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.Tag.Type;
 
 @SuppressWarnings("rawtypes")
@@ -38,11 +40,10 @@ public class WorldManager {
 		String worldname = world.getName();
 		ArrayList<Object> removedKeys = new ArrayList<Object>();
 		try {
-			for (Entry<File, Reference<RegionFile>> entry : RegionFileCacheRef.FILES.entrySet()) {
+			for (Entry<File, RegionFile> entry : RegionFileCacheRef.FILES.entrySet()) {
 				if (entry.getKey().toString().startsWith("." + File.separator + worldname)) {
-					Reference ref = entry.getValue();
+					RegionFile file = entry.getValue();
 					try {
-						RegionFile file = (RegionFile) ref.get();
 						if (file != null) {
 							RandomAccessFile raf = RegionFileRef.stream.get(file);
 							raf.close();
@@ -149,24 +150,9 @@ public class WorldManager {
 		if (!name.equals("")) {
 			name = name.toLowerCase();
 			//get plugin
-			String pname = null;
-			String[] plugins = getGeneratorPlugins();
-			for (String plugin : plugins) {
-				if (plugin.toLowerCase().equals(name)) {
-					pname = plugin;
-					break;
-				}
-			}
+			final String pname = ParseUtil.parseArray(getGeneratorPlugins(), name, null);
 			if (pname == null) {
-				for (String plugin : plugins) {
-					if (plugin.toLowerCase().contains(name)) {
-						pname = plugin;
-						break;
-					}
-				}
-			}
-			if (pname == null) {
-				return name + ":" + id;
+				return null;
 			} else {
 				return pname + ":" + id;
 			}
@@ -385,9 +371,43 @@ public class WorldManager {
 		return Bukkit.getServer().unloadWorld(world, world.isAutoSave());
 	}
 
+	/**
+	 * Regenerates the spawn point for a world if it is not properly set<br>
+	 * Also updates the spawn position in the world configuration
+	 * 
+	 * @param world to regenerate the spawn point for
+	 */
+	public static void fixSpawnLocation(World world) {
+		Environment env = world.getEnvironment();
+		if (env == Environment.NETHER || env == Environment.THE_END) {
+			Location loc = world.getSpawnLocation();
+			if (Util.isDefaultWorldSpawn(loc)) {
+				// Use a portal agent to generate the world spawn point
+				loc = new PortalTravelAgent().findOrCreate(loc);
+				if (loc != null) {
+					// Add half a block to get around 'isDefault' check and to fix spawn position to the middle
+					loc = loc.add(0.5, 0.5, 0.5);
+					// Set new fixed spawn position
+					world.setSpawnLocation(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+				}
+			}
+		} else {
+			// Nothing wrong? Add more modes if needed.
+		}
+		// Set spawn position of world config
+		WorldConfig.get(world).spawnPoint = new Position(world.getSpawnLocation());
+	}
+
 	public static World createWorld(String worldname, long seed) {
+		final boolean load = WorldManager.worldExists(worldname);
 		WorldConfig wc = WorldConfig.get(worldname);
-		StringBuilder msg = new StringBuilder().append("Loading or creating world '").append(worldname).append("'");
+		StringBuilder msg = new StringBuilder();
+		if (load) {
+			msg.append("Loading");
+		} else {
+			msg.append("Generating");
+		}
+		msg.append(" world '").append(worldname).append("'");
 		if (seed == 0) {
 			if (wc.chunkGeneratorName != null) {
 				msg.append(" using chunk generator: '").append(wc.chunkGeneratorName).append("'");
@@ -434,6 +454,11 @@ public class WorldManager {
 			if (w != null) break;
 		}
 		if (w != null) {
+			// Logic for newly generated worlds
+			if (!load) {
+				// Generate a possible spawn point for this world
+				fixSpawnLocation(w);
+			}
 			wc.update(w);
 		}
 		if (w == null) {
@@ -445,12 +470,7 @@ public class WorldManager {
 		}
 		return w;
 	}
-	
-	public static void setTime(World world, long time) {
-		net.minecraft.server.World w = ((CraftWorld) world).getHandle();
-		w.setTime(time); //fix tick lists?
-	}
-	
+
 	private static boolean delete(File folder) {
 		if (folder.isDirectory()) {
 			for (File f : folder.listFiles()) {
@@ -459,7 +479,7 @@ public class WorldManager {
 		}
 		return folder.delete();
 	}
-    public static boolean copy(File sourceLocation , File targetLocation) {
+    public static boolean copy(File sourceLocation, File targetLocation) {
     	try {
             if (sourceLocation.isDirectory()) {
                 if (!targetLocation.exists()) {

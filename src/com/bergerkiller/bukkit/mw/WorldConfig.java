@@ -32,8 +32,8 @@ public class WorldConfig extends WorldConfigStore {
 	public GameMode gameMode;
 	public boolean holdWeather = false;
 	public boolean pvp = true;
-	public SpawnControl spawnControl;
-	public TimeControl timeControl;
+	public final SpawnControl spawnControl = new SpawnControl();
+	public final TimeControl timeControl = new TimeControl(this);
 	public String defaultPortal;
 	public List<String> OPlist = new ArrayList<String>();
 	public boolean autosave = true;
@@ -49,8 +49,6 @@ public class WorldConfig extends WorldConfigStore {
 	public WorldConfig(String worldname) {
 		this.gameMode = Bukkit.getServer().getDefaultGameMode();
 		this.worldname = worldname;
-		this.spawnControl = new SpawnControl();
-		this.timeControl = new TimeControl(this);
 		if (worldname == null) {
 			return;
 		}
@@ -66,7 +64,7 @@ public class WorldConfig extends WorldConfigStore {
 			this.autosave = world.isAutoSave();
 		} else {
 			this.worldmode = WorldMode.get(worldname);
-			this.spawnPoint = new Position(worldname, 0, 64, 0);
+			this.spawnPoint = new Position(worldname, 0, 128, 0);
 		}
 		if (MyWorlds.useWorldOperators) {
 			for (OfflinePlayer op : Bukkit.getServer().getOperators()) {
@@ -85,6 +83,30 @@ public class WorldConfig extends WorldConfigStore {
 		} else if (this.worldmode == WorldMode.NORMAL) {
 			this.defaultPortal = this.worldname + "_nether";
 		}
+	}
+
+	public void load(WorldConfig config) {
+		this.keepSpawnInMemory = config.keepSpawnInMemory;
+		this.worldmode = config.worldmode;
+		this.chunkGeneratorName = config.chunkGeneratorName;
+		this.difficulty = config.difficulty;
+		this.spawnPoint = new Position(config.spawnPoint);
+		this.gameMode = config.gameMode;
+		this.holdWeather = config.holdWeather;
+		this.pvp = config.pvp;
+		this.spawnControl.deniedCreatures.clear();
+		this.spawnControl.deniedCreatures.addAll(config.spawnControl.deniedCreatures);
+		this.timeControl.setLocking(config.timeControl.isLocked());
+		this.timeControl.setTime(timeControl.getTime());
+		this.autosave = config.autosave;
+		this.reloadWhenEmpty = config.reloadWhenEmpty;
+		this.formSnow = config.formSnow;
+		this.formIce = config.formIce;
+		this.showRain = config.showRain;
+		this.showSnow = config.showSnow;
+		this.clearInventory = config.clearInventory;
+		this.forcedRespawn = config.forcedRespawn;
+		this.inventory = config.inventory.add(this.worldname);
 	}
 
 	public void load(ConfigurationNode node) {
@@ -201,8 +223,10 @@ public class WorldConfig extends WorldConfigStore {
 			World w = WorldManager.getOrCreateWorld(this.worldname);
 			if (w == null) {
 				MyWorlds.plugin.log(Level.SEVERE, "Failed to (pre)load world: " + worldname);
+			} else {
+				this.update(w);
+				return w;
 			}
-			return w;
 		} else {
 			MyWorlds.plugin.log(Level.WARNING, "World: " + worldname + " could not be loaded because it no longer exists!");
 		}
@@ -316,8 +340,8 @@ public class WorldConfig extends WorldConfigStore {
 	}
 	public void update(World world) {
 		if (world == null) return;
-		if (this.spawnPoint.getX() == 0.0 && this.spawnPoint.getY() == 64.0 && this.spawnPoint.getZ() == 0.0) {
-			this.spawnPoint = new Position(world.getSpawnLocation());
+		if (Util.isDefaultWorldSpawn(this.spawnPoint)) {
+			WorldManager.fixSpawnLocation(world);
 		}
 		updatePVP(world);
 		updateKeepSpawnInMemory(world);

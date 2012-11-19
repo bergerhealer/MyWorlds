@@ -86,11 +86,11 @@ public class WorldTime extends Command {
 					if (w != null) {
 						if (tc.isLocked()) {
 							tc.setLocking(false);
-							WorldManager.setTime(w, time);
+							w.setTime(time);
 							message(ChatColor.GREEN + "Time of world '" + worldname + "' unlocked and set to " + 
 									TimeUtil.getTimeString(time) + "!");
 						} else {
-							WorldManager.setTime(w, time);
+							w.setTime(time);
 							message(ChatColor.GREEN + "Time of world '" + worldname + "' set to " + 
 									TimeUtil.getTimeString(time) + "!");
 						}

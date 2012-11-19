@@ -52,15 +52,16 @@ public class Command {
 		return true;
 	}
 
-	public void removeArg(int index) {
-		String[] newargs = new String[args.length - 1];
-		int ni = 0;
-		for (int i = 0; i < args.length; i++) {
-			if (i == index) continue;
-			newargs[ni] = args[i];
-			ni++;
-		}
-		this.args = newargs;
+	/**
+	 * Removes a single argument from the arguments of this command and returns it
+	 * 
+	 * @param index of the argument to remove
+	 * @return removed argument
+	 */
+	public String removeArg(int index) {
+		String value = this.args[index];
+		this.args = StringUtil.remove(this.args, index);
+		return value;
 	}
 
 	public boolean hasPermission() {
@@ -168,7 +169,28 @@ public class Command {
 			this.worldname = Bukkit.getServer().getWorlds().get(0).getName();
 		}
 	}
-			
+
+	/**
+	 * Extracts the generator name including generator arguments from the world name previously parsed<br>
+	 * Requires a worldname to be generated first
+	 * 
+	 * @return generator name and arguments, or null if there are none
+	 */
+	public String getGeneratorName() {
+		String gen = null;
+		if (this.worldname.contains(":")) {
+			String[] parts = this.worldname.split(":");
+			if (parts.length == 2) {
+				this.worldname = parts[0];
+				gen = parts[1];
+			} else {
+				this.worldname = parts[0];
+				gen = parts[1] + ":" + parts[2];
+			}
+		}
+		return gen;
+	}
+
 	public static void execute(CommandSender sender, String cmdLabel, String[] args) {
 		//generate a node from this command
 		Command rval = null;

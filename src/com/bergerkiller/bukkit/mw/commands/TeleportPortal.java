@@ -50,7 +50,7 @@ public class TeleportPortal extends Command {
 				//Get portal
 				Location tele = Portal.getPortalLocation(dest, world.getName(), true);
 				if (tele != null) {
-					Portal portal = Portal.get(tele, 3);
+					Portal portal = Portal.getNear(tele, 3);
 					if (portal != null) {
 						//Perform portal teleports
 						int succcount = 0;

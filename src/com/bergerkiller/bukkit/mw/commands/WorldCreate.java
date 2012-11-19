@@ -6,6 +6,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
 import com.bergerkiller.bukkit.mw.MWListener;
 import com.bergerkiller.bukkit.mw.MyWorlds;
@@ -21,25 +22,10 @@ public class WorldCreate extends Command {
 
 	public void execute() {
 		if (args.length != 0) {
-			worldname = args[0];
-			String gen = null;
-			if (worldname.contains(":")) {
-				String[] parts = worldname.split(":");
-				if (parts.length == 2) {
-					worldname = parts[0];
-					gen = parts[1];
-				} else {
-					worldname = parts[0];
-					gen = parts[1] + ":" + parts[2];
-				}
-			}
+			this.worldname = this.removeArg(0);
+			String gen = this.getGeneratorName();
 			if (!WorldManager.worldExists(worldname)) {
-				String seed = "";
-				for (int i = 1; i < args.length;i++) {
-					if (seed != "") seed += " ";
-					seed += args[i];
-				}
-				long seedval = WorldManager.getRandomSeed(seed);
+				long seedval = WorldManager.getRandomSeed(StringUtil.combine(" ", this.args));
 				notifyConsole("Issued a world creation command for world: " + worldname);
 		        WorldConfig.remove(worldname);
 				if (gen == null) {

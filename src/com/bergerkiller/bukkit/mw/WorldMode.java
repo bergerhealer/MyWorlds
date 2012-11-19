@@ -17,7 +17,7 @@ public enum WorldMode {
 		this.wtype = wtype;
 		this.name = name;
 	}
-	
+
 	private final Environment env;
 	private final WorldType wtype;
 	private final String name;
@@ -29,7 +29,7 @@ public enum WorldMode {
 	public Environment getEnvironment() {
 		return this.env;
 	}
-	
+
 	public WorldType getType() {
 		return this.wtype;
 	}
@@ -48,7 +48,7 @@ public enum WorldMode {
 		}
 		return NORMAL;
 	}
-	
+
 	public static WorldMode get(World world) {
 		if (world.getWorldType() == WorldType.FLAT) {
 			return FLAT;

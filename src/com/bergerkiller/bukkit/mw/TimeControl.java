@@ -27,11 +27,10 @@ public class TimeControl extends Task {
     public final WorldConfig config;
     public boolean locking = false;
     private long lockedTime;
-    private long realtime;
     private World world;
 
     public void setTime(long time) {
-    	this.lockedTime = this.realtime = time;
+    	this.lockedTime = time;
     	this.updateWorld(config.getWorld());
     	if (world != null) {
     		this.run();
@@ -77,8 +76,7 @@ public class TimeControl extends Task {
 		if (this.world == null) {
 			this.stop();
 		} else {
-			WorldManager.setTime(this.world, realtime);
-			this.realtime += 24000L;
+			this.world.setTime(this.lockedTime);
 		}
 	}
 

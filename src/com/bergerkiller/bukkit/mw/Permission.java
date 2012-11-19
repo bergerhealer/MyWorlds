@@ -20,6 +20,7 @@ public enum Permission implements IPermissionDefault {
     COMMAND_LISTGEN("world.listgenerators", PermissionDefault.OP, "Sets if the player can list all chunk generators on the server"),
     COMMAND_SETPORTAL("world.setportal", PermissionDefault.OP, "Sets if the player can change the default portal destination on the world"),
     COMMAND_LOAD("world.load", PermissionDefault.OP, "Sets if the player can load unloaded worlds (not create)"),
+    COMMAND_LOADSPECIAL("world.loadspecial", PermissionDefault.OP, "Sets if a player can load a world with a new chunk generator (can corrupt worlds!)"),
     COMMAND_UNLOAD("world.unload", PermissionDefault.OP, "Sets if the player can unload loaded worlds (not create)"),
     COMMAND_CREATE("world.create", PermissionDefault.OP, "Sets if the player can create worlds (not replace)"),
     COMMAND_SPAWN("world.spawn", PermissionDefault.OP, "Sets if the player can teleport to world spawn points"),

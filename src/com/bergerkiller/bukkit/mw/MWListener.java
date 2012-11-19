@@ -128,10 +128,16 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
-		if (event.isBedSpawn() && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
-			return; // Ignore bed spawns that are not overrided
+		World respawnWorld = event.getPlayer().getWorld();
+		if (MyWorlds.forceMainWorldSpawn) {
+			// Force a respawn on the main world
+			respawnWorld = MyWorlds.getMainWorld();
+		} else {
+			if (event.isBedSpawn() && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
+				return; // Ignore bed spawns that are not overrided
+			}
 		}
-		Location loc = WorldManager.getRespawnLocation(event.getPlayer().getWorld());
+		Location loc = WorldManager.getRespawnLocation(respawnWorld);
 		if (loc != null) {
 			event.setRespawnLocation(loc);
 		}
@@ -149,7 +155,11 @@ public class MWListener implements Listener {
 			// Handle player movement for portals
 			Location loc = walkDistanceCheckMap.get(event.getPlayer());
 			if (loc != null) {
-				if (loc.getWorld() != event.getTo().getWorld() || loc.distanceSquared(event.getTo()) > 1.0) {
+				if (loc.getWorld() != event.getTo().getWorld()) {
+					// Put in proper world
+					walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
+				} else if (loc.distanceSquared(event.getTo()) > 5.0) {
+					// Moved outside radius - remove point
 					walkDistanceCheckMap.remove(event.getPlayer());
 				}
 			}
@@ -178,13 +188,6 @@ public class MWListener implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.LOWEST)
-	public void onPlayerPortal(PlayerPortalEvent event) {
-		if (event.getCause() == TeleportCause.NETHER_PORTAL) {
-			event.setCancelled(true);
-		}
-	}
-
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
 		if (!event.isCancelled()) {
@@ -192,12 +195,19 @@ public class MWListener implements Listener {
 		}
 	}
 
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void onPlayerPortal(PlayerPortalEvent event) {
+		if (event.getCause() == TeleportCause.NETHER_PORTAL) {
+			if (Portal.hasPortalNearby(event.getFrom())) {
+				event.setCancelled(true);
+			}
+		}
+	}
+
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onEntityPortalEnter(EntityPortalEnterEvent event) {
-		if (MyWorlds.onlyPlayerTeleportation) {
-			if (!(event.getEntity() instanceof Player)) {
-				return;
-			}
+		if (MyWorlds.onlyPlayerTeleportation && !(event.getEntity() instanceof Player)) {
+			return;
 		}
 		if (MyWorlds.onlyObsidianPortals) {
 			Block b = event.getLocation().getBlock();

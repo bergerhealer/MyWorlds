@@ -14,14 +14,16 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
+import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 
 public class Util {
 	public static boolean isSolid(Block b, BlockFace direction) {
 		int maxwidth = 10;
 		while (true) {
 			int id = b.getTypeId();
-			if (id == 0) return false;
-			if (id != 9 && id != 8) return true;
+			if (id != 9 && id != 8) {
+				return MaterialUtil.SUFFOCATES.get(id);
+			}
 			b = b.getRelative(direction);
 			--maxwidth;
 			if (maxwidth <= 0) return false;
@@ -139,5 +141,21 @@ public class Util {
 	    	}
 		}
 		return null;
+	}
+
+	/**
+	 * Checks whether a given spawn point is the default 0/128/0 spawn point
+	 * 
+	 * @param loc to check
+	 * @return True if it is the default spawn point, False if not
+	 */
+	public static boolean isDefaultWorldSpawn(Location loc) {
+		if (loc == null) {
+			return true;
+		}
+		if (loc.getX() == 0.0 && loc.getZ() == 0.0 && loc.getYaw() == 0.0f && loc.getPitch() == 0.0f) {
+			return loc.getY() == 0.0 || loc.getY() == 64.0 || loc.getY() == 128.0;
+		}
+		return false;
 	}
 }

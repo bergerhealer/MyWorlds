@@ -18,6 +18,7 @@ import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class Portal extends PortalStore {
+	public static final double SEARCH_RADIUS = 5.0;
 	private String name;
 	private String destination;
 	private String destdisplayname;
@@ -171,21 +172,32 @@ public class Portal extends PortalStore {
 	public static boolean remove(String name, String world) {
 		return getPortalLocations(world).remove(name) != null;
 	}
-	public static Portal get(String name) {
-		return get(getPortalLocation(name, null));
+
+	/**
+	 * Gets the nearest portal (sign) near a given point using the SEARCH_RADIUS as radius
+	 * 
+	 * @param middle point of the sphere to look in
+	 * @return Nearest portal, or null if none are found
+	 */
+	public static Portal getNear(Location middle) {
+		return getNear(middle, SEARCH_RADIUS);
 	}
-	public static Portal get(Location signloc) {
-		if (signloc == null) return null;
-		return get(signloc.getBlock(), false);
-	}
-	public static Portal get(Location signloc, double radius) {
+
+	/**
+	 * Gets the nearest portal (sign) in a given spherical area
+	 * 
+	 * @param middle point of the sphere to look in
+	 * @param radius of the sphere to look in
+	 * @return Nearest portal, or null if none are found
+	 */
+	public static Portal getNear(Location middle, double radius) {
 		Portal p = null;
-		HashMap<String, Position> positions = getPortalLocations(signloc.getWorld().getName());
+		HashMap<String, Position> positions = getPortalLocations(middle.getWorld().getName());
 		for (Map.Entry<String, Position> pos : positions.entrySet()) {
 			Location ploc = Util.getLocation(pos.getValue());
 			String portalname = pos.getKey();
-			if (ploc != null && ploc.getWorld() == signloc.getWorld()) {
-				double distance = ploc.distance(signloc);
+			if (ploc != null && ploc.getWorld() == middle.getWorld()) {
+				double distance = ploc.distance(middle);
 				if (distance <= radius) {
 					Portal newp = Portal.get(ploc);
 					if (newp != null) {
@@ -197,12 +209,21 @@ public class Portal extends PortalStore {
 						positions.remove(portalname);
 						MyWorlds.plugin.log(Level.WARNING, "Removed portal '" + portalname + "' because it is no longer there!");
 						//End the loop and call the function again
-						return get(signloc, radius);
+						return getNear(middle, radius);
 					}
 				}
 			}
 		}
 		return p;
+	}
+
+	public static Portal get(String name) {
+		return get(getPortalLocation(name, null));
+	}
+
+	public static Portal get(Location signloc) {
+		if (signloc == null) return null;
+		return get(signloc.getBlock(), false);
 	}
 
 	public static Portal get(Block signblock, boolean loadchunk) {
@@ -244,18 +265,36 @@ public class Portal extends PortalStore {
 		return null;
 	}
 
-	public static void handlePortalEnter(Entity e) {
-		Portal portal = get(e.getLocation(), 5);
+	/**
+	 * Checks whether a portal is nearby a given position<br>
+	 * If the world has a default portal, True is returned as well
+	 * 
+	 * @param portalPos to check
+	 * @return True if a portal is nearby, False if not
+	 */
+	public static boolean hasPortalNearby(Location portalPos) {
+		return portalPos != null && (WorldConfig.get(portalPos).defaultPortal != null || getNear(portalPos) != null);
+	}
+
+	/**
+	 * Handles an entity entering a certain portal block
+	 * 
+	 * @param e that entered
+	 * @return True if a teleport was performed, False if not
+	 */
+	public static boolean handlePortalEnter(Entity e) {
+		Portal portal = getNear(e.getLocation());
 		if (portal == null) {
 			// Default portals
 			String def = WorldConfig.get(e).defaultPortal;
 			if (def != null) {
 				portal = get(getPortalLocation(def, e.getWorld().getName()));
-				if (portal != null) {
+				if (portal == null) {
 					// Is it a world spawn?
 					World w = WorldManager.getWorld(def);
 					if (w != null) {
 						EntityUtil.teleportNextTick(e, WorldManager.getSpawnLocation(w));
+						return true;
 					}
 				}
 			}
@@ -263,6 +302,8 @@ public class Portal extends PortalStore {
 		// If a portal was found, teleport using it
 		if (portal != null) {
 			portal.teleportNextTick(e);
+			return true;
 		}
+		return false;
 	}
 }
