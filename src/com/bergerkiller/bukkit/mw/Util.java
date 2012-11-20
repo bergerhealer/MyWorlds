@@ -101,15 +101,38 @@ public class Util {
 	}
 
 	/**
-	 * Checks if a given portal block is surrounded by obsidian
+	 * Checks if a given block is of a valid ender portal, plugin settings are applied
 	 * 
 	 * @param main portal block
-	 * @return True if it is an Obsidian Portal, False if not
+	 * @return True if it is an end Portal, False if not
 	 */
-	public static boolean isObsidianPortal(Block main) {
+	public static boolean isEndPortal(Block main, boolean overrideMainType) {
+		return overrideMainType || main.getType() == Material.ENDER_PORTAL;
+	}
+
+	/**
+	 * Checks if a given block is of a valid nether portal, plugin settings are applied
+	 * 
+	 * @param main portal block
+	 * @param overrideMainType - True to override the main block type checking
+	 * @return True if it is a nether Portal, False if not
+	 */
+	public static boolean isNetherPortal(Block main, boolean overrideMainType) {
+		if (!MyWorlds.onlyObsidianPortals) {
+			// Simple check
+			return overrideMainType || main.getType() == Material.PORTAL;
+		}
+		// Obsidian portal check
+		if (main.getType() != Material.PORTAL) {
+			return false;
+		}
 		if (isObsidianPortal(main, BlockFace.UP) && isObsidianPortal(main, BlockFace.DOWN)) {
-			if (isObsidianPortal(main, BlockFace.NORTH) && isObsidianPortal(main, BlockFace.SOUTH)) return true;
-			if (isObsidianPortal(main, BlockFace.EAST) && isObsidianPortal(main, BlockFace.WEST)) return true;
+			if (isObsidianPortal(main, BlockFace.NORTH) && isObsidianPortal(main, BlockFace.SOUTH)) {
+				return true;
+			}
+			if (isObsidianPortal(main, BlockFace.EAST) && isObsidianPortal(main, BlockFace.WEST)) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -154,7 +177,7 @@ public class Util {
 			return true;
 		}
 		if (loc.getX() == 0.0 && loc.getZ() == 0.0 && loc.getYaw() == 0.0f && loc.getPitch() == 0.0f) {
-			return loc.getY() == 0.0 || loc.getY() == 64.0 || loc.getY() == 128.0;
+			return loc.getY() == 0.0 || loc.getY() == 50.0 || loc.getY() == 64.0 || loc.getY() == 128.0;
 		}
 		return false;
 	}

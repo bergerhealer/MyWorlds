@@ -34,7 +34,8 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean pvp = true;
 	public final SpawnControl spawnControl = new SpawnControl();
 	public final TimeControl timeControl = new TimeControl(this);
-	public String defaultPortal;
+	public String defaultNetherPortal;
+	public String defaultEndPortal;
 	public List<String> OPlist = new ArrayList<String>();
 	public boolean autosave = true;
 	public boolean reloadWhenEmpty = false;
@@ -78,9 +79,21 @@ public class WorldConfig extends WorldConfigStore {
 	 */
 	public void loadNew() {
 		if (this.worldmode == WorldMode.NETHER && this.worldname.toLowerCase().endsWith("_nether")) {
-			this.defaultPortal = this.worldname.substring(0, this.worldname.length() - 7);
+			// Default nether portal to normal world
+			this.defaultNetherPortal = this.worldname.substring(0, this.worldname.length() - 7);
+		} else if (this.worldmode == WorldMode.THE_END && this.worldname.toLowerCase().endsWith("_the_end")) {
+			// Default end portal to normal world
+			this.defaultEndPortal = this.worldname.substring(0, this.worldname.length() - 8);
 		} else if (this.worldmode == WorldMode.NORMAL) {
-			this.defaultPortal = this.worldname + "_nether";
+			// Default portals to nether and the_end
+			this.defaultNetherPortal = this.worldname + "_nether";
+			this.defaultEndPortal = this.worldname + "_the_end";
+		}
+		if (!WorldManager.worldExists(this.defaultNetherPortal)) {
+			this.defaultNetherPortal = null;
+		}
+		if (!WorldManager.worldExists(this.defaultEndPortal)) {
+			this.defaultEndPortal = null;
 		}
 		this.gameMode = Bukkit.getDefaultGameMode();
 	}
@@ -151,9 +164,16 @@ public class WorldConfig extends WorldConfigStore {
 			this.timeControl.setTime(time);
 			this.timeControl.setLocking(true);
     	}
-    	this.defaultPortal = node.get("defaultPortal", String.class, this.defaultPortal);
+		this.defaultNetherPortal = node.get("defaultNetherPortal", String.class, this.defaultNetherPortal);
+		this.defaultEndPortal = node.get("defaultEndPortal", String.class, this.defaultEndPortal);
+    	if (node.contains("defaultPortal")) {
+    		// Compatibility mode
+    		this.defaultNetherPortal = node.get("defaultPortal", String.class, this.defaultNetherPortal);
+    		node.set("defaultPortal", null);
+    	}
     	this.OPlist = node.getList("operators", String.class, this.OPlist);
 	}
+
 
 	public void save(ConfigurationNode node) {
 		//Set if the world can be directly accessed
@@ -196,7 +216,8 @@ public class WorldConfig extends WorldConfigStore {
 		}
 		node.set("forcedRespawn", this.forcedRespawn);
 		node.set("pvp", this.pvp);
-		node.set("defaultPortal", this.defaultPortal);
+		node.set("defaultNetherPortal", this.defaultNetherPortal);
+		node.set("defaultEndPortal", this.defaultEndPortal);
 		node.set("operators", this.OPlist);
 		node.set("deniedCreatures", creatures);
 		node.set("holdWeather", this.holdWeather);

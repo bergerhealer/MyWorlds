@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -266,27 +267,22 @@ public class Portal extends PortalStore {
 	}
 
 	/**
-	 * Checks whether a portal is nearby a given position<br>
-	 * If the world has a default portal, True is returned as well
-	 * 
-	 * @param portalPos to check
-	 * @return True if a portal is nearby, False if not
-	 */
-	public static boolean hasPortalNearby(Location portalPos) {
-		return portalPos != null && (WorldConfig.get(portalPos).defaultPortal != null || getNear(portalPos) != null);
-	}
-
-	/**
 	 * Handles an entity entering a certain portal block
 	 * 
 	 * @param e that entered
+	 * @param portalMaterial of the block that was used as portal
 	 * @return True if a teleport was performed, False if not
 	 */
-	public static boolean handlePortalEnter(Entity e) {
+	public static boolean handlePortalEnter(Entity e, Material portalMaterial) {
 		Portal portal = getNear(e.getLocation());
 		if (portal == null) {
 			// Default portals
-			String def = WorldConfig.get(e).defaultPortal;
+			String def = null;
+			if (portalMaterial == Material.PORTAL) {
+				def = WorldConfig.get(e).defaultNetherPortal;
+			} else if (portalMaterial == Material.ENDER_PORTAL) {
+				def = WorldConfig.get(e).defaultEndPortal;
+			}
 			if (def != null) {
 				portal = get(getPortalLocation(def, e.getWorld().getName()));
 				if (portal == null) {

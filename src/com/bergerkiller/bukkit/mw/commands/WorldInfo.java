@@ -43,6 +43,13 @@ public class WorldInfo extends Command {
 				} else {
 					message(ChatColor.WHITE + "World size: " + ChatColor.YELLOW + "Unknown (calculation is disabled)");
 				}
+				//Default portals
+				if (wc.defaultNetherPortal != null) {
+					message(ChatColor.WHITE + "Nether portal: " + ChatColor.YELLOW + wc.defaultNetherPortal);
+				}
+				if (wc.defaultEndPortal != null) {
+					message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + wc.defaultEndPortal);
+				}
 				//PvP
 				if (wc.pvp) { 
 					message(ChatColor.WHITE + "PvP: " + ChatColor.GREEN + "Enabled");

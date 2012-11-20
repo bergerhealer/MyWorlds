@@ -352,9 +352,9 @@ public class WorldManager {
 		return getWorld(worldname) != null;
 	}
 	public static boolean worldExists(String worldname) {
-		return getDataFile(worldname).exists();
+		return worldname != null && getDataFile(worldname).exists();
 	}
-	
+
 	public static World getOrCreateWorld(String worldname) {
 		World w = getWorld(worldname);
 		if (w != null) return w;

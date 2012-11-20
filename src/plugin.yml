@@ -23,6 +23,8 @@ commands:
             /world spawn - Teleport to world spawn
             /world time - Set the time of a world
             /world weather - Set the weather of a world
+            /world setnetherportal - Set nether portal destination
+            /world setendportal - Set ender portal destination
             /world gamemode - Set the game mode of a world
             /world difficulty - Set the difficulty of a world
             /world togglepvp - Toggle PVP mode on/off
@@ -161,6 +163,16 @@ commands:
     world repair:
         description: Repairs an unloaded world
         usage: /world repair [world]
+    world setnetherportal:
+        description: Sets the nether portal destination for a world
+        usage: |
+            /world setnetherportal [portal/world]
+            /world setnetherportal    - Clear it
+    world setendportal:
+        description: Sets the ender portal destination for a world
+        usage: |
+            /world setendportal [portal/world]
+            /world setendportal    - Clear it
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World

@@ -5,6 +5,8 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
+import com.bergerkiller.bukkit.common.MessageBuilder;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.SpawnControl;
@@ -111,22 +113,17 @@ public class WorldSpawning extends Command {
 			}
 			// Display denied Mobs
 			SpawnControl sc = WorldConfig.get(worldname).spawnControl;
+			MessageBuilder message = new MessageBuilder();
 			if (sc.deniedCreatures.isEmpty()) {
-				message(ChatColor.WHITE + "All mobs are allowed to spawn right now.");
+				message.green("All mobs are allowed to spawn right now.");
 			} else {
-				message(ChatColor.WHITE + "The following mobs are denied from spawning:");
-				String message = ChatColor.YELLOW.toString();
-				boolean first = true;
+				message.green("The following mobs are denied from spawning:").newLine();
+				message.setIndent(2).setSeparator(ChatColor.WHITE, " / ");
 				for (EntityType type : sc.deniedCreatures) {
-					if (first) {
-						message += type.getName();
-						first = false;
-					} else {
-						message += ", " + type.getName();
-					}
+					message.append(ChatColor.RED, EntityUtil.getName(type));
 				}
-				message(message);
 			}
+			message.send(sender);
 		}	
 	}
 }

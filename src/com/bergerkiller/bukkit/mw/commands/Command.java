@@ -261,14 +261,10 @@ public class Command {
 					rval = new WorldSpawning(true);
 				} else if (cmdLabel.equalsIgnoreCase("denyspawning")) {
 					rval = new WorldSpawning(false);
-				} else if (cmdLabel.equalsIgnoreCase("setportal")) {
-					rval = new WorldSetPortal();
-				} else if (cmdLabel.equalsIgnoreCase("setdefaultportal")) {
-					rval = new WorldSetPortal();
-				} else if (cmdLabel.equalsIgnoreCase("setdefportal")) {
-					rval = new WorldSetPortal();
-				} else if (cmdLabel.equalsIgnoreCase("setdefport")) {
-					rval = new WorldSetPortal();
+				} else if (cmdLabel.equalsIgnoreCase("setnetherportal")) {
+					rval = new WorldSetNetherPortal();
+				} else if (cmdLabel.equalsIgnoreCase("setendportal")) {
+					rval = new WorldSetEndPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setspawn")) {
 					rval = new WorldSetSpawn();
 				} else if (cmdLabel.equalsIgnoreCase("gamemode")) {

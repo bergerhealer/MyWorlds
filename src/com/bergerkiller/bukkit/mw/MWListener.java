@@ -48,6 +48,8 @@ public class MWListener implements Listener {
 	private static HashSet<String> initIgnoreWorlds = new HashSet<String>();
 	// A mapping of player positions to prevent spammed portal teleportation
 	private static WeakHashMap<Player, Location> walkDistanceCheckMap = new WeakHashMap<Player, Location>();
+	// A mapping of player positions to store the actually entered portal
+	private static WeakHashMap<Player, Location> playerPortalEnter = new WeakHashMap<Player, Location>();
 	// Portal times for a minimal delay
     private static WeakHashMap<Entity, Long> portaltimes = new WeakHashMap<Entity, Long>();
     // Whether weather changes handling is ignored
@@ -147,6 +149,10 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		WorldConfig.updateReload(event.getPlayer());
+		// Clear temporary data
+		walkDistanceCheckMap.remove(event.getPlayer());
+		playerPortalEnter.remove(event.getPlayer());
+		portaltimes.remove(event.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -165,8 +171,9 @@ public class MWListener implements Listener {
 			}
 			// Water teleport handling
 			Block b = event.getTo().getBlock();
-			if (MyWorlds.useWaterTeleport && b.getTypeId() == 9) {
-				if (b.getRelative(BlockFace.UP).getTypeId() == 9 || b.getRelative(BlockFace.DOWN).getTypeId() == 9) {
+			final int statid = Material.STATIONARY_WATER.getId(); //= 9
+			if (MyWorlds.useWaterTeleport && b.getTypeId() == statid) {
+				if (b.getRelative(BlockFace.UP).getTypeId() == statid || b.getRelative(BlockFace.DOWN).getTypeId() == statid) {
 					boolean allow = false;
 					if (b.getRelative(BlockFace.NORTH).getType() == Material.AIR || b.getRelative(BlockFace.SOUTH).getType() == Material.AIR) {
 						if (Util.isSolid(b, BlockFace.WEST) && Util.isSolid(b, BlockFace.EAST)) {
@@ -178,7 +185,7 @@ public class MWListener implements Listener {
 						}
 					}
 					if (allow && preTeleport(event.getPlayer())) {
-						Portal.handlePortalEnter(event.getPlayer());
+						Portal.handlePortalEnter(event.getPlayer(), Material.STATIONARY_WATER);
 					}
 				}
 			}
@@ -195,30 +202,54 @@ public class MWListener implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.LOW)
 	public void onPlayerPortal(PlayerPortalEvent event) {
+		if (event.isCancelled()) {
+			return;
+		}
+		Location loc = playerPortalEnter.remove(event.getPlayer());
+		if (loc == null) {
+			loc = event.getFrom();
+		}
+		Block b = loc.getBlock();
+
+		// Handle player teleportation
+		Material mat;
 		if (event.getCause() == TeleportCause.NETHER_PORTAL) {
-			if (Portal.hasPortalNearby(event.getFrom())) {
+			mat = Material.PORTAL;
+			if (!Util.isNetherPortal(b, true)) {
 				event.setCancelled(true);
+				return; // Invalid
 			}
+		} else if (event.getCause() == TeleportCause.END_PORTAL) {
+			mat = Material.ENDER_PORTAL;
+			if (!Util.isEndPortal(b, true)) {
+				event.setCancelled(true);
+				return; // Invalid
+			}
+		} else {
+			return; // Unknown portal teleport type
+		}
+		// Perform teleportation
+		if (!preTeleport(event.getPlayer()) || Portal.handlePortalEnter(event.getPlayer(), mat)) {
+			event.setCancelled(true);
 		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onEntityPortalEnter(EntityPortalEnterEvent event) {
-		if (MyWorlds.onlyPlayerTeleportation && !(event.getEntity() instanceof Player)) {
-			return;
-		}
-		if (MyWorlds.onlyObsidianPortals) {
+		if (event.getEntity() instanceof Player) {
+			// Store the to location - the one in the portal enter event is inaccurate
+			playerPortalEnter.put((Player) event.getEntity(), event.getLocation());
+		} else if (!MyWorlds.onlyPlayerTeleportation) {
+			// Handle teleportation of non-player entities
 			Block b = event.getLocation().getBlock();
-			if (b.getType() == Material.PORTAL) {
-				if (!Util.isObsidianPortal(b)) {
-					return;
-				}
+			if (!Util.isNetherPortal(b, false) && !Util.isEndPortal(b, false)) {
+				return;
 			}
-		}
-		if (preTeleport(event.getEntity())) {
-			Portal.handlePortalEnter(event.getEntity());
+			if (preTeleport(event.getEntity())) {
+				Portal.handlePortalEnter(event.getEntity(), b.getType());
+			}
 		}
 	}
 
