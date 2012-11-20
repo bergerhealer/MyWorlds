@@ -80,7 +80,7 @@ public class WorldConfigStore {
 		for (ConfigurationNode node : config.getNodes()) {
 			String worldname = node.get("name", node.getName());
 			if (WorldManager.worldExists(worldname)) {
-				WorldConfig wc = get(worldname);
+				WorldConfig wc = new WorldConfig(worldname);
 				wc.load(node);
 				if (node.get("loaded", false)) {
 					wc.loadWorld();

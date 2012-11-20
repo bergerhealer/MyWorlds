@@ -29,7 +29,7 @@ public class WorldConfig extends WorldConfigStore {
 	public String chunkGeneratorName;
 	public Difficulty difficulty = Difficulty.NORMAL;
 	public Position spawnPoint;
-	public GameMode gameMode;
+	public GameMode gameMode = null;
 	public boolean holdWeather = false;
 	public boolean pvp = true;
 	public final SpawnControl spawnControl = new SpawnControl();
@@ -47,7 +47,6 @@ public class WorldConfig extends WorldConfigStore {
 	public WorldInventory inventory;
 
 	public WorldConfig(String worldname) {
-		this.gameMode = Bukkit.getServer().getDefaultGameMode();
 		this.worldname = worldname;
 		if (worldname == null) {
 			return;
@@ -83,6 +82,7 @@ public class WorldConfig extends WorldConfigStore {
 		} else if (this.worldmode == WorldMode.NORMAL) {
 			this.defaultPortal = this.worldname + "_nether";
 		}
+		this.gameMode = Bukkit.getDefaultGameMode();
 	}
 
 	public void load(WorldConfig config) {

@@ -178,15 +178,10 @@ public class WorldManager {
 	public static void setGenerator(String worldname, String name) {
 		WorldConfig.get(worldname).chunkGeneratorName = name;
 	}
+
 	/*
 	 * General world fields
 	 */
-	private static File serverfolder;
-	public static File getServerFolder() {
-		if (serverfolder == null) serverfolder = MyWorlds.plugin.getDataFolder().getAbsoluteFile().getParentFile().getParentFile();
-		return serverfolder;
-	}
-	
 	public static long getSeed(String seed) {
 		if (seed == null) return 0;
 		long seedval = 0;
@@ -204,7 +199,7 @@ public class WorldManager {
 		}
 		return seedval;
 	}
-		
+
 	public static String getWorldName(CommandSender sender, String[] args, boolean useAlternative) {
 		String alternative = (args == null || args.length == 0) ? null : args[args.length - 1];
 		return getWorldName(sender, alternative, useAlternative);
@@ -223,7 +218,7 @@ public class WorldManager {
 		}
 		return worldname;
 	}
-		
+
 	public static boolean generateData(String worldname, String seed) {
 		return generateData(worldname, getRandomSeed(seed));
 	}
@@ -274,7 +269,7 @@ public class WorldManager {
 	}
 	
 	public static File getDataFolder(String worldname) {
-		return new File(getServerFolder() + File.separator + worldname);
+		return new File(Bukkit.getWorldContainer(), worldname);
 	}
 	public static File getDataFile(String worldname) {
 		return new File(getDataFolder(worldname) + File.separator + "level.dat");
@@ -317,7 +312,7 @@ public class WorldManager {
 	}
 	public static String[] getWorlds() {
 		ArrayList<String> rval = new ArrayList<String>();
-		for (String world : getServerFolder().list()) {
+		for (String world : Bukkit.getWorldContainer().list()) {
 			if (worldExists(world) || isLoaded(world)) {
 				rval.add(world);
 			}

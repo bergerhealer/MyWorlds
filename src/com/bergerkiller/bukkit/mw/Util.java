@@ -19,15 +19,15 @@ import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 public class Util {
 	public static boolean isSolid(Block b, BlockFace direction) {
 		int maxwidth = 10;
-		while (true) {
+		while (maxwidth-- >= 0) {
 			int id = b.getTypeId();
-			if (id != 9 && id != 8) {
-				return MaterialUtil.SUFFOCATES.get(id);
+			if (MaterialUtil.isType(id, Material.WATER, Material.STATIONARY_WATER)) {
+				b = b.getRelative(direction);
+			} else {
+				return id != 0;
 			}
-			b = b.getRelative(direction);
-			--maxwidth;
-			if (maxwidth <= 0) return false;
 		}
+		return false;
 	}
 
 	public static ConfigurationNode cloneNode(ConfigurationNode node) {
