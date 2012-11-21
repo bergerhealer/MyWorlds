@@ -167,12 +167,12 @@ commands:
         description: Sets the nether portal destination for a world
         usage: |
             /world setnetherportal [portal/world]
-            /world setnetherportal    - Clear it
+            /world setnetherportal    - Reset to default
     world setendportal:
         description: Sets the ender portal destination for a world
         usage: |
             /world setendportal [portal/world]
-            /world setendportal    - Clear it
+            /world setendportal    - Reset to default
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World

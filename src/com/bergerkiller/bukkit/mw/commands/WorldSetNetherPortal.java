@@ -17,13 +17,13 @@ public class WorldSetNetherPortal extends Command {
 		this.genWorldname(1);
 		if (this.handleWorld()) {
 			if (dest.isEmpty()) {
-				WorldConfig.get(worldname).defaultNetherPortal = null;
-				message(ChatColor.GREEN + "Default nether portal destination of world '" + worldname + "' cleared!");
+				WorldConfig.get(worldname).setNetherPortal(null);
+				message(ChatColor.GREEN + "Default nether portal destination of world '" + worldname + "' reset!");
 			} else if (Portal.getPortalLocation(dest, null) != null) {
-				WorldConfig.get(worldname).defaultNetherPortal = dest;
+				WorldConfig.get(worldname).setNetherPortal(dest);
 				message(ChatColor.GREEN + "Default nether portal destination of world '" + worldname + "' set to portal: '" + dest + "'!");
 			} else if ((dest = WorldManager.matchWorld(dest)) != null) {
-				WorldConfig.get(worldname).defaultNetherPortal = dest;
+				WorldConfig.get(worldname).setNetherPortal(dest);
 				message(ChatColor.GREEN + "Default nether portal destination of world '" + worldname + "' set to world: '" + dest + "'!");
 				if (!WorldManager.isLoaded(dest)) {
 					message(ChatColor.YELLOW + "Note that this world is not loaded, so nothing happens yet!");

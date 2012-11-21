@@ -34,8 +34,8 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean pvp = true;
 	public final SpawnControl spawnControl = new SpawnControl();
 	public final TimeControl timeControl = new TimeControl(this);
-	public String defaultNetherPortal;
-	public String defaultEndPortal;
+	private String defaultNetherPortal;
+	private String defaultEndPortal;
 	public List<String> OPlist = new ArrayList<String>();
 	public boolean autosave = true;
 	public boolean reloadWhenEmpty = false;
@@ -78,23 +78,6 @@ public class WorldConfig extends WorldConfigStore {
 	 * Handles the case of this configuration being made for a new world
 	 */
 	public void loadNew() {
-		if (this.worldmode == WorldMode.NETHER && this.worldname.toLowerCase().endsWith("_nether")) {
-			// Default nether portal to normal world
-			this.defaultNetherPortal = this.worldname.substring(0, this.worldname.length() - 7);
-		} else if (this.worldmode == WorldMode.THE_END && this.worldname.toLowerCase().endsWith("_the_end")) {
-			// Default end portal to normal world
-			this.defaultEndPortal = this.worldname.substring(0, this.worldname.length() - 8);
-		} else if (this.worldmode == WorldMode.NORMAL) {
-			// Default portals to nether and the_end
-			this.defaultNetherPortal = this.worldname + "_nether";
-			this.defaultEndPortal = this.worldname + "_the_end";
-		}
-		if (!WorldManager.worldExists(this.defaultNetherPortal)) {
-			this.defaultNetherPortal = null;
-		}
-		if (!WorldManager.worldExists(this.defaultEndPortal)) {
-			this.defaultEndPortal = null;
-		}
 		this.gameMode = Bukkit.getDefaultGameMode();
 	}
 
@@ -238,6 +221,41 @@ public class WorldConfig extends WorldConfigStore {
 			node.set("spawn.pitch", (double) this.spawnPoint.getPitch());
 		}
 	}
+
+	public void setNetherPortal(String destination) {
+		this.defaultNetherPortal = destination;
+	}
+
+	public void setEndPortal(String destination) {
+		this.defaultEndPortal = destination;
+	}
+
+	public String getNetherPortal() {
+		if (this.defaultNetherPortal == null) {
+			if (this.worldmode == WorldMode.NETHER && this.worldname.toLowerCase().endsWith("_nether")) {
+				this.defaultNetherPortal = this.worldname.substring(0, this.worldname.length() - 7);
+			} else if (this.worldmode == WorldMode.THE_END && this.worldname.toLowerCase().endsWith("_the_end")) {
+				this.defaultNetherPortal = this.worldname.substring(0, this.worldname.length() - 8) + "_nether";
+			} else {
+				this.defaultNetherPortal = this.worldname + "_nether";
+			}
+		}
+		return this.defaultNetherPortal;
+	}
+
+	public String getEndPortal() {
+		if (this.defaultEndPortal == null) {
+			if (this.worldmode == WorldMode.NETHER && this.worldname.toLowerCase().endsWith("_nether")) {
+				this.defaultEndPortal = this.worldname.substring(0, this.worldname.length() - 7) + "_the_end";
+			} else if (this.worldmode == WorldMode.THE_END && this.worldname.toLowerCase().endsWith("_the_end")) {
+				this.defaultEndPortal = this.worldname.substring(0, this.worldname.length() - 8);
+			} else {
+				this.defaultEndPortal = this.worldname + "_the_end";
+			}
+		}
+		return this.defaultEndPortal;
+	}
+
 
 	public World loadWorld() {
 		if (WorldManager.worldExists(this.worldname)) {

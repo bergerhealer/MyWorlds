@@ -207,32 +207,37 @@ public class MWListener implements Listener {
 		if (event.isCancelled()) {
 			return;
 		}
+		final boolean nether = event.getCause() == TeleportCause.NETHER_PORTAL;
+		final boolean end = event.getCause() == TeleportCause.END_PORTAL;
+		if (!nether && !end) {
+			return; // Ignore alternative types
+		}
+		// Cancel the internal logic
+		event.setCancelled(true);
+
+		// Get from location
 		Location loc = playerPortalEnter.remove(event.getPlayer());
 		if (loc == null) {
 			loc = event.getFrom();
 		}
 		Block b = loc.getBlock();
 
-		// Handle player teleportation
-		Material mat;
-		if (event.getCause() == TeleportCause.NETHER_PORTAL) {
+		// Handle player teleportation - portal check
+		Material mat = Material.AIR;
+		if (nether) {
 			mat = Material.PORTAL;
 			if (!Util.isNetherPortal(b, true)) {
-				event.setCancelled(true);
 				return; // Invalid
 			}
-		} else if (event.getCause() == TeleportCause.END_PORTAL) {
+		} else if (end) {
 			mat = Material.ENDER_PORTAL;
 			if (!Util.isEndPortal(b, true)) {
-				event.setCancelled(true);
 				return; // Invalid
 			}
-		} else {
-			return; // Unknown portal teleport type
 		}
 		// Perform teleportation
-		if (!preTeleport(event.getPlayer()) || Portal.handlePortalEnter(event.getPlayer(), mat)) {
-			event.setCancelled(true);
+		if (preTeleport(event.getPlayer())) {
+			Portal.handlePortalEnter(event.getPlayer(), mat);
 		}
 	}
 

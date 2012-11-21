@@ -279,9 +279,9 @@ public class Portal extends PortalStore {
 			// Default portals
 			String def = null;
 			if (portalMaterial == Material.PORTAL) {
-				def = WorldConfig.get(e).defaultNetherPortal;
+				def = WorldConfig.get(e).getNetherPortal();
 			} else if (portalMaterial == Material.ENDER_PORTAL) {
-				def = WorldConfig.get(e).defaultEndPortal;
+				def = WorldConfig.get(e).getEndPortal();
 			}
 			if (def != null) {
 				portal = get(getPortalLocation(def, e.getWorld().getName()));

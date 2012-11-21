@@ -177,7 +177,7 @@ public class Util {
 			return true;
 		}
 		if (loc.getX() == 0.0 && loc.getZ() == 0.0 && loc.getYaw() == 0.0f && loc.getPitch() == 0.0f) {
-			return loc.getY() == 0.0 || loc.getY() == 50.0 || loc.getY() == 64.0 || loc.getY() == 128.0;
+			return loc.getY() == (double) loc.getBlockY();
 		}
 		return false;
 	}
