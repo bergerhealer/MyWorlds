@@ -374,23 +374,27 @@ public class WorldManager {
 	 */
 	public static void fixSpawnLocation(World world) {
 		Environment env = world.getEnvironment();
+		Location loc = world.getSpawnLocation();
 		if (env == Environment.NETHER || env == Environment.THE_END) {
-			Location loc = world.getSpawnLocation();
-			if (Util.isDefaultWorldSpawn(loc)) {
-				// Use a portal agent to generate the world spawn point
-				loc = new PortalTravelAgent().findOrCreate(loc);
-				if (loc != null) {
-					// Add half a block to get around 'isDefault' check and to fix spawn position to the middle
-					loc = loc.add(0.5, 0.5, 0.5);
-					// Set new fixed spawn position
-					world.setSpawnLocation(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
-				}
+			// Use a portal agent to generate the world spawn point
+			loc = new PortalTravelAgent().findOrCreate(loc);
+			if (loc == null) {
+				return; // Failure?
 			}
 		} else {
-			// Nothing wrong? Add more modes if needed.
+			loc.setY(loc.getWorld().getHighestBlockYAt(loc));
 		}
+
+		// Minor offset
+		loc.setX(0.5 + (double) loc.getBlockX());
+		loc.setY(0.5 + (double) loc.getBlockY());
+		loc.setZ(0.5 + (double) loc.getBlockZ());
+
+		// Set new fixed spawn position
+		world.setSpawnLocation(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+
 		// Set spawn position of world config
-		WorldConfig.get(world).spawnPoint = new Position(world.getSpawnLocation());
+		WorldConfig.get(world).spawnPoint = new Position(loc);
 	}
 
 	public static World createWorld(String worldname, long seed) {

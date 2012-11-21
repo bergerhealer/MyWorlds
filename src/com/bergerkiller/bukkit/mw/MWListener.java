@@ -8,6 +8,7 @@ import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.PlayerFileData;
 
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -63,9 +64,10 @@ public class MWListener implements Listener {
 	 * Handles the teleport delay and distance checks
 	 * 
 	 * @param e Entity to pre-teleport
-	 * @return True if teleporting is possible, False if not
+	 * @param portalMaterial of the portal
+	 * @return True if teleporting happened, False if not
 	 */
-	public static boolean preTeleport(Entity e) {
+	public static boolean doPortalTeleport(Entity e, Material portalMaterial) {
     	if (walkDistanceCheckMap.containsKey(e)) {
     		return false;
     	}
@@ -79,7 +81,7 @@ public class MWListener implements Listener {
     	}
         if (currtime - lastteleport >= MyWorlds.teleportInterval) {
         	portaltimes.put(e, currtime);
-        	return true;
+        	return Portal.handlePortalEnter(e, portalMaterial);
         } else {
         	return false;
         }
@@ -164,7 +166,7 @@ public class MWListener implements Listener {
 				if (loc.getWorld() != event.getTo().getWorld()) {
 					// Put in proper world
 					walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
-				} else if (loc.distanceSquared(event.getTo()) > 5.0) {
+				} else if (loc.distanceSquared(event.getTo()) > 2.25) {
 					// Moved outside radius - remove point
 					walkDistanceCheckMap.remove(event.getPlayer());
 				}
@@ -184,8 +186,8 @@ public class MWListener implements Listener {
 							allow = true;
 						}
 					}
-					if (allow && preTeleport(event.getPlayer())) {
-						Portal.handlePortalEnter(event.getPlayer(), Material.STATIONARY_WATER);
+					if (allow) {
+						doPortalTeleport(event.getPlayer(), Material.STATIONARY_WATER);
 					}
 				}
 			}
@@ -199,6 +201,7 @@ public class MWListener implements Listener {
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
 		if (!event.isCancelled()) {
 			walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
+			portaltimes.put(event.getPlayer(), System.currentTimeMillis());
 		}
 	}
 
@@ -236,26 +239,28 @@ public class MWListener implements Listener {
 			}
 		}
 		// Perform teleportation
-		if (preTeleport(event.getPlayer())) {
-			Portal.handlePortalEnter(event.getPlayer(), mat);
-		}
+		doPortalTeleport(event.getPlayer(), mat);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onEntityPortalEnter(EntityPortalEnterEvent event) {
 		if (event.getEntity() instanceof Player) {
-			// Store the to location - the one in the portal enter event is inaccurate
-			playerPortalEnter.put((Player) event.getEntity(), event.getLocation());
-		} else if (!MyWorlds.onlyPlayerTeleportation) {
-			// Handle teleportation of non-player entities
-			Block b = event.getLocation().getBlock();
-			if (!Util.isNetherPortal(b, false) && !Util.isEndPortal(b, false)) {
-				return;
+			Player player = (Player) event.getEntity();
+			// Survival?
+			if (player.getGameMode() == GameMode.CREATIVE || !MyWorlds.alwaysInstantPortal) {
+				// Store the to location - the one in the portal enter event is inaccurate
+				playerPortalEnter.put((Player) event.getEntity(), event.getLocation());
+				return; // Ignore teleportation
 			}
-			if (preTeleport(event.getEntity())) {
-				Portal.handlePortalEnter(event.getEntity(), b.getType());
-			}
+		} else if (MyWorlds.onlyPlayerTeleportation) {
+			return; // Ignore
 		}
+		// Handle teleportation
+		Block b = event.getLocation().getBlock();
+		if (!Util.isNetherPortal(b, false) && !Util.isEndPortal(b, false)) {
+			return;
+		}
+		doPortalTeleport(event.getEntity(), b.getType());
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)

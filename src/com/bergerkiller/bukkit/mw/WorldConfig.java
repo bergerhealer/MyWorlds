@@ -20,6 +20,7 @@ import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 
 public class WorldConfig extends WorldConfigStore {
@@ -379,7 +380,7 @@ public class WorldConfig extends WorldConfigStore {
 	}
 	public void update(World world) {
 		if (world == null) return;
-		if (Util.isDefaultWorldSpawn(this.spawnPoint)) {
+		if (MaterialUtil.SUFFOCATES.get(world.getBlockAt(this.spawnPoint))) {
 			WorldManager.fixSpawnLocation(world);
 		}
 		updatePVP(world);

@@ -165,20 +165,4 @@ public class Util {
 		}
 		return null;
 	}
-
-	/**
-	 * Checks whether a given spawn point is the default 0/128/0 spawn point
-	 * 
-	 * @param loc to check
-	 * @return True if it is the default spawn point, False if not
-	 */
-	public static boolean isDefaultWorldSpawn(Location loc) {
-		if (loc == null) {
-			return true;
-		}
-		if (loc.getX() == 0.0 && loc.getZ() == 0.0 && loc.getYaw() == 0.0f && loc.getPitch() == 0.0f) {
-			return loc.getY() == (double) loc.getBlockY();
-		}
-		return false;
-	}
 }

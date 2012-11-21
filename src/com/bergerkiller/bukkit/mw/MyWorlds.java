@@ -30,6 +30,7 @@ public class MyWorlds extends PluginBase {
 	public static boolean calculateWorldSize;
 	private static String mainWorld;
 	public static boolean forceMainWorldSpawn;
+	public static boolean alwaysInstantPortal;
 
 	public static MyWorlds plugin;
 
@@ -110,6 +111,9 @@ public class MyWorlds extends PluginBase {
 
 		config.setHeader("forceMainWorldSpawn", "\nWhether all players respawn on the main world at all times");
 		forceMainWorldSpawn = config.get("forceMainWorldSpawn", false);
+
+		config.setHeader("alwaysInstantPortal", "\nWhether survival players instantly teleport when entering a nether portal");
+		alwaysInstantPortal = config.get("alwaysInstantPortal", true);
 
 		config.save();
 
