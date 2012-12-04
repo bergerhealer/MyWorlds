@@ -61,8 +61,8 @@ public class AsyncHandler {
 							String[] regionfiles = regionfolder.list();
 							int i = 1;
 							for (String listedFile : regionfiles) {
-								CommonUtil.sendMessage(sender, ChatColor.YELLOW + "Scanning and repairing file " + i + "/" + regionfiles.length);
-								if (listedFile.toLowerCase().endsWith(".mcr")) {
+								if (listedFile.toLowerCase().endsWith(".mca")) {
+									CommonUtil.sendMessage(sender, ChatColor.YELLOW + "Scanning and repairing file " + i + "/" + regionfiles.length);
 									int fixcount = WorldManager.repairRegion(new File(regionfolder + File.separator + listedFile), backupfolder);
 									if (fixcount == -1) {
 										totalremoves++;

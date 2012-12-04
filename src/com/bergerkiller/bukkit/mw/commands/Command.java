@@ -156,11 +156,18 @@ public class Command {
 		}
 		builder.send(sender);
 	}
-	
-	public void genWorldname(int argindex) {
-		if (argindex >= 0 && argindex < this.args.length) {
-			this.worldname = WorldManager.matchWorld(args[argindex]);
-			if (this.worldname != null) return;
+
+	/**
+	 * Finds out the world to operate in, checking the command arguments if possible
+	 * 
+	 * @param preceedingArgCount expected before the world argument
+	 */
+	public void genWorldname(int preceedingArgCount) {
+		if (args.length > 0 && args.length > preceedingArgCount) {
+			this.worldname = WorldManager.matchWorld(args[args.length - 1]);
+			if (this.worldname != null) {
+				return;
+			}
 		}
 		if (player != null) {
 			this.worldname = player.getWorld().getName();
@@ -235,11 +242,11 @@ public class Command {
 				} else if (cmdLabel.equalsIgnoreCase("copy")) {
 					rval = new WorldCopy();
 				} else if (cmdLabel.equalsIgnoreCase("togglepvp")) {
-					rval = new WorldTogglePVP();
+					rval = new WorldSetPVP();
 				} else if (cmdLabel.equalsIgnoreCase("tpvp")) {
-					rval = new WorldTogglePVP();
+					rval = new WorldSetPVP();
 				} else if (cmdLabel.equalsIgnoreCase("pvp")) {
-					rval = new WorldTogglePVP();		
+					rval = new WorldSetPVP();		
 				} else if (cmdLabel.equalsIgnoreCase("weather")) {
 					rval = new WorldWeather();
 				} else if (cmdLabel.equalsIgnoreCase("w")) {
@@ -283,11 +290,11 @@ public class Command {
 				} else if (cmdLabel.equalsIgnoreCase("listgen")) {
 					rval = new WorldListGenerators();
 				} else if (cmdLabel.equalsIgnoreCase("togglespawnloaded")) {
-					rval = new WorldToggleSpawnLoaded();
+					rval = new WorldSetSpawnLoaded();
 				} else if (cmdLabel.equalsIgnoreCase("spawnloaded")) {
-					rval = new WorldToggleSpawnLoaded();
+					rval = new WorldSetSpawnLoaded();
 				} else if (cmdLabel.equalsIgnoreCase("keepspawnloaded")) {
-					rval = new WorldToggleSpawnLoaded();
+					rval = new WorldSetSpawnLoaded();
 				} else if (cmdLabel.equalsIgnoreCase("difficulty")) {
 					rval = new WorldDifficulty();
 				} else if (cmdLabel.equalsIgnoreCase("difficult")) {
@@ -335,9 +342,9 @@ public class Command {
 				} else if (cmdLabel.equalsIgnoreCase("inv")) {
 					rval = new WorldInventory();
 				} else if (cmdLabel.equalsIgnoreCase("togglerespawn")) {
-					rval = new WorldToggleRespawn();
-				} else if (cmdLabel.equalsIgnoreCase("respawn")) {
-					rval = new WorldToggleRespawn();
+					rval = new WorldSetForcedRespawn();
+				} else if (cmdLabel.equalsIgnoreCase("forcedrespawn")) {
+					rval = new WorldSetForcedRespawn();
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {

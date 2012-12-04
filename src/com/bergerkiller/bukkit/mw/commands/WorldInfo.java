@@ -24,7 +24,6 @@ public class WorldInfo extends Command {
 			} else {
 				WorldConfig wc = WorldConfig.get(worldname);
 				message(ChatColor.YELLOW + "Information about the world: " + worldname);
-				message(ChatColor.WHITE + "Internal name: " + ChatColor.YELLOW + info.name);
 				message(ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + wc.worldmode.toString());
 				if (wc.chunkGeneratorName == null) {
 					message(ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + "Default");
@@ -51,6 +50,12 @@ public class WorldInfo extends Command {
 					message(ChatColor.WHITE + "PvP: " + ChatColor.GREEN + "Enabled");
 				} else {
 					message(ChatColor.WHITE + "PvP: " + ChatColor.YELLOW + "Disabled");
+				}
+				//Forced respawn
+				if (wc.forcedRespawn) {
+					message(ChatColor.WHITE + "Forced Respawn: " + ChatColor.GREEN + "Yes, to main spawn point, no bed spawns");
+				} else {
+					message(ChatColor.WHITE + "Forced Respawn: " + ChatColor.GREEN + "No, allow bed spawns");
 				}
 				//Difficulty
 				message(ChatColor.WHITE + "Difficulty: " + ChatColor.YELLOW + wc.difficulty.toString().toLowerCase());

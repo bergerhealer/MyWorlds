@@ -32,11 +32,13 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_TIME = new Permission("world.time", PermissionDefault.OP, "Sets if the player can change the time on worlds");
     public static final Permission COMMAND_GAMEMODE = new Permission("world.gamemode", PermissionDefault.OP, "Sets if the player can change the gamemode of a world");
     public static final Permission COMMAND_SETSPAWN = new Permission("world.setspawn", PermissionDefault.OP, "Sets if the player can change the spawn point of a world");
+    public static final Permission COMMAND_SETFORCEDSPAWN = new Permission("world.setforcedspawn", PermissionDefault.OP, "Sets if the player can change whether all players force-respawn at the world spawn");
     public static final Permission COMMAND_INVENTORY = new Permission("world.inventory", PermissionDefault.OP, "Sets if the player can alter the inventory states of a world");
     public static final Permission COMMAND_TOGGLERESPAWN = new Permission("world.togglerespawn", PermissionDefault.OP, "Sets if the player can toggle the forced respawn to the world spawn");
     public static final Permission COMMAND_SPOUTWEATHER = new Permission("world.spoutweather", PermissionDefault.OP, "Sets if player can toggle virtual weather changes using Spout Plugin");
     public static final Permission COMMAND_FORMING = new Permission("world.forming", PermissionDefault.OP, "Sets if the player can toggle snow and ice forming on or off");
     public static final Permission COMMAND_RELOADWE = new Permission("world.reloadwe", PermissionDefault.OP, "Sets if players can toggle if worlds reload when empty");
+    public static final Permission COMMAND_TPP = new Permission("tpp", PermissionDefault.OP, "Sets if the player can teleport to worlds or portals");
     public static final Permission GENERAL_TELEPORT = new Permission("world.teleport", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn", 1);
     public static final Permission GENERAL_ENTER = new Permission("world.enter", PermissionDefault.OP, "Sets if the player can enter a certain world through portals", 1);
     public static final Permission GENERAL_BUILD = new Permission("world.build", PermissionDefault.OP, "Sets if the player can build in a certain world", 1);
@@ -50,7 +52,6 @@ public class Permission extends PermissionEnum {
     public static final Permission PORTAL_USE = new Permission("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals", 1);
     public static final Permission PORTAL_TELEPORT = new Permission("portal.teleport", PermissionDefault.OP, "Sets the portals a player can teleport to using /tpp", 1);
     public static final Permission PORTAL_ENTER = new Permission("portal.enter", PermissionDefault.OP, "Sets if the player can enter a certain portal", 1);
-    public static final Permission COMMAND_TPP = new Permission("tpp", PermissionDefault.OP, "Sets if the player can teleport to worlds or portals");
 
 	private Permission(final String name, final PermissionDefault def, final String desc) {
 		super(name, def, desc, 0);

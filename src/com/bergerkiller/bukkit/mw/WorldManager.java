@@ -32,10 +32,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
-import com.bergerkiller.bukkit.mw.Tag.Type;
 
 @SuppressWarnings("rawtypes")
 public class WorldManager {
+	private static final String LEVEL_DATA_NAME = "Data";
+	
 	public static boolean clearWorldReference(World world) {
 		String worldname = world.getName();
 		ArrayList<Object> removedKeys = new ArrayList<Object>();
@@ -223,43 +224,50 @@ public class WorldManager {
 		return generateData(worldname, getRandomSeed(seed));
 	}
 	public static boolean generateData(String worldname, long seed) {
-		Tag data = new Tag(Type.TAG_Compound, "Data", new Tag[] {
-				new Tag(Type.TAG_Byte, "thundering", (byte) 0), 
-				new Tag(Type.TAG_Long, "LastPlayed", System.currentTimeMillis()),
-				new Tag(Type.TAG_Long, "RandomSeed", seed), 
-				new Tag(Type.TAG_Int, "version", (int) 19132), 
-				new Tag(Type.TAG_Long, "Time", 0L),
-				new Tag(Type.TAG_Byte, "raining", (byte) 0), 
-				new Tag(Type.TAG_Int, "SpawnX", 0), 
-				new Tag(Type.TAG_Int, "thunderTime", (int) 200000000), 
-				new Tag(Type.TAG_Int, "SpawnY", 64), 
-				new Tag(Type.TAG_Int, "SpawnZ", 0), 
-				new Tag(Type.TAG_String, "LevelName", worldname),
-				new Tag(Type.TAG_Long, "SizeOnDisk", getWorldSize(worldname)),
-				new Tag(Type.TAG_Int, "rainTime", (int) 50000), 
-				new Tag(Type.TAG_End, null, null)});
-		Tag finaltag = new Tag(Type.TAG_Compound, null, new Tag[] {data, new Tag(Type.TAG_End, null, null)});
-				
+		NBTTagCompound data = new NBTTagCompound(LEVEL_DATA_NAME);
+		data.setByte("thundering", (byte) 0);
+		data.setByte("thundering", (byte) 0);
+		data.setLong("LastPlayed", System.currentTimeMillis());
+		data.setLong("RandomSeed", seed);
+		data.setInt("version", (int) 19132);
+		data.setLong("Time", 0L);
+		data.setByte("raining", (byte) 0);
+		data.setInt("SpawnX", 0);
+		data.setInt("thunderTime", (int) 200000000);
+		data.setInt("SpawnY", 64);
+		data.setInt("SpawnZ", 0);
+		data.setString("LevelName", worldname);
+		data.setLong("SizeOnDisk", getWorldSize(worldname));
+		data.setInt("rainTime", (int) 50000);
 		//write the data
-	    return setData(worldname, finaltag);
+	    return setData(worldname, data);
 	}
-	public static Tag getData(String worldname) {
+	public static NBTTagCompound getData(String worldname) {
 		File f = getDataFile(worldname);
-		if (!f.exists()) return null;
+		if (!f.exists()) {
+			return null;
+		}
 		try {
 			FileInputStream fis = new FileInputStream(f);
-			Tag t = Tag.readFrom(fis);
+			NBTTagCompound data = NBTCompressedStreamTools.a(fis);
+			if (data != null && data.hasKey(LEVEL_DATA_NAME)) {
+				data = data.getCompound(LEVEL_DATA_NAME);
+			} else {
+				data = null;
+			}
 			fis.close();
-			return t;
+			return data;
 		} catch (Exception ex) {
 			return null;
 		}
 	}
-	public static boolean setData(String worldname, Tag data) {
+	public static boolean setData(String worldname, NBTTagCompound data) {
     	File datafile = getDataFile(worldname);
     	try {
 			OutputStream s = new FileOutputStream(datafile);
-			data.writeTo(s);
+			NBTTagCompound root = new NBTTagCompound();
+			root.setCompound(data.getName(), data);
+			NBTCompressedStreamTools.a(root, s);
 			s.close();
 			return true;
 		} catch (IOException e) {
@@ -267,7 +275,7 @@ public class WorldManager {
 			return false;
 		}
 	}
-	
+
 	public static File getDataFolder(String worldname) {
 		return new File(Bukkit.getWorldContainer(), worldname);
 	}
@@ -284,14 +292,13 @@ public class WorldManager {
 	public static WorldInfo getInfo(String worldname) {
 		WorldInfo info = null;
 		try {
-			Tag t = getData(worldname);
+			NBTTagCompound t = getData(worldname);
 			if (t != null) {
 				info = new WorldInfo();
-				info.name = t.findTagByName("LevelName").getValue().toString();
-				info.seed = (Long) t.findTagByName("RandomSeed").getValue();
-				info.time = (Long) t.findTagByName("Time").getValue();
-				info.raining = ((Byte) t.findTagByName("raining").getValue()) != 0;
-		        info.thundering = ((Byte) t.findTagByName("thundering").getValue()) != 0;
+				info.seed = t.getLong("RandomSeed");
+				info.time = t.getLong("Time");
+				info.raining = t.getByte("raining") != 0;
+		        info.thundering = t.getByte("thundering") != 0;
 			}
 		} catch (Exception ex) {}
 		World w = getWorld(worldname);
@@ -299,7 +306,6 @@ public class WorldManager {
 			if (info == null) {
 				info = new WorldInfo();
 			}
-			info.name = w.getName();
 			info.seed = w.getSeed();
 			info.time = w.getFullTime();
 			info.raining = w.hasStorm();
@@ -519,24 +525,19 @@ public class WorldManager {
 			return folder.length();
 		}
 	}
-    private static boolean renameWorld(String worldname, String newname) {
-    	if (isLoaded(worldname)) return false;
-    	Tag t = getData(worldname);
-    	if (t == null) return false;
-    	t = t.findTagByName("Data");
-    	if (t == null || t.getType() != Type.TAG_Compound) return false;
-    	int i = 0;
-    	for (Tag tt : (Tag[]) t.getValue()) {
-    		if (tt.getName().equals("LevelName")) {
-    			t.removeTag(i);
-    			t.insertTag(new Tag(Type.TAG_String, "LevelName", newname), i);
-    			break;
-    		}
-    		i++;
-    	}
-    	return setData(worldname, t);
-    }
-    
+
+	private static boolean renameWorld(String worldname, String newname) {
+		if (isLoaded(worldname)) {
+			return false;
+		}
+		NBTTagCompound data = getData(worldname);
+		if (data == null) {
+			return false;
+		}
+		data.setString("LevelName", newname);
+		return setData(worldname, data);
+	}
+
 	public static boolean deleteWorld(String worldname) {
 		return delete(getDataFolder(worldname));
 	}

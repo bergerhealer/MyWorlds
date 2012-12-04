@@ -136,14 +136,14 @@ public class MWListener implements Listener {
 		if (MyWorlds.forceMainWorldSpawn) {
 			// Force a respawn on the main world
 			respawnWorld = MyWorlds.getMainWorld();
-		} else {
-			if (event.isBedSpawn() && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
-				return; // Ignore bed spawns that are not overrided
-			}
+		} else if (event.isBedSpawn() && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
+			respawnWorld = null; // Ignore bed spawns that are not overrided
 		}
-		Location loc = WorldManager.getRespawnLocation(respawnWorld);
-		if (loc != null) {
-			event.setRespawnLocation(loc);
+		if (respawnWorld != null) {
+			Location loc = WorldManager.getRespawnLocation(respawnWorld);
+			if (loc != null) {
+				event.setRespawnLocation(loc);
+			}
 		}
 		WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
 	}

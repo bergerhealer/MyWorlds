@@ -114,7 +114,7 @@ public class MyWorlds extends PluginBase {
 
 		config.setHeader("allowPersonalPortals", "\nWhether individually placed nether/end portals create their own destination portal");
 		config.addHeader("allowPersonalPortals", "False: Players are teleported to the spawn point of the world");
-		config.setHeader("allowPersonalPortals", "True: Players are teleported to their own portal on the other world");
+		config.addHeader("allowPersonalPortals", "True: Players are teleported to their own portal on the other world");
 		allowPersonalPortals = config.get("allowPersonalPortals", true);
 
 		config.save();

@@ -1,7 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
 public class WorldInfo {
-	public String name;
 	public long seed;
 	public long size;
 	public long time;

@@ -27,12 +27,13 @@ commands:
             /world setendportal - Set ender portal destination
             /world gamemode - Set the game mode of a world
             /world difficulty - Set the difficulty of a world
-            /world togglepvp - Toggle PVP mode on/off
+            /world pvp - Toggle PVP mode on/off
             /world allowspawn - Allow mobs to spawn
             /world denyspawn - Deny mobs from spawning
             /world inventory - Manage world inventories
             /world saving - Toggle world saving on/off
             /world spawnloaded - Toggle spawn loaded on/off
+            /world forcedrespawn - Toggle forced respawn on/off
             /world evacuate - Evacuate all players of a world
             /world delete - Delete a world permanently
             /world copy - Copy a world to a new name
@@ -97,6 +98,7 @@ commands:
             /world weather sunny world2
     world gamemode:
         description: Sets the game mode of a world
+        aliases: [world gm]
         usage: |
             /world gamemode [mode]
             /world gamemode [mode] [world]
@@ -104,16 +106,24 @@ commands:
             /world gamemode survival world3
     world difficulty:
         description: Sets the difficulty of a world
+        aliases: [world diff]
         usage: |
             /world difficulty [mode]
             /world difficulty [mode] [world]
             /world difficulty hard
             /world difficulty normal world3
-    world togglepvp:
+    world pvp:
         description: Toggles PVP on or off
+        aliaes: [world togglepvp]
         usage: |
-            /world togglepvp
-            /world togglepvp [world]
+            /world pvp [on/off]
+            /world pvp [on/off] [world]
+    world forcedrespawn:
+        description: Toggles forced world respawn on or off
+        aliases: [world togglerespawn]
+        usage: |
+            /world forcedrespawn [on/off]
+            /world forcedrespawn [on/off] [world]
     world allowspawn:
         description: Allows certain mobs to spawn
         usage: |
@@ -130,6 +140,7 @@ commands:
             /world denyspawn creeper world2
     world inventory:
         description: Changes world inventory settings
+        aliases: [world inv]
         usage: |
             /world inventory enable
             /world inventory enable [world]
@@ -146,11 +157,13 @@ commands:
             /world saving enable world2
     world spawnloaded:
         description: Toggles if the world spawn is kept loaded
+        aliases: [world keepspawnloaded]
         usage: |
-            /world spawnloaded
-            /world spawnloaded [world]
+            /world spawnloaded [enable/disable]
+            /world spawnloaded [enable/disable] [world]
     world evacuate:
         description: Clears a world of players
+        aliases: [world evac]
         usage: |
             /world evacuate
             /world evacuate [world]
@@ -162,6 +175,7 @@ commands:
         usage: /world copy [world_from] [world_to]
     world repair:
         description: Repairs an unloaded world
+        aliases: [world rep]
         usage: /world repair [world]
     world setnetherportal:
         description: Sets the nether portal destination for a world

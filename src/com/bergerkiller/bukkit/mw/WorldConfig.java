@@ -19,7 +19,7 @@ import org.getspout.spoutapi.block.SpoutWeather;
 import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
-import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 
@@ -45,7 +45,7 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean showRain = true;
 	public boolean showSnow = true;
 	public boolean clearInventory = false;
-	public boolean forcedRespawn = true;
+	public boolean forcedRespawn = false;
 	public WorldInventory inventory;
 
 	public WorldConfig(String worldname) {
@@ -286,11 +286,11 @@ public class WorldConfig extends WorldConfigStore {
 		updateReload(world.getName());
 	}
 	public static void updateReload(final String worldname) {
-		new Task(MyWorlds.plugin) {
+		CommonUtil.nextTick(new Runnable() {
 			public void run() {
 				get(worldname).updateReload();
 			}
-		}.start(1);
+		});
 	}
 	public void updateSpoutWeather(World world) {
 		if (!MyWorlds.isSpoutEnabled) return;
