@@ -7,8 +7,10 @@ import java.util.logging.Level;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.craftbukkit.PortalTravelAgent;
 import org.bukkit.entity.Entity;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
@@ -289,7 +291,22 @@ public class Portal extends PortalStore {
 					// Is it a world spawn?
 					World w = WorldManager.getWorld(def);
 					if (w != null) {
-						EntityUtil.teleportNextTick(e, WorldManager.getSpawnLocation(w));
+						Location dest = null;
+						if (MyWorlds.allowPersonalPortals) {
+							// Find out what location to teleport to
+							// Use source block as the location to search from
+							dest = e.getLocation();
+							final double blockRatio = w.getEnvironment() == Environment.NORMAL ? 8 : 0.125;
+							dest.setX(dest.getX() * blockRatio);
+							dest.setZ(dest.getZ() * blockRatio);
+							dest.setWorld(w);
+							dest = new PortalTravelAgent().findOrCreate(dest);
+						}
+						// Fall-back to the main world spawn
+						if (dest == null) {
+							dest = WorldManager.getSpawnLocation(w);
+						}
+						EntityUtil.teleportNextTick(e, dest);
 						return true;
 					}
 				}

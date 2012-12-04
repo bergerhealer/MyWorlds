@@ -344,7 +344,7 @@ public class MWListener implements Listener {
 			Portal portal = Portal.get(event.getBlock(), false);
 			if (portal != null && portal.remove()) {
 				event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
-				Util.notifyConsole(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
+				MyWorlds.plugin.logAction(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
 			}
 		}
 	}
@@ -363,7 +363,7 @@ public class MWListener implements Listener {
 						}
 					}
 					portal.add();
-					Util.notifyConsole(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
+					MyWorlds.plugin.logAction(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
 					if (portal.hasDestination()) {
 						event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + portal.getDestinationName() + ChatColor.GREEN + "!");
 					} else {

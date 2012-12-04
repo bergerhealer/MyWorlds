@@ -1,7 +1,5 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.util.logging.Level;
-
 import net.minecraft.server.NBTTagDouble;
 import net.minecraft.server.NBTTagFloat;
 import net.minecraft.server.NBTTagList;
@@ -10,10 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
-import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 
 public class Util {
@@ -28,25 +23,6 @@ public class Util {
 			}
 		}
 		return false;
-	}
-
-	public static ConfigurationNode cloneNode(ConfigurationNode node) {
-		ConfigurationNode cloned = new ConfigurationNode();
-		cloned.setHeader(node.getHeader());
-		for (String key : node.getKeys()) {
-			if (node.isNode(key)) {
-				cloned.set(key, cloneNode(node.getNode(key)));
-			} else {
-				cloned.set(key, node.get(key));
-			}
-		}
-		return cloned;
-	}
-
-	public static void notifyConsole(CommandSender sender, String message) {
-		if (sender instanceof Player) {
-			MyWorlds.plugin.log(Level.INFO, ((Player) sender).getName() + " " + message);
-		}
 	}
 
 	/**

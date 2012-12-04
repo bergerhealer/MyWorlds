@@ -19,7 +19,7 @@ public class WorldDelete extends Command {
 			if (!WorldManager.worldExists(worldname)) worldname = null;
 			if (this.handleWorld()) {
 				if (!WorldManager.isLoaded(worldname)) {
-					notifyConsole("Issued a world deletion command for world: " + worldname);
+					logAction("Issued a world deletion command for world: " + worldname);
 					WorldConfig.remove(worldname);
 					AsyncHandler.delete(sender, worldname);
 				} else {

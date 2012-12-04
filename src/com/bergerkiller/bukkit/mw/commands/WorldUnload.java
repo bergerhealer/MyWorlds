@@ -20,7 +20,7 @@ public class WorldUnload extends Command {
 			if (this.handleWorld()) {
 				World w = Bukkit.getServer().getWorld(worldname);
 				if (w != null) {
-					notifyConsole("Issued an unload command for world: " + worldname);
+					logAction("Issued an unload command for world: " + worldname);
 					if (WorldManager.unload(w)) {
 						message(ChatColor.GREEN + "World '" + worldname + "' has been unloaded!");
 					} else {

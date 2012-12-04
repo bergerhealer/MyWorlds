@@ -20,7 +20,7 @@ public class WorldCopy extends Command {
 			if (this.handleWorld()) {
 				String newname = args[1];
 				if (!WorldManager.worldExists(newname)) {
-					notifyConsole("Issued a world copy command for world: " + worldname + " to '" + newname + "'!");
+					logAction("Issued a world copy command for world: " + worldname + " to '" + newname + "'!");
 					message(ChatColor.YELLOW + "Copying world '" + worldname + "' to '" + newname + "'...");
 					// Copy configuration
 					WorldConfigStore.copy(WorldConfigStore.get(this.worldname), newname);

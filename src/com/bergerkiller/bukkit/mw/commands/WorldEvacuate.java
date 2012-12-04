@@ -28,7 +28,7 @@ public class WorldEvacuate extends Command {
 					} else {
 						message = message.trim();
 					}
-					notifyConsole("Evacuated world: " + worldname +  " ('" + message + "')");
+					logAction("Evacuated world: " + worldname +  " ('" + message + "')");
 					WorldManager.evacuate(w, message);
 				} else {
 					Localization.WORLD_NOTLOADED.message(sender, worldname);

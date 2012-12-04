@@ -45,7 +45,7 @@ public class WorldLoad extends Command {
 						}
 					}
 					message(ChatColor.YELLOW + msg);
-					notifyConsole("Issued a load command for world: " + this.worldname);
+					logAction("Issued a load command for world: " + this.worldname);
 					if (WorldManager.createWorld(worldname, 0) != null) {
 						message(ChatColor.GREEN + "World loaded!");
 					} else {

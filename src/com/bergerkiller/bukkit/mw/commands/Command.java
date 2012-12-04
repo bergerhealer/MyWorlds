@@ -13,7 +13,6 @@ import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
-import com.bergerkiller.bukkit.mw.Util;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class Command {
@@ -95,8 +94,8 @@ public class Command {
 		node.message(this.sender, arguments);
 	}
 
-	public void notifyConsole(String message) {
-		Util.notifyConsole(sender, message);
+	public void logAction(String action) {
+		MyWorlds.plugin.logAction(this.sender, action);
 	}
 
 	public boolean showInv() {

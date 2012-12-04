@@ -23,7 +23,7 @@ public class WorldConfigStore {
 			c = new WorldConfig(worldname);
 			if (defaultProperties != null) {
 				// Load using a clone to prevent altering the original
-				c.load(Util.cloneNode(defaultProperties));
+				c.load(defaultProperties.clone());
 			}
 			c.loadNew();
 		}

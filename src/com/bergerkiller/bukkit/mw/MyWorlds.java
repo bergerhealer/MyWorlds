@@ -9,10 +9,10 @@ import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
 
 public class MyWorlds extends PluginBase {
-	public static boolean usePermissions;
 	public static int teleportInterval;
 	public static boolean useWaterTeleport;
 	public static int timeLockInterval;
@@ -31,12 +31,12 @@ public class MyWorlds extends PluginBase {
 	private static String mainWorld;
 	public static boolean forceMainWorldSpawn;
 	public static boolean alwaysInstantPortal;
-
+	public static boolean allowPersonalPortals;
 	public static MyWorlds plugin;
 
 	@Override
 	public int getMinimumLibVersion() {
-		return 7;
+		return Common.VERSION;
 	}
 
 	public String root() {
@@ -67,9 +67,6 @@ public class MyWorlds extends PluginBase {
 		config.addHeader("http://dev.bukkit.org/server-mods/my-worlds/");
 		config.addHeader("http://forums.bukkit.org/threads/myworlds.31718");
 		config.addHeader("http://wiki.bukkit.org/MyWorlds-Plugin");
-
-		config.setHeader("usePermissions", "\nWhether the Permissions 3.* plugin should be used for permissions");
-		usePermissions = config.get("usePermissions", false);
 
 		config.setHeader("teleportInterval", "\nThe interval in miliseconds a player has to wait before being teleported again");
 		teleportInterval = config.get("teleportInterval", 2000);
@@ -115,10 +112,12 @@ public class MyWorlds extends PluginBase {
 		config.setHeader("alwaysInstantPortal", "\nWhether survival players instantly teleport when entering a nether portal");
 		alwaysInstantPortal = config.get("alwaysInstantPortal", true);
 
-		config.save();
+		config.setHeader("allowPersonalPortals", "\nWhether individually placed nether/end portals create their own destination portal");
+		config.addHeader("allowPersonalPortals", "False: Players are teleported to the spawn point of the world");
+		config.setHeader("allowPersonalPortals", "True: Players are teleported to their own portal on the other world");
+		allowPersonalPortals = config.get("allowPersonalPortals", true);
 
-		// Permissions
-		Permission.init(this);
+		config.save();
 
 		// Portals
 		Portal.init(root() + "portals.txt");
@@ -144,8 +143,6 @@ public class MyWorlds extends PluginBase {
 
 		// World inventories
 		WorldInventory.save(root() + "inventories.yml");
-
-		Permission.deinit();
 
 		// Abort chunk loader
 		LoadChunksTask.deinit();
