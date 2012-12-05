@@ -1,7 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.bukkit.ChatColor;
@@ -16,7 +16,7 @@ public class WorldInventory extends Command {
 		super(Permission.COMMAND_INVENTORY, "world.inventory");
 	}
 	
-	public Set<String> worlds = new HashSet<String>();
+	public Set<String> worlds = new LinkedHashSet<String>();
 
 	public boolean prepareWorlds() {
 		this.removeArg(0);
@@ -48,7 +48,7 @@ public class WorldInventory extends Command {
 		if (args.length > 1) {
 			if (args[0].equalsIgnoreCase("merge")) {
 				if (this.prepareWorlds()) {
-					Set<String> invWorlds = new HashSet<String>();
+					Set<String> invWorlds = new LinkedHashSet<String>();
 					for (String world : worlds) {
 						invWorlds.add(world.toLowerCase());
 						invWorlds.addAll(com.bergerkiller.bukkit.mw.WorldConfig.get(world).inventory.getWorlds());

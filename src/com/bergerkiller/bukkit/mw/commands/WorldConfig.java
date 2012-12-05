@@ -2,7 +2,6 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.ChatColor;
 
-import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 
 public class WorldConfig extends Command {
@@ -17,7 +16,7 @@ public class WorldConfig extends Command {
 				com.bergerkiller.bukkit.mw.WorldConfig.init();
 				message(ChatColor.GREEN + "World configuration has been loaded!");
 			} else if (args[0].equalsIgnoreCase("save")) {
-				com.bergerkiller.bukkit.mw.WorldConfig.saveAll(MyWorlds.plugin.root() + "worlds.yml");
+				com.bergerkiller.bukkit.mw.WorldConfig.saveAll();
 				message(ChatColor.GREEN + "World configuration has been saved!");
 			} else {
 				this.showInv();

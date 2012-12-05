@@ -1,13 +1,11 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import org.bukkit.Bukkit;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
@@ -20,31 +18,44 @@ public class WorldInventory {
 		return inventories;
 	}
 
-	public static void load(String filename) {
-		FileConfiguration config = new FileConfiguration(filename);
+	public static void load() {
+		inventories.clear();
+		FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "inventories.yml");
 		config.load();
 		for (ConfigurationNode node : config.getNodes()) {
-			String worldFolder = node.get("folder", String.class, null);
-			if (worldFolder == null || !WorldManager.worldExists(worldFolder)) {
+			String sharedWorld = node.get("folder", String.class, null);
+			if (sharedWorld == null) {
 				continue;
 			}
 			List<String> worlds = node.getList("worlds", String.class);
+			// Verify these worlds
+			Iterator<String> worldsIter = worlds.iterator();
+			while (worldsIter.hasNext()) {
+				String world = worldsIter.next();
+				if (world == null || !WorldManager.getDataFolder(world).exists()) {
+					worldsIter.remove();
+				}
+			}
 			if (worlds.isEmpty()) {
 				continue;
 			}
-			WorldInventory inv = new WorldInventory(worldFolder);
-			inv.name = node.getName();
-			for (String world : worlds) {
-				if (world == null || !WorldManager.worldExists(world)) {
+			// Verify shared world container
+			if (!WorldManager.getDataFolder(sharedWorld).exists()) {
+				sharedWorld = getSharedWorldName(worlds);
+				if (sharedWorld == null) {
 					continue;
 				}
+			}
+			WorldInventory inv = new WorldInventory(sharedWorld);
+			inv.name = node.getName();
+			for (String world : worlds) {
 				inv.add(world);
 			}
 		}
 	}
 
-	public static void save(String filename) {
-		FileConfiguration config = new FileConfiguration(filename);
+	public static void save() {
+		FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "inventories.yml");
 		Set<String> savedNames = new HashSet<String>();
 		for (WorldInventory inventory : inventories) {
 			if (inventory.worlds.size() > 1) {
@@ -80,18 +91,10 @@ public class WorldInventory {
 
 	public WorldInventory(String worldFolder) {
 		this();
-		this.worldname = worldFolder;
-		this.folder = null;
-		worldFolder = WorldManager.matchWorld(worldFolder);
-		if (worldFolder != null) {
-			this.worldname = worldFolder;
-			this.folder = new File(Bukkit.getWorldContainer(), worldFolder);
-			this.folder = new File(this.folder, "players");
-		}
+		this.worldname = WorldManager.matchWorld(worldFolder);
 	}
 
 	private final Set<String> worlds = new HashSet<String>();
-	private File folder;
 	private String worldname;
 	private String name;
 
@@ -108,6 +111,15 @@ public class WorldInventory {
 		return this.worldname;
 	}
 
+	private static String getSharedWorldName(Collection<String> worlds) {
+		for (String world : worlds) {
+			if (WorldManager.getDataFolder(world).exists()) {
+				return world;
+			}
+		}
+		return null;
+	}
+
 	public WorldInventory remove(String worldname, boolean createNew) {
 		if (this.worlds.remove(worldname.toLowerCase())) {
 			//constructor handles world config update
@@ -118,9 +130,9 @@ public class WorldInventory {
 		if (this.worlds.isEmpty()) {
 			inventories.remove(this);
 		} else if (this.worldname.equalsIgnoreCase(worldname)) {
-			for (String world : this.worlds) {
-				this.worldname = world;
-				break;
+			this.worldname = getSharedWorldName(this.worlds);
+			if (this.worldname == null) {
+				inventories.remove(this);
 			}
 		}
 		return this;

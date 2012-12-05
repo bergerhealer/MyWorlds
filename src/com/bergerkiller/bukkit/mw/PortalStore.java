@@ -1,5 +1,11 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -103,31 +109,54 @@ public class PortalStore {
 		return names.toArray(new String[0]);
 	}
 
-	public static void init(String filename) {
+	public static void init(File file) {
 		portallocations = new HashMap<String, HashMap<String, Position>>();
-		for (String textline : SafeReader.readAll(filename, true)) {
-			String[] args = StringUtil.convertArgs(textline.split(" "));
-			if (args.length == 7) {
-				String name = args[0];
-				try {
-					Position pos = new Position(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
-					getPortalLocations(args[1]).put(name, pos);
-				} catch (Exception ex) {
-					MyWorlds.plugin.log(Level.SEVERE, "Failed to load portal: " + name);
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(file));
+			try {
+				String textline;
+				while ((textline = reader.readLine()) != null) {
+					String[] args = StringUtil.convertArgs(textline.split(" "));
+					if (args.length == 7) {
+						String name = args[0];
+						try {
+							Position pos = new Position(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
+							getPortalLocations(args[1]).put(name, pos);
+						} catch (Exception ex) {
+							MyWorlds.plugin.log(Level.SEVERE, "Failed to load portal: " + name);
+						}
+					}
 				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			} finally {
+				reader.close();
 			}
+		} catch (IOException ex) {
+			ex.printStackTrace();
 		}
 	}
 
-	public static void deinit(String filename) {
-		SafeWriter w = new SafeWriter(filename);
-		for (HashMap<String, Position> positions : portallocations.values()) {
-			for (Map.Entry<String, Position> p : positions.entrySet()) {
-				Position pos = p.getValue();
-				w.writeLine("\"" + p.getKey() + "\" \"" + pos.getWorldName() + "\" " + pos.getBlockX() + " " + pos.getBlockY() + " " + pos.getBlockZ() + " " + pos.getYaw() + " " + pos.getPitch());
+	public static void deinit(File file) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+			try {
+				for (HashMap<String, Position> positions : portallocations.values()) {
+					for (Map.Entry<String, Position> p : positions.entrySet()) {
+						Position pos = p.getValue();
+						writer.write("\"" + p.getKey() + "\" \"" + pos.getWorldName() + "\" ");
+						writer.write(pos.getBlockX() + " " + pos.getBlockY() + " " + pos.getBlockZ() + " " + pos.getYaw() + " " + pos.getPitch());
+						writer.newLine();
+					}
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			} finally {
+				writer.close();
 			}
+		} catch (IOException ex) {
+			ex.printStackTrace();
 		}
-		w.close();
 		portallocations.clear();
 		portallocations = null;
 	}

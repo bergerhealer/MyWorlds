@@ -75,6 +75,7 @@ public class WorldConfigStore {
 		}
 
 		// Worlds configuration
+		worldConfigs.clear();
 		FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "worlds.yml");
 		config.load();
 		for (ConfigurationNode node : config.getNodes()) {
@@ -95,15 +96,15 @@ public class WorldConfigStore {
 			get(world).update(world);
 		}
 	}
-	public static void saveAll(String filename) {
-		FileConfiguration cfg = new FileConfiguration(filename);
+	public static void saveAll() {
+		FileConfiguration cfg = new FileConfiguration(MyWorlds.plugin, "worlds.yml");
 		for (WorldConfig wc : all()) {
 			wc.save(cfg.getNode(wc.getConfigName()));
 		}
 		cfg.save();
 	}
-	public static void deinit(String filename) {
-		saveAll(filename);
+	public static void deinit() {
+		saveAll();
 		for (WorldConfig world : all()) {
 			world.timeControl.setLocking(false);
 		}

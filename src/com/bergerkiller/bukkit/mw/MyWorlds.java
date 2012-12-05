@@ -119,14 +119,14 @@ public class MyWorlds extends PluginBase {
 
 		config.save();
 
-		// Portals
-		Portal.init(root() + "portals.txt");
-
-		// World info
+		// World configurations have to be loaded first
 		WorldConfig.init();
 
+		// Portals
+		Portal.init(this.getDataFile("portals.txt"));
+
 		// World inventories
-		WorldInventory.load(root() + "inventories.yml");
+		WorldInventory.load();
 		PlayerData.init();
 
 		// init chunk loader
@@ -136,13 +136,13 @@ public class MyWorlds extends PluginBase {
 	@Override
 	public void disable() {
 		// Portals
-		Portal.deinit(root() + "portals.txt");
-
-		// World info
-		WorldConfig.deinit(root() + "worlds.yml");
+		Portal.deinit(this.getDataFile("portals.txt"));
 
 		// World inventories
-		WorldInventory.save(root() + "inventories.yml");
+		WorldInventory.save();
+
+		// World configurations have to be cleared last
+		WorldConfig.deinit();
 
 		// Abort chunk loader
 		LoadChunksTask.deinit();

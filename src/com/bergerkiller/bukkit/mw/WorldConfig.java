@@ -158,7 +158,6 @@ public class WorldConfig extends WorldConfigStore {
     	this.OPlist = node.getList("operators", String.class, this.OPlist);
 	}
 
-
 	public void save(ConfigurationNode node) {
 		//Set if the world can be directly accessed
 		World w = this.getWorld();
