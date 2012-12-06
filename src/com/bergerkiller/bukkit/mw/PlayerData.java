@@ -15,7 +15,7 @@ import org.bukkit.craftbukkit.entity.CraftPlayer;
 import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.utils.NativeUtil;
 
 import net.minecraft.server.ChunkCoordinates;
 import net.minecraft.server.EntityHuman;
@@ -53,7 +53,7 @@ public class PlayerData implements PlayerFileData {
 
 	@Override
 	public String[] getSeenPlayers() {
-		IDataManager man = WorldUtil.getWorlds().get(0).getDataManager();
+		IDataManager man = NativeUtil.getNative(MyWorlds.getMainWorld()).getDataManager();
 		if (man instanceof WorldNBTStorage) {
 			return ((WorldNBTStorage) man).getSeenPlayers();
 		} else {
@@ -104,7 +104,7 @@ public class PlayerData implements PlayerFileData {
 	private static File getPlayerData(String worldName, World world, String playerName) {
 		File playersFolder = null;
 		if (world != null) {
-			IDataManager man = WorldUtil.getNative(world).getDataManager();
+			IDataManager man = NativeUtil.getNative(world).getDataManager();
 			if (man instanceof WorldNBTStorage) {
 				playersFolder = ((WorldNBTStorage) man).getPlayerDir();
 			}

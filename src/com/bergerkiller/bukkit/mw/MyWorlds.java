@@ -178,6 +178,6 @@ public class MyWorlds extends PluginBase {
 				return world;
 			}
 		}
-		return WorldUtil.getWorlds().get(0).getWorld();
+		return WorldUtil.getWorlds().iterator().next();
 	}
 }

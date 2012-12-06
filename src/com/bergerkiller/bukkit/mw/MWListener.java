@@ -41,8 +41,7 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.utils.NativeUtil;
 
 public class MWListener implements Listener {
 	// World to disable keepspawnloaded for
@@ -104,7 +103,7 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onWorldInit(WorldInitEvent event) {
 		if (initIgnoreWorlds.remove(event.getWorld().getName())) {
-			WorldUtil.getNative(event.getWorld()).keepSpawnInMemory = false;
+			NativeUtil.getNative(event.getWorld()).keepSpawnInMemory = false;
 		} else {
 			WorldConfig.get(event.getWorld()).update(event.getWorld());
 		}
@@ -289,10 +288,10 @@ public class MWListener implements Listener {
 			}
 		});
 		if (MyWorlds.useWorldInventories && !Permission.GENERAL_KEEPINV.has(event.getPlayer())) {
-			EntityPlayer ep = EntityUtil.getNative(event.getPlayer());
+			EntityPlayer ep = NativeUtil.getNative(event.getPlayer());
 			PlayerFileData data = CommonUtil.getServerConfig().playerFileData;
 			net.minecraft.server.World newWorld = ep.world;
-			ep.world = WorldUtil.getNative(event.getFrom());
+			ep.world = NativeUtil.getNative(event.getFrom());
 			data.save(ep);
 			ep.world = newWorld;
 			PlayerData.refreshState(ep);
