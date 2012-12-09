@@ -1,9 +1,5 @@
 package com.bergerkiller.bukkit.mw;
 
-import net.minecraft.server.NBTTagDouble;
-import net.minecraft.server.NBTTagFloat;
-import net.minecraft.server.NBTTagList;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -23,43 +19,6 @@ public class Util {
 			}
 		}
 		return false;
-	}
-
-	/**
-	 * Obtains a double list from an array of double values
-	 * 
-	 * @param adouble values
-	 * @return List with the values
-	 */
-	public static NBTTagList doubleArrayToList(double... adouble) {
-		NBTTagList nbttaglist = new NBTTagList();
-		double[] adouble1 = adouble;
-		int i = adouble.length;
-		for (int j = 0; j < i; ++j) {
-			double d0 = adouble1[j];
-			nbttaglist.add(new NBTTagDouble((String) null, d0));
-		}
-		return nbttaglist;
-	}
-
-	/**
-	 * Obtains a float list from an array of float values
-	 * 
-	 * @param afloat values
-	 * @return List with the values
-	 */
-	public static NBTTagList floatArrayToList(float... afloat) {
-		NBTTagList nbttaglist = new NBTTagList();
-		float[] afloat1 = afloat;
-		int i = afloat.length;
-
-		for (int j = 0; j < i; ++j) {
-			float f = afloat1[j];
-
-			nbttaglist.add(new NBTTagFloat((String) null, f));
-		}
-
-		return nbttaglist;
 	}
 
 	private static boolean isObsidianPortal(Block main, BlockFace direction) {

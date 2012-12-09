@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -15,6 +14,7 @@ import org.bukkit.craftbukkit.entity.CraftPlayer;
 import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
+import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.NativeUtil;
 
 import net.minecraft.server.ChunkCoordinates;
@@ -22,7 +22,6 @@ import net.minecraft.server.EntityHuman;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.IDataManager;
 import net.minecraft.server.MobEffect;
-import net.minecraft.server.NBTCompressedStreamTools;
 import net.minecraft.server.NBTTagCompound;
 import net.minecraft.server.NBTTagList;
 import net.minecraft.server.Packet41MobEffect;
@@ -125,7 +124,7 @@ public class PlayerData implements PlayerFileData {
 	 */
 	public static void write(NBTTagCompound nbttagcompound, File destFile) throws Exception {
 		File tmpDest = new File(destFile.toString() + ".tmp");
-		NBTCompressedStreamTools.a(nbttagcompound, new FileOutputStream(tmpDest));
+		NBTUtil.writeCompound(nbttagcompound, new FileOutputStream(tmpDest));
 		if (destFile.exists()) {
 			destFile.delete();
 		}
@@ -141,14 +140,14 @@ public class PlayerData implements PlayerFileData {
 	 */
 	public static NBTTagCompound read(File sourceFile, EntityHuman human) throws Exception {
 		if (sourceFile.exists()) {
-			return NBTCompressedStreamTools.a(new FileInputStream(sourceFile));
+			return NBTUtil.readCompound(new FileInputStream(sourceFile));
 		} else {
 			NBTTagCompound empty = new NBTTagCompound();
 			empty.setShort("Health", (short) 20);
 			empty.setShort("HurtTime", (short) 0);
 			empty.setShort("DeathTime", (short) 0);
 			empty.setShort("AttackTime", (short) 0);
-			empty.set("Motion", Util.doubleArrayToList(human.motX, human.motY, human.motZ));
+			empty.set("Motion", NBTUtil.doubleArrayToList(human.motX, human.motY, human.motZ));
 			setLocation(empty, human.getBukkitEntity().getLocation());
 			empty.setInt("Dimension", human.dimension);
 			empty.setString("World", human.world.getWorld().getName());
@@ -164,13 +163,11 @@ public class PlayerData implements PlayerFileData {
 	}
 
 	private static void setLocation(NBTTagCompound nbttagcompound, Location location) {
-		nbttagcompound.set("Pos", Util.doubleArrayToList(location.getX(), location.getY(), location.getZ()));
-		nbttagcompound.set("Rotation", Util.floatArrayToList(location.getYaw(), location.getPitch()));
+		nbttagcompound.set("Pos", NBTUtil.doubleArrayToList(location.getX(), location.getY(), location.getZ()));
+		nbttagcompound.set("Rotation", NBTUtil.floatArrayToList(location.getYaw(), location.getPitch()));
 		World world = location.getWorld();
 		nbttagcompound.setString("World", world.getName());
-		UUID worldUUID = world.getUID();
-		nbttagcompound.setLong("WorldUUIDLeast", worldUUID.getLeastSignificantBits());
-		nbttagcompound.setLong("WorldUUIDMost", worldUUID.getMostSignificantBits());
+		NBTUtil.saveUUID(world.getUID(), nbttagcompound);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -216,7 +213,7 @@ public class PlayerData implements PlayerFileData {
 			File source = getSaveFile(player);
 			NBTTagCompound data = read(source, player);
 			// Load the inventory for that world
-			player.inventory.b(data.getList("Inventory"));
+			NBTUtil.loadFromNBT(player.inventory, data.getList("Inventory"));
 			player.exp = data.getFloat("XpP");
 			player.expLevel = data.getInt("XpLevel");
 			player.expTotal = data.getInt("XpTotal");
@@ -229,14 +226,15 @@ public class PlayerData implements PlayerFileData {
 				player.setRespawnPosition(new ChunkCoordinates(data.getInt("SpawnX"), data.getInt("SpawnY"), data.getInt("SpawnZ")), spawnForced);
 				player.spawnWorld = spawnWorld;
 			}
-			player.getFoodData().a(data);
+			NBTUtil.loadFromNBT(player.getFoodData(), data);
+			// Ender chest inventory
+			NBTUtil.loadFromNBT(player.getEnderChest(), data.getList("EnderItems"));
 			// Effects
 			clearEffects(player);
 			if (data.hasKey("ActiveEffects")) {
 				NBTTagList nbttaglist = data.getList("ActiveEffects");
 				for (int i = 0; i < nbttaglist.size(); ++i) {
-					NBTTagCompound nbttagcompound1 = (NBTTagCompound) nbttaglist.get(i);
-					MobEffect mobeffect = MobEffect.b(nbttagcompound1);
+					MobEffect mobeffect = NBTUtil.loadMobEffect((NBTTagCompound) nbttaglist.get(i));
 					player.effects.put(Integer.valueOf(mobeffect.getEffectId()), mobeffect);
 				}
 			}
@@ -270,10 +268,8 @@ public class PlayerData implements PlayerFileData {
 				hasPlayedBefore = main.exists();
 				if (hasPlayedBefore && !MyWorlds.forceMainWorldSpawn) {
 					// Allow switching worlds and positions
-					nbttagcompound = NBTCompressedStreamTools.a(new FileInputStream(main));
-					long least = nbttagcompound.getLong("WorldUUIDLeast");
-					long most = nbttagcompound.getLong("WorldUUIDMost");
-					org.bukkit.World world = Bukkit.getWorld(new UUID(most, least));
+					nbttagcompound = NBTUtil.readCompound(new FileInputStream(main));
+					org.bukkit.World world = Bukkit.getWorld(NBTUtil.loadUUID(nbttagcompound));
 					if (world != null) {
 						// Switch to the save file of the loaded world
 						main = getSaveFile(world.getName(), entityhuman.name);
@@ -290,7 +286,7 @@ public class PlayerData implements PlayerFileData {
 				setLocation(nbttagcompound, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
 			}
 			// Load the save file
-			entityhuman.e(nbttagcompound);
+			NBTUtil.loadFromNBT(entityhuman, nbttagcompound);
 			if (entityhuman instanceof EntityPlayer) {
 				CraftPlayer player = (CraftPlayer) entityhuman.getBukkitEntity();
 				if (hasPlayedBefore) {
@@ -306,13 +302,12 @@ public class PlayerData implements PlayerFileData {
 			Bukkit.getLogger().warning("Failed to load player data for " + entityhuman.name);
 			exception.printStackTrace();
 		}
-}
+	}
 
 	@Override
 	public void save(EntityHuman entityhuman) {
 		try {
-			NBTTagCompound nbttagcompound = new NBTTagCompound();
-			entityhuman.d(nbttagcompound);
+			NBTTagCompound nbttagcompound = NBTUtil.saveToNBT(entityhuman);
 			File mainDest = getMainFile(entityhuman.name);
 			File dest;
 			if (MyWorlds.useWorldInventories) {
@@ -329,11 +324,9 @@ public class PlayerData implements PlayerFileData {
 			}
 			// Update the world in the main file
 			if (mainDest.exists()) {
-				nbttagcompound = NBTCompressedStreamTools.a(new FileInputStream(mainDest));
+				nbttagcompound = NBTUtil.readCompound(new FileInputStream(mainDest));
 			}
-			UUID worldUUID = entityhuman.world.getWorld().getUID();
-			nbttagcompound.setLong("WorldUUIDLeast", worldUUID.getLeastSignificantBits());
-			nbttagcompound.setLong("WorldUUIDMost", worldUUID.getMostSignificantBits());
+			NBTUtil.saveUUID(entityhuman.world.getWorld().getUID(), nbttagcompound);
 			write(nbttagcompound, mainDest);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player data for " + entityhuman.name);

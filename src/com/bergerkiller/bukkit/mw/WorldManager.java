@@ -10,8 +10,6 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import net.minecraft.server.NBTBase;
-import net.minecraft.server.NBTCompressedStreamTools;
 import net.minecraft.server.NBTTagCompound;
 import net.minecraft.server.RegionFile;
 
@@ -31,6 +29,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
+import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 
 @SuppressWarnings("rawtypes")
@@ -249,7 +248,7 @@ public class WorldManager {
 		}
 		try {
 			FileInputStream fis = new FileInputStream(f);
-			NBTTagCompound data = NBTCompressedStreamTools.a(fis);
+			NBTTagCompound data = NBTUtil.readCompound(fis);
 			if (data != null && data.hasKey(LEVEL_DATA_NAME)) {
 				data = data.getCompound(LEVEL_DATA_NAME);
 			} else {
@@ -267,7 +266,7 @@ public class WorldManager {
 			OutputStream s = new FileOutputStream(datafile);
 			NBTTagCompound root = new NBTTagCompound();
 			root.setCompound(data.getName(), data);
-			NBTCompressedStreamTools.a(root, s);
+			NBTUtil.writeCompound(root, s);
 			s.close();
 			return true;
 		} catch (IOException e) {
@@ -682,18 +681,13 @@ public class WorldManager {
 							
 							//Validate the stream and close
 							try {
-								NBTBase base = NBTTagCompound.b((DataInput) stream);
-								if (base == null) {
-									editcount++;
-									locations[i] = 0;
-									MyWorlds.plugin.log(Level.WARNING, "Invalid tag compound at chunk " + chunkX + "/" + chunkZ);
-								} else if (!(base instanceof NBTTagCompound)) {
+								NBTTagCompound comp = NBTUtil.readCompound(stream);
+								if (comp == null) {
 									editcount++;
 									locations[i] = 0;
 									MyWorlds.plugin.log(Level.WARNING, "Invalid tag compound at chunk " + chunkX + "/" + chunkZ);
 								} else {
 									//correct location?
-									NBTTagCompound comp = (NBTTagCompound) base;
 									if (comp.hasKey("Level")) {
 										NBTTagCompound level = comp.getCompound("Level");
 										int xPos = level.getInt("xPos");
@@ -706,7 +700,7 @@ public class WorldManager {
 											//rewrite to stream
 											ByteArrayOutputStream baos = new ByteArrayOutputStream(8096);
 									        DataOutputStream dataoutputstream = new DataOutputStream(new DeflaterOutputStream(baos));
-									        NBTCompressedStreamTools.a(level, (DataOutput) dataoutputstream);
+									        NBTUtil.writeCompound(level, dataoutputstream);
 									        dataoutputstream.close();
 									        //write to region file
 									        raf.seek(seekindex);
