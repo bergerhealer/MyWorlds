@@ -9,7 +9,7 @@ import java.util.Collection;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_4_5.entity.CraftPlayer;
 
 import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
@@ -17,17 +17,17 @@ import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.NativeUtil;
 
-import net.minecraft.server.ChunkCoordinates;
-import net.minecraft.server.EntityHuman;
-import net.minecraft.server.EntityPlayer;
-import net.minecraft.server.IDataManager;
-import net.minecraft.server.MobEffect;
-import net.minecraft.server.NBTTagCompound;
-import net.minecraft.server.NBTTagList;
-import net.minecraft.server.Packet41MobEffect;
-import net.minecraft.server.Packet42RemoveMobEffect;
-import net.minecraft.server.PlayerFileData;
-import net.minecraft.server.WorldNBTStorage;
+import net.minecraft.server.v1_4_5.ChunkCoordinates;
+import net.minecraft.server.v1_4_5.EntityHuman;
+import net.minecraft.server.v1_4_5.EntityPlayer;
+import net.minecraft.server.v1_4_5.IDataManager;
+import net.minecraft.server.v1_4_5.MobEffect;
+import net.minecraft.server.v1_4_5.NBTTagCompound;
+import net.minecraft.server.v1_4_5.NBTTagList;
+import net.minecraft.server.v1_4_5.Packet41MobEffect;
+import net.minecraft.server.v1_4_5.Packet42RemoveMobEffect;
+import net.minecraft.server.v1_4_5.PlayerFileData;
+import net.minecraft.server.v1_4_5.WorldNBTStorage;
 
 /**
  * A player file data implementation that supports inventory sharing between worlds<br>

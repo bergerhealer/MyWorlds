@@ -54,11 +54,11 @@ public class Permission extends PermissionEnum {
     public static final Permission PORTAL_ENTER = new Permission("portal.enter", PermissionDefault.OP, "Sets if the player can enter a certain portal", 1);
 
 	private Permission(final String name, final PermissionDefault def, final String desc) {
-		super(name, def, desc, 0);
+		super("myworlds." + name, def, desc, 0);
 	}
 
 	private Permission(final String name, final PermissionDefault def, final String desc, final int argCount) {
-		super(name, def, desc, argCount);
+		super("myworlds." + name, def, desc, argCount);
 	}
 
 	public static boolean canEnter(Player player, Portal portal) {

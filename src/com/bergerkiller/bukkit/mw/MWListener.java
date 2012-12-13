@@ -4,14 +4,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.WeakHashMap;
 
-import net.minecraft.server.EntityPlayer;
-import net.minecraft.server.PlayerFileData;
+import net.minecraft.server.v1_4_5.EntityPlayer;
+import net.minecraft.server.v1_4_5.PlayerFileData;
+import net.minecraft.server.v1_4_5.World;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -109,7 +109,7 @@ public class MWListener implements Listener {
 		}
 	}
 
-	public static void setWeather(World w, boolean storm) {
+	public static void setWeather(org.bukkit.World w, boolean storm) {
 		ignoreWeatherChanges = true;
 		w.setStorm(storm);
 		ignoreWeatherChanges = false;
@@ -131,7 +131,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
-		World respawnWorld = event.getPlayer().getWorld();
+		org.bukkit.World respawnWorld = event.getPlayer().getWorld();
 		if (MyWorlds.forceMainWorldSpawn) {
 			// Force a respawn on the main world
 			respawnWorld = MyWorlds.getMainWorld();
@@ -290,7 +290,7 @@ public class MWListener implements Listener {
 		if (MyWorlds.useWorldInventories && !Permission.GENERAL_KEEPINV.has(event.getPlayer())) {
 			EntityPlayer ep = NativeUtil.getNative(event.getPlayer());
 			PlayerFileData data = CommonUtil.getServerConfig().playerFileData;
-			net.minecraft.server.World newWorld = ep.world;
+			World newWorld = ep.world;
 			ep.world = NativeUtil.getNative(event.getFrom());
 			data.save(ep);
 			ep.world = newWorld;

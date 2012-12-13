@@ -10,8 +10,8 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import net.minecraft.server.NBTTagCompound;
-import net.minecraft.server.RegionFile;
+import net.minecraft.server.v1_4_5.NBTTagCompound;
+import net.minecraft.server.v1_4_5.RegionFile;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -20,8 +20,8 @@ import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.PortalTravelAgent;
+//import org.bukkit.craftbukkit.v1_4_5.CraftWorld;
+import org.bukkit.craftbukkit.v1_4_5.PortalTravelAgent;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -338,10 +338,10 @@ public class WorldManager {
 		}
 		return null;
 	}
-	public static CraftWorld getWorld(String worldname) {
+	public static World getWorld(String worldname) {
 		if (worldname == null) return null;
 		try {
-			return (CraftWorld) Bukkit.getServer().getWorld(worldname);
+			return Bukkit.getServer().getWorld(worldname);
 		} catch (Exception ex) {
 			return null;
 		}
