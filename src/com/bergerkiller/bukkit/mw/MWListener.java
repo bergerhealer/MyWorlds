@@ -2,7 +2,6 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.WeakHashMap;
 
 import net.minecraft.server.v1_4_5.EntityPlayer;
 import net.minecraft.server.v1_4_5.PlayerFileData;
@@ -40,6 +39,7 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import com.bergerkiller.bukkit.common.EntityMap;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.NativeUtil;
 
@@ -47,11 +47,11 @@ public class MWListener implements Listener {
 	// World to disable keepspawnloaded for
 	private static HashSet<String> initIgnoreWorlds = new HashSet<String>();
 	// A mapping of player positions to prevent spammed portal teleportation
-	private static WeakHashMap<Player, Location> walkDistanceCheckMap = new WeakHashMap<Player, Location>();
+	private static EntityMap<Player, Location> walkDistanceCheckMap = new EntityMap<Player, Location>();
 	// A mapping of player positions to store the actually entered portal
-	private static WeakHashMap<Player, Location> playerPortalEnter = new WeakHashMap<Player, Location>();
+	private static EntityMap<Player, Location> playerPortalEnter = new EntityMap<Player, Location>();
 	// Portal times for a minimal delay
-    private static WeakHashMap<Entity, Long> portaltimes = new WeakHashMap<Entity, Long>();
+    private static EntityMap<Entity, Long> portaltimes = new EntityMap<Entity, Long>();
     // Whether weather changes handling is ignored
 	public static boolean ignoreWeatherChanges = false;
 
@@ -150,10 +150,6 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		WorldConfig.updateReload(event.getPlayer());
-		// Clear temporary data
-		walkDistanceCheckMap.remove(event.getPlayer());
-		playerPortalEnter.remove(event.getPlayer());
-		portaltimes.remove(event.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
