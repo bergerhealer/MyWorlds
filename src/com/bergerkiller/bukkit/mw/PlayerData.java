@@ -9,7 +9,7 @@ import java.util.Collection;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_4_5.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_4_6.entity.CraftPlayer;
 
 import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
@@ -17,17 +17,17 @@ import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.NativeUtil;
 
-import net.minecraft.server.v1_4_5.ChunkCoordinates;
-import net.minecraft.server.v1_4_5.EntityHuman;
-import net.minecraft.server.v1_4_5.EntityPlayer;
-import net.minecraft.server.v1_4_5.IDataManager;
-import net.minecraft.server.v1_4_5.MobEffect;
-import net.minecraft.server.v1_4_5.NBTTagCompound;
-import net.minecraft.server.v1_4_5.NBTTagList;
-import net.minecraft.server.v1_4_5.Packet41MobEffect;
-import net.minecraft.server.v1_4_5.Packet42RemoveMobEffect;
-import net.minecraft.server.v1_4_5.PlayerFileData;
-import net.minecraft.server.v1_4_5.WorldNBTStorage;
+import net.minecraft.server.v1_4_6.ChunkCoordinates;
+import net.minecraft.server.v1_4_6.EntityHuman;
+import net.minecraft.server.v1_4_6.EntityPlayer;
+import net.minecraft.server.v1_4_6.IDataManager;
+import net.minecraft.server.v1_4_6.MobEffect;
+import net.minecraft.server.v1_4_6.NBTTagCompound;
+import net.minecraft.server.v1_4_6.NBTTagList;
+import net.minecraft.server.v1_4_6.Packet41MobEffect;
+import net.minecraft.server.v1_4_6.Packet42RemoveMobEffect;
+import net.minecraft.server.v1_4_6.PlayerFileData;
+import net.minecraft.server.v1_4_6.WorldNBTStorage;
 
 /**
  * A player file data implementation that supports inventory sharing between worlds<br>
@@ -175,9 +175,9 @@ public class PlayerData implements PlayerFileData {
 		// Send remove messages for all previous effects
 		if (human instanceof EntityPlayer) {
 			EntityPlayer ep = (EntityPlayer) human;
-			if (ep.netServerHandler != null) {
+			if (ep.playerConnection != null) {
 				for (MobEffect effect : (Collection<MobEffect>) human.effects.values()) {
-					ep.netServerHandler.sendPacket(new Packet42RemoveMobEffect(ep.id, effect));
+					ep.playerConnection.sendPacket(new Packet42RemoveMobEffect(ep.id, effect));
 				}
 			}
 		}
@@ -242,8 +242,8 @@ public class PlayerData implements PlayerFileData {
 			if (player instanceof EntityPlayer) {
 				EntityPlayer ep = (EntityPlayer) player;
 				for (MobEffect effect : (Collection<MobEffect>) player.effects.values()) {
-					if (ep.netServerHandler != null) {
-						ep.netServerHandler.sendPacket(new Packet41MobEffect(ep.id, effect));
+					if (ep.playerConnection != null) {
+						ep.playerConnection.sendPacket(new Packet41MobEffect(ep.id, effect));
 					}
 				}
 			}

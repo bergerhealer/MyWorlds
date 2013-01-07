@@ -10,8 +10,8 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import net.minecraft.server.v1_4_5.NBTTagCompound;
-import net.minecraft.server.v1_4_5.RegionFile;
+import net.minecraft.server.v1_4_6.NBTTagCompound;
+import net.minecraft.server.v1_4_6.RegionFile;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -21,7 +21,7 @@ import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
 //import org.bukkit.craftbukkit.v1_4_5.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_5.PortalTravelAgent;
+import org.bukkit.craftbukkit.v1_4_6.PortalTravelAgent;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -610,6 +610,7 @@ public class WorldManager {
 	 * @param backupfolder
 	 * @return
 	 */
+	@SuppressWarnings("resource")
 	public static int repairRegion(File chunkfile, File backupfolder) {
 		MyWorlds.plugin.log(Level.INFO, "Performing repairs on region file: " + chunkfile.getName());
 		RandomAccessFile raf = null;

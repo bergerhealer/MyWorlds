@@ -3,9 +3,9 @@ package com.bergerkiller.bukkit.mw;
 import java.util.HashSet;
 import java.util.Iterator;
 
-import net.minecraft.server.v1_4_5.EntityPlayer;
-import net.minecraft.server.v1_4_5.PlayerFileData;
-import net.minecraft.server.v1_4_5.World;
+import net.minecraft.server.v1_4_6.EntityPlayer;
+import net.minecraft.server.v1_4_6.PlayerFileData;
+import net.minecraft.server.v1_4_6.World;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;

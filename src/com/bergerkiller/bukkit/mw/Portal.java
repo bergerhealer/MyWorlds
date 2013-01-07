@@ -10,7 +10,7 @@ import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
-import org.bukkit.craftbukkit.v1_4_5.PortalTravelAgent;
+import org.bukkit.craftbukkit.v1_4_6.PortalTravelAgent;
 import org.bukkit.entity.Entity;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;

@@ -110,6 +110,12 @@ public class PortalStore {
 	}
 
 	public static void init(File file) {
+		if(!file.exists())
+		{
+			try {
+				file.createNewFile();
+			} catch (IOException e) { }
+		}
 		portallocations = new HashMap<String, HashMap<String, Position>>();
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(file));

@@ -8,6 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.metrics.AddonHandler;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
@@ -131,6 +132,10 @@ public class MyWorlds extends PluginBase {
 
 		// init chunk loader
 		LoadChunksTask.init();
+		
+		//metrics
+		AddonHandler ah = new AddonHandler(this);
+		ah.startMetrics();
 	}
 
 	@Override
