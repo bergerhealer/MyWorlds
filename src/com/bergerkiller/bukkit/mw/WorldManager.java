@@ -10,8 +10,9 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import net.minecraft.server.v1_4_6.NBTTagCompound;
-import net.minecraft.server.v1_4_6.RegionFile;
+import net.minecraft.server.v1_4_R1.NBTTagCompound;
+import net.minecraft.server.v1_4_R1.RegionFile;
+import net.minecraft.server.v1_4_R1.WorldServer;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -20,8 +21,9 @@ import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
+import org.bukkit.craftbukkit.v1_4_R1.CraftTravelAgent;
+import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
 //import org.bukkit.craftbukkit.v1_4_5.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_6.PortalTravelAgent;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -382,7 +384,8 @@ public class WorldManager {
 		Location loc = world.getSpawnLocation();
 		if (env == Environment.NETHER || env == Environment.THE_END) {
 			// Use a portal agent to generate the world spawn point
-			loc = new PortalTravelAgent().findOrCreate(loc);
+			WorldServer ws = ((CraftWorld)world).getHandle();
+			loc = new CraftTravelAgent(ws).findOrCreate(loc);
 			if (loc == null) {
 				return; // Failure?
 			}

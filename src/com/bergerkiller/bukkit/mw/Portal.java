@@ -4,13 +4,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+import net.minecraft.server.v1_4_R1.WorldServer;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
-import org.bukkit.craftbukkit.v1_4_6.PortalTravelAgent;
+import org.bukkit.craftbukkit.v1_4_R1.CraftTravelAgent;
+import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
 import org.bukkit.entity.Entity;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
@@ -300,7 +303,8 @@ public class Portal extends PortalStore {
 							dest.setX(dest.getX() * blockRatio);
 							dest.setZ(dest.getZ() * blockRatio);
 							dest.setWorld(w);
-							dest = new PortalTravelAgent().findOrCreate(dest);
+							WorldServer ws = ((CraftWorld)w).getHandle();
+							dest = new CraftTravelAgent(ws).findOrCreate(dest);
 						}
 						// Fall-back to the main world spawn
 						if (dest == null) {
