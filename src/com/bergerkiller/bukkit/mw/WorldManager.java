@@ -11,7 +11,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 import net.minecraft.server.v1_4_R1.NBTTagCompound;
-import net.minecraft.server.v1_4_R1.RegionFile;
 import net.minecraft.server.v1_4_R1.WorldServer;
 
 import org.bukkit.Bukkit;
@@ -42,9 +41,9 @@ public class WorldManager {
 		String worldname = world.getName();
 		ArrayList<Object> removedKeys = new ArrayList<Object>();
 		try {
-			for (Entry<File, RegionFile> entry : RegionFileCacheRef.FILES.entrySet()) {
+			for (Entry<File, Object> entry : RegionFileCacheRef.FILES.entrySet()) {
 				if (entry.getKey().toString().startsWith("." + File.separator + worldname)) {
-					RegionFile file = entry.getValue();
+					Object file = entry.getValue();
 					try {
 						if (file != null) {
 							RandomAccessFile raf = RegionFileRef.stream.get(file);

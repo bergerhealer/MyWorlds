@@ -148,7 +148,7 @@ public class PlayerData implements PlayerFileData {
 			empty.setShort("DeathTime", (short) 0);
 			empty.setShort("AttackTime", (short) 0);
 			empty.set("Motion", NBTUtil.doubleArrayToList(human.motX, human.motY, human.motZ));
-			setLocation(empty, human.getBukkitEntity().getLocation());
+			setLocation(empty, NativeUtil.getEntity(human).getLocation());
 			empty.setInt("Dimension", human.dimension);
 			empty.setString("World", human.world.getWorld().getName());
 			ChunkCoordinates coord = human.getBed();
@@ -288,7 +288,7 @@ public class PlayerData implements PlayerFileData {
 			// Load the save file
 			NBTUtil.loadFromNBT(entityhuman, nbttagcompound);
 			if (entityhuman instanceof EntityPlayer) {
-				CraftPlayer player = (CraftPlayer) entityhuman.getBukkitEntity();
+				CraftPlayer player = (CraftPlayer) NativeUtil.getEntity(entityhuman);
 				if (hasPlayedBefore) {
 					player.setFirstPlayed(main.lastModified());
 				} else {

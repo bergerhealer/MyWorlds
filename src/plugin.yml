@@ -1,8 +1,7 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.58
-author: bergerkiller
-authors: [lenis0012]
+version: 1.60
+authors: [bergerkiller, lenis0012]
 softdepend: [Spout]
 depend: [BKCommonLib]
 loadbefore: [MobArena, RegionForSale, CreativeGates]
