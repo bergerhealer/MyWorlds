@@ -10,9 +10,6 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import net.minecraft.server.v1_4_R1.NBTTagCompound;
-import net.minecraft.server.v1_4_R1.WorldServer;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -20,23 +17,20 @@ import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_4_R1.CraftTravelAgent;
-import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
-//import org.bukkit.craftbukkit.v1_4_5.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
-@SuppressWarnings("rawtypes")
 public class WorldManager {
-	private static final String LEVEL_DATA_NAME = "Data";
-	
+
 	public static boolean clearWorldReference(World world) {
 		String worldname = world.getName();
 		ArrayList<Object> removedKeys = new ArrayList<Object>();
@@ -121,17 +115,16 @@ public class WorldManager {
 		}
 		return pos.toArray(new Position[0]);
 	}
-	
+
 	/*
 	 * Chunk generators
 	 */
-	@SuppressWarnings("unchecked")
 	public static String[] getGeneratorPlugins() {
 		ArrayList<String> gens = new ArrayList<String>();
 		for (Plugin plugin : Bukkit.getServer().getPluginManager().getPlugins()) {
 			try {
 				String mainclass = plugin.getDescription().getMain();
-				Class cmain = Class.forName(mainclass);
+				Class<?> cmain = Class.forName(mainclass);
 				if (cmain == null) continue;
 				if (cmain.getMethod("getDefaultWorldGenerator", String.class, String.class).getDeclaringClass() != JavaPlugin.class) {
 					gens.add(plugin.getDescription().getName());
@@ -140,6 +133,7 @@ public class WorldManager {
 		}
 		return gens.toArray(new String[0]);
 	}
+
 	public static String fixGeneratorName(String name) {
 		if (name == null) return null;
 		String id = "";
@@ -224,51 +218,45 @@ public class WorldManager {
 		return generateData(worldname, getRandomSeed(seed));
 	}
 	public static boolean generateData(String worldname, long seed) {
-		NBTTagCompound data = new NBTTagCompound(LEVEL_DATA_NAME);
-		data.setByte("thundering", (byte) 0);
-		data.setByte("thundering", (byte) 0);
-		data.setLong("LastPlayed", System.currentTimeMillis());
-		data.setLong("RandomSeed", seed);
-		data.setInt("version", (int) 19132);
-		data.setLong("Time", 0L);
-		data.setByte("raining", (byte) 0);
-		data.setInt("SpawnX", 0);
-		data.setInt("thunderTime", (int) 200000000);
-		data.setInt("SpawnY", 64);
-		data.setInt("SpawnZ", 0);
-		data.setString("LevelName", worldname);
-		data.setLong("SizeOnDisk", getWorldSize(worldname));
-		data.setInt("rainTime", (int) 50000);
-		//write the data
+		CommonTagCompound data = new CommonTagCompound("Data");
+		data.putValue("thundering", (byte) 0);
+		data.putValue("thundering", (byte) 0);
+		data.putValue("LastPlayed", System.currentTimeMillis());
+		data.putValue("RandomSeed", seed);
+		data.putValue("version", (int) 19132);
+		data.putValue("Time", 0L);
+		data.putValue("raining", (byte) 0);
+		data.putValue("SpawnX", 0);
+		data.putValue("thunderTime", (int) 200000000);
+		data.putValue("SpawnY", 64);
+		data.putValue("SpawnZ", 0);
+		data.putValue("LevelName", worldname);
+		data.putValue("SizeOnDisk", getWorldSize(worldname));
+		data.putValue("rainTime", (int) 50000);
 	    return setData(worldname, data);
 	}
-	public static NBTTagCompound getData(String worldname) {
+	public static CommonTagCompound getData(String worldname) {
 		File f = getDataFile(worldname);
 		if (!f.exists()) {
 			return null;
 		}
 		try {
-			FileInputStream fis = new FileInputStream(f);
-			NBTTagCompound data = NBTUtil.readCompound(fis);
-			if (data != null && data.hasKey(LEVEL_DATA_NAME)) {
-				data = data.getCompound(LEVEL_DATA_NAME);
+			CommonTagCompound root = CommonTagCompound.readFrom(f);
+			if (root != null) {
+				return root.get("Data", CommonTagCompound.class);
 			} else {
-				data = null;
+				return null;
 			}
-			fis.close();
-			return data;
 		} catch (Exception ex) {
 			return null;
 		}
 	}
-	public static boolean setData(String worldname, NBTTagCompound data) {
-    	File datafile = getDataFile(worldname);
+
+	public static boolean setData(String worldname, CommonTagCompound data) {
     	try {
-			OutputStream s = new FileOutputStream(datafile);
-			NBTTagCompound root = new NBTTagCompound();
-			root.setCompound(data.getName(), data);
-			NBTUtil.writeCompound(root, s);
-			s.close();
+			CommonTagCompound root = new CommonTagCompound();
+			root.put(data.getName(), data);
+			data.writeTo(getDataFile(worldname));
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -292,13 +280,13 @@ public class WorldManager {
 	public static WorldInfo getInfo(String worldname) {
 		WorldInfo info = null;
 		try {
-			NBTTagCompound t = getData(worldname);
+			CommonTagCompound t = getData(worldname);
 			if (t != null) {
 				info = new WorldInfo();
-				info.seed = t.getLong("RandomSeed");
-				info.time = t.getLong("Time");
-				info.raining = t.getByte("raining") != 0;
-		        info.thundering = t.getByte("thundering") != 0;
+				info.seed = t.getValue("RandomSeed", 0L);
+				info.time = t.getValue("Time", 0L);
+				info.raining = t.getValue("raining", (byte) 0) != 0;
+		        info.thundering = t.getValue("thundering", (byte) 0) != 0;
 			}
 		} catch (Exception ex) {}
 		World w = getWorld(worldname);
@@ -383,8 +371,7 @@ public class WorldManager {
 		Location loc = world.getSpawnLocation();
 		if (env == Environment.NETHER || env == Environment.THE_END) {
 			// Use a portal agent to generate the world spawn point
-			WorldServer ws = ((CraftWorld)world).getHandle();
-			loc = new CraftTravelAgent(ws).findOrCreate(loc);
+			loc = WorldUtil.findSpawnLocation(loc);
 			if (loc == null) {
 				return; // Failure?
 			}
@@ -531,11 +518,11 @@ public class WorldManager {
 		if (isLoaded(worldname)) {
 			return false;
 		}
-		NBTTagCompound data = getData(worldname);
+		CommonTagCompound data = getData(worldname);
 		if (data == null) {
 			return false;
 		}
-		data.setString("LevelName", newname);
+		data.putValue("LevelName", newname);
 		return setData(worldname, data);
 	}
 
@@ -612,7 +599,6 @@ public class WorldManager {
 	 * @param backupfolder
 	 * @return
 	 */
-	@SuppressWarnings("resource")
 	public static int repairRegion(File chunkfile, File backupfolder) {
 		MyWorlds.plugin.log(Level.INFO, "Performing repairs on region file: " + chunkfile.getName());
 		RandomAccessFile raf = null;
@@ -684,22 +670,22 @@ public class WorldManager {
 							
 							//Validate the stream and close
 							try {
-								NBTTagCompound comp = NBTUtil.readCompound(stream);
+								CommonTagCompound comp = CommonTagCompound.readFrom(stream);
 								if (comp == null) {
 									editcount++;
 									locations[i] = 0;
 									MyWorlds.plugin.log(Level.WARNING, "Invalid tag compound at chunk " + chunkX + "/" + chunkZ);
 								} else {
 									//correct location?
-									if (comp.hasKey("Level")) {
-										NBTTagCompound level = comp.getCompound("Level");
-										int xPos = level.getInt("xPos");
-										int zPos = level.getInt("zPos");
+									if (comp.containsKey("Level")) {
+										CommonTagCompound level = comp.createCompound("Level");
+										int xPos = level.getValue("xPos", Integer.MIN_VALUE);
+										int zPos = level.getValue("zPos", Integer.MIN_VALUE);
 										//valid coordinates?
 										if (xPos != chunkX || zPos != chunkZ) {
 											MyWorlds.plugin.log(Level.WARNING, "Chunk [" + xPos + "/" + zPos + "] was stored at [" + chunkX + "/" + chunkZ + "], moving...");
-											level.setInt("xPos", chunkX);
-											level.setInt("zPos", chunkZ);
+											level.putValue("xPos", chunkX);
+											level.putValue("zPos", chunkZ);
 											//rewrite to stream
 											ByteArrayOutputStream baos = new ByteArrayOutputStream(8096);
 									        DataOutputStream dataoutputstream = new DataOutputStream(new DeflaterOutputStream(baos));

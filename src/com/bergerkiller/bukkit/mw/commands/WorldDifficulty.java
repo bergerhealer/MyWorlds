@@ -3,7 +3,7 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
 
-import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.common.conversion.Conversion;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
@@ -21,7 +21,7 @@ public class WorldDifficulty extends Command {
 		    	String diff = wc.difficulty.toString().toLowerCase();
 		    	message(ChatColor.YELLOW + "Difficulty of world '" + worldname + "' is set at " + ChatColor.WHITE + diff);
 		    } else {
-		    	Difficulty diff = ParseUtil.parseEnum(args[0], Difficulty.NORMAL);
+		    	Difficulty diff = Conversion.toDifficulty.convert(args[0]);
 		    	if (diff != null) {
 					wc.difficulty = diff;
 					wc.updateDifficulty(wc.getWorld());

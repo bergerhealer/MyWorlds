@@ -24,7 +24,6 @@ import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.NativeUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 
-@SuppressWarnings("deprecation")
 public class WorldConfig extends WorldConfigStore {
 	public String worldname;
 	public boolean keepSpawnInMemory = true;

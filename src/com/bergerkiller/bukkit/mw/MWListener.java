@@ -3,10 +3,6 @@ package com.bergerkiller.bukkit.mw;
 import java.util.HashSet;
 import java.util.Iterator;
 
-import net.minecraft.server.v1_4_R1.EntityPlayer;
-import net.minecraft.server.v1_4_R1.PlayerFileData;
-import net.minecraft.server.v1_4_R1.World;
-
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -39,7 +35,9 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
-import com.bergerkiller.bukkit.common.EntityMap;
+import com.bergerkiller.bukkit.common.collections.EntityMap;
+import com.bergerkiller.bukkit.common.conversion.Conversion;
+import com.bergerkiller.bukkit.common.reflection.classes.EntityRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.NativeUtil;
 
@@ -284,13 +282,12 @@ public class MWListener implements Listener {
 			}
 		});
 		if (MyWorlds.useWorldInventories && !Permission.GENERAL_KEEPINV.has(event.getPlayer())) {
-			EntityPlayer ep = NativeUtil.getNative(event.getPlayer());
-			PlayerFileData data = CommonUtil.getServerConfig().playerFileData;
-			World newWorld = ep.world;
-			ep.world = NativeUtil.getNative(event.getFrom());
-			data.save(ep);
-			ep.world = newWorld;
-			PlayerData.refreshState(ep);
+			Object playerHandle = Conversion.toEntityHandle.convert(event.getPlayer());
+			org.bukkit.World newWorld = EntityRef.world.get(playerHandle);
+			EntityRef.world.set(playerHandle, event.getFrom());
+			CommonUtil.savePlayer(event.getPlayer());
+			EntityRef.world.set(playerHandle, newWorld);
+			MWPlayerFileData.refreshState(event.getPlayer());
 		}
 	}
 

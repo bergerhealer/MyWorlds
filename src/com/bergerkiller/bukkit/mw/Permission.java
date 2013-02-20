@@ -1,4 +1,5 @@
 package com.bergerkiller.bukkit.mw;
+
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionDefault;

@@ -128,7 +128,7 @@ public class MyWorlds extends PluginBase {
 
 		// World inventories
 		WorldInventory.load();
-		PlayerData.init();
+		MWPlayerFileData.init();
 
 		// init chunk loader
 		LoadChunksTask.init();
