@@ -25,7 +25,7 @@ public class MyWorlds extends PluginBase {
 	public static boolean allowPortalNameOverride;
 	public static boolean useWorldOperators;
 	public static boolean onlyObsidianPortals = false;
-	public static boolean isSpoutEnabled = false;
+	public static boolean isSpoutPluginEnabled = false;
 	public static boolean onlyPlayerTeleportation = true;
 	public static boolean useWorldInventories;
 	public static boolean calculateWorldSize;
@@ -47,7 +47,7 @@ public class MyWorlds extends PluginBase {
 	@Override
 	public void updateDependency(Plugin plugin, String pluginName, boolean enabled) {
 		if (pluginName.equals("Spout")) {
-			isSpoutEnabled = enabled;
+			isSpoutPluginEnabled = enabled;
 		}
 	}
 

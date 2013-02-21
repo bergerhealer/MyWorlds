@@ -14,9 +14,6 @@ import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
-import org.getspout.spoutapi.SpoutManager;
-import org.getspout.spoutapi.block.SpoutWeather;
-import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
@@ -293,31 +290,12 @@ public class WorldConfig extends WorldConfigStore {
 		});
 	}
 	public void updateSpoutWeather(World world) {
-		if (!MyWorlds.isSpoutEnabled) return;
+		if (!MyWorlds.isSpoutPluginEnabled) return;
 		for (Player p : world.getPlayers()) updateSpoutWeather(p);
 	}
 	public void updateSpoutWeather(Player player) {
-		if (MyWorlds.isSpoutEnabled) {
-			try {
-				SpoutPlayer sp = SpoutManager.getPlayer(player);
-				if (sp.isSpoutCraftEnabled()) {
-					SpoutWeather w = SpoutWeather.NONE;
-					if (player.getWorld().hasStorm()) {
-						if (this.showRain && this.showSnow) {
-							w = SpoutWeather.RESET;
-						} else if (this.showRain) {
-							w = SpoutWeather.RAIN;
-						} else if (this.showSnow) {
-							w = SpoutWeather.SNOW;
-						}
-					}
-					SpoutManager.getBiomeManager().setPlayerWeather(SpoutManager.getPlayer(player), w);
-				}
-			} catch (Throwable t) {
-				MyWorlds.isSpoutEnabled = false;
-				MyWorlds.plugin.log(Level.SEVERE, "An error occured while using Spout, Spout is no longer used in MyWorlds from now on:");
-				t.printStackTrace();
-			}
+		if (MyWorlds.isSpoutPluginEnabled) {
+			SpoutPluginHandler.setPlayerWeather(player, showRain, showSnow);
 		}
 	}
 	public void updateReload() {

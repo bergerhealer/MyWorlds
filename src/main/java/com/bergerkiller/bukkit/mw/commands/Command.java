@@ -82,7 +82,7 @@ public class Command {
 	}
 	
 	public void messageNoSpout() {
-		if (MyWorlds.isSpoutEnabled) return;
+		if (MyWorlds.isSpoutPluginEnabled) return;
 		this.message(ChatColor.YELLOW + "Note that Spout is not installed right now!");
 	}
 	public void message(String msg) {
