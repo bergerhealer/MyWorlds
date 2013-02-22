@@ -6,8 +6,7 @@
   <artifactId>MyWorlds</artifactId>
   <version>1.60</version>
   <packaging>jar</packaging>
-
-  <name>TrainCarts</name>
+  <name>MyWorlds</name>
   <url>http://dev.bukkit.org/server-mods/my-worlds/</url>
 
   <properties>
