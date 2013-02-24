@@ -18,7 +18,6 @@ import org.bukkit.generator.ChunkGenerator;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
-import com.bergerkiller.bukkit.common.utils.NativeUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 
 public class WorldConfig extends WorldConfigStore {
@@ -164,7 +163,7 @@ public class WorldConfig extends WorldConfigStore {
 	        this.keepSpawnInMemory = w.getKeepSpawnInMemory();
 	        this.autosave = w.isAutoSave();
 	        if (this.chunkGeneratorName == null) {
-	        	ChunkGenerator gen = NativeUtil.getNative(w).generator;
+	        	ChunkGenerator gen = w.getGenerator();
 	        	if (gen != null) {
 	        		String name = gen.getClass().getName();
 	        		if (name.equals("bukkit.techguard.christmas.world.ChristmasGenerator")) {

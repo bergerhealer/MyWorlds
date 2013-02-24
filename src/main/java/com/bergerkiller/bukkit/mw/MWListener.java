@@ -39,7 +39,7 @@ import com.bergerkiller.bukkit.common.collections.EntityMap;
 import com.bergerkiller.bukkit.common.conversion.Conversion;
 import com.bergerkiller.bukkit.common.reflection.classes.EntityRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
-import com.bergerkiller.bukkit.common.utils.NativeUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class MWListener implements Listener {
 	// World to disable keepspawnloaded for
@@ -101,7 +101,7 @@ public class MWListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onWorldInit(WorldInitEvent event) {
 		if (initIgnoreWorlds.remove(event.getWorld().getName())) {
-			NativeUtil.getNative(event.getWorld()).keepSpawnInMemory = false;
+			WorldUtil.setKeepSpawnInMemory(event.getWorld(), false);
 		} else {
 			WorldConfig.get(event.getWorld()).update(event.getWorld());
 		}
