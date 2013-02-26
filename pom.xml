@@ -41,7 +41,7 @@
     <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
-      <version>1.50</version>
+      <version>1.50-SNAPSHOT</version>
   	</dependency>
   	<dependency>
       <groupId>org.getspout</groupId>

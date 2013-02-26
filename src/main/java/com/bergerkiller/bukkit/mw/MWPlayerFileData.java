@@ -1,7 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
@@ -82,8 +81,8 @@ public class MWPlayerFileData extends PlayerFileDataBase {
 	}
 
 	private static void setLocation(CommonTagCompound tagCompound, Location location) {
-		tagCompound.putValue("Pos", Arrays.asList(location.getX(), location.getY(), location.getZ()));
-		tagCompound.putValue("Rotation", Arrays.asList(location.getYaw(), location.getPitch()));
+		tagCompound.putListValues("Pos", location.getX(), location.getY(), location.getZ());
+		tagCompound.putListValues("Rotation", location.getYaw(), location.getPitch());
 		final World world = location.getWorld();
 		tagCompound.putValue("World", world.getName());
 		tagCompound.putUUID("World", world.getUID());
@@ -107,7 +106,7 @@ public class MWPlayerFileData extends PlayerFileDataBase {
 			empty.putValue("HurtTime", (short) 0);
 			empty.putValue("DeathTime", (short) 0);
 			empty.putValue("AttackTime", (short) 0);
-			empty.putValue("Motion", Arrays.asList(velocity.getX(), velocity.getY(), velocity.getZ()));
+			empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
 			setLocation(empty, human.getLocation());
 			final Object humanHandle = Conversion.toEntityHandle.convert(human);
 			IntVector3 coord = EntityHumanRef.spawnCoord.get(humanHandle);
