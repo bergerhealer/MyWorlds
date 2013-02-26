@@ -6,7 +6,7 @@ softdepend: [Spout]
 depend: [BKCommonLib]
 loadbefore: [MobArena, RegionForSale, CreativeGates]
 dev-url: http://dev.bukkit.org/server-mods/my-worlds/
-class-loader-of: BKCommonLib
+metrics: true
 commands:
     world:
         description: Commands to manage your worlds
