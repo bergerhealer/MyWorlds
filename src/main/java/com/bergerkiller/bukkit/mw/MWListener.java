@@ -94,7 +94,7 @@ public class MWListener implements Listener {
 		if (!event.isCancelled()) {
 			WorldConfig config = WorldConfig.get(event.getWorld());
 			config.timeControl.updateWorld(null);
-			WorldManager.clearWorldReference(event.getWorld());
+			WorldManager.closeWorldStreams(event.getWorld());
 		}
 	}
 

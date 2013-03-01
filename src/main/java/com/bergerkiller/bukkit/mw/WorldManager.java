@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.logging.Level;
@@ -31,32 +32,34 @@ import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldManager {
 
-	public static boolean clearWorldReference(World world) {
-		String worldname = world.getName();
-		ArrayList<Object> removedKeys = new ArrayList<Object>();
-		try {
-			for (Entry<File, Object> entry : RegionFileCacheRef.FILES.entrySet()) {
-				if (entry.getKey().toString().startsWith("." + File.separator + worldname)) {
-					Object file = entry.getValue();
+	/**
+	 * Closes all file streams associated with the world specified.
+	 * 
+	 * @param world to close
+	 */
+	public static void closeWorldStreams(World world) {
+		synchronized (RegionFileCacheRef.TEMPLATE.getType()) {
+			try {
+				String worldPart = "." + File.separator + world.getName();
+				Iterator<Entry<File, Object>> iter = RegionFileCacheRef.FILES.entrySet().iterator();
+				Entry<File, Object> entry;
+				while (iter.hasNext()) {
+					entry = iter.next();
+					if (!entry.getKey().toString().startsWith(worldPart) || entry.getValue() == null) {
+						continue;
+					}
 					try {
-						if (file != null) {
-							RandomAccessFile raf = RegionFileRef.stream.get(file);
-							raf.close();
-							removedKeys.add(entry.getKey());
-						}
+						RegionFileRef.close.invoke(entry.getValue());
+						iter.remove();
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					}
 				}
+			} catch (Exception ex) {
+				MyWorlds.plugin.log(Level.WARNING, "Exception while removing world reference for '" + world.getName() + "'!");
+				ex.printStackTrace();
 			}
-		} catch (Exception ex) {
-			MyWorlds.plugin.log(Level.WARNING, "Exception while removing world reference for '" + worldname + "'!");
-			ex.printStackTrace();
 		}
-		for (Object key : removedKeys) {
-			RegionFileCacheRef.FILES.remove(key);
-		}
-		return true;
 	}
 
 	/*
@@ -536,14 +539,16 @@ public class WorldManager {
 		if (uid.exists()) uid.delete();
 		return true;
 	}
-	
+
 	public static Location getEvacuation(Player player) {
 		World world = player.getWorld();
 		String[] portalnames;
 		if (Permission.COMMAND_SPAWN.has(player) || Permission.COMMAND_TPP.has(player)) {
 			for (Position pos : getSpawnPoints()) {
 				Location loc = pos.toLocation();
-				if (loc.getWorld() == null) continue;
+				if (loc.getWorld() == null || loc.getWorld() == world) {
+					continue;
+				}
 				if (Permission.canEnter(player, loc.getWorld())) {
 					return loc;
 				}
@@ -555,8 +560,9 @@ public class WorldManager {
 		for (String name : portalnames) {
 			if (Permission.canEnterPortal(player, name)) {
 				Location loc = Portal.getPortalLocation(name, player.getWorld().getName(), true);
-				if (loc == null) continue;
-				if (loc.getWorld() == null) continue;
+				if (loc == null || loc.getWorld() == null || loc.getWorld() == world) {
+					continue;
+				}
 				if (Permission.canEnter(player, loc.getWorld())) {
 					return loc;
 				}
