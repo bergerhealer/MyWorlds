@@ -16,13 +16,12 @@ import com.bergerkiller.bukkit.common.conversion.Conversion;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.protocol.PacketFields;
-import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.reflection.classes.EntityHumanRef;
 import com.bergerkiller.bukkit.common.reflection.classes.MobEffectRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
+import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class MWPlayerFileData extends PlayerFileDataBase {
@@ -243,11 +242,12 @@ public class MWPlayerFileData extends PlayerFileDataBase {
 			NBTUtil.loadEntity(human, tagcompound);
 			if (human instanceof Player) {
 				if (hasPlayedBefore) {
-					EntityUtil.setFirstPlayed((Player) human, main.lastModified());
+					// As specified in the WorldNBTStorage implementation, set this
+					PlayerUtil.setFirstPlayed((Player) human, main.lastModified());
 				} else {
 					// Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
 					// Make sure the player is marked as being new
-					SafeField.set(human, "hasPlayedBefore", false);
+					PlayerUtil.setHasPlayedBefore((Player) human, false);
 				}
 			}
 			postLoad(human);
