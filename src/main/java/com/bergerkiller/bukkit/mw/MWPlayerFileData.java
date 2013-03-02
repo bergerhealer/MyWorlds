@@ -181,7 +181,7 @@ public class MWPlayerFileData extends PlayerFileDataBase {
 			}
 			EntityHumanRef.spawnCoord.set(playerHandle, spawn);
 			EntityHumanRef.spawnWorld.set(playerHandle, spawnWorld);
-			EntityHumanRef.spawnForced.set(playerHandle, data.getValue("SpawnForced", Boolean.class));
+			EntityHumanRef.spawnForced.set(playerHandle, data.getValue("SpawnForced", false));
 
 			// Other data
 			NBTUtil.loadFoodMetaData(EntityHumanRef.foodData.get(playerHandle), data);

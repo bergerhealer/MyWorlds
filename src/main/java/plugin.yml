@@ -4,7 +4,7 @@ version: 1.60
 authors: [bergerkiller, lenis0012]
 softdepend: [Spout]
 depend: [BKCommonLib]
-loadbefore: [MobArena, RegionForSale, CreativeGates]
+loadbefore: [MobArena, RegionForSale, CreativeGates, HeroStronghold]
 dev-url: http://dev.bukkit.org/server-mods/my-worlds/
 metrics: true
 commands:
