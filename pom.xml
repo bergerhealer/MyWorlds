@@ -26,8 +26,8 @@
     </repository>
     <!-- Repo for access to BKCommonLib -->
     <repository>
-      <id>herocraft-repo</id>
-      <url>http://ci.herocraftonline.com/plugin/repository/everything/</url>
+      <id>dj-tcraft-repo</id>
+      <url>http://ci.dj-tcraft.nl/plugin/repository/</url>
     </repository>
   </repositories>
 
@@ -35,13 +35,13 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>craftbukkit</artifactId>
-      <version>1.4.7-R1.1-SNAPSHOT</version>
+      <version>1.5-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
-      <version>1.50-SNAPSHOT</version>
+      <version>1.51</version>
   	</dependency>
   	<dependency>
       <groupId>org.getspout</groupId>
