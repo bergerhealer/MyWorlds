@@ -4,7 +4,7 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.60</version>
+  <version>1.61</version>
   <packaging>jar</packaging>
   <name>MyWorlds</name>
   <url>http://dev.bukkit.org/server-mods/my-worlds/</url>
@@ -27,21 +27,21 @@
     <!-- Repo for access to BKCommonLib -->
     <repository>
       <id>dj-tcraft-repo</id>
-      <url>http://ci.dj-tcraft.nl/plugin/repository/</url>
+      <url>http://ci.dj-tcraft.nl/plugin/repository/everything/</url>
     </repository>
   </repositories>
 
   <dependencies>
     <dependency>
       <groupId>org.bukkit</groupId>
-      <artifactId>craftbukkit</artifactId>
+      <artifactId>bukkit</artifactId>
       <version>1.5-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
-      <version>1.51</version>
+      <version>1.51-SNAPSHOT</version>
   	</dependency>
   	<dependency>
       <groupId>org.getspout</groupId>
@@ -82,7 +82,7 @@
 		<configuration>
 		  <source>1.6</source>
 		  <target>1.6</target>
-		  <showWarnings>true</showWarnings>
+		  <showWarnings>false</showWarnings>
 		  <showDeprecation>true</showDeprecation>
 		</configuration>
       </plugin>

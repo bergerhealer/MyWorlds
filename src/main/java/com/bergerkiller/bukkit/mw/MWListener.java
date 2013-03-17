@@ -287,7 +287,7 @@ public class MWListener implements Listener {
 			EntityRef.world.set(playerHandle, event.getFrom());
 			CommonUtil.savePlayer(event.getPlayer());
 			EntityRef.world.set(playerHandle, newWorld);
-			MWPlayerFileData.refreshState(event.getPlayer());
+			MWPlayerDataController.refreshState(event.getPlayer());
 		}
 	}
 

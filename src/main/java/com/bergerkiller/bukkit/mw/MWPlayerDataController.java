@@ -11,23 +11,19 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.bergerkiller.bukkit.common.bases.IntVector3;
-import com.bergerkiller.bukkit.common.bases.PlayerFileDataBase;
+import com.bergerkiller.bukkit.common.controller.PlayerDataController;
 import com.bergerkiller.bukkit.common.conversion.Conversion;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.protocol.PacketFields;
 import com.bergerkiller.bukkit.common.reflection.classes.EntityHumanRef;
 import com.bergerkiller.bukkit.common.reflection.classes.MobEffectRef;
-import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
-public class MWPlayerFileData extends PlayerFileDataBase {
-	public static void init() {
-		CommonUtil.setPlayerFileData(new MWPlayerFileData());
-	}
+public class MWPlayerDataController extends PlayerDataController {
 
 	/**
 	 * Gets the Main world save file for the playerName specified
@@ -213,7 +209,7 @@ public class MWPlayerFileData extends PlayerFileDataBase {
 	}
 
 	@Override
-	public void load(HumanEntity human) {
+	public CommonTagCompound onLoad(HumanEntity human) {
 		try {
 			File main;
 			CommonTagCompound tagcompound;
@@ -238,27 +234,29 @@ public class MWPlayerFileData extends PlayerFileDataBase {
 				// Alter saved data to point to the main world
 				setLocation(tagcompound, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
 			}
+
 			// Load the save file
 			NBTUtil.loadEntity(human, tagcompound);
 			if (human instanceof Player) {
+				// Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
+				// Make sure the player is marked as being new
+				PlayerUtil.setHasPlayedBefore((Player) human, hasPlayedBefore);
 				if (hasPlayedBefore) {
 					// As specified in the WorldNBTStorage implementation, set this
 					PlayerUtil.setFirstPlayed((Player) human, main.lastModified());
-				} else {
-					// Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
-					// Make sure the player is marked as being new
-					PlayerUtil.setHasPlayedBefore((Player) human, false);
 				}
 			}
 			postLoad(human);
+			return tagcompound;
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to load player data for " + human.getName());
 			exception.printStackTrace();
+			return super.onLoad(human);
 		}
 	}
 
 	@Override
-	public void save(HumanEntity human) {
+	public void onSave(HumanEntity human) {
 		try {
 			CommonTagCompound tagcompound = NBTUtil.saveEntity(human, null);
 			File mainDest = getMainFile(human.getName());
@@ -271,6 +269,7 @@ public class MWPlayerFileData extends PlayerFileDataBase {
 				dest = mainDest;
 			}
 			// Write to the source
+			System.out.println("WRITING TO " + dest);
 			tagcompound.writeTo(dest);
 			if (mainDest.equals(dest)) {
 				return; // Do not update world if same file
@@ -280,6 +279,7 @@ public class MWPlayerFileData extends PlayerFileDataBase {
 				tagcompound = CommonTagCompound.readFrom(mainDest);
 			}
 			tagcompound.putUUID("World", human.getWorld().getUID());
+			System.out.println("MAIN: " + mainDest);
 			tagcompound.writeTo(mainDest);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player data for " + human.getName());
