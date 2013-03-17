@@ -269,7 +269,6 @@ public class MWPlayerDataController extends PlayerDataController {
 				dest = mainDest;
 			}
 			// Write to the source
-			System.out.println("WRITING TO " + dest);
 			tagcompound.writeTo(dest);
 			if (mainDest.equals(dest)) {
 				return; // Do not update world if same file
@@ -279,7 +278,6 @@ public class MWPlayerDataController extends PlayerDataController {
 				tagcompound = CommonTagCompound.readFrom(mainDest);
 			}
 			tagcompound.putUUID("World", human.getWorld().getUID());
-			System.out.println("MAIN: " + mainDest);
 			tagcompound.writeTo(mainDest);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player data for " + human.getName());
