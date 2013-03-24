@@ -127,7 +127,7 @@ public class Command {
 		builder.yellow("Available portals: ").white(portals.length, " Portal");
 		if (portals.length != 1) builder.append('s');
 		if (portals.length > 0) {
-			builder.newLine().setIndent(2).setSeparator(ChatColor.WHITE, " / ");
+			builder.setIndent(2).setSeparator(ChatColor.WHITE, " / ").newLine();
 			final Location ploc;
 			if (sender instanceof Player) {
 				ploc = ((Player) sender).getLocation();

@@ -18,8 +18,8 @@ public class WorldList extends Command {
 			//perform some nice layout coloring
 			MessageBuilder builder = new MessageBuilder();
 			builder.newLine().green("[Loaded/Online] ").red("[Unloaded/Offline] ").dark_red("[Broken/Dead]");
-			builder.newLine().yellow("Available worlds: ").newLine();
-			builder.setIndent(2).setSeparator(ChatColor.WHITE, " / ");
+			builder.newLine().yellow("Available worlds: ");
+			builder.setSeparator(ChatColor.WHITE, " / ").setIndent(2).newLine();
 			for (String world : WorldManager.getWorlds()) {
 				if (WorldManager.isLoaded(world)) {
 					builder.green(world);
