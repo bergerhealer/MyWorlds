@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
+import java.util.zip.ZipException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -711,11 +712,16 @@ public class WorldManager {
 										MyWorlds.plugin.log(Level.WARNING, "Invalid tag compound at chunk " + chunkX + "/" + chunkZ);
 									}
 								}
+							} catch (ZipException ex) {
+								//Invalid.
+								editcount++;
+								locations[i] = 0;
+								MyWorlds.plugin.log(Level.WARNING, "Chunk at position " + chunkX + "/" + chunkZ + " is not in a valid ZIP format (it's corrupted, and thus lost)");
 							} catch (Exception ex) {
 								//Invalid.
 								editcount++;
 								locations[i] = 0;
-								MyWorlds.plugin.log(Level.WARNING, "Stream  " + i);
+								MyWorlds.plugin.log(Level.WARNING, "Failed to properly read chunk at position " + chunkX + "/" + chunkZ + ":");
 								ex.printStackTrace();
 							}
 							stream.close();
