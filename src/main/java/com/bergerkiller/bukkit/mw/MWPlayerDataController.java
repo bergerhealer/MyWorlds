@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.zip.ZipException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -91,28 +92,35 @@ public class MWPlayerDataController extends PlayerDataController {
 	 * @return the data in the file, or the empty data constant if the file does not exist
 	 * @throws Exception
 	 */
-	public static CommonTagCompound read(File sourceFile, HumanEntity human) throws Exception {
-		if (sourceFile.exists()) {
-			return CommonTagCompound.readFrom(sourceFile);
-		} else {
-			final Vector velocity = human.getVelocity();
-			CommonTagCompound empty = new CommonTagCompound();
-			empty.putValue("Health", (short) 20);
-			empty.putValue("HurtTime", (short) 0);
-			empty.putValue("DeathTime", (short) 0);
-			empty.putValue("AttackTime", (short) 0);
-			empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
-			setLocation(empty, human.getLocation());
-			final Object humanHandle = Conversion.toEntityHandle.convert(human);
-			IntVector3 coord = EntityHumanRef.spawnCoord.get(humanHandle);
-			if (coord != null) {
-				empty.putValue("SpawnWorld", EntityHumanRef.spawnWorld.get(humanHandle));
-				empty.putValue("SpawnX", coord.x);
-				empty.putValue("SpawnY", coord.y);
-				empty.putValue("SpawnZ", coord.z);
+	public static CommonTagCompound read(File sourceFile, HumanEntity human) {
+		try {
+			if (sourceFile.exists()) {
+				return CommonTagCompound.readFrom(sourceFile);
 			}
-			return empty;
+		} catch (ZipException ex) {
+			Bukkit.getLogger().warning("Failed to read player data for " + human.getName() + " (ZIP-exception: file corrupted)");
+		} catch (Throwable t) {
+			// Return an empty data constant for now
+			Bukkit.getLogger().warning("Failed to read player data for " + human.getName());
+			t.printStackTrace();
 		}
+		final Vector velocity = human.getVelocity();
+		CommonTagCompound empty = new CommonTagCompound();
+		empty.putValue("Health", (short) 20);
+		empty.putValue("HurtTime", (short) 0);
+		empty.putValue("DeathTime", (short) 0);
+		empty.putValue("AttackTime", (short) 0);
+		empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
+		setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
+		final Object humanHandle = Conversion.toEntityHandle.convert(human);
+		IntVector3 coord = EntityHumanRef.spawnCoord.get(humanHandle);
+		if (coord != null) {
+			empty.putValue("SpawnWorld", EntityHumanRef.spawnWorld.get(humanHandle));
+			empty.putValue("SpawnX", coord.x);
+			empty.putValue("SpawnY", coord.y);
+			empty.putValue("SpawnZ", coord.z);
+		}
+		return empty;
 	}
 
 	private static void clearEffects(HumanEntity human) {
@@ -220,12 +228,16 @@ public class MWPlayerDataController extends PlayerDataController {
 			if (MyWorlds.useWorldInventories) {
 				// Find out where to find the save file
 				if (hasPlayedBefore && !MyWorlds.forceMainWorldSpawn) {
-					// Allow switching worlds and positions
-					tagcompound = CommonTagCompound.readFrom(main);
-					World world = Bukkit.getWorld(tagcompound.getUUID("World"));
-					if (world != null) {
-						// Switch to the save file of the loaded world
-						main = getSaveFile(world.getName(), human.getName());
+					try {
+						// Allow switching worlds and positions
+						tagcompound = CommonTagCompound.readFrom(main);
+						World world = Bukkit.getWorld(tagcompound.getUUID("World"));
+						if (world != null) {
+							// Switch to the save file of the loaded world
+							main = getSaveFile(world.getName(), human.getName());
+						}
+					} catch (Throwable t) {
+						// Stick with the current world for now.
 					}
 				}
 			}
