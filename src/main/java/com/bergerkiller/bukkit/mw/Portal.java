@@ -17,6 +17,8 @@ import org.bukkit.material.MaterialData;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
+import com.bergerkiller.bukkit.common.utils.LogicUtil;
+import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class Portal extends PortalStore {
@@ -241,28 +243,27 @@ public class Portal extends PortalStore {
 	}
 
 	public static Portal get(Block signblock, String[] lines) {
-		if (signblock.getState() instanceof Sign) {
-			if (lines[0].equalsIgnoreCase("[portal]")) {
-				String name = lines[1];
-				if (name != null && name.trim().equals("") == false) {
-					Portal p = new Portal();
-					p.name = name.replace("\"", "").replace("'", "");
-					p.destination = lines[2].replace("\"", "").replace("'", "");
-					if (lines[3].isEmpty()) {
-						p.destdisplayname = p.getDestinationName();
-					} else {
-						p.destdisplayname = lines[3];
-					}
-					p.location = signblock.getLocation();
-			    	MaterialData data = signblock.getState().getData();
-			    	float yaw = 0;
-			    	if (data instanceof Directional) {
-			    		yaw = FaceUtil.faceToYaw(((Directional) data).getFacing()) + 90;
-			    	}
-			    	p.location.setYaw(yaw);
-					return p;
-				}
+		if (signblock.getState() instanceof Sign && lines[0].equalsIgnoreCase("[portal]")) {
+			String name = lines[1];
+			if (LogicUtil.nullOrEmpty(name)) {
+				name = StringUtil.blockToString(signblock);
 			}
+			Portal p = new Portal();
+			p.name = name.replace("\"", "").replace("'", "");
+			p.destination = lines[2].replace("\"", "").replace("'", "");
+			if (lines[3].isEmpty()) {
+				p.destdisplayname = p.getDestinationName();
+			} else {
+				p.destdisplayname = lines[3];
+			}
+			p.location = signblock.getLocation();
+			MaterialData data = signblock.getState().getData();
+			float yaw = 0;
+			if (data instanceof Directional) {
+				yaw = FaceUtil.faceToYaw(((Directional) data).getFacing()) + 90;
+			}
+			p.location.setYaw(yaw);
+			return p;
 		}
 		return null;
 	}

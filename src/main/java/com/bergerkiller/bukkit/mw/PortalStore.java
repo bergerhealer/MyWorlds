@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import org.bukkit.Chunk;
@@ -35,6 +36,27 @@ public class PortalStore {
 			portallocations.put(worldname, rval);
 		}
 		return rval;
+	}
+
+	/**
+	 * Checks whether a specific Portal has a name set, or whether the default name was used.
+	 * 
+	 * @param portalname to check
+	 * @param position of the portal
+	 * @return True if the portal can be teleported to, False if not
+	 */
+	public static boolean canBeTeleportedTo(String portalname, Position position) {
+		if (portalname.contains("_")) {
+			StringBuilder posName = new StringBuilder(30);
+			posName.append(position.getWorldName()).append('_');
+			posName.append(position.getBlockX()).append('_');
+			posName.append(position.getBlockY()).append('_');
+			posName.append(position.getBlockZ());
+			if (portalname.equalsIgnoreCase(posName.toString())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static Location getPortalLocation(String portalname, String world, boolean spawnlocation) {
@@ -93,6 +115,10 @@ public class PortalStore {
 		ArrayList<String> rval = new ArrayList<String>();
 		for (HashMap<String, Position> positions : portallocations.values()) {
 			for (Map.Entry<String, Position> entry : positions.entrySet()) {
+				// Hide portals that can not be teleported to (does allow teleportation...)
+				if (!canBeTeleportedTo(entry.getKey(), entry.getValue())) {
+					continue;
+				}
 				if (entry.getValue().getWorldName().equals(w.getName())) {
 					rval.add(entry.getKey());
 				}
@@ -104,14 +130,19 @@ public class PortalStore {
 	public static String[] getPortals() {
 		HashSet<String> names = new HashSet<String>();
 		for (HashMap<String, Position> positions : portallocations.values()) {
-			names.addAll(positions.keySet());
+			for (Entry<String, Position> entry : positions.entrySet()) {
+				// Hide portals that can not be teleported to (does allow teleportation...)
+				if (!canBeTeleportedTo(entry.getKey(), entry.getValue())) {
+					continue;
+				}
+				names.add(entry.getKey());
+			}
 		}
 		return names.toArray(new String[0]);
 	}
 
 	public static void init(File file) {
-		if(!file.exists())
-		{
+		if(!file.exists()) {
 			try {
 				file.createNewFile();
 			} catch (IOException e) { }
@@ -163,7 +194,6 @@ public class PortalStore {
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
-		portallocations.clear();
 		portallocations = null;
 	}
 }
