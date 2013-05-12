@@ -4,7 +4,7 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.61</version>
+  <version>1.62</version>
   <packaging>jar</packaging>
   <name>MyWorlds</name>
   <url>http://dev.bukkit.org/server-mods/my-worlds/</url>
@@ -35,13 +35,13 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.5.1-R0.2</version>
+      <version>1.5.2-R0.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
-      <version>1.51</version>
+      <version>1.52-SNAPSHOT</version>
   	</dependency>
   	<dependency>
       <groupId>org.getspout</groupId>
@@ -58,20 +58,18 @@
 
   <!-- Build -->
   <build>
-    <!-- Resources -->
-    <resources>
-	  <resource>
-	    <directory>src/main/java/</directory>
-		<includes>
-          <include>**</include>
-		</includes>
-        <!-- Don't add source files to target jar -->
-	    <excludes>
-		  <exclude>com/bergerkiller/bukkit/**/*.java</exclude>
-		</excludes>
-	  </resource>
+	<!-- Resources (the filtering allows us to use project properties in plugin.yml) -->
+	<resources>
+      <resource>
+        <directory>src/main/java</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>plugin.yml</include>
+        </includes>
+      </resource>
 	</resources>
 	<defaultGoal>clean install</defaultGoal>
+
 	<!-- Plugins -->
 	<plugins>
 	  <!-- Compiler plugin -->

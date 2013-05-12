@@ -8,6 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.internal.CommonPlugin;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
@@ -32,7 +33,9 @@ public class MyWorlds extends PluginBase {
 	public static boolean forceMainWorldSpawn;
 	public static boolean alwaysInstantPortal;
 	public static boolean allowPersonalPortals;
+	public static boolean ignoreEggSpawns;
 	public static MyWorlds plugin;
+	private MWListener listener;
 
 	@Override
 	public int getMinimumLibVersion() {
@@ -55,7 +58,9 @@ public class MyWorlds extends PluginBase {
 		plugin = this;
 
 		// Event registering
-		this.register(MWListener.class);
+		listener = new MWListener();
+		this.register(listener);
+		CommonPlugin.getInstance().addMobPreSpawnListener(listener);
 		this.register(MWPermissionListener.class);
 		this.register("tpp", "world");
 
@@ -116,6 +121,9 @@ public class MyWorlds extends PluginBase {
 		config.addHeader("allowPersonalPortals", "True: Players are teleported to their own portal on the other world");
 		allowPersonalPortals = config.get("allowPersonalPortals", true);
 
+		config.setHeader("ignoreEggSpawns", "\nWhether egg-spawned entities are allowed to spawn, even if worlds have these entities blacklisted");
+		ignoreEggSpawns = config.get("ignoreEggSpawns", true);
+
 		config.save();
 
 		// World configurations have to be loaded first
@@ -145,6 +153,9 @@ public class MyWorlds extends PluginBase {
 
 		// Abort chunk loader
 		LoadChunksTask.deinit();
+
+		// Unregister mob spawning listener
+		CommonPlugin.getInstance().removeMobPreSpawnListener(listener);
 
 		plugin = null;
 	}

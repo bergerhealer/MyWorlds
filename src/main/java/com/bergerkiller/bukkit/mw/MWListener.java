@@ -7,9 +7,11 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -37,11 +39,12 @@ import org.bukkit.event.world.WorldUnloadEvent;
 
 import com.bergerkiller.bukkit.common.collections.EntityMap;
 import com.bergerkiller.bukkit.common.conversion.Conversion;
+import com.bergerkiller.bukkit.common.internal.MobPreSpawnListener;
 import com.bergerkiller.bukkit.common.reflection.classes.EntityRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
-public class MWListener implements Listener {
+public class MWListener implements Listener, MobPreSpawnListener {
 	// World to disable keepspawnloaded for
 	private static HashSet<String> initIgnoreWorlds = new HashSet<String>();
 	// A mapping of player positions to prevent spammed portal teleportation
@@ -89,13 +92,11 @@ public class MWListener implements Listener {
 		WorldConfig.get(event.getWorld()).timeControl.updateWorld(event.getWorld());
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onWorldUnload(WorldUnloadEvent event) {
-		if (!event.isCancelled()) {
-			WorldConfig config = WorldConfig.get(event.getWorld());
-			config.timeControl.updateWorld(null);
-			WorldManager.closeWorldStreams(event.getWorld());
-		}
+		WorldConfig config = WorldConfig.get(event.getWorld());
+		config.timeControl.updateWorld(null);
+		WorldManager.closeWorldStreams(event.getWorld());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -113,7 +114,7 @@ public class MWListener implements Listener {
 		ignoreWeatherChanges = false;
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onWeatherChange(WeatherChangeEvent event) {
 		if (!ignoreWeatherChanges && WorldConfig.get(event.getWorld()).holdWeather) {
 			event.setCancelled(true);
@@ -150,59 +151,52 @@ public class MWListener implements Listener {
 		WorldConfig.updateReload(event.getPlayer());
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerMove(PlayerMoveEvent event) {
-		if (!event.isCancelled()) {
-			// Handle player movement for portals
-			Location loc = walkDistanceCheckMap.get(event.getPlayer());
-			if (loc != null) {
-				if (loc.getWorld() != event.getTo().getWorld()) {
-					// Put in proper world
-					walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
-				} else if (loc.distanceSquared(event.getTo()) > 2.25) {
-					// Moved outside radius - remove point
-					walkDistanceCheckMap.remove(event.getPlayer());
-				}
+		// Handle player movement for portals
+		Location loc = walkDistanceCheckMap.get(event.getPlayer());
+		if (loc != null) {
+			if (loc.getWorld() != event.getTo().getWorld()) {
+				// Put in proper world
+				walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
+			} else if (loc.distanceSquared(event.getTo()) > 2.25) {
+				// Moved outside radius - remove point
+				walkDistanceCheckMap.remove(event.getPlayer());
 			}
-			// Water teleport handling
-			Block b = event.getTo().getBlock();
-			final int statid = Material.STATIONARY_WATER.getId(); //= 9
-			if (MyWorlds.useWaterTeleport && b.getTypeId() == statid) {
-				if (b.getRelative(BlockFace.UP).getTypeId() == statid || b.getRelative(BlockFace.DOWN).getTypeId() == statid) {
-					boolean allow = false;
-					if (b.getRelative(BlockFace.NORTH).getType() == Material.AIR || b.getRelative(BlockFace.SOUTH).getType() == Material.AIR) {
-						if (Util.isSolid(b, BlockFace.WEST) && Util.isSolid(b, BlockFace.EAST)) {
-							allow = true;
-						}
-					} else if (b.getRelative(BlockFace.EAST).getType() == Material.AIR || b.getRelative(BlockFace.WEST).getType() == Material.AIR) {
-						if (Util.isSolid(b, BlockFace.NORTH) && Util.isSolid(b, BlockFace.SOUTH)) {
-							allow = true;
-						}
+		}
+		// Water teleport handling
+		Block b = event.getTo().getBlock();
+		final int statid = Material.STATIONARY_WATER.getId(); // = 9
+		if (MyWorlds.useWaterTeleport && b.getTypeId() == statid) {
+			if (b.getRelative(BlockFace.UP).getTypeId() == statid || b.getRelative(BlockFace.DOWN).getTypeId() == statid) {
+				boolean allow = false;
+				if (b.getRelative(BlockFace.NORTH).getType() == Material.AIR || b.getRelative(BlockFace.SOUTH).getType() == Material.AIR) {
+					if (Util.isSolid(b, BlockFace.WEST) && Util.isSolid(b, BlockFace.EAST)) {
+						allow = true;
 					}
-					if (allow) {
-						doPortalTeleport(event.getPlayer(), Material.STATIONARY_WATER);
+				} else if (b.getRelative(BlockFace.EAST).getType() == Material.AIR || b.getRelative(BlockFace.WEST).getType() == Material.AIR) {
+					if (Util.isSolid(b, BlockFace.NORTH) && Util.isSolid(b, BlockFace.SOUTH)) {
+						allow = true;
 					}
 				}
+				if (allow) {
+					doPortalTeleport(event.getPlayer(), Material.STATIONARY_WATER);
+				}
 			}
-			if (event.getFrom().getWorld() != event.getTo().getWorld()) {
-				WorldConfig.updateReload(event.getFrom());
-			}
+		}
+		if (event.getFrom().getWorld() != event.getTo().getWorld()) {
+			WorldConfig.updateReload(event.getFrom());
 		}
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		if (!event.isCancelled()) {
-			walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
-			portaltimes.put(event.getPlayer(), System.currentTimeMillis());
-		}
+		walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
+		portaltimes.put(event.getPlayer(), System.currentTimeMillis());
 	}
 
-	@EventHandler(priority = EventPriority.LOW)
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void onPlayerPortal(PlayerPortalEvent event) {
-		if (event.isCancelled()) {
-			return;
-		}
 		final boolean nether = event.getCause() == TeleportCause.NETHER_PORTAL;
 		final boolean end = event.getCause() == TeleportCause.END_PORTAL;
 		if (!nether && !end) {
@@ -291,22 +285,22 @@ public class MWListener implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onCreatureSpawn(CreatureSpawnEvent event) {
-		if (!event.isCancelled()) {
-			if (event.getSpawnReason() != SpawnReason.CUSTOM) {
-				if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
-					event.setCancelled(true);
-				}
+		if (event.getSpawnReason() != SpawnReason.CUSTOM && (!MyWorlds.ignoreEggSpawns || event.getSpawnReason() != SpawnReason.EGG)) {
+			if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
+				event.setCancelled(true);
 			}
 		}
 	}
 
-	@EventHandler(priority = EventPriority.LOWEST)
+	@Override
+	public boolean canSpawn(World world, int x, int y, int z, EntityType entityType) {
+		return !WorldConfig.get(world).spawnControl.isDenied(entityType);
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onBlockForm(BlockFormEvent event) {
-		if (event.isCancelled()) {
-			return;
-		}
 		Material type = event.getNewState().getType();
 		if (type == Material.SNOW) {
 			if (!WorldConfig.get(event.getBlock()).formSnow) {
@@ -319,51 +313,45 @@ public class MWListener implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onBlockPhysics(BlockPhysicsEvent event) {
-		if (!event.isCancelled()) {
-			if (event.getBlock().getType() == Material.PORTAL) {
-				if (!(event.getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR)) {
-					event.setCancelled(true);
-				}
+		if (event.getBlock().getType() == Material.PORTAL) {
+			if (!(event.getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR)) {
+				event.setCancelled(true);
 			}
 		}
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent event) {
-		if (!event.isCancelled()) {
-			Portal portal = Portal.get(event.getBlock(), false);
-			if (portal != null && portal.remove()) {
-				event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
-				MyWorlds.plugin.logAction(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
-			}
+		Portal portal = Portal.get(event.getBlock(), false);
+		if (portal != null && portal.remove()) {
+			event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
+			MyWorlds.plugin.logAction(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
 		}
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onSignChange(SignChangeEvent event) {
-		if (!event.isCancelled()) {
-			Portal portal = Portal.get(event.getBlock(), event.getLines());
-			if (portal != null) {
-				if (Permission.PORTAL_CREATE.has(event.getPlayer())) {
-					if (Portal.exists(event.getPlayer().getWorld().getName(), portal.getName())) {
-						if (!MyWorlds.allowPortalNameOverride || !Permission.PORTAL_OVERRIDE.has(event.getPlayer())) {
-							event.getPlayer().sendMessage(ChatColor.RED + "This portal name is already used!");
-							event.setCancelled(true);
-							return;
-						}
+		Portal portal = Portal.get(event.getBlock(), event.getLines());
+		if (portal != null) {
+			if (Permission.PORTAL_CREATE.has(event.getPlayer())) {
+				if (Portal.exists(event.getPlayer().getWorld().getName(), portal.getName())) {
+					if (!MyWorlds.allowPortalNameOverride || !Permission.PORTAL_OVERRIDE.has(event.getPlayer())) {
+						event.getPlayer().sendMessage(ChatColor.RED + "This portal name is already used!");
+						event.setCancelled(true);
+						return;
 					}
-					portal.add();
-					MyWorlds.plugin.logAction(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
-					if (portal.hasDestination()) {
-						event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + portal.getDestinationName() + ChatColor.GREEN + "!");
-					} else {
-						event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new destination portal!");
-					}
-				} else {
-					event.setCancelled(true);
 				}
+				portal.add();
+				MyWorlds.plugin.logAction(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
+				if (portal.hasDestination()) {
+					event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + portal.getDestinationName() + ChatColor.GREEN + "!");
+				} else {
+					event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new destination portal!");
+				}
+			} else {
+				event.setCancelled(true);
 			}
 		}
 	}
