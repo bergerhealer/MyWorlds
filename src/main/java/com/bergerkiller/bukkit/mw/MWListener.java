@@ -287,7 +287,7 @@ public class MWListener implements Listener, MobPreSpawnListener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onCreatureSpawn(CreatureSpawnEvent event) {
-		if (event.getSpawnReason() != SpawnReason.CUSTOM && (!MyWorlds.ignoreEggSpawns || event.getSpawnReason() != SpawnReason.EGG)) {
+		if (event.getSpawnReason() != SpawnReason.CUSTOM && (!MyWorlds.ignoreEggSpawns || event.getSpawnReason() != SpawnReason.SPAWNER_EGG)) {
 			if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
 				event.setCancelled(true);
 			}
