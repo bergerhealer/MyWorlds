@@ -14,6 +14,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
+import com.bergerkiller.bukkit.common.bases.IntVector3;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
@@ -291,23 +292,22 @@ public class Portal extends PortalStore {
 					// Is it a world spawn?
 					World w = WorldManager.getWorld(def);
 					if (w != null) {
-						Location dest = null;
+						final Location dest;
 						if (MyWorlds.allowPersonalPortals) {
 							// Find out what location to teleport to
 							// Use source block as the location to search from
-							dest = e.getLocation();
-							final double blockRatio = w.getEnvironment() == Environment.NORMAL ? 8 : 0.125;
-							dest.setX(dest.getX() * blockRatio);
-							dest.setZ(dest.getZ() * blockRatio);
-							dest.setWorld(w);
-							dest = WorldUtil.findSpawnLocation(dest);
-						}
-						// Fall-back to the main world spawn
-						if (dest == null) {
+							double blockRatio = w.getEnvironment() == Environment.NORMAL ? 8 : 0.125;
+							Location entityLoc = e.getLocation();
+							IntVector3 blockPos = new IntVector3(blockRatio * entityLoc.getX(), entityLoc.getY(), blockRatio * entityLoc.getZ());
+							dest = WorldUtil.findSpawnLocation(new Location(w, blockPos.x + 0.5, blockPos.y + 0.5, blockPos.z + 0.5));
+						} else {
+							// Fall-back to the main world spawn
 							dest = WorldManager.getSpawnLocation(w);
 						}
-						EntityUtil.teleportNextTick(e, dest);
-						return true;
+						if (dest != null) {
+							EntityUtil.teleportNextTick(e, dest);
+							return true;
+						}
 					}
 				}
 			}
