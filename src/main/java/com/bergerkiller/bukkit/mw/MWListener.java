@@ -7,11 +7,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -39,12 +37,12 @@ import org.bukkit.event.world.WorldUnloadEvent;
 
 import com.bergerkiller.bukkit.common.collections.EntityMap;
 import com.bergerkiller.bukkit.common.conversion.Conversion;
-import com.bergerkiller.bukkit.common.internal.MobPreSpawnListener;
+import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
 import com.bergerkiller.bukkit.common.reflection.classes.EntityRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
-public class MWListener implements Listener, MobPreSpawnListener {
+public class MWListener implements Listener {
 	// World to disable keepspawnloaded for
 	private static HashSet<String> initIgnoreWorlds = new HashSet<String>();
 	// A mapping of player positions to prevent spammed portal teleportation
@@ -294,9 +292,11 @@ public class MWListener implements Listener, MobPreSpawnListener {
 		}
 	}
 
-	@Override
-	public boolean canSpawn(World world, int x, int y, int z, EntityType entityType) {
-		return !WorldConfig.get(world).spawnControl.isDenied(entityType);
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	public void onCreaturePreSpawn(CreaturePreSpawnEvent event) {
+		if (WorldConfig.get(event.getSpawnLocation()).spawnControl.isDenied(event.getEntityType())) {
+			event.setCancelled(true);
+		}
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)

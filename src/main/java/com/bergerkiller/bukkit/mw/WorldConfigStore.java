@@ -1,7 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -10,15 +9,16 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 
+import com.bergerkiller.bukkit.common.collections.StringMapCaseInsensitive;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 
 public class WorldConfigStore {
-	protected static HashMap<String, WorldConfig> worldConfigs = new HashMap<String, WorldConfig>();
+	protected static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
 	private static FileConfiguration defaultProperties;
 
 	public static WorldConfig get(String worldname) {
-		WorldConfig c = worldConfigs.get(worldname.toLowerCase());
+		WorldConfig c = worldConfigs.get(worldname);
 		if (c == null) {
 			c = new WorldConfig(worldname);
 			if (defaultProperties != null) {

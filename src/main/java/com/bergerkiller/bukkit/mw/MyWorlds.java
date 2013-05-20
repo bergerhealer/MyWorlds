@@ -8,7 +8,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
-import com.bergerkiller.bukkit.common.internal.CommonPlugin;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
@@ -35,7 +34,6 @@ public class MyWorlds extends PluginBase {
 	public static boolean allowPersonalPortals;
 	public static boolean ignoreEggSpawns;
 	public static MyWorlds plugin;
-	private MWListener listener;
 
 	@Override
 	public int getMinimumLibVersion() {
@@ -58,9 +56,7 @@ public class MyWorlds extends PluginBase {
 		plugin = this;
 
 		// Event registering
-		listener = new MWListener();
-		this.register(listener);
-		CommonPlugin.getInstance().addMobPreSpawnListener(listener);
+		this.register(MWListener.class);
 		this.register(MWPermissionListener.class);
 		this.register("tpp", "world");
 
@@ -153,9 +149,6 @@ public class MyWorlds extends PluginBase {
 
 		// Abort chunk loader
 		LoadChunksTask.deinit();
-
-		// Unregister mob spawning listener
-		CommonPlugin.getInstance().removeMobPreSpawnListener(listener);
 
 		plugin = null;
 	}

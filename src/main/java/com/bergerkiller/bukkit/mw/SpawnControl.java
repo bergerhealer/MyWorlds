@@ -15,19 +15,7 @@ public class SpawnControl {
 	}
 
 	public boolean isDenied(EntityType type) {
-		return type != null && deniedCreatures.contains(type);
-	}
-
-	public boolean isDenied(String type) {
-		for (EntityType ctype : deniedCreatures) {
-			if (ctype.name().equals(type)) {
-				return true;
-			}
-		}
-		if (type.endsWith("S")) {
-			return isDenied(type.substring(0, type.length() - 2));
-		}
-		return false;
+		return deniedCreatures.contains(type);
 	}
 
 	public boolean getAnimals() {
