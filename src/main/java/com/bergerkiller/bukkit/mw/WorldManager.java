@@ -268,18 +268,15 @@ public class WorldManager {
 		}
 	}
 
-	public static File getDataFolder(String worldname) {
-		return new File(Bukkit.getWorldContainer(), worldname);
-	}
 	public static File getDataFile(String worldname) {
-		return new File(getDataFolder(worldname) + File.separator + "level.dat");
+		return new File(WorldUtil.getWorldFolder(worldname), "level.dat");
 	}
 	public static File getUIDFile(String worldname) {
-		return new File(getDataFolder(worldname) + File.separator + "uid.dat");
+		return new File(WorldUtil.getWorldFolder(worldname), "uid.dat");
 	}
 
 	public static long getWorldSize(String worldname) {
-		return getFolderSize(getDataFolder(worldname));
+		return getFolderSize(WorldUtil.getWorldFolder(worldname));
 	}
 	public static WorldInfo getInfo(String worldname) {
 		WorldInfo info = null;
@@ -308,20 +305,11 @@ public class WorldManager {
 		}
 		return info;
 	}
-	public static String[] getWorlds() {
-		ArrayList<String> rval = new ArrayList<String>();
-		for (String world : Bukkit.getWorldContainer().list()) {
-			if (worldExists(world) || isLoaded(world)) {
-				rval.add(world);
-			}
-		}
-		return rval.toArray(new String[0]);
-	}
 	public static String matchWorld(String matchname) {
 		if (matchname == null || matchname.isEmpty()) {
 			return null;
 		}
-		String[] worldnames = getWorlds();
+		Collection<String> worldnames = WorldUtil.getLoadableWorlds();
 		for (String worldname : worldnames) {
 			if (worldname.equalsIgnoreCase(matchname)) return worldname;
 		}
@@ -339,18 +327,15 @@ public class WorldManager {
 			return null;
 		}
 	}
-	
+
 	public static boolean isBroken(String worldname) {
-		if (getData(worldname) == null) {
-			return getWorld(worldname) == null;
-		}
-		return false;
+		return getData(worldname) == null && !isLoaded(worldname);
 	}
 	public static boolean isLoaded(String worldname) {
 		return getWorld(worldname) != null;
 	}
 	public static boolean worldExists(String worldname) {
-		return worldname != null && getDataFile(worldname).exists();
+		return worldname != null && WorldUtil.isLoadableWorld(worldname);
 	}
 
 	public static World getOrCreateWorld(String worldname) {
@@ -531,12 +516,13 @@ public class WorldManager {
 	}
 
 	public static boolean deleteWorld(String worldname) {
-		return delete(getDataFolder(worldname));
+		return delete(WorldUtil.getWorldFolder(worldname));
 	}
 	public static boolean copyWorld(String worldname, String newname) {
-		if (!copy(getDataFolder(worldname), getDataFolder(newname))) return false;;
+		File destFolder = WorldUtil.getWorldFolder(newname);
+		if (!copy(WorldUtil.getWorldFolder(worldname), destFolder)) return false;;
 		renameWorld(newname, newname);
-		File uid = new File(getDataFolder(newname) + File.separator + "uid.dat");
+		File uid = new File(destFolder, "uid.dat");
 		if (uid.exists()) uid.delete();
 		return true;
 	}

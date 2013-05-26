@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldInventory {
 	private static final Set<WorldInventory> inventories = new HashSet<WorldInventory>();
@@ -32,7 +33,7 @@ public class WorldInventory {
 			Iterator<String> worldsIter = worlds.iterator();
 			while (worldsIter.hasNext()) {
 				String world = worldsIter.next();
-				if (world == null || !WorldManager.getDataFolder(world).exists()) {
+				if (world == null || !WorldUtil.getWorldFolder(world).exists()) {
 					worldsIter.remove();
 				}
 			}
@@ -40,7 +41,7 @@ public class WorldInventory {
 				continue;
 			}
 			// Verify shared world container
-			if (!WorldManager.getDataFolder(sharedWorld).exists()) {
+			if (!WorldUtil.getWorldFolder(sharedWorld).exists()) {
 				sharedWorld = getSharedWorldName(worlds);
 				if (sharedWorld == null) {
 					continue;
@@ -113,7 +114,7 @@ public class WorldInventory {
 
 	private static String getSharedWorldName(Collection<String> worlds) {
 		for (String world : worlds) {
-			if (WorldManager.getDataFolder(world).exists()) {
+			if (WorldUtil.getWorldFolder(world).exists()) {
 				return world;
 			}
 		}

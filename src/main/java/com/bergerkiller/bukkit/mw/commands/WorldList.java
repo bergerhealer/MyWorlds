@@ -4,6 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
@@ -20,7 +21,7 @@ public class WorldList extends Command {
 			builder.newLine().green("[Loaded/Online] ").red("[Unloaded/Offline] ").dark_red("[Broken/Dead]");
 			builder.newLine().yellow("Available worlds: ");
 			builder.setSeparator(ChatColor.WHITE, " / ").setIndent(2).newLine();
-			for (String world : WorldManager.getWorlds()) {
+			for (String world : WorldUtil.getLoadableWorlds()) {
 				if (WorldManager.isLoaded(world)) {
 					builder.green(world);
 				} else if (WorldManager.getData(world) == null) {
@@ -33,7 +34,7 @@ public class WorldList extends Command {
 		} else {
 			//plain world per line
 			sender.sendMessage("Available worlds:");
-			for (String world : WorldManager.getWorlds()) {
+			for (String world : WorldUtil.getLoadableWorlds()) {
 				String status = "[Unloaded]";
 				if (WorldManager.isLoaded(world)) {
 					status = "[Loaded]";

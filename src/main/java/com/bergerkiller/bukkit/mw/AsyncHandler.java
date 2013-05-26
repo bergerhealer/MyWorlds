@@ -10,6 +10,7 @@ import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.AsyncTask;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class AsyncHandler {
 	public static void delete(final CommandSender sender, final String worldname) {
@@ -52,8 +53,8 @@ public class AsyncHandler {
 					int totaldelfailures = 0;
 					int totalaccessfailures = 0;
 					try {
-						File regionfolder = new File(WorldManager.getDataFolder(worldname) + File.separator + "region");
-						if (regionfolder.exists()) {
+						File regionfolder = WorldUtil.getWorldRegionFolder(worldname);
+						if (regionfolder != null) {
 							//Generate backup folder
 							Calendar cal = Calendar.getInstance();
 							SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy_hh-mm-ss");
