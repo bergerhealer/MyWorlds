@@ -14,7 +14,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
-import com.bergerkiller.bukkit.common.bases.IntVector3;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;

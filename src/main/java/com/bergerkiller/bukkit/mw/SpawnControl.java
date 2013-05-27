@@ -20,7 +20,7 @@ public class SpawnControl {
 
 	public boolean getAnimals() {
 		for (EntityType type : EntityType.values()) {
-			if (EntityUtil.isAnimal(type.toString().toLowerCase().replace("_", ""))) {
+			if (EntityUtil.isAnimal(type)) {
 				if (!this.deniedCreatures.contains(type)) {
 					return false;
 				}
@@ -31,7 +31,7 @@ public class SpawnControl {
 
 	public boolean getMonsters() {
 		for (EntityType type : EntityType.values()) {
-			if (EntityUtil.isMonster(type.toString().toLowerCase().replace("_", ""))) {
+			if (EntityUtil.isMonster(type)) {
 				if (!this.deniedCreatures.contains(type)) {
 					return false;
 				}
@@ -42,7 +42,7 @@ public class SpawnControl {
 
 	public void setAnimals(boolean deny) {
 		for (EntityType type : EntityType.values()) {
-			if (EntityUtil.isAnimal(type.toString().toLowerCase().replace("_", ""))) {
+			if (EntityUtil.isAnimal(type)) {
 				if (deny) {
 					deniedCreatures.add(type);
 				} else {
@@ -54,7 +54,7 @@ public class SpawnControl {
 
 	public void setMonsters(boolean deny) {
 		for (EntityType type : EntityType.values()) {
-			if (EntityUtil.isMonster(type.toString().toLowerCase().replace("_", ""))) {
+			if (EntityUtil.isMonster(type)) {
 				if (deny) {
 					deniedCreatures.add(type);
 				} else {
@@ -66,7 +66,7 @@ public class SpawnControl {
 
 	public void setNPC(boolean deny) {
 		for (EntityType type : EntityType.values()) {
-			if (EntityUtil.isNPC(type.toString().toLowerCase().replace("_", ""))) {
+			if (EntityUtil.isNPC(type)) {
 				if (deny) {
 					deniedCreatures.add(type);
 				} else {

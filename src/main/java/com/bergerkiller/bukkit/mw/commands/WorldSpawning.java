@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.Locale;
+
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -48,13 +50,13 @@ public class WorldSpawning extends Command {
 				} else if (args[0].equalsIgnoreCase("npc")) {
 					type = "npc";
 				} else {
-					type = args[0].toUpperCase();
+					type = args[0].toUpperCase(Locale.ENGLISH);
 					EntityType ctype = ParseUtil.parseEnum(EntityType.class, type, null);
 					if (ctype == null && type.endsWith("S")) {
 						ctype = ParseUtil.parseEnum(EntityType.class, type.substring(0, type.length() - 2), null);
 					}
 					if (ctype != null) {
-						type = ctype.name().toLowerCase();
+						type = ctype.name().toLowerCase(Locale.ENGLISH);
 					} else {
 						type = null;
 					}
@@ -71,7 +73,7 @@ public class WorldSpawning extends Command {
 						} else if (type.equals("mob")) {
 							sc.deniedCreatures.clear();
 						} else {
-							sc.deniedCreatures.remove(EntityType.valueOf(type.toUpperCase()));
+							sc.deniedCreatures.remove(EntityType.valueOf(type.toUpperCase(Locale.ENGLISH)));
 						}
 						if (WorldManager.isLoaded(worldname)) {
 							message(ChatColor.GREEN + type + "s are now allowed to spawn on world: '" + worldname + "'!");
@@ -89,7 +91,7 @@ public class WorldSpawning extends Command {
 							sc.setAnimals(true);
 							sc.setMonsters(true);
 						} else {
-							sc.deniedCreatures.add(EntityType.valueOf(type.toUpperCase()));
+							sc.deniedCreatures.add(EntityType.valueOf(type.toUpperCase(Locale.ENGLISH)));
 						}
 						//Capitalize
 						type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
