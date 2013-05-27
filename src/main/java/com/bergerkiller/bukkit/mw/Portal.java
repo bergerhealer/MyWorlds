@@ -297,9 +297,8 @@ public class Portal extends PortalStore {
 							// Find out what location to teleport to
 							// Use source block as the location to search from
 							double blockRatio = w.getEnvironment() == Environment.NORMAL ? 8 : 0.125;
-							Location entityLoc = e.getLocation();
-							IntVector3 blockPos = new IntVector3(blockRatio * entityLoc.getX(), entityLoc.getY(), blockRatio * entityLoc.getZ());
-							dest = WorldUtil.findSpawnLocation(new Location(w, blockPos.x + 0.5, blockPos.y + 0.5, blockPos.z + 0.5));
+							Location start = e.getLocation();
+							dest = WorldUtil.findSpawnLocation(new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ())).add(0.5, 0.0, 0.5);
 						} else {
 							// Fall-back to the main world spawn
 							dest = WorldManager.getSpawnLocation(w);
