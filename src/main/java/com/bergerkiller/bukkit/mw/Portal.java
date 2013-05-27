@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.material.Directional;
@@ -297,7 +298,21 @@ public class Portal extends PortalStore {
 							// Use source block as the location to search from
 							double blockRatio = w.getEnvironment() == Environment.NORMAL ? 8 : 0.125;
 							Location start = e.getLocation();
-							dest = WorldUtil.findSpawnLocation(new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ())).add(0.5, 0.0, 0.5);
+							Location end = WorldUtil.findSpawnLocation(new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ()));
+							if (end == null) {
+								dest = null;
+							} else {
+								Block destB = end.getBlock();
+								// Figure out the best yaw to use here by checking for air blocks
+								float yaw = 0.0f;
+								for (BlockFace face : FaceUtil.AXIS) {
+									if (destB.getRelative(face).getTypeId() == Material.AIR.getId()) {
+										yaw = FaceUtil.faceToYaw(face) + 90f;
+										break;
+									}
+								}
+								dest = new Location(destB.getWorld(), destB.getX() + 0.5, destB.getY(), destB.getZ() + 0.5, yaw, 0.0f);
+							}
 						} else {
 							// Fall-back to the main world spawn
 							dest = WorldManager.getSpawnLocation(w);
