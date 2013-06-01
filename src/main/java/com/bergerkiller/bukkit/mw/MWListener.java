@@ -65,7 +65,7 @@ public class MWListener implements Listener {
 	 * @param portalMaterial of the portal
 	 * @return True if teleporting happened, False if not
 	 */
-	public static boolean doPortalTeleport(Entity e, Material portalMaterial) {
+	public static boolean canPortalTeleport(Entity e) {
     	if (walkDistanceCheckMap.containsKey(e)) {
     		return false;
     	}
@@ -79,7 +79,7 @@ public class MWListener implements Listener {
     	}
         if (currtime - lastteleport >= MyWorlds.teleportInterval) {
         	portaltimes.put(e, currtime);
-        	return Portal.handlePortalEnter(e, portalMaterial);
+        	return true;
         } else {
         	return false;
         }
@@ -177,8 +177,8 @@ public class MWListener implements Listener {
 						allow = true;
 					}
 				}
-				if (allow) {
-					doPortalTeleport(event.getPlayer(), Material.STATIONARY_WATER);
+				if (allow && canPortalTeleport(event.getPlayer())) {
+					Portal.handlePortalEnter(event.getPlayer(), Material.STATIONARY_WATER);
 				}
 			}
 		}
@@ -204,11 +204,11 @@ public class MWListener implements Listener {
 		event.setCancelled(true);
 
 		// Get from location
-		Location loc = playerPortalEnter.remove(event.getPlayer());
-		if (loc == null) {
-			loc = event.getFrom();
+		Location enterLoc = playerPortalEnter.remove(event.getPlayer());
+		if (enterLoc == null) {
+			enterLoc = event.getFrom();
 		}
-		Block b = loc.getBlock();
+		Block b = enterLoc.getBlock();
 
 		// Handle player teleportation - portal check
 		Material mat = Material.AIR;
@@ -224,7 +224,25 @@ public class MWListener implements Listener {
 			}
 		}
 		// Perform teleportation
-		doPortalTeleport(event.getPlayer(), mat);
+		if (canPortalTeleport(event.getPlayer())) {
+			Object loc = Portal.getPortalEnterDestination(event.getPlayer(), mat);
+			Location dest = null;
+			if (loc instanceof Portal) {
+				dest = ((Portal) loc).getDestination();
+			} else if (loc instanceof Location) {
+				dest = (Location) loc;
+			}
+			if (dest != null && MWPermissionListener.handleTeleportPermission(event.getPlayer(), dest)) {
+				event.setCancelled(false);
+				event.setTo(dest);
+				// Send teleport message
+				if (loc instanceof Portal) {
+					Localization.PORTAL_ENTER.message(event.getPlayer(), ((Portal) loc).getDestinationDisplayName());
+				} else if (dest.getWorld() != event.getPlayer().getWorld()) {
+					Localization.WORLD_ENTER.message(event.getPlayer(), dest.getWorld().getName());
+				}
+			}
+		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -245,7 +263,7 @@ public class MWListener implements Listener {
 		if (!Util.isNetherPortal(b, false) && !Util.isEndPortal(b, false)) {
 			return;
 		}
-		doPortalTeleport(event.getEntity(), b.getType());
+		Portal.handlePortalEnter(event.getEntity(), b.getType());
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)

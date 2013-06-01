@@ -12,6 +12,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
@@ -105,44 +106,12 @@ public class Portal extends PortalStore {
 	 * @return True if successful, False if not
 	 */
 	public boolean teleportSelf(Entity entity) {
-		MWPermissionListener.lastSelfPortal = this;
+		Portal self = new Portal();
+		self.destdisplayname = this.getName();
+		MWPermissionListener.lastEnteredPortal = self;
 		boolean rval = EntityUtil.teleport(entity, Util.spawnOffset(this.getLocation()));
-		MWPermissionListener.lastSelfPortal = null;
+		MWPermissionListener.lastEnteredPortal = null;
 		return rval;
-	}
-
-	/**
-	 * Teleports an Entity to the destination of this Portal in the next tick
-	 * 
-	 * @param entity to teleport
-	 */
-	public void teleportNextTick(final Entity entity) {
-		CommonUtil.nextTick(new Runnable() {
-			public void run() {
-	    		if (Portal.this.hasDestination()) {
-	    			Portal.this.teleport(entity);
-    			} else {
-    				CommonUtil.sendMessage(entity, Localization.PORTAL_NODESTINATION.get());
-    			}
-			}
-		});
-	}
-
-	/**
-	 * Teleports an Entity to the destination of this Portal
-	 * 
-	 * @param entity to teleport
-	 * @return True if successful, False if not
-	 */
-	public boolean teleport(Entity entity) {
-		Location dest = this.getDestination();
-		if (dest != null && entity != null) {
-			MWPermissionListener.lastPortal = this;
-			boolean rval = EntityUtil.teleport(entity, dest);
-			MWPermissionListener.lastPortal = null;
-			return rval;
-		}
-		return false;
 	}
 
 	/**
@@ -276,7 +245,39 @@ public class Portal extends PortalStore {
 	 * @param portalMaterial of the block that was used as portal
 	 * @return True if a teleport was performed, False if not
 	 */
-	public static boolean handlePortalEnter(Entity e, Material portalMaterial) {
+	public static boolean handlePortalEnter(final Entity e, Material portalMaterial) {
+		final Object loc = getPortalEnterDestination(e, portalMaterial);
+		if (loc == null) {
+			CommonUtil.sendMessage(e, Localization.PORTAL_NODESTINATION.get());
+			return false;
+		}
+		CommonUtil.nextTick(new Runnable() {
+			public void run() {
+				Location dest = null;
+				if (loc instanceof Portal) {
+					MWPermissionListener.lastEnteredPortal = (Portal) loc;
+					dest = ((Portal) loc).getDestination();
+				} else if (loc instanceof Location) {
+					dest = (Location) loc;
+				}
+				if (dest != null) {
+					EntityUtil.teleport(e, dest);
+				}
+				MWPermissionListener.lastEnteredPortal = null;
+			}
+		});
+		return true;
+	}
+
+	/**
+	 * Handles an entity entering a certain portal block
+	 * 
+	 * @param e that entered
+	 * @param portalMaterial of the block that was used as portal
+	 * @return A Portal object or a Location object to represent the destination
+	 */
+	public static Object getPortalEnterDestination(Entity e, Material portalMaterial) {
+		Location dest = null;
 		Portal portal = getNear(e.getLocation());
 		if (portal == null) {
 			// Default portals
@@ -292,44 +293,49 @@ public class Portal extends PortalStore {
 					// Is it a world spawn?
 					World w = WorldManager.getWorld(def);
 					if (w != null) {
-						final Location dest;
 						if (MyWorlds.allowPersonalPortals) {
-							// Find out what location to teleport to
-							// Use source block as the location to search from
-							double blockRatio = w.getEnvironment() == Environment.NORMAL ? 8 : 0.125;
-							Location start = e.getLocation();
-							Location end = WorldUtil.findSpawnLocation(new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ()));
-							if (end == null) {
-								dest = null;
-							} else {
-								Block destB = end.getBlock();
-								// Figure out the best yaw to use here by checking for air blocks
-								float yaw = 0.0f;
-								for (BlockFace face : FaceUtil.AXIS) {
-									if (destB.getRelative(face).getTypeId() == Material.AIR.getId()) {
-										yaw = FaceUtil.faceToYaw(face) + 90f;
-										break;
-									}
+							// What environment are we coming from?
+							Environment env = e.getWorld().getEnvironment();
+							if (env == Environment.THE_END) {
+								// No special portal type or anything is used
+								// Instead, teleport to a personal bed or otherwise world spawn
+								if (e instanceof Player) {
+									dest = ((Player) e).getBedSpawnLocation();
 								}
-								dest = new Location(destB.getWorld(), destB.getX() + 0.5, destB.getY(), destB.getZ() + 0.5, yaw, 0.0f);
+								if (dest == null) {
+									dest = WorldManager.getSpawnLocation(w);
+								}
+							} else {
+								// Find out what location to teleport to
+								// Use source block as the location to search from
+								double blockRatio = env == Environment.NORMAL ? 0.125 : 8.0;
+								Location start = e.getLocation();
+								Location end = WorldUtil.findSpawnLocation(new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ()));
+								if (end != null) {
+									Block destB = end.getBlock();
+									// Figure out the best yaw to use here by checking for air blocks
+									float yaw = 0.0f;
+									for (BlockFace face : FaceUtil.AXIS) {
+										if (destB.getRelative(face).getTypeId() == Material.AIR.getId()) {
+											yaw = FaceUtil.faceToYaw(face) + 90f;
+											break;
+										}
+									}
+									dest = new Location(destB.getWorld(), destB.getX() + 0.5, destB.getY(), destB.getZ() + 0.5, yaw, 0.0f);
+								}
 							}
 						} else {
 							// Fall-back to the main world spawn
 							dest = WorldManager.getSpawnLocation(w);
-						}
-						if (dest != null) {
-							EntityUtil.teleportNextTick(e, dest);
-							return true;
 						}
 					}
 				}
 			}
 		}
 		// If a portal was found, teleport using it
-		if (portal != null) {
-			portal.teleportNextTick(e);
-			return true;
+		if (portal != null && portal.hasDestination()) {
+			return portal;
 		}
-		return false;
+		return dest;
 	}
 }
