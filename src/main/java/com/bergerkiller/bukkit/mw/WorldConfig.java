@@ -14,6 +14,7 @@ import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
@@ -60,6 +61,17 @@ public class WorldConfig extends WorldConfigStore {
 			this.spawnPoint = new Position(world.getSpawnLocation());
 			this.pvp = world.getPVP();
 			this.autosave = world.isAutoSave();
+
+			// Obtain the chunk generator of this world
+			// Note that we are unable to obtain the chunk generator arguments
+			// This method will at least somewhat avoid chunk generator mishaps
+			ChunkGenerator gen = world.getGenerator();
+			if (gen != null) {
+				Plugin genPlugin = CommonUtil.getPluginByClass(gen.getClass());
+				if (genPlugin != null) {
+					this.chunkGeneratorName = genPlugin.getName();
+				}
+			}
 		} else {
 			this.worldmode = WorldMode.get(worldname);
 			this.spawnPoint = new Position(worldname, 0, 128, 0);

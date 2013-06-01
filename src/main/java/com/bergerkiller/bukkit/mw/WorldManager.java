@@ -27,6 +27,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -343,7 +344,7 @@ public class WorldManager {
 		if (w != null) return w;
 		return createWorld(worldname, 0);
 	}
-	
+
 	public static boolean unload(World world) {
 		if (world == null) return false;
 		return Bukkit.getServer().unloadWorld(world, world.isAutoSave());
@@ -380,7 +381,26 @@ public class WorldManager {
 		WorldConfig.get(world).spawnPoint = new Position(loc);
 	}
 
+	/**
+	 * Creates a new World
+	 * 
+	 * @param worldname to create
+	 * @param seed to use
+	 * @return The created World, or null on failure
+	 */
 	public static World createWorld(String worldname, long seed) {
+		return createWorld(worldname, seed, null);
+	}
+
+	/**
+	 * Creates a new World
+	 * 
+	 * @param worldname to create
+	 * @param seed to use
+	 * @param sender to send creation problems to if they occur (null to ignore)
+	 * @return The created World, or null on failure
+	 */
+	public static World createWorld(String worldname, long seed, CommandSender sender) {
 		final boolean load = WorldManager.worldExists(worldname);
 		WorldConfig wc = WorldConfig.get(worldname);
 		StringBuilder msg = new StringBuilder();
@@ -413,10 +433,18 @@ public class WorldManager {
 		} catch (Exception ex) {}
 		if (cgen == null) {
 			if (wc.chunkGeneratorName != null) {
-				MyWorlds.plugin.log(Level.SEVERE, "World '" + worldname + "' could not be loaded because the chunk generator '" + wc.chunkGeneratorName + "' was not found!");
+				msg.setLength(0);
+				msg.append("World '").append(worldname);
+				msg.append("' could not be created because the chunk generator '");
+				msg.append(wc.chunkGeneratorName).append("' was not found!");
+				MyWorlds.plugin.log(Level.SEVERE, msg.toString());
+				if (sender != null) {
+					sender.sendMessage(ChatColor.RED + msg.toString());
+				}
 				return null;
 			}
 		}
+		Exception failReason = null;
 		for (i = 0; i < retrycount + 1; i++) {
 			try {
 				WorldCreator c = new WorldCreator(worldname);
@@ -427,11 +455,7 @@ public class WorldManager {
 				c.generator(cgen);
 				w = c.createWorld();
 			} catch (Exception ex) {
-				MyWorlds.plugin.log(Level.WARNING, "World load issue: " + ex.getMessage());
-				for (StackTraceElement el : ex.getStackTrace()) {
-					if (el.getClassName().equals("com.bergerkiller.bukkit.mw.WorldManager")) break;
-					System.out.println("    at " + el.toString());
-				}
+				failReason = ex;
 			}
 			if (w != null) break;
 		}
@@ -444,11 +468,17 @@ public class WorldManager {
 			wc.update(w);
 		}
 		if (w == null) {
-			MyWorlds.plugin.log(Level.WARNING, "Operation failed after " + i + " retries!");
+			MyWorlds.plugin.log(Level.WARNING, "World creation failed after " + i + " retries!");
+			if (failReason != null) {
+				if (sender != null) {
+					sender.sendMessage(ChatColor.RED + "Failed to create world: " + failReason.getMessage());
+				}
+				CommonUtil.filterStackTrace(failReason).printStackTrace();
+			}
 		} else if (i == 1) {
-			MyWorlds.plugin.log(Level.INFO, "Operation succeeded after 1 retry!");
+			MyWorlds.plugin.log(Level.INFO, "World creation succeeded after 1 retry!");
 		} else if (i > 0) {
-			MyWorlds.plugin.log(Level.INFO, "Operation succeeded after " + i + " retries!");
+			MyWorlds.plugin.log(Level.INFO, "World creation succeeded after " + i + " retries!");
 		}
 		return w;
 	}

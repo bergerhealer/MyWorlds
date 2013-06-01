@@ -41,7 +41,7 @@ public class WorldCreate extends Command {
 				}
 		        message(ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
 		        MWListener.ignoreWorld(worldname);
-		        final World world = WorldManager.createWorld(worldname, seedval);
+		        final World world = WorldManager.createWorld(worldname, seedval, sender);
 				if (world != null) {
 					//load chunks
 					final int keepdimension = 15;
@@ -78,8 +78,6 @@ public class WorldCreate extends Command {
 							LoadChunksTask.add(world, cx, cz, t);
 						}
 					}
-				} else {
-					message(ChatColor.RED + "World creation failed!");
 				}
 			} else {
 				message(ChatColor.RED + "World already exists!");
