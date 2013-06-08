@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 
 public class Position extends Location {
 	private String worldname;
@@ -49,5 +50,10 @@ public class Position extends Location {
 	public Location toLocation() {
 		return new Location(this.getWorld(), this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch());
 	}
-	
+
+	@Override
+	public Block getBlock() {
+		World world = getWorld();
+		return world == null ? null : world.getBlockAt(this);
+	}
 }

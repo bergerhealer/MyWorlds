@@ -25,10 +25,11 @@ public class WorldInfo extends Command {
 				WorldConfig wc = WorldConfig.get(worldname);
 				message(ChatColor.YELLOW + "Information about the world: " + worldname);
 				message(ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + wc.worldmode.toString());
-				if (wc.chunkGeneratorName == null) {
+				String chunkGenerator = wc.getChunkGeneratorName();
+				if (chunkGenerator == null) {
 					message(ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + "Default");
 				} else {
-					message(ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + wc.chunkGeneratorName);
+					message(ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + chunkGenerator);
 				}
 				message(ChatColor.WHITE + "Auto-saving: " + ChatColor.YELLOW + wc.autosave);
 				message(ChatColor.WHITE + "Keep spawn loaded: " + ChatColor.YELLOW + wc.keepSpawnInMemory);

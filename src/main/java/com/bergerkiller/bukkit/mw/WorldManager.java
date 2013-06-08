@@ -16,7 +16,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -174,9 +173,6 @@ public class WorldManager {
 		} else {
 			return null;
 		}
-	}
-	public static void setGenerator(String worldname, String name) {
-		WorldConfig.get(worldname).chunkGeneratorName = name;
 	}
 
 	/*
@@ -351,37 +347,6 @@ public class WorldManager {
 	}
 
 	/**
-	 * Regenerates the spawn point for a world if it is not properly set<br>
-	 * Also updates the spawn position in the world configuration
-	 * 
-	 * @param world to regenerate the spawn point for
-	 */
-	public static void fixSpawnLocation(World world) {
-		Environment env = world.getEnvironment();
-		Location loc = world.getSpawnLocation();
-		if (env == Environment.NETHER || env == Environment.THE_END) {
-			// Use a portal agent to generate the world spawn point
-			loc = WorldUtil.findSpawnLocation(loc);
-			if (loc == null) {
-				return; // Failure?
-			}
-		} else {
-			loc.setY(loc.getWorld().getHighestBlockYAt(loc));
-		}
-
-		// Minor offset
-		loc.setX(0.5 + (double) loc.getBlockX());
-		loc.setY(0.5 + (double) loc.getBlockY());
-		loc.setZ(0.5 + (double) loc.getBlockZ());
-
-		// Set new fixed spawn position
-		world.setSpawnLocation(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
-
-		// Set spawn position of world config
-		WorldConfig.get(world).spawnPoint = new Position(loc);
-	}
-
-	/**
 	 * Creates a new World
 	 * 
 	 * @param worldname to create
@@ -403,6 +368,7 @@ public class WorldManager {
 	public static World createWorld(String worldname, long seed, CommandSender sender) {
 		final boolean load = WorldManager.worldExists(worldname);
 		WorldConfig wc = WorldConfig.get(worldname);
+		String chunkGeneratorName = wc.getChunkGeneratorName();
 		StringBuilder msg = new StringBuilder();
 		if (load) {
 			msg.append("Loading");
@@ -411,13 +377,13 @@ public class WorldManager {
 		}
 		msg.append(" world '").append(worldname).append("'");
 		if (seed == 0) {
-			if (wc.chunkGeneratorName != null) {
-				msg.append(" using chunk generator: '").append(wc.chunkGeneratorName).append("'");
+			if (chunkGeneratorName != null) {
+				msg.append(" using chunk generator: '").append(chunkGeneratorName).append("'");
 			}
 		} else {
 			msg.append(" using seed ").append(seed);
-			if (wc.chunkGeneratorName != null) {
-				msg.append(" and chunk generator: '").append(wc.chunkGeneratorName).append("'");
+			if (chunkGeneratorName != null) {
+				msg.append(" and chunk generator: '").append(chunkGeneratorName).append("'");
 			}
 		}
 		MyWorlds.plugin.log(Level.INFO, msg.toString());
@@ -427,16 +393,16 @@ public class WorldManager {
 		int i = 0;
 		ChunkGenerator cgen = null;
 		try {
-			if (wc.chunkGeneratorName != null) {
-				cgen = getGenerator(worldname, wc.chunkGeneratorName);
+			if (chunkGeneratorName != null) {
+				cgen = getGenerator(worldname, chunkGeneratorName);
 			}
 		} catch (Exception ex) {}
 		if (cgen == null) {
-			if (wc.chunkGeneratorName != null) {
+			if (chunkGeneratorName != null) {
 				msg.setLength(0);
 				msg.append("World '").append(worldname);
 				msg.append("' could not be created because the chunk generator '");
-				msg.append(wc.chunkGeneratorName).append("' was not found!");
+				msg.append(chunkGeneratorName).append("' was not found!");
 				MyWorlds.plugin.log(Level.SEVERE, msg.toString());
 				if (sender != null) {
 					sender.sendMessage(ChatColor.RED + msg.toString());
@@ -463,9 +429,8 @@ public class WorldManager {
 			// Logic for newly generated worlds
 			if (!load) {
 				// Generate a possible spawn point for this world
-				fixSpawnLocation(w);
+				wc.fixSpawnLocation();
 			}
-			wc.update(w);
 		}
 		if (w == null) {
 			MyWorlds.plugin.log(Level.WARNING, "World creation failed after " + i + " retries!");

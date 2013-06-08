@@ -11,6 +11,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.World.Environment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
@@ -20,12 +21,13 @@ import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldConfig extends WorldConfigStore {
 	public String worldname;
 	public boolean keepSpawnInMemory = true;
 	public WorldMode worldmode;
-	public String chunkGeneratorName;
+	private String chunkGeneratorName;
 	public Difficulty difficulty = Difficulty.NORMAL;
 	public Position spawnPoint;
 	public GameMode gameMode = null;
@@ -61,17 +63,7 @@ public class WorldConfig extends WorldConfigStore {
 			this.spawnPoint = new Position(world.getSpawnLocation());
 			this.pvp = world.getPVP();
 			this.autosave = world.isAutoSave();
-
-			// Obtain the chunk generator of this world
-			// Note that we are unable to obtain the chunk generator arguments
-			// This method will at least somewhat avoid chunk generator mishaps
-			ChunkGenerator gen = world.getGenerator();
-			if (gen != null) {
-				Plugin genPlugin = CommonUtil.getPluginByClass(gen.getClass());
-				if (genPlugin != null) {
-					this.chunkGeneratorName = genPlugin.getName();
-				}
-			}
+			this.getChunkGeneratorName();
 		} else {
 			this.worldmode = WorldMode.get(worldname);
 			this.spawnPoint = new Position(worldname, 0, 128, 0);
@@ -82,6 +74,38 @@ public class WorldConfig extends WorldConfigStore {
 			}
 		}
 		this.inventory = new WorldInventory(this.worldname).add(worldname);
+	}
+
+	/**
+	 * Sets the generator name and arguments for this World.
+	 * Note that this does not alter the generator for a possible loaded world.
+	 * Only after re-loading does this take effect.
+	 * 
+	 * @param name to set to
+	 */
+	public void setChunkGeneratorName(String name) {
+		this.chunkGeneratorName = name;
+	}
+
+	/**
+	 * Gets the generator name and arguments of this World
+	 * 
+	 * @return Chunk Generator name and arguments
+	 */
+	public String getChunkGeneratorName() {
+		if (this.chunkGeneratorName == null) {
+			World world = this.getWorld();
+			if (world != null) {
+				ChunkGenerator gen = world.getGenerator();
+				if (gen != null) {
+					Plugin genPlugin = CommonUtil.getPluginByClass(gen.getClass());
+					if (genPlugin != null) {
+						this.chunkGeneratorName = genPlugin.getName();
+					}
+				}
+			}
+		}
+		return this.chunkGeneratorName;
 	}
 
 	/**
@@ -174,15 +198,6 @@ public class WorldConfig extends WorldConfigStore {
 	        this.difficulty = w.getDifficulty();
 	        this.keepSpawnInMemory = w.getKeepSpawnInMemory();
 	        this.autosave = w.isAutoSave();
-	        if (this.chunkGeneratorName == null) {
-	        	ChunkGenerator gen = w.getGenerator();
-	        	if (gen != null) {
-	        		String name = gen.getClass().getName();
-	        		if (name.equals("bukkit.techguard.christmas.world.ChristmasGenerator")) {
-	        			this.chunkGeneratorName = "Christmas";
-	        		}
-	        	}
-	        }
 		}
 		if (this.worldname == null || this.worldname.equals(this.getConfigName())) {
 			node.remove("name");
@@ -192,7 +207,7 @@ public class WorldConfig extends WorldConfigStore {
 		node.set("loaded", w != null);
 		node.set("keepSpawnLoaded", this.keepSpawnInMemory);
 		node.set("environment", this.worldmode);
-		node.set("chunkGenerator", this.chunkGeneratorName);
+		node.set("chunkGenerator", this.getChunkGeneratorName());
 		node.set("clearInventory", this.clearInventory ? true : null);
 		node.set("gamemode", this.gameMode);
 
@@ -231,6 +246,46 @@ public class WorldConfig extends WorldConfigStore {
 		}
 	}
 
+	/**
+	 * Regenerates the spawn point for a world if it is not properly set<br>
+	 * Also updates the spawn position in the world configuration
+	 * 
+	 * @param world to regenerate the spawn point for
+	 */
+	public void fixSpawnLocation() {
+		// Obtain the configuration and the set spawn position from it
+		World world = spawnPoint.getWorld();
+		if (world == null) {
+			return;
+		}
+
+		Environment env = world.getEnvironment();
+		if (env == Environment.NETHER || env == Environment.THE_END) {
+			// Use a portal agent to generate the world spawn point
+			Location loc = WorldUtil.findSpawnLocation(spawnPoint);
+			if (loc == null) {
+				return; // Failure?
+			}
+			spawnPoint = new Position(loc);
+		} else {
+			spawnPoint.setY(world.getHighestBlockYAt(spawnPoint));
+		}
+
+		// Minor offset
+		spawnPoint.setX(0.5 + (double) spawnPoint.getBlockX());
+		spawnPoint.setY(0.5 + (double) spawnPoint.getBlockY());
+		spawnPoint.setZ(0.5 + (double) spawnPoint.getBlockZ());
+
+		// Apply position to the world if same world
+		if (!isOtherWorldSpawn()) {
+			world.setSpawnLocation(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
+		}
+	}
+	
+	public boolean isOtherWorldSpawn() {
+		return !spawnPoint.getWorldName().equalsIgnoreCase(worldname);
+	}
+
 	public void setNetherPortal(String destination) {
 		this.defaultNetherPortal = destination;
 	}
@@ -265,6 +320,33 @@ public class WorldConfig extends WorldConfigStore {
 		return this.defaultEndPortal;
 	}
 
+	public void onWorldLoad(World world) {
+		// Fix spawn point if needed
+		if (MaterialUtil.SUFFOCATES.get(this.spawnPoint.getBlock())) {
+			this.fixSpawnLocation();
+		} else if (!isOtherWorldSpawn()) {
+			world.setSpawnLocation(this.spawnPoint.getBlockX(), this.spawnPoint.getBlockY(), this.spawnPoint.getBlockZ());
+		}
+		// Update world settings
+		updatePVP(world);
+		updateKeepSpawnInMemory(world);
+		updateDifficulty(world);
+		updateAutoSave(world);
+	}
+
+	public void onWorldUnload(World world) {
+		// If the actual World spawnpoint changed, be sure to update accordingly
+		if (!isOtherWorldSpawn()) {
+			Location spawn = world.getSpawnLocation();
+			if (spawnPoint.getBlockX() != spawn.getBlockX() || spawnPoint.getBlockY() != spawn.getBlockY() 
+					|| spawnPoint.getBlockZ() != spawn.getBlockZ()) {
+				spawnPoint = new Position(spawn);
+			}
+		}
+
+		// Disable time control
+		timeControl.updateWorld(null);
+	}
 
 	public World loadWorld() {
 		if (WorldManager.worldExists(this.worldname)) {
@@ -272,7 +354,6 @@ public class WorldConfig extends WorldConfigStore {
 			if (w == null) {
 				MyWorlds.plugin.log(Level.SEVERE, "Failed to (pre)load world: " + worldname);
 			} else {
-				this.update(w);
 				return w;
 			}
 		} else {
@@ -367,16 +448,7 @@ public class WorldConfig extends WorldConfigStore {
 			world.setDifficulty(this.difficulty);
 		}
 	}
-	public void update(World world) {
-		if (world == null) return;
-		if (MaterialUtil.SUFFOCATES.get(world.getBlockAt(this.spawnPoint))) {
-			WorldManager.fixSpawnLocation(world);
-		}
-		updatePVP(world);
-		updateKeepSpawnInMemory(world);
-		updateDifficulty(world);
-		updateAutoSave(world);
-	}
+
 	public void update(Player player) {
 		updateOP(player);
 		updateGamemode(player);

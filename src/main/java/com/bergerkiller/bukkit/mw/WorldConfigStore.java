@@ -3,7 +3,6 @@ package com.bergerkiller.bukkit.mw;
 import java.util.Collection;
 import java.util.logging.Level;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -12,6 +11,7 @@ import org.bukkit.entity.Entity;
 import com.bergerkiller.bukkit.common.collections.StringMapCaseInsensitive;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldConfigStore {
 	protected static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
@@ -92,8 +92,8 @@ public class WorldConfigStore {
 		}
 
 		// Update any remaining worlds
-		for (World world : Bukkit.getServer().getWorlds()) {
-			get(world).update(world);
+		for (World world : WorldUtil.getWorlds()) {
+			get(world).onWorldLoad(world);
 		}
 	}
 	public static void saveAll() {
@@ -104,10 +104,13 @@ public class WorldConfigStore {
 		cfg.save();
 	}
 	public static void deinit() {
-		saveAll();
-		for (WorldConfig world : all()) {
-			world.timeControl.setLocking(false);
+		// Tell all loaded worlds to unload (for MyWorlds) to properly handle disabling
+		for (World world : WorldUtil.getWorlds()) {
+			get(world).onWorldUnload(world);
 		}
+		// Save the current world configurations
+		saveAll();
+		// De-initialize some data
 		defaultProperties = null;
 	}
 

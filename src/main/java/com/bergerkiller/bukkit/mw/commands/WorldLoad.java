@@ -30,17 +30,17 @@ public class WorldLoad extends Command {
 							return;
 						}
 						if (gen.equalsIgnoreCase("none")) {
-							if (config.chunkGeneratorName != null) {
+							if (config.getChunkGeneratorName() != null) {
 								msg = "Cleared old chunk generator set and loading world: '" + this.worldname + "'...";
 							}
 						} else {
-							String fixgen = WorldManager.fixGeneratorName(gen);
-							if (fixgen == null) {
+							String cgenName = WorldManager.fixGeneratorName(gen);
+							if (cgenName == null) {
 								message(ChatColor.RED + "Can not load world: Chunk generator '" + gen + "' does not exist on this server!");
 								return;
 							} else {
-								config.chunkGeneratorName = fixgen;
-								message(ChatColor.YELLOW + "Loading world: '" + this.worldname + "' using chunk generator '" + gen + "'...");
+								config.setChunkGeneratorName(cgenName);
+								message(ChatColor.YELLOW + "Loading world: '" + this.worldname + "' using chunk generator '" + cgenName + "'...");
 							}
 						}
 					}

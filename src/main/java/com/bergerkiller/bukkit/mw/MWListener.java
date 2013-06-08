@@ -92,8 +92,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onWorldUnload(WorldUnloadEvent event) {
-		WorldConfig config = WorldConfig.get(event.getWorld());
-		config.timeControl.updateWorld(null);
+		WorldConfig.get(event.getWorld()).onWorldUnload(event.getWorld());
 		WorldManager.closeWorldStreams(event.getWorld());
 	}
 
@@ -102,7 +101,7 @@ public class MWListener implements Listener {
 		if (initIgnoreWorlds.remove(event.getWorld().getName())) {
 			WorldUtil.setKeepSpawnInMemory(event.getWorld(), false);
 		} else {
-			WorldConfig.get(event.getWorld()).update(event.getWorld());
+			WorldConfig.get(event.getWorld()).onWorldLoad(event.getWorld());
 		}
 	}
 

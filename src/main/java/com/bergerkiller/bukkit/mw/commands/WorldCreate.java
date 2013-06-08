@@ -28,15 +28,16 @@ public class WorldCreate extends Command {
 				long seedval = WorldManager.getRandomSeed(StringUtil.combine(" ", this.args));
 				logAction("Issued a world creation command for world: " + worldname);
 		        WorldConfig.remove(worldname);
+		        WorldConfig wc = WorldConfig.get(worldname);
 				if (gen == null) {
 					message(ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
 				} else {
-					String fixgen = WorldManager.fixGeneratorName(gen);
-					if (fixgen == null) {
+					String cgenName = WorldManager.fixGeneratorName(gen);
+					if (cgenName == null) {
 						message(ChatColor.RED + "Failed to create world because the generator '" + gen + "' is missing!");
 					} else {
-						WorldManager.setGenerator(worldname, fixgen);
-						message(ChatColor.YELLOW + "Creating world '" + worldname + "' using generator '" + fixgen + "' (this can take a while) ...");
+						wc.setChunkGeneratorName(cgenName);
+						message(ChatColor.YELLOW + "Creating world '" + worldname + "' using generator '" + cgenName + "' (this can take a while) ...");
 					}
 				}
 		        message(ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
