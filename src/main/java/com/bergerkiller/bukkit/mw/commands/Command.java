@@ -365,7 +365,7 @@ public class Command {
 
 	public void execute() {
 		//This is executed when no command was found
-		message(ChatColor.RED + "Unknown command: " + args[0]);
-		message(ChatColor.RED + "Use /help myworlds command help");
+		Localization.COMMAND_UNKNOWN.message(sender, args[0]);
+		Localization.COMMAND_HELP.message(sender);
 	}
 }
