@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -458,28 +459,54 @@ public class WorldManager {
 	}
     public static boolean copy(File sourceLocation, File targetLocation) {
     	try {
-            if (sourceLocation.isDirectory()) {
-                if (!targetLocation.exists()) {
-                    targetLocation.mkdir();
-                }
-                for (String child : sourceLocation.list()) {
-                    if (!copy(new File(sourceLocation, child), new File(targetLocation, child))) {
-                    	return false;
-                    }
-                }
-            } else {
-                InputStream in = new FileInputStream(sourceLocation);
-                OutputStream out = new FileOutputStream(targetLocation);
-                // Copy the bits from instream to outstream
-                byte[] buf = new byte[1024];
-                int len;
-                while ((len = in.read(buf)) > 0) {
-                    out.write(buf, 0, len);
-                }
-                in.close();
-                out.close();
-            }
-            return true;
+    		if (sourceLocation.isDirectory()) {
+    			if (!targetLocation.exists()) {
+    				targetLocation.mkdir();
+    			}
+    			for (String child : sourceLocation.list()) {
+    				if (!copy(new File(sourceLocation, child), new File(targetLocation, child))) {
+    					return false;
+    				}
+    			}
+    		} else {
+    			// Create file
+    			if (!targetLocation.exists()) {
+    				targetLocation.createNewFile();
+    			}
+    			// Start a new stream
+    			FileInputStream input = null;
+    			FileOutputStream output = null;
+    			FileChannel inputChannel = null;
+    			FileChannel outputChannel = null;
+    			try {
+    				// Initialize file streams
+        			input = new FileInputStream(sourceLocation);
+        			inputChannel = input.getChannel();
+        			output = new FileOutputStream(targetLocation);
+        			outputChannel = output.getChannel();
+        			// Start transferring
+        			long transfered = 0;
+        			long bytes = inputChannel.size();
+        			while (transfered < bytes) {
+        				transfered += outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
+        				outputChannel.position(transfered);
+        			}
+    			} finally {
+    				// Close input stream
+    				if (inputChannel != null) {
+    					inputChannel.close();
+    				} else if (input != null) {
+    					input.close();
+    				}
+    				// Close output stream
+    				if (outputChannel != null) {
+    					outputChannel.close();
+    				} else if (output != null) {
+    					output.close();
+    				}
+    			}
+    		}
+    		return true;
     	} catch (IOException ex) {
     		ex.printStackTrace();
     		return false;

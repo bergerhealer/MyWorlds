@@ -120,7 +120,7 @@ public class WorldConfig extends WorldConfigStore {
 		this.worldmode = config.worldmode;
 		this.chunkGeneratorName = config.chunkGeneratorName;
 		this.difficulty = config.difficulty;
-		this.spawnPoint = new Position(config.spawnPoint);
+		this.spawnPoint = config.spawnPoint.clone();
 		this.gameMode = config.gameMode;
 		this.holdWeather = config.holdWeather;
 		this.pvp = config.pvp;

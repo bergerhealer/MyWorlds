@@ -24,11 +24,6 @@ public class Command {
 	public String[] args;
 	public String worldname;
 
-	private static String[] commandNodes = new String[] {"world.repair", "world.delete", "world.rename", "world.copy",
-		"world.save", "world.load", "world.unload", "world.reloadwhenempty", "world.create", "world.listgenerators",
-		"world.weather", "world.time", "world.spawn", "world.setspawn", "world.list", "world.info", "world.portals",
-		"world.gamemode", "world.togglepvp", "world.op", "world.deop",  "world.allowspawn", "tpp"};
-
 	public Command(Permission permission, String commandNode) {
 		this.permission = permission;
 		this.commandNode = commandNode;
@@ -366,19 +361,11 @@ public class Command {
 				rval.execute();
 			}
 		}
-	}		
-	
-	public void execute() {
-		//This is executed when no command was found
-		boolean hac = false; //has available commands
-		for (String command : commandNodes) {
-			hac |= showUsage(command);
-		}
-		if (hac) {
-			message(ChatColor.RED + "Unknown command: " + args[0]);
-		} else {
-			locmessage(Localization.COMMAND_NOPERM);
-		}
 	}
 
+	public void execute() {
+		//This is executed when no command was found
+		message(ChatColor.RED + "Unknown command: " + args[0]);
+		message(ChatColor.RED + "Use /help myworlds command help");
+	}
 }

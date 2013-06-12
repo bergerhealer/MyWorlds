@@ -5,9 +5,9 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
-public class Position extends Location {
+public class Position extends Location implements Cloneable {
 	private String worldname;
-	
+
 	public Position(Location location) {
 		this(location.getWorld().getName(), location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
 	}
@@ -55,5 +55,10 @@ public class Position extends Location {
 	public Block getBlock() {
 		World world = getWorld();
 		return world == null ? null : world.getBlockAt(this);
+	}
+
+	@Override
+	public Position clone() {
+		return new Position(getWorldName(), getX(), getY(), getZ(), getYaw(), getPitch());
 	}
 }
