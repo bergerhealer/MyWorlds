@@ -28,6 +28,7 @@ public class MyWorlds extends PluginBase {
 	public static boolean onlyPlayerTeleportation = true;
 	public static boolean useWorldInventories;
 	public static boolean calculateWorldSize;
+	public static double maxPortalSignDistance;
 	private static String mainWorld;
 	public static boolean forceMainWorldSpawn;
 	public static boolean alwaysInstantPortal;
@@ -112,6 +113,9 @@ public class MyWorlds extends PluginBase {
 		config.setHeader("alwaysInstantPortal", "\nWhether survival players instantly teleport when entering a nether portal");
 		alwaysInstantPortal = config.get("alwaysInstantPortal", true);
 
+		config.setHeader("maxPortalSignDistance", "\nThe maximum distance to look for a portal sign when entering a portal");
+		maxPortalSignDistance = config.get("maxPortalSignDistance", 5.0);
+		
 		config.setHeader("allowPersonalPortals", "\nWhether individually placed nether/end portals create their own destination portal");
 		config.addHeader("allowPersonalPortals", "False: Players are teleported to the spawn point of the world");
 		config.addHeader("allowPersonalPortals", "True: Players are teleported to their own portal on the other world");

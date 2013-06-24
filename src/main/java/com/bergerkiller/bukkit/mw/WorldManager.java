@@ -40,6 +40,9 @@ public class WorldManager {
 	 * @param world to close
 	 */
 	public static void closeWorldStreams(World world) {
+		// Wait until all chunks of this world are saved
+		WorldUtil.saveToDisk(world);
+		// Close the region files
 		synchronized (RegionFileCacheRef.TEMPLATE.getType()) {
 			try {
 				String worldPart = "." + File.separator + world.getName();

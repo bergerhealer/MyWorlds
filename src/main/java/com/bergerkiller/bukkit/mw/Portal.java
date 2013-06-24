@@ -24,7 +24,6 @@ import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class Portal extends PortalStore {
-	public static final double SEARCH_RADIUS = 5.0;
 	private String name;
 	private String destination;
 	private String destdisplayname;
@@ -154,7 +153,7 @@ public class Portal extends PortalStore {
 	 * @return Nearest portal, or null if none are found
 	 */
 	public static Portal getNear(Location middle) {
-		return getNear(middle, SEARCH_RADIUS);
+		return getNear(middle, MyWorlds.maxPortalSignDistance);
 	}
 
 	/**
@@ -248,7 +247,11 @@ public class Portal extends PortalStore {
 	public static boolean handlePortalEnter(final Entity e, Material portalMaterial) {
 		final Object loc = getPortalEnterDestination(e, portalMaterial);
 		if (loc == null) {
-			CommonUtil.sendMessage(e, Localization.PORTAL_NODESTINATION.get());
+			// Only for nether and ender portals do we show a 'no destination' message
+			// Other types of portals are too generic
+			if (LogicUtil.contains(portalMaterial, Material.PORTAL, Material.ENDER_PORTAL)) {
+				CommonUtil.sendMessage(e, Localization.PORTAL_NODESTINATION.get());
+			}
 			return false;
 		}
 		CommonUtil.nextTick(new Runnable() {
