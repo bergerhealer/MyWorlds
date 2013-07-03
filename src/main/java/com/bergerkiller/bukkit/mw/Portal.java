@@ -75,7 +75,8 @@ public class Portal extends PortalStore {
 	 * @return Portal destination
 	 */
 	public Location getDestination() {
-		Location loc = getPortalLocation(this.destination, location.getWorld().getName(), true);
+		final String worldName = this.location == null ? null : this.location.getWorld().getName();
+		Location loc = getPortalLocation(this.destination, worldName, true);
 		if (loc == null) {
 			String portalname = WorldManager.matchWorld(this.destination);
 			World w = WorldManager.getWorld(portalname);
@@ -99,15 +100,26 @@ public class Portal extends PortalStore {
 	}
 
 	/**
+	 * Gets a new non-existing Portal object that teleports to this Portal
+	 * 
+	 * @return new Portal with this Portal as destination
+	 */
+	public Portal getOtherEnd() {
+		Portal p = new Portal();
+		p.name = "Unknown";
+		p.destdisplayname = p.destination = this.name;
+		p.location = null;
+		return p;
+	}
+
+	/**
 	 * Teleports an Entity to the location of this Portal
 	 * 
 	 * @param entity to teleport
 	 * @return True if successful, False if not
 	 */
 	public boolean teleportSelf(Entity entity) {
-		Portal self = new Portal();
-		self.destdisplayname = this.getName();
-		MWPermissionListener.lastEnteredPortal = self;
+		MWPermissionListener.lastEnteredPortal = this.getOtherEnd();
 		boolean rval = EntityUtil.teleport(entity, Util.spawnOffset(this.getLocation()));
 		MWPermissionListener.lastEnteredPortal = null;
 		return rval;
@@ -136,6 +148,11 @@ public class Portal extends PortalStore {
 	 */
 	public boolean isAdded() {
 		return getPortalLocations(this.location.getWorld().getName()).containsKey(this.getName());
+	}
+
+	@Override
+	public String toString() {
+		return "Portal {name=" + getName() + ", loc=" + getLocation() + ", dest=" + (hasDestination() ? getDestinationName() : "None") + "}";
 	}
 
 	public static boolean exists(String world, String portalname) {
@@ -292,7 +309,10 @@ public class Portal extends PortalStore {
 			}
 			if (def != null) {
 				portal = get(getPortalLocation(def, e.getWorld().getName()));
-				if (portal == null) {
+				if (portal != null) {
+					// Teleport to a specific portal - change perspective
+					portal = portal.getOtherEnd();
+				} else {
 					// Is it a world spawn?
 					World w = WorldManager.getWorld(def);
 					if (w != null) {

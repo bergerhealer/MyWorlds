@@ -232,6 +232,8 @@ public class MWListener implements Listener {
 				dest = (Location) loc;
 			}
 			if (dest != null && MWPermissionListener.handleTeleportPermission(event.getPlayer(), dest)) {
+				// Only use the travel agent when not teleporting to fixed portals
+				event.useTravelAgent(!(loc instanceof Portal));
 				event.setCancelled(false);
 				event.setTo(dest);
 				// Send teleport message
