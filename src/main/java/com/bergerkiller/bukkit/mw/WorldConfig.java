@@ -296,12 +296,28 @@ public class WorldConfig extends WorldConfigStore {
 
 	public String getNetherPortal() {
 		if (this.defaultNetherPortal == null) {
-			if (this.worldmode == WorldMode.NETHER && this.worldname.toLowerCase().endsWith("_nether")) {
-				this.defaultNetherPortal = this.worldname.substring(0, this.worldname.length() - 7);
-			} else if (this.worldmode == WorldMode.THE_END && this.worldname.toLowerCase().endsWith("_the_end")) {
-				this.defaultNetherPortal = this.worldname.substring(0, this.worldname.length() - 8) + "_nether";
+			final String wname = this.worldname.toLowerCase();
+			if (this.worldmode == WorldMode.NETHER) {
+				// From nether to overworld
+				if (wname.endsWith("_nether")) {
+					this.defaultNetherPortal = this.worldname.substring(0, wname.length() - 7);
+				} else if (wname.equals("dim-1")) {
+					this.defaultNetherPortal = MyWorlds.getMainWorld().getName();
+				}
+			} else if (this.worldmode == WorldMode.THE_END) {
+				// From the_end to nether
+				if (wname.endsWith("_the_end")) {
+					this.defaultNetherPortal = this.worldname.substring(0, wname.length() - 8) + "_nether";
+				} else if (wname.equals("dim1")) {
+					this.defaultNetherPortal = "DIM-1";
+				}
 			} else {
-				this.defaultNetherPortal = this.worldname + "_nether";
+				// From overworld to nether
+				if (this.getWorld() == MyWorlds.getMainWorld() && WorldManager.worldExists("DIM-1")) {
+					this.defaultNetherPortal = "DIM-1";
+				} else {
+					this.defaultNetherPortal = this.worldname + "_nether";
+				}
 			}
 		}
 		return this.defaultNetherPortal;
@@ -309,12 +325,28 @@ public class WorldConfig extends WorldConfigStore {
 
 	public String getEndPortal() {
 		if (this.defaultEndPortal == null) {
-			if (this.worldmode == WorldMode.NETHER && this.worldname.toLowerCase().endsWith("_nether")) {
-				this.defaultEndPortal = this.worldname.substring(0, this.worldname.length() - 7) + "_the_end";
-			} else if (this.worldmode == WorldMode.THE_END && this.worldname.toLowerCase().endsWith("_the_end")) {
-				this.defaultEndPortal = this.worldname.substring(0, this.worldname.length() - 8);
+			final String wname = this.worldname.toLowerCase();
+			if (this.worldmode == WorldMode.NETHER) {
+				// From nether to the_end
+				if (wname.endsWith("_nether")) {
+					this.defaultEndPortal = this.worldname.substring(0, wname.length() - 7) + "_the_end";
+				} else if (wname.equals("dim-1")) {
+					this.defaultEndPortal = "DIM1";
+				}
+			} else if (this.worldmode == WorldMode.THE_END) {
+				// From the_end to overworld
+				if (wname.endsWith("_the_end")) {
+					this.defaultEndPortal = this.worldname.substring(0, wname.length() - 8);
+				} else if (wname.equals("dim1")) {
+					this.defaultEndPortal = MyWorlds.getMainWorld().getName();
+				}
 			} else {
-				this.defaultEndPortal = this.worldname + "_the_end";
+				// From overworld to the_end
+				if (this.getWorld() == MyWorlds.getMainWorld() && WorldManager.worldExists("DIM1")) {
+					this.defaultEndPortal = "DIM1";
+				} else {
+					this.defaultEndPortal = this.worldname + "_the_end";
+				}
 			}
 		}
 		return this.defaultEndPortal;

@@ -89,7 +89,7 @@ public class TeleportPortal extends Command {
 							message(ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
 						}
 					} else {
-						Localization.PORTAL_NOTFOUND.message(sender);
+						Localization.PORTAL_NOTFOUND.message(sender, dest);
 						listPortals(Portal.getPortals());
 					}
 				}

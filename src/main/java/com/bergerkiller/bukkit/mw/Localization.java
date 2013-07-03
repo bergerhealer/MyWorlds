@@ -17,7 +17,7 @@ public class Localization extends LocalizationEnum {
 	public static final Localization WORLD_NOBUILD = new Localization("world.nobuild", ChatColor.RED + "You are not allowed to place blocks in this world!");
 	public static final Localization WORLD_NOBREAK = new Localization("world.nobreak", ChatColor.RED + "cYou are not allowed to break blocks in this world!");
 	public static final Localization PORTAL_ENTER = new Localization("portal.enter", ChatColor.GREEN + "You teleported to '%0%'!");
-	public static final Localization PORTAL_NOTFOUND = new Localization("portal.notfound", ChatColor.RED + "Portal not found!");
+	public static final Localization PORTAL_NOTFOUND = new Localization("portal.notfound", ChatColor.RED + "Portal '%0%' was not found!");
 	public static final Localization PORTAL_NODESTINATION = new Localization("portal.nodestination", ChatColor.YELLOW + "This portal has no destination!");
 	public static final Localization PORTAL_NOACCESS = new Localization("portal.noaccess", ChatColor.YELLOW + "You are not allowed to enter this portal!");
 

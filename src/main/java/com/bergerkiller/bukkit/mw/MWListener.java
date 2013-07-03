@@ -228,6 +228,13 @@ public class MWListener implements Listener {
 			Location dest = null;
 			if (loc instanceof Portal) {
 				dest = ((Portal) loc).getDestination();
+				if (dest == null) {
+					String name = ((Portal) loc).getDestinationName();
+					if (name != null) {
+						// Show message indicating the destination is unavailable
+						Localization.PORTAL_NOTFOUND.message(event.getPlayer(), name);
+					}
+				}
 			} else if (loc instanceof Location) {
 				dest = (Location) loc;
 			}

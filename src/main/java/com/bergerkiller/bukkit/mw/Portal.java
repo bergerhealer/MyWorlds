@@ -277,6 +277,13 @@ public class Portal extends PortalStore {
 				if (loc instanceof Portal) {
 					MWPermissionListener.lastEnteredPortal = (Portal) loc;
 					dest = ((Portal) loc).getDestination();
+					if (dest == null) {
+						String name = ((Portal) loc).getDestinationName();
+						if (name != null && e instanceof Player) {
+							// Show message indicating the destination is unavailable
+							Localization.PORTAL_NOTFOUND.message((Player) e, name);
+						}
+					}
 				} else if (loc instanceof Location) {
 					dest = (Location) loc;
 				}
@@ -355,10 +362,7 @@ public class Portal extends PortalStore {
 				}
 			}
 		}
-		// If a portal was found, teleport using it
-		if (portal != null && portal.hasDestination()) {
-			return portal;
-		}
-		return dest;
+		// If a portal was found, teleport using it, otherwise use destination Location
+		return portal != null ? portal : dest;
 	}
 }
