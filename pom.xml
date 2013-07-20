@@ -4,7 +4,7 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.62</version>
+  <version>1.63</version>
   <packaging>jar</packaging>
   <name>MyWorlds</name>
   <url>http://dev.bukkit.org/server-mods/my-worlds/</url>
@@ -35,13 +35,13 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.5.2-R0.1</version>
+      <version>1.6.2-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
-      <version>1.52-SNAPSHOT</version>
+      <version>1.54-SNAPSHOT</version>
   	</dependency>
   	<dependency>
       <groupId>org.getspout</groupId>
