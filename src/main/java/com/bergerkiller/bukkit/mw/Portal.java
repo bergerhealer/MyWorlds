@@ -237,6 +237,12 @@ public class Portal extends PortalStore {
 			Portal p = new Portal();
 			p.name = name.replace("\"", "").replace("'", "");
 			p.destination = lines[2].replace("\"", "").replace("'", "");
+			if (p.name.isEmpty()) {
+				p.name = null;
+			}
+			if (p.destination.isEmpty()) {
+				p.destination = null;
+			}
 			if (lines[3].isEmpty()) {
 				p.destdisplayname = p.getDestinationName();
 			} else {
@@ -325,8 +331,9 @@ public class Portal extends PortalStore {
 					if (w != null) {
 						if (MyWorlds.allowPersonalPortals) {
 							// What environment are we coming from?
-							Environment env = e.getWorld().getEnvironment();
-							if (env == Environment.THE_END) {
+							Environment oldEnvironment = e.getWorld().getEnvironment();
+							Environment newEnvironment = w.getEnvironment();
+							if (oldEnvironment == Environment.THE_END) {
 								// No special portal type or anything is used
 								// Instead, teleport to a personal bed or otherwise world spawn
 								if (e instanceof Player) {
@@ -338,7 +345,14 @@ public class Portal extends PortalStore {
 							} else {
 								// Find out what location to teleport to
 								// Use source block as the location to search from
-								double blockRatio = env == Environment.NORMAL ? 0.125 : 8.0;
+								double blockRatio = 1.0;
+								if (oldEnvironment != newEnvironment) {
+									if (newEnvironment == Environment.NETHER) {
+										blockRatio = 0.125;
+									} else if (oldEnvironment == Environment.NETHER) {
+										blockRatio = 8.0;
+									}
+								}
 								Location start = e.getLocation();
 								Location end = WorldUtil.findSpawnLocation(new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ()));
 								if (end != null) {

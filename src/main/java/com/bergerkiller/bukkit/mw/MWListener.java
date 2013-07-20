@@ -59,6 +59,17 @@ public class MWListener implements Listener {
 	}
 
 	/**
+	 * Sets a portal point, so players will no longer attempt to enter it next time
+	 * 
+	 * @param player to set
+	 * @param location of the Portal to set
+	 */
+	public static void setPortalPoint(Player player, Location location) {
+		walkDistanceCheckMap.put(player, location);
+		portaltimes.put(player, System.currentTimeMillis());
+	}
+
+	/**
 	 * Handles the teleport delay and distance checks
 	 * 
 	 * @param e Entity to pre-teleport
@@ -188,8 +199,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
-		portaltimes.put(event.getPlayer(), System.currentTimeMillis());
+		setPortalPoint(event.getPlayer(), event.getTo());
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -222,8 +232,10 @@ public class MWListener implements Listener {
 				return; // Invalid
 			}
 		}
+
 		// Perform teleportation
 		if (canPortalTeleport(event.getPlayer())) {
+			setPortalPoint(event.getPlayer(), enterLoc);
 			Object loc = Portal.getPortalEnterDestination(event.getPlayer(), mat);
 			Location dest = null;
 			if (loc instanceof Portal) {
@@ -238,7 +250,9 @@ public class MWListener implements Listener {
 			} else if (loc instanceof Location) {
 				dest = (Location) loc;
 			}
-			if (dest != null && MWPermissionListener.handleTeleportPermission(event.getPlayer(), dest)) {
+			if (dest == null) {
+				Localization.PORTAL_NODESTINATION.message(event.getPlayer());
+			} else if (MWPermissionListener.handleTeleportPermission(event.getPlayer(), dest)) {
 				// Only use the travel agent when not teleporting to fixed portals
 				event.useTravelAgent(!(loc instanceof Portal));
 				event.setCancelled(false);
@@ -257,11 +271,22 @@ public class MWListener implements Listener {
 	public void onEntityPortalEnter(EntityPortalEnterEvent event) {
 		if (event.getEntity() instanceof Player) {
 			Player player = (Player) event.getEntity();
-			// Survival?
+
+			// If player is creative, we can instantly handle the teleport in PLAYER_PORTAL_ENTER
+			// If not but the delayed teleportation is preferred, then also let PLAYER_PORTAL_ENTER handle it
+			// If not, then we will handle the teleportation in here
 			if (player.getGameMode() == GameMode.CREATIVE || !MyWorlds.alwaysInstantPortal) {
-				// Store the to location - the one in the portal enter event is inaccurate
-				playerPortalEnter.put((Player) event.getEntity(), event.getLocation());
-				return; // Ignore teleportation
+				// Store the to location - the one in the PLAYER_PORTAL_ENTER is inaccurate
+				playerPortalEnter.put(player, event.getLocation());
+				// Ignore teleportation here, handle it during PLAYER_PORTAL_ENTER
+				return;
+			}
+
+			// We are about to handle teleportation here...be sure to avoid spam
+			if (canPortalTeleport(player)) {
+				setPortalPoint(player, event.getLocation());
+			} else {
+				return;
 			}
 		} else if (MyWorlds.onlyPlayerTeleportation) {
 			return; // Ignore
@@ -371,10 +396,14 @@ public class MWListener implements Listener {
 				}
 				portal.add();
 				MyWorlds.plugin.logAction(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
-				if (portal.hasDestination()) {
-					event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + portal.getDestinationName() + ChatColor.GREEN + "!");
+				// Build message
+				if (portal.getDestinationName() != null) {
+					Localization.PORTAL_CREATE_TO.message(event.getPlayer(), portal.getDestinationName());
+					if (!portal.hasDestination()) {
+						Localization.PORTAL_CREATE_MISSING.message(event.getPlayer());
+					}
 				} else {
-					event.getPlayer().sendMessage(ChatColor.GREEN + "You created a new destination portal!");
+					Localization.PORTAL_CREATE_END.message(event.getPlayer());
 				}
 			} else {
 				event.setCancelled(true);

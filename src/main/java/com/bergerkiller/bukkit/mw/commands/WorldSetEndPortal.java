@@ -17,8 +17,8 @@ public class WorldSetEndPortal extends Command {
 		this.genWorldname(1);
 		if (this.handleWorld()) {
 			if (dest.isEmpty()) {
-				WorldConfig.get(worldname).setEndPortal(null);
-				message(ChatColor.GREEN + "Default ender portal destination of world '" + worldname + "' reset!");
+				WorldConfig.get(worldname).setEndPortal("");
+				message(ChatColor.GREEN + "Default ender portal destination of world '" + worldname + "' cleared! (no default teleport)");
 			} else if (Portal.getPortalLocation(dest, null) != null) {
 				WorldConfig.get(worldname).setEndPortal(dest);
 				message(ChatColor.GREEN + "Default ender portal destination of world '" + worldname + "' set to portal: '" + dest + "'!");
