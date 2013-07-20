@@ -230,24 +230,24 @@ public class Portal extends PortalStore {
 
 	public static Portal get(Block signblock, String[] lines) {
 		if (signblock.getState() instanceof Sign && lines[0].equalsIgnoreCase("[portal]")) {
-			String name = lines[1];
-			if (LogicUtil.nullOrEmpty(name)) {
-				name = StringUtil.blockToString(signblock);
-			}
 			Portal p = new Portal();
-			p.name = name.replace("\"", "").replace("'", "");
-			p.destination = lines[2].replace("\"", "").replace("'", "");
-			if (p.name.isEmpty()) {
-				p.name = null;
+			// Read name, if none set, use portal location as name
+			p.name = Util.filterPortalName(lines[1]);
+			if (LogicUtil.nullOrEmpty(p.name)) {
+				p.name = StringUtil.blockToString(signblock);
 			}
+			// Read destination, if none set, set to null so it's clear there is no destination set
+			p.destination = Util.filterPortalName(lines[2]);
 			if (p.destination.isEmpty()) {
 				p.destination = null;
 			}
+			// Read destination name, if none set, use destination instead
 			if (lines[3].isEmpty()) {
 				p.destdisplayname = p.getDestinationName();
 			} else {
 				p.destdisplayname = lines[3];
 			}
+			// Set portal locatiol using sign location and orientation
 			p.location = signblock.getLocation();
 			MaterialData data = signblock.getState().getData();
 			float yaw = 0;

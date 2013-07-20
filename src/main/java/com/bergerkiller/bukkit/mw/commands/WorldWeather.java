@@ -3,7 +3,7 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
-import com.bergerkiller.bukkit.mw.MWListener;
+import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
@@ -70,7 +70,7 @@ public class WorldWeather extends Command {
 					boolean holdchange = wc.holdWeather != setHold;
 					wc.holdWeather = setHold;
 					if (setStorm && ((!w.hasStorm()) || (setThunder && !w.isThundering()) || holdchange)) {
-						MWListener.setWeather(w, true);
+						MyWorlds.plugin.setWeather(w, true);
 						if (setThunder) {
 							 w.setThundering(true);
 						}
@@ -89,7 +89,7 @@ public class WorldWeather extends Command {
 							}
 						}
 					} else if (setSun && (w.hasStorm() || holdchange)) {
-						MWListener.setWeather(w, false);
+						MyWorlds.plugin.setWeather(w, false);
 						if (setHold) {
 							message(ChatColor.GREEN + "You stopped the formation of storms on world: '" + worldname + "'!");
 						} else {

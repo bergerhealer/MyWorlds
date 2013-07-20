@@ -8,7 +8,6 @@ import org.bukkit.World;
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
-import com.bergerkiller.bukkit.mw.MWListener;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
@@ -41,7 +40,7 @@ public class WorldCreate extends Command {
 					}
 				}
 		        message(ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
-		        MWListener.ignoreWorld(worldname);
+		        MyWorlds.plugin.initDisableSpawn(worldname);
 		        final World world = WorldManager.createWorld(worldname, seedval, sender);
 				if (world != null) {
 					//load chunks

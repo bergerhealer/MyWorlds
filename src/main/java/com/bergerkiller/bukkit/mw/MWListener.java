@@ -1,6 +1,5 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.util.HashSet;
 import java.util.Iterator;
 
 import org.bukkit.ChatColor;
@@ -9,7 +8,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -43,58 +41,10 @@ import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class MWListener implements Listener {
-	// World to disable keepspawnloaded for
-	private static HashSet<String> initIgnoreWorlds = new HashSet<String>();
-	// A mapping of player positions to prevent spammed portal teleportation
-	private static EntityMap<Player, Location> walkDistanceCheckMap = new EntityMap<Player, Location>();
 	// A mapping of player positions to store the actually entered portal
-	private static EntityMap<Player, Location> playerPortalEnter = new EntityMap<Player, Location>();
-	// Portal times for a minimal delay
-    private static EntityMap<Entity, Long> portaltimes = new EntityMap<Entity, Long>();
-    // Whether weather changes handling is ignored
-	public static boolean ignoreWeatherChanges = false;
-
-	public static void ignoreWorld(String worldname) {
-		initIgnoreWorlds.add(worldname);
-	}
-
-	/**
-	 * Sets a portal point, so players will no longer attempt to enter it next time
-	 * 
-	 * @param player to set
-	 * @param location of the Portal to set
-	 */
-	public static void setPortalPoint(Player player, Location location) {
-		walkDistanceCheckMap.put(player, location);
-		portaltimes.put(player, System.currentTimeMillis());
-	}
-
-	/**
-	 * Handles the teleport delay and distance checks
-	 * 
-	 * @param e Entity to pre-teleport
-	 * @param portalMaterial of the portal
-	 * @return True if teleporting happened, False if not
-	 */
-	public static boolean canPortalTeleport(Entity e) {
-    	if (walkDistanceCheckMap.containsKey(e)) {
-    		return false;
-    	}
-        long currtime = System.currentTimeMillis();
-    	long lastteleport;
-    	if (portaltimes.containsKey(e)) {
-    		lastteleport = portaltimes.get(e);
-    	} else {
-    		lastteleport = currtime - MyWorlds.teleportInterval;
-    		portaltimes.put(e, lastteleport);
-    	}
-        if (currtime - lastteleport >= MyWorlds.teleportInterval) {
-        	portaltimes.put(e, currtime);
-        	return true;
-        } else {
-        	return false;
-        }
-	}
+	private final EntityMap<Player, Location> playerPortalEnter = new EntityMap<Player, Location>();
+	// Keeps track of player teleports
+	private final TeleportationTracker teleportTracker = new TeleportationTracker();
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onWorldLoad(WorldLoadEvent event) {
@@ -109,22 +59,16 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onWorldInit(WorldInitEvent event) {
-		if (initIgnoreWorlds.remove(event.getWorld().getName())) {
+		if (MyWorlds.plugin.clearInitDisableSpawn(event.getWorld().getName())) {
 			WorldUtil.setKeepSpawnInMemory(event.getWorld(), false);
 		} else {
 			WorldConfig.get(event.getWorld()).onWorldLoad(event.getWorld());
 		}
 	}
 
-	public static void setWeather(org.bukkit.World w, boolean storm) {
-		ignoreWeatherChanges = true;
-		w.setStorm(storm);
-		ignoreWeatherChanges = false;
-	}
-
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onWeatherChange(WeatherChangeEvent event) {
-		if (!ignoreWeatherChanges && WorldConfig.get(event.getWorld()).holdWeather) {
+		if (!MyWorlds.plugin.ignoreWeatherChanges && WorldConfig.get(event.getWorld()).holdWeather) {
 			event.setCancelled(true);
 		} else {
 			WorldConfig.get(event.getWorld()).updateSpoutWeather(event.getWorld());
@@ -138,6 +82,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
+		// Update spawn position based on world configuration
 		org.bukkit.World respawnWorld = event.getPlayer().getWorld();
 		if (MyWorlds.forceMainWorldSpawn) {
 			// Force a respawn on the main world
@@ -156,23 +101,16 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
+		// Reload the world if the player just exited a world to be reloaded
 		WorldConfig.updateReload(event.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerMove(PlayerMoveEvent event) {
 		// Handle player movement for portals
-		Location loc = walkDistanceCheckMap.get(event.getPlayer());
-		if (loc != null) {
-			if (loc.getWorld() != event.getTo().getWorld()) {
-				// Put in proper world
-				walkDistanceCheckMap.put(event.getPlayer(), event.getTo());
-			} else if (loc.distanceSquared(event.getTo()) > 2.25) {
-				// Moved outside radius - remove point
-				walkDistanceCheckMap.remove(event.getPlayer());
-			}
-		}
-		// Water teleport handling
+		teleportTracker.updatePlayerPosition(event.getPlayer(), event.getTo());
+
+		// Water teleportation handling
 		Block b = event.getTo().getBlock();
 		final int statid = Material.STATIONARY_WATER.getId(); // = 9
 		if (MyWorlds.useWaterTeleport && b.getTypeId() == statid) {
@@ -187,11 +125,13 @@ public class MWListener implements Listener {
 						allow = true;
 					}
 				}
-				if (allow && canPortalTeleport(event.getPlayer())) {
+				if (allow && teleportTracker.canTeleport(event.getPlayer())) {
 					Portal.handlePortalEnter(event.getPlayer(), Material.STATIONARY_WATER);
 				}
 			}
 		}
+
+		// Reload the world if the player just exited a world to be reloaded
 		if (event.getFrom().getWorld() != event.getTo().getWorld()) {
 			WorldConfig.updateReload(event.getFrom());
 		}
@@ -199,7 +139,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		setPortalPoint(event.getPlayer(), event.getTo());
+		teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -234,8 +174,8 @@ public class MWListener implements Listener {
 		}
 
 		// Perform teleportation
-		if (canPortalTeleport(event.getPlayer())) {
-			setPortalPoint(event.getPlayer(), enterLoc);
+		if (teleportTracker.canTeleport(event.getPlayer())) {
+			teleportTracker.setPortalPoint(event.getPlayer(), enterLoc);
 			Object loc = Portal.getPortalEnterDestination(event.getPlayer(), mat);
 			Location dest = null;
 			if (loc instanceof Portal) {
@@ -283,8 +223,8 @@ public class MWListener implements Listener {
 			}
 
 			// We are about to handle teleportation here...be sure to avoid spam
-			if (canPortalTeleport(player)) {
-				setPortalPoint(player, event.getLocation());
+			if (teleportTracker.canTeleport(player)) {
+				teleportTracker.setPortalPoint(player, event.getLocation());
 			} else {
 				return;
 			}
@@ -301,6 +241,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerChat(AsyncPlayerChatEvent event) {
+		// Handle chat permissions
 		if (!Permission.canChat(event.getPlayer())) {
 			event.setCancelled(true);
 			Localization.WORLD_NOCHATACCESS.message(event.getPlayer());
@@ -336,6 +277,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onCreatureSpawn(CreatureSpawnEvent event) {
+		// Any creature spawns we couldn't cancel in PreSpawn we will cancel here
 		if (event.getSpawnReason() != SpawnReason.CUSTOM && (!MyWorlds.ignoreEggSpawns || event.getSpawnReason() != SpawnReason.SPAWNER_EGG)) {
 			if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
 				event.setCancelled(true);
@@ -345,6 +287,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onCreaturePreSpawn(CreaturePreSpawnEvent event) {
+		// Cancel creature spawns before entities are spawned
 		if (WorldConfig.get(event.getSpawnLocation()).spawnControl.isDenied(event.getEntityType())) {
 			event.setCancelled(true);
 		}
@@ -352,6 +295,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onBlockForm(BlockFormEvent event) {
+		// Snow/Ice forming cancelling based on world settings
 		Material type = event.getNewState().getType();
 		if (type == Material.SNOW) {
 			if (!WorldConfig.get(event.getBlock()).formSnow) {
@@ -366,6 +310,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onBlockPhysics(BlockPhysicsEvent event) {
+		// Allows portals to be placed without physics killing it
 		if (event.getBlock().getType() == Material.PORTAL) {
 			if (!(event.getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR)) {
 				event.setCancelled(true);

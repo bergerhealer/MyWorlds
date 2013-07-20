@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
+import java.util.HashSet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -34,6 +35,10 @@ public class MyWorlds extends PluginBase {
 	public static boolean alwaysInstantPortal;
 	public static boolean allowPersonalPortals;
 	public static boolean ignoreEggSpawns;
+	// Whether weather changes handling is ignored
+	public boolean ignoreWeatherChanges = false;
+	// World to disable keepspawnloaded for
+	private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
 	public static MyWorlds plugin;
 
 	@Override
@@ -171,6 +176,37 @@ public class MyWorlds extends PluginBase {
 	@Override
 	public void permissions() {
 		this.loadPermissions(Permission.class);
+	}
+
+	/**
+	 * Prevents a just-initialized world from loading the spawn area
+	 * 
+	 * @param worldname to disable the spawn loading for during initialization
+	 */
+	public void initDisableSpawn(String worldname) {
+		spawnDisabledWorlds.add(worldname);
+	}
+
+	/**
+	 * Clears the init-disable spawn for a world, and returns whether it was disabled
+	 * 
+	 * @param worldname to clear
+	 * @return True if spawn was disabled, False if not
+	 */
+	public boolean clearInitDisableSpawn(String worldname) {
+		return spawnDisabledWorlds.remove(worldname);
+	}
+
+	/**
+	 * Sets the weather state of a World without canceling because of it being locked
+	 * 
+	 * @param world to set the weather of
+	 * @param storm state: True for storm/rain, False for clear sky
+	 */
+	public void setWeather(org.bukkit.World world, boolean storm) {
+		ignoreWeatherChanges = true;
+		world.setStorm(storm);
+		ignoreWeatherChanges = false;
 	}
 
 	/**

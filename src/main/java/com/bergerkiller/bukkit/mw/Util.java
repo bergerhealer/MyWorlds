@@ -100,4 +100,19 @@ public class Util {
 		}
 		return null;
 	}
+
+	/**
+	 * Removes all unallowed characters from a portal name.
+	 * These are characters that would cause internal loading/saving issues otherwise.
+	 * 
+	 * @param name to filter
+	 * @return filtered name
+	 */
+	public static String filterPortalName(String name) {
+		if (name == null) {
+			return null;
+		} else {
+			return name.replace("\"", "").replace("'", "");
+		}
+	}
 }
