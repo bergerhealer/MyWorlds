@@ -1,7 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.*;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -452,69 +451,6 @@ public class WorldManager {
 		return w;
 	}
 
-	private static boolean delete(File folder) {
-		if (folder.isDirectory()) {
-			for (File f : folder.listFiles()) {
-				if (!delete(f)) return false;
-			}
-		}
-		return folder.delete();
-	}
-    public static boolean copy(File sourceLocation, File targetLocation) {
-    	try {
-    		if (sourceLocation.isDirectory()) {
-    			if (!targetLocation.exists()) {
-    				targetLocation.mkdir();
-    			}
-    			for (String child : sourceLocation.list()) {
-    				if (!copy(new File(sourceLocation, child), new File(targetLocation, child))) {
-    					return false;
-    				}
-    			}
-    		} else {
-    			// Create file
-    			if (!targetLocation.exists()) {
-    				targetLocation.createNewFile();
-    			}
-    			// Start a new stream
-    			FileInputStream input = null;
-    			FileOutputStream output = null;
-    			FileChannel inputChannel = null;
-    			FileChannel outputChannel = null;
-    			try {
-    				// Initialize file streams
-        			input = new FileInputStream(sourceLocation);
-        			inputChannel = input.getChannel();
-        			output = new FileOutputStream(targetLocation);
-        			outputChannel = output.getChannel();
-        			// Start transferring
-        			long transfered = 0;
-        			long bytes = inputChannel.size();
-        			while (transfered < bytes) {
-        				transfered += outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
-        				outputChannel.position(transfered);
-        			}
-    			} finally {
-    				// Close input stream
-    				if (inputChannel != null) {
-    					inputChannel.close();
-    				} else if (input != null) {
-    					input.close();
-    				}
-    				// Close output stream
-    				if (outputChannel != null) {
-    					outputChannel.close();
-    				} else if (output != null) {
-    					output.close();
-    				}
-    			}
-    		}
-    		return true;
-    	} catch (IOException ex) {
-    		ex.printStackTrace();
-    		return false;
-    	}
-    }
 	private static long getFolderSize(File folder) {
 		if (!folder.exists()) return 0;
 		if (folder.isDirectory()) {
@@ -541,11 +477,11 @@ public class WorldManager {
 	}
 
 	public static boolean deleteWorld(String worldname) {
-		return delete(WorldUtil.getWorldFolder(worldname));
+		return Util.deleteFile(WorldUtil.getWorldFolder(worldname)).isEmpty();
 	}
 	public static boolean copyWorld(String worldname, String newname) {
 		File destFolder = WorldUtil.getWorldFolder(newname);
-		if (!copy(WorldUtil.getWorldFolder(worldname), destFolder)) return false;;
+		if (!Util.tryCopyFile(WorldUtil.getWorldFolder(worldname), destFolder)) return false;;
 		renameWorld(newname, newname);
 		File uid = new File(destFolder, "uid.dat");
 		if (uid.exists()) uid.delete();
@@ -745,7 +681,7 @@ public class WorldManager {
 				}
 			}
 			if (editcount > 0) {
-				if (backupfolder.mkdirs() && copy(chunkfile, backupfile)) {
+				if (backupfolder.mkdirs() && Util.tryCopyFile(chunkfile, backupfile)) {
 					//Write out the new locations
 					raf.seek(0);
 					for (int location : locations) {
