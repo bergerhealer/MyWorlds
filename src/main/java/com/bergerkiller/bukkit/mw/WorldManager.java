@@ -481,10 +481,14 @@ public class WorldManager {
 	}
 	public static boolean copyWorld(String worldname, String newname) {
 		File destFolder = WorldUtil.getWorldFolder(newname);
-		if (!Util.tryCopyFile(WorldUtil.getWorldFolder(worldname), destFolder)) return false;;
+		if (!Util.tryCopyFile(WorldUtil.getWorldFolder(worldname), destFolder)) {
+			return false;
+		}
 		renameWorld(newname, newname);
 		File uid = new File(destFolder, "uid.dat");
-		if (uid.exists()) uid.delete();
+		if (uid.exists()) {
+			uid.delete();
+		}
 		return true;
 	}
 
@@ -566,7 +570,7 @@ public class WorldManager {
 			int zOffset = 32 * Integer.parseInt(zname);
 			
 			raf = new RandomAccessFile(chunkfile, "rw");
-			File backupfile = new File(backupfolder + File.separator + chunkfile.getName());
+			File backupfile = new File(backupfolder, chunkfile.getName());
 			int[] locations = new int[1024];
 			for (int i = 0; i < 1024; i++) {
 				locations[i] = raf.readInt();
@@ -589,7 +593,9 @@ public class WorldManager {
 				chunkX += xOffset;
 				chunkZ += zOffset;
 				int location = locations[i];
-				if (location == 0) continue;
+				if (location == 0) {
+					continue;
+				}
 				try {
 					int offset = location >> 8;
                     int size = location & 255;
@@ -605,10 +611,10 @@ public class WorldManager {
 					} else if (size > 0 && length > 0) {
 						byte version = raf.readByte();
 						if (data.length < length + 10) {
-							data = new byte[length - 1];
+							data = new byte[length + 10];
 						}
-						raf.read(data);
-						ByteArrayInputStream bais = new ByteArrayInputStream(data);
+						raf.read(data, 0, length - 1);
+						ByteArrayInputStream bais = new ByteArrayInputStream(data, 0, length - 1);
 						//Try to load it all...
 						DataInputStream stream;
 						if (version == 1) {
@@ -624,7 +630,7 @@ public class WorldManager {
 							
 							//Validate the stream and close
 							try {
-								CommonTagCompound comp = CommonTagCompound.readFrom(stream);
+								CommonTagCompound comp = CommonTagCompound.readFromUncompressed(stream);
 								if (comp == null) {
 									editcount++;
 									locations[i] = 0;
@@ -642,9 +648,9 @@ public class WorldManager {
 											level.putValue("zPos", chunkZ);
 											//rewrite to stream
 											ByteArrayOutputStream baos = new ByteArrayOutputStream(8096);
-									        DataOutputStream dataoutputstream = new DataOutputStream(new DeflaterOutputStream(baos));
-									        NBTUtil.writeCompound(level, dataoutputstream);
-									        dataoutputstream.close();
+									        OutputStream outputstream = new DeflaterOutputStream(baos);
+									        level.writeToUncompressed(outputstream);
+									        outputstream.close();
 									        //write to region file
 									        raf.seek(seekindex);
 									        byte[] newdata = baos.toByteArray();
@@ -681,7 +687,7 @@ public class WorldManager {
 				}
 			}
 			if (editcount > 0) {
-				if (backupfolder.mkdirs() && Util.tryCopyFile(chunkfile, backupfile)) {
+				if ((backupfolder.exists() || backupfolder.mkdirs()) && Util.tryCopyFile(chunkfile, backupfile)) {
 					//Write out the new locations
 					raf.seek(0);
 					for (int location : locations) {
