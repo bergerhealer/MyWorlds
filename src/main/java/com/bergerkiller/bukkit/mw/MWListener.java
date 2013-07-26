@@ -3,7 +3,6 @@ package com.bergerkiller.bukkit.mw;
 import java.util.Iterator;
 
 import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -38,6 +37,7 @@ import com.bergerkiller.bukkit.common.conversion.Conversion;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
 import com.bergerkiller.bukkit.common.reflection.classes.EntityRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class MWListener implements Listener {
@@ -215,7 +215,7 @@ public class MWListener implements Listener {
 			// If player is creative, we can instantly handle the teleport in PLAYER_PORTAL_ENTER
 			// If not but the delayed teleportation is preferred, then also let PLAYER_PORTAL_ENTER handle it
 			// If not, then we will handle the teleportation in here
-			if (player.getGameMode() == GameMode.CREATIVE || !MyWorlds.alwaysInstantPortal) {
+			if (PlayerUtil.isInvulnerable(player) || !MyWorlds.alwaysInstantPortal) {
 				// Store the to location - the one in the PLAYER_PORTAL_ENTER is inaccurate
 				playerPortalEnter.put(player, event.getLocation());
 				// Ignore teleportation here, handle it during PLAYER_PORTAL_ENTER

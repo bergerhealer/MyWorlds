@@ -5,6 +5,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.collections.EntityMap;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 
 /**
  * Keeps track of the portals player enter, restricting too much teleporting.
@@ -25,6 +26,8 @@ public class TeleportationTracker {
 	public void setPortalPoint(Player player, Location location) {
 		walkDistanceCheckMap.put(player, location);
 		portaltimes.put(player, System.currentTimeMillis());
+		EntityUtil.setAllowTeleportation(player, false);
+		EntityUtil.setPortalCooldown(player, EntityUtil.getPortalCooldownMaximum(player));
 	}
 
 	/**
