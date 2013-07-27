@@ -8,45 +8,9 @@ import org.bukkit.World;
 import com.bergerkiller.bukkit.common.Task;
 
 public class LoadChunksTask extends Task {
-	
-	private static class ChunkCoord {
-		public int x, z;
-		public World world;
-		public Task taskWhenFinished;
-	}
-	
-	public static void abort() {
-		remaining = new LinkedList<ChunkCoord>();
-		Task.stop(task);
-	}
-	
-	public static void init() {
-		remaining = new LinkedList<ChunkCoord>();
-	}
-	
-	public static void deinit() {
-		abort();
-		remaining.clear();
-		remaining = null;
-	}
-	
-	private static Queue<ChunkCoord> remaining;
-	public static void add(World world, int cx, int cz) {
-		add(world, cx, cz, null);
-	}
-	public static void add(World world, int cx, int cz, Task taskWhenFinished) {
-		ChunkCoord coord = new ChunkCoord();
-		coord.x = cx;
-		coord.z = cz;
-		coord.world = world;
-		coord.taskWhenFinished = taskWhenFinished;
-		remaining.offer(coord);
-		Task.stop(task);
-		task = new LoadChunksTask().start(0, 1);
-	}
-	
-	private static Task task;
-	
+	private static LoadChunksTask task;
+	private final Queue<ChunkCoord> remaining = new LinkedList<ChunkCoord>();
+
 	private LoadChunksTask() {
 		super(MyWorlds.plugin);
 	}
@@ -68,4 +32,33 @@ public class LoadChunksTask extends Task {
 		}
 	}
 
+	public static void abort() {
+		Task.stop(task);
+		task = null;
+	}
+
+	public static void add(World world, int cx, int cz) {
+		add(world, cx, cz, null);
+	}
+
+	public static void add(World world, int cx, int cz, Runnable taskWhenFinished) {
+		ChunkCoord coord = new ChunkCoord();
+		coord.x = cx;
+		coord.z = cz;
+		coord.world = world;
+		coord.taskWhenFinished = taskWhenFinished;
+		if (task == null) {
+			task = new LoadChunksTask();
+			task.start(0, 1);
+		}
+		synchronized (task) {
+			task.remaining.offer(coord);
+		}
+	}
+
+	private static class ChunkCoord {
+		public int x, z;
+		public World world;
+		public Runnable taskWhenFinished;
+	}
 }

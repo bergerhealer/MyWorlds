@@ -140,9 +140,6 @@ public class MyWorlds extends PluginBase {
 		// World inventories
 		WorldInventory.load();
 		new MWPlayerDataController().assign();
-
-		// init chunk loader
-		LoadChunksTask.init();
 	}
 
 	@Override
@@ -157,7 +154,7 @@ public class MyWorlds extends PluginBase {
 		WorldConfig.deinit();
 
 		// Abort chunk loader
-		LoadChunksTask.deinit();
+		LoadChunksTask.abort();
 
 		plugin = null;
 	}

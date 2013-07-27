@@ -5,7 +5,6 @@ import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
-import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
 import com.bergerkiller.bukkit.mw.MyWorlds;
@@ -51,14 +50,15 @@ public class WorldCreate extends Command {
 					int spawnx = world.getSpawnLocation().getBlockX() >> 4;
 				    int spawnz = world.getSpawnLocation().getBlockZ() >> 4;
 					for (int x = -keepdimension; x <= keepdimension; x++) {
-						boolean first = true;
 						for (int z = -keepdimension; z <= keepdimension; z++) {
+							// Spam messages every 64 chunks
+							boolean first = (current & 63) == 0x0;
 							int cx = spawnx + x;
 							int cz = spawnz + z;
-							Task t = null;
+							Runnable t = null;
 							if (first || (current + 2) == total) {
 								final int percent = first ? (100 * current / total) : 100;
-								t = new Task(MyWorlds.plugin) {
+								t = new Runnable() {
 									public void run() {
 									    message(ChatColor.YELLOW + "Preparing spawn area (" + percent + "%)...");
 									    MyWorlds.plugin.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
@@ -67,7 +67,7 @@ public class WorldCreate extends Command {
 								first = false;
 							}
 							if (++current == total) {
-								t = new Task(MyWorlds.plugin) {
+								t = new Runnable() {
 									public void run() {
 										world.setKeepSpawnInMemory(true);
 									    message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
