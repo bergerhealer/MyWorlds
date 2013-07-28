@@ -57,16 +57,16 @@ public class TeleportationTracker {
 	 * @return True if teleporting happened, False if not
 	 */
 	public boolean canTeleport(Entity e) {
-    	if (walkDistanceCheckMap.containsKey(e)) {
-    		return false;
-    	}
-    	Long lastTeleport = portaltimes.get(e);
-    	if (lastTeleport != null) {
-    		final long currtime = System.currentTimeMillis();
-    		if (currtime - lastTeleport.longValue() < MyWorlds.teleportInterval) {
-    			return false;
-    		}
-    	}
-    	return true;
+		if (walkDistanceCheckMap.containsKey(e)) {
+			return false;
+		}
+		Long lastTeleport = portaltimes.get(e);
+		if (lastTeleport != null) {
+			final long currtime = System.currentTimeMillis();
+			if (currtime - lastTeleport.longValue() < MyWorlds.teleportInterval) {
+				return false;
+			}
+		}
+		return true;
 	}
 }

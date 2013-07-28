@@ -172,7 +172,7 @@ public class MWListener implements Listener {
 		// Get from location
 		Location enterLoc = portalEnterLocations.remove(entity);
 		if (enterLoc == null) {
-			enterLoc = event.getFrom();;
+			enterLoc = event.getFrom();
 		}
 		Block b = enterLoc.getBlock();
 
@@ -221,9 +221,17 @@ public class MWListener implements Listener {
 			return;
 		} else {
 			// Permissions
-			if (entity instanceof Player && !MWListenerPost.handleTeleportPermission((Player) entity, dest)) {
-				return;
+			if (entity instanceof Player) {
+				// For later on: set up the right portal for permissions and messages'
+				if (loc instanceof Portal) {
+					MWListenerPost.setLastEntered((Player) entity, (Portal) loc);
+				}
+				// Check permissions
+				if (!MWListenerPost.handleTeleportPermission((Player) entity, dest)) {
+					return;
+				}
 			} else if (WorldConfig.get(dest).spawnControl.isDenied(entity)) {
+				// Non-player entity was denied from teleporting there because of spawn control
 				return;
 			}
 
@@ -231,11 +239,6 @@ public class MWListener implements Listener {
 			event.useTravelAgent(!(loc instanceof Portal));
 			event.setTo(dest);
 			event.setCancelled(false);
-
-			// For later on: set up the right portal for permissions and messages
-			if (loc instanceof Portal && entity instanceof Player) {
-				MWListenerPost.setLastEntered((Player) entity, (Portal) loc);
-			}
 		}
 	}
 
