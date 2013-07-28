@@ -29,7 +29,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.WorldInitEvent;
-import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 import com.bergerkiller.bukkit.common.collections.EntityMap;
@@ -45,11 +44,6 @@ public class MWListener implements Listener {
 	private final EntityMap<Player, Location> playerPortalEnter = new EntityMap<Player, Location>();
 	// Keeps track of player teleports
 	private final TeleportationTracker teleportTracker = new TeleportationTracker();
-
-	@EventHandler(priority = EventPriority.MONITOR)
-	public void onWorldLoad(WorldLoadEvent event) {
-		WorldConfig.get(event.getWorld()).timeControl.updateWorld(event.getWorld());
-	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onWorldUnload(WorldUnloadEvent event) {
@@ -176,7 +170,7 @@ public class MWListener implements Listener {
 		// Perform teleportation
 		if (teleportTracker.canTeleport(event.getPlayer())) {
 			teleportTracker.setPortalPoint(event.getPlayer(), enterLoc);
-			Object loc = Portal.getPortalEnterDestination(event.getPlayer(), mat);
+			Object loc = Portal.getPortalEnterDestination(event.getPlayer(), mat, false);
 			Location dest = null;
 			if (loc instanceof Portal) {
 				dest = ((Portal) loc).getDestination();

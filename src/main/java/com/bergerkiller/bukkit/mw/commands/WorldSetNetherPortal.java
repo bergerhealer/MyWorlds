@@ -18,7 +18,7 @@ public class WorldSetNetherPortal extends Command {
 		if (this.handleWorld()) {
 			if (dest.isEmpty()) {
 				WorldConfig.get(worldname).setNetherPortal("");
-				message(ChatColor.GREEN + "Default nether portal destination of world '" + worldname + "' cleared! (no default teleport)");
+				message(ChatColor.GREEN + "Default nether portal teleportation of world '" + worldname + "' disabled! (no default teleport)");
 			} else if (Portal.getPortalLocation(dest, null) != null) {
 				WorldConfig.get(worldname).setNetherPortal(dest);
 				message(ChatColor.GREEN + "Default nether portal destination of world '" + worldname + "' set to portal: '" + dest + "'!");

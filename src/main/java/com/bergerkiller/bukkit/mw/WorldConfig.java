@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -17,7 +18,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
+import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
@@ -36,7 +39,7 @@ public class WorldConfig extends WorldConfigStore {
 	public final SpawnControl spawnControl = new SpawnControl();
 	public final TimeControl timeControl = new TimeControl(this);
 	private String defaultNetherPortal;
-	private String defaultEndPortal;
+	private String defaultEnderPortal;
 	public List<String> OPlist = new ArrayList<String>();
 	public boolean autosave = true;
 	public boolean reloadWhenEmpty = false;
@@ -57,6 +60,7 @@ public class WorldConfig extends WorldConfigStore {
 		worldConfigs.put(worldname, this);
 		World world = this.getWorld();
 		if (world != null) {
+			// Read from the loaded world directly
 			this.keepSpawnInMemory = world.getKeepSpawnInMemory();
 			this.worldmode = WorldMode.get(world);
 			this.difficulty = world.getDifficulty();
@@ -67,6 +71,32 @@ public class WorldConfig extends WorldConfigStore {
 		} else {
 			this.worldmode = WorldMode.get(worldname);
 			this.spawnPoint = new Position(worldname, 0, 128, 0);
+			if (WorldManager.worldExists(this.worldname)) {
+				// Open up the level.dat of the World and read the settings from it
+				CommonTagCompound data = WorldManager.getData(this.worldname);
+				if (data != null) {
+					// Read the settings from it
+					this.spawnPoint.setX(data.getValue("SpawnX", this.spawnPoint.getBlockX()));
+					this.spawnPoint.setY(data.getValue("SpawnY", this.spawnPoint.getBlockY()));
+					this.spawnPoint.setZ(data.getValue("SpawnZ", this.spawnPoint.getBlockZ()));
+				}
+				// Figure out the world mode by inspecting the region files in the world
+				// On failure, it will resort to using the world name to figure it out
+				File regions = Common.SERVER.getWorldRegionFolder(this.worldname);
+				if (regions != null && regions.isDirectory()) {
+					// Skip the 'region' folder found in the dimension folder
+					regions = regions.getParentFile();
+					// Find out what name the current folder is
+					// If this is DIM1 or DIM-1 then it is the_end/nether
+					// Otherwise we will resort to using the world name
+					String dimName = regions.getName();
+					if (dimName.equals("DIM1")) {
+						this.worldmode = WorldMode.THE_END;
+					} else if (dimName.equals("DIM-1")) {
+						this.worldmode = WorldMode.NETHER;
+					}
+				}
+			}
 		}
 		if (MyWorlds.useWorldOperators) {
 			for (OfflinePlayer op : Bukkit.getServer().getOperators()) {
@@ -182,7 +212,7 @@ public class WorldConfig extends WorldConfigStore {
 			this.timeControl.setLocking(true);
     	}
 		this.defaultNetherPortal = node.get("defaultNetherPortal", String.class, this.defaultNetherPortal);
-		this.defaultEndPortal = node.get("defaultEndPortal", String.class, this.defaultEndPortal);
+		this.defaultEnderPortal = node.get("defaultEndPortal", String.class, this.defaultEnderPortal);
     	if (node.contains("defaultPortal")) {
     		// Compatibility mode
     		this.defaultNetherPortal = node.get("defaultPortal", String.class, this.defaultNetherPortal);
@@ -224,7 +254,7 @@ public class WorldConfig extends WorldConfigStore {
 		node.set("forcedRespawn", this.forcedRespawn);
 		node.set("pvp", this.pvp);
 		node.set("defaultNetherPortal", this.defaultNetherPortal);
-		node.set("defaultEndPortal", this.defaultEndPortal);
+		node.set("defaultEndPortal", this.defaultEnderPortal);
 		node.set("operators", this.OPlist);
 		node.set("deniedCreatures", creatures);
 		node.set("holdWeather", this.holdWeather);
@@ -286,70 +316,36 @@ public class WorldConfig extends WorldConfigStore {
 		return !spawnPoint.getWorldName().equalsIgnoreCase(worldname);
 	}
 
+	/**
+	 * Gets the name of the destination default nether portals teleport to on this World.
+	 * If this returns null, then none is known at this time, indicating that it can be
+	 * automatically set. If this returns an empty String, it indicates the user forcibly
+	 * requested no destination and no automatic detection will be attempted.
+	 * 
+	 * @return Default nether portal destination name
+	 */
+	public String getNetherPortal() {
+		return this.defaultNetherPortal;
+	}
+
 	public void setNetherPortal(String destination) {
 		this.defaultNetherPortal = destination;
 	}
 
-	public void setEndPortal(String destination) {
-		this.defaultEndPortal = destination;
+	/**
+	 * Gets the name of the destination default ender portals teleport to on this World.
+	 * If this returns null, then none is known at this time, indicating that it can be
+	 * automatically set. If this returns an empty String, it indicates the user forcibly
+	 * requested no destination and no automatic detection will be attempted.
+	 * 
+	 * @return Default ender portal destination name
+	 */
+	public String getEnderPortal() {
+		return this.defaultEnderPortal;
 	}
 
-	public String getNetherPortal() {
-		if (this.defaultNetherPortal == null) {
-			final String wname = this.worldname.toLowerCase();
-			if (this.worldmode == WorldMode.NETHER) {
-				// From nether to overworld
-				if (wname.endsWith("_nether")) {
-					this.defaultNetherPortal = this.worldname.substring(0, wname.length() - 7);
-				} else if (wname.equals("dim-1")) {
-					this.defaultNetherPortal = MyWorlds.getMainWorld().getName();
-				}
-			} else if (this.worldmode == WorldMode.THE_END) {
-				// From the_end to nether
-				if (wname.endsWith("_the_end")) {
-					this.defaultNetherPortal = this.worldname.substring(0, wname.length() - 8) + "_nether";
-				} else if (wname.equals("dim1")) {
-					this.defaultNetherPortal = "DIM-1";
-				}
-			} else {
-				// From overworld to nether
-				if (this.getWorld() == MyWorlds.getMainWorld() && WorldManager.worldExists("DIM-1")) {
-					this.defaultNetherPortal = "DIM-1";
-				} else {
-					this.defaultNetherPortal = this.worldname + "_nether";
-				}
-			}
-		}
-		return this.defaultNetherPortal;
-	}
-
-	public String getEndPortal() {
-		if (this.defaultEndPortal == null) {
-			final String wname = this.worldname.toLowerCase();
-			if (this.worldmode == WorldMode.NETHER) {
-				// From nether to the_end
-				if (wname.endsWith("_nether")) {
-					this.defaultEndPortal = this.worldname.substring(0, wname.length() - 7) + "_the_end";
-				} else if (wname.equals("dim-1")) {
-					this.defaultEndPortal = "DIM1";
-				}
-			} else if (this.worldmode == WorldMode.THE_END) {
-				// From the_end to overworld
-				if (wname.endsWith("_the_end")) {
-					this.defaultEndPortal = this.worldname.substring(0, wname.length() - 8);
-				} else if (wname.equals("dim1")) {
-					this.defaultEndPortal = MyWorlds.getMainWorld().getName();
-				}
-			} else {
-				// From overworld to the_end
-				if (this.getWorld() == MyWorlds.getMainWorld() && WorldManager.worldExists("DIM1")) {
-					this.defaultEndPortal = "DIM1";
-				} else {
-					this.defaultEndPortal = this.worldname + "_the_end";
-				}
-			}
-		}
-		return this.defaultEndPortal;
+	public void setEnderPortal(String destination) {
+		this.defaultEnderPortal = destination;
 	}
 
 	public void onWorldLoad(World world) {
@@ -364,6 +360,9 @@ public class WorldConfig extends WorldConfigStore {
 		updateKeepSpawnInMemory(world);
 		updateDifficulty(world);
 		updateAutoSave(world);
+		timeControl.updateWorld(world);
+		// Detect default portals
+		tryCreatePortalLink();
 	}
 
 	public void onWorldUnload(World world) {
@@ -529,5 +528,80 @@ public class WorldConfig extends WorldConfigStore {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Tries to create a portal link with another world currently available.
+	 * 
+	 * @see #tryCreatePortalLink(WorldConfig, WorldConfig)
+	 */
+	public void tryCreatePortalLink() {
+		// Try to detect a possible portal link between worlds
+		for (WorldConfig otherConfig : WorldConfig.all()) {
+			if (otherConfig != this) {
+				WorldConfig.tryCreatePortalLink(this, otherConfig);
+			}
+		}
+	}
+
+	/**
+	 * Tries to create a default portal link if none is currently set between two worlds
+	 * Only if the worlds match names and no portal is set will this create a link.
+	 * 
+	 * @param world1
+	 * @param world1
+	 */
+	public static void tryCreatePortalLink(WorldConfig world1, WorldConfig world2) {
+		// Name compatibility check
+		if (!world1.getRawWorldName().equals(world2.getRawWorldName())) {
+			return;
+		}
+		// If same environment, directly stop it here
+		if (world1.worldmode == world2.worldmode) {
+			return;
+		}
+		// Default nether portal check and detection
+		if (world1.defaultNetherPortal == null && world2.defaultEnderPortal == null) {
+			// Try to create a link with the nether portals
+			if ((world1.worldmode == WorldMode.NETHER && world2.worldmode == WorldMode.NORMAL) ||
+					(world2.worldmode == WorldMode.NETHER && world1.worldmode == WorldMode.NORMAL)) {
+				// Nether link detected!
+				world1.defaultNetherPortal = world2.worldname;
+				world2.defaultNetherPortal = world1.worldname;
+				MyWorlds.plugin.log(Level.INFO, "Created nether portal link between worlds '" + world1.worldname + "' and '" + world2.worldname + "'!");
+			}
+		}
+		// Default ender portal check and detection
+		if (world1.defaultEnderPortal == null && world2.defaultEnderPortal == null) {
+			// Try to create a link with the nether portals
+			if ((world1.worldmode == WorldMode.THE_END && world2.worldmode == WorldMode.NORMAL) ||
+					(world2.worldmode == WorldMode.THE_END && world1.worldmode == WorldMode.NORMAL)) {
+				// Nether link detected!
+				world1.defaultEnderPortal = world2.worldname;
+				world2.defaultEnderPortal = world1.worldname;
+				MyWorlds.plugin.log(Level.INFO, "Created ender portal link between worlds '" + world1.worldname + "' and '" + world2.worldname + "'!");
+			}
+		}
+	}
+
+	/**
+	 * Gets the World Name of this World excluding any _nether, _the_end or DIM extensions from the name.
+	 * Returns an empty String if the world name equals DIM1 or DIM-1 (for MCPC+ server).
+	 * In all cases, a lower-cased world name is returned.
+	 * 
+	 * @return Raw world name
+	 */
+	private String getRawWorldName() {
+		String lower = this.worldname.toLowerCase();
+		if (lower.endsWith("_nether")) {
+			return lower.substring(0, lower.length() - 7);
+		}
+		if (lower.endsWith("_the_end")) {
+			return lower.substring(0, lower.length() - 8);
+		}
+		if (lower.equals("dim1") || lower.equals("dim-1")) {
+			return "";
+		}
+		return lower;
 	}
 }

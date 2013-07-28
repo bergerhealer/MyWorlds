@@ -21,12 +21,16 @@ public class WorldCreate extends Command {
 	public void execute() {
 		if (args.length != 0) {
 			this.worldname = this.removeArg(0);
+			this.genForcedWorldMode();
 			String gen = this.getGeneratorName();
 			if (!WorldManager.worldExists(worldname)) {
 				long seedval = WorldManager.getRandomSeed(StringUtil.combine(" ", this.args));
 				logAction("Issued a world creation command for world: " + worldname);
 		        WorldConfig.remove(worldname);
 		        WorldConfig wc = WorldConfig.get(worldname);
+		        if (this.forcedWorldMode != null) {
+		        	wc.worldmode = this.forcedWorldMode;
+		        }
 				if (gen == null) {
 					message(ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
 				} else {
@@ -69,7 +73,11 @@ public class WorldCreate extends Command {
 							if (++current == total) {
 								t = new Runnable() {
 									public void run() {
+										// Set to True, any mistakes in loading chunks will be corrected here
 										world.setKeepSpawnInMemory(true);
+										// Call onLoad (it was ignored while initing to avoid chunk loads when finding spawn)
+										WorldConfig.get(world).onWorldLoad(world);
+										// Confirmation message
 									    message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
 									    MyWorlds.plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
 									}

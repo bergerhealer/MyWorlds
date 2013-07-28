@@ -1,6 +1,5 @@
 package com.bergerkiller.bukkit.mw.commands;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -8,12 +7,15 @@ import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.WorldManager;
+import com.bergerkiller.bukkit.mw.WorldMode;
 
 public class Command {
 	public Permission permission;
@@ -23,6 +25,7 @@ public class Command {
 	public CommandSender sender;
 	public String[] args;
 	public String worldname;
+	public WorldMode forcedWorldMode;
 
 	public Command(Permission permission, String commandNode) {
 		this.permission = permission;
@@ -153,7 +156,7 @@ public class Command {
 	}
 
 	/**
-	 * Finds out the world to operate in, checking the command arguments if possible
+	 * Finds out the world to operate in, checking the command arguments if possible.
 	 * 
 	 * @param preceedingArgCount expected before the world argument
 	 */
@@ -167,7 +170,20 @@ public class Command {
 		if (player != null) {
 			this.worldname = player.getWorld().getName();
 		} else {
-			this.worldname = Bukkit.getServer().getWorlds().get(0).getName();
+			this.worldname = WorldUtil.getWorlds().iterator().next().getName();
+		}
+	}
+
+	/**
+	 * Reads a World Mode set on the world name using the /-parameter
+	 * For example, /world create world1/nether will read the nether forced mode.
+	 */
+	public void genForcedWorldMode() {
+		int idx = this.worldname.indexOf('/');
+		this.forcedWorldMode = null;
+		if (idx != -1) {
+			this.forcedWorldMode = ParseUtil.parseEnum(this.worldname.substring(idx + 1), WorldMode.NORMAL);
+			this.worldname = this.worldname.substring(0, idx);
 		}
 	}
 
@@ -265,7 +281,7 @@ public class Command {
 				} else if (cmdLabel.equalsIgnoreCase("setnetherportal")) {
 					rval = new WorldSetNetherPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setendportal")) {
-					rval = new WorldSetEndPortal();
+					rval = new WorldSetEnderPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setspawn")) {
 					rval = new WorldSetSpawn();
 				} else if (cmdLabel.equalsIgnoreCase("gamemode")) {

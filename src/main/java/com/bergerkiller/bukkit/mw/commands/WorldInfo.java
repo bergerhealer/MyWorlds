@@ -44,8 +44,20 @@ public class WorldInfo extends Command {
 					message(ChatColor.WHITE + "World size: " + ChatColor.YELLOW + "Unknown (calculation is disabled)");
 				}
 				//Default portals
-				message(ChatColor.WHITE + "Nether portal: " + ChatColor.YELLOW + wc.getNetherPortal());
-				message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + wc.getEndPortal());
+				if (wc.getNetherPortal() == null) {
+					message(ChatColor.WHITE + "Nether portal: " + ChatColor.YELLOW + "None (will auto-detect when available)");
+				} else if (wc.getNetherPortal().isEmpty()) {
+					message(ChatColor.WHITE + "Nether portal: " + ChatColor.YELLOW + "Disabled");
+				} else {
+					message(ChatColor.WHITE + "Nether portal: " + ChatColor.YELLOW + wc.getNetherPortal());
+				}
+				if (wc.getEnderPortal() == null) {
+					message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + "None (will auto-detect when available)");
+				} else if (wc.getEnderPortal().isEmpty()) {
+					message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + "Disabled");
+				} else {
+					message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + wc.getNetherPortal());
+				}
 				//PvP
 				if (wc.pvp) { 
 					message(ChatColor.WHITE + "PvP: " + ChatColor.GREEN + "Enabled");

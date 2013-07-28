@@ -268,7 +268,7 @@ public class Portal extends PortalStore {
 	 * @return True if a teleport was performed, False if not
 	 */
 	public static boolean handlePortalEnter(final Entity e, Material portalMaterial) {
-		final Object loc = getPortalEnterDestination(e, portalMaterial);
+		final Object loc = getPortalEnterDestination(e, portalMaterial, true);
 		if (loc == null) {
 			// Only for nether and ender portals do we show a 'no destination' message
 			// Other types of portals are too generic
@@ -307,9 +307,10 @@ public class Portal extends PortalStore {
 	 * 
 	 * @param e that entered
 	 * @param portalMaterial of the block that was used as portal
+	 * @param useTravelAgent sets whether to find nearby portals if required
 	 * @return A Portal object or a Location object to represent the destination
 	 */
-	public static Object getPortalEnterDestination(Entity e, Material portalMaterial) {
+	public static Object getPortalEnterDestination(Entity e, Material portalMaterial, boolean useTravelAgent) {
 		Location dest = null;
 		Portal portal = getNear(e.getLocation());
 		if (portal == null) {
@@ -318,7 +319,7 @@ public class Portal extends PortalStore {
 			if (portalMaterial == Material.PORTAL) {
 				def = WorldConfig.get(e).getNetherPortal();
 			} else if (portalMaterial == Material.ENDER_PORTAL) {
-				def = WorldConfig.get(e).getEndPortal();
+				def = WorldConfig.get(e).getEnderPortal();
 			}
 			if (def != null) {
 				portal = get(getPortalLocation(def, e.getWorld().getName()));
@@ -354,7 +355,10 @@ public class Portal extends PortalStore {
 									}
 								}
 								Location start = e.getLocation();
-								Location end = WorldUtil.findSpawnLocation(new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ()));
+								Location end = new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ());
+								if (useTravelAgent) {
+									end = WorldUtil.findSpawnLocation(end);
+								}
 								if (end != null) {
 									Block destB = end.getBlock();
 									// Figure out the best yaw to use here by checking for air blocks

@@ -14,7 +14,8 @@ public class WorldLoad extends Command {
 
 	public void execute() {
 		if (args.length != 0) {
-			this.worldname = this.removeArg(0);
+			this.worldname = args[0];
+			this.genForcedWorldMode();
 			final String gen = this.getGeneratorName();
 			this.worldname = WorldManager.matchWorld(this.worldname);
 			if (this.handleWorld()) {
@@ -25,8 +26,8 @@ public class WorldLoad extends Command {
 					String msg = "Loading world: '" + this.worldname + "'...";
 					if (gen != null) {
 						// Permission handling to change chunk generator
-						if (this.player != null && !Permission.COMMAND_LOADSPECIAL.has(this.player)) {
-							this.player.sendMessage(ChatColor.RED + "You are not allowed to change world chunk generators!");
+						if (!Permission.COMMAND_LOADSPECIAL.has(sender)) {
+							message(ChatColor.RED + "You are not allowed to change world chunk generators!");
 							return;
 						}
 						if (gen.equalsIgnoreCase("none")) {
@@ -43,6 +44,15 @@ public class WorldLoad extends Command {
 								message(ChatColor.YELLOW + "Loading world: '" + this.worldname + "' using chunk generator '" + cgenName + "'...");
 							}
 						}
+					}
+					if (this.forcedWorldMode != null) {
+						// Permission handling to change chunk generator
+						if (!Permission.COMMAND_LOADSPECIAL.has(sender)) {
+							message(ChatColor.RED + "You are not allowed to change world environments!");
+							return;
+						}
+						config.worldmode = this.forcedWorldMode;
+						message(ChatColor.YELLOW + "World will be loaded using environment " + this.forcedWorldMode.getName());
 					}
 					message(ChatColor.YELLOW + msg);
 					logAction("Issued a load command for world: " + this.worldname);
