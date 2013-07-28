@@ -35,6 +35,7 @@ commands:
             /world saving - Toggle world saving on/off
             /world spawnloaded - Toggle spawn loaded on/off
             /world forcedrespawn - Toggle forced respawn on/off
+            /world rememberlastpos - Toggles last-position memory on/off
             /world evacuate - Evacuate all players of a world
             /world delete - Delete a world permanently
             /world copy - Copy a world to a new name
@@ -125,6 +126,12 @@ commands:
         usage: |
             /world forcedrespawn [on/off]
             /world forcedrespawn [on/off] [world]
+    world rememberlastpos:
+        description: Toggles last-position memory on or off
+        aliases: [world setrememberlastpos, world setrememberlastposition]
+        usage: |
+            /world rememberlastpos [on/off]
+            /world rememberlastpos [on/off] [world]
     world allowspawn:
         description: Allows certain mobs to spawn
         usage: |

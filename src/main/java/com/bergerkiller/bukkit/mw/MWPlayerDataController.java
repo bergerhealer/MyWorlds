@@ -66,7 +66,7 @@ public class MWPlayerDataController extends PlayerDataController {
 	 * @param playerName for the data
 	 * @return Player data file
 	 */
-	private static File getPlayerData(String worldName, World world, String playerName) {
+	public static File getPlayerData(String worldName, World world, String playerName) {
 		final File playersFolder;
 		if (world == null) {
 			playersFolder = new File(WorldUtil.getWorldFolder(worldName), "players");
@@ -83,6 +83,41 @@ public class MWPlayerDataController extends PlayerDataController {
 		tagCompound.putValue("World", world.getName());
 		tagCompound.putUUID("World", world.getUID());
 		tagCompound.putValue("Dimension", WorldUtil.getDimension(world));
+	}
+
+	/**
+	 * Creates new human data information as if the human just joined the server.
+	 * 
+	 * @param human to generate information about
+	 * @return empty data
+	 */
+	public static CommonTagCompound createEmptyData(HumanEntity human) {
+		final Vector velocity = human.getVelocity();
+		CommonTagCompound empty = new CommonTagCompound();
+		float health = 20.0f;
+		try {
+			// Note: this getMaxHealth method changed as of 1.6.1
+			// To avoid errors on 1.5.2, a try-catch is used here
+			// By default it will resort back to 20 health
+			health = (float) human.getMaxHealth();
+		} catch (Throwable t) {
+		}
+		empty.putValue("Health", (short) health);
+		empty.putValue("HealF", health); // since 1.6.1 health is a float
+		empty.putValue("HurtTime", (short) 0);
+		empty.putValue("DeathTime", (short) 0);
+		empty.putValue("AttackTime", (short) 0);
+		empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
+		setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
+		final Object humanHandle = Conversion.toEntityHandle.convert(human);
+		IntVector3 coord = EntityHumanRef.spawnCoord.get(humanHandle);
+		if (coord != null) {
+			empty.putValue("SpawnWorld", EntityHumanRef.spawnWorld.get(humanHandle));
+			empty.putValue("SpawnX", coord.x);
+			empty.putValue("SpawnY", coord.y);
+			empty.putValue("SpawnZ", coord.z);
+		}
+		return empty;
 	}
 
 	/**
@@ -104,23 +139,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			Bukkit.getLogger().warning("Failed to read player data for " + human.getName());
 			t.printStackTrace();
 		}
-		final Vector velocity = human.getVelocity();
-		CommonTagCompound empty = new CommonTagCompound();
-		empty.putValue("Health", (short) 20);
-		empty.putValue("HurtTime", (short) 0);
-		empty.putValue("DeathTime", (short) 0);
-		empty.putValue("AttackTime", (short) 0);
-		empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
-		setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
-		final Object humanHandle = Conversion.toEntityHandle.convert(human);
-		IntVector3 coord = EntityHumanRef.spawnCoord.get(humanHandle);
-		if (coord != null) {
-			empty.putValue("SpawnWorld", EntityHumanRef.spawnWorld.get(humanHandle));
-			empty.putValue("SpawnX", coord.x);
-			empty.putValue("SpawnY", coord.y);
-			empty.putValue("SpawnZ", coord.z);
-		}
-		return empty;
+		return createEmptyData(human);
 	}
 
 	private static void clearEffects(HumanEntity human) {
@@ -267,6 +286,72 @@ public class MWPlayerDataController extends PlayerDataController {
 		}
 	}
 
+	/**
+	 * Fired when a player respawns and all it's settings will be wiped.
+	 * The player contains all information right before respawning.
+	 * All data that would be wiped should be written has being wiped.
+	 * This involves a manual save.
+	 * 
+	 * @param player that respawned
+	 * @param respawnLocation where the player respawns at
+	 */
+	public void onRespawnSave(Player player, Location respawnLocation) {
+		try {
+			// Generate player saved information - used in favour of accessing NMS fields
+			CommonTagCompound savedInfo = NBTUtil.saveEntity(player, null);
+			// Generate a new tag compound with information
+			CommonTagCompound tagcompound = createEmptyData(player);
+
+			// We store this entire Bukkit tag + experience information!
+			CommonTagCompound bukkitTag = savedInfo.get("bukkit", CommonTagCompound.class);
+			if (bukkitTag != null) {
+				// But, we do need to wipe information as specified
+				if (bukkitTag.getValue("keepLevel", false)) {
+					// Preserve experience
+					bukkitTag.putValue("newTotalExp", savedInfo.getValue("XpTotal", 0));
+					bukkitTag.putValue("newLevel", savedInfo.getValue("XpLevel", 0));
+					tagcompound.putValue("XpP", savedInfo.getValue("XpP", 0.0f));
+				}
+				// Store experience (if not preserved, uses newTotal/newLevel) and the tag
+				tagcompound.putValue("XpTotal", bukkitTag.getValue("newTotalExp", 0));
+				tagcompound.putValue("XpLevel", bukkitTag.getValue("newLevel", 0));
+				tagcompound.put("bukkit", bukkitTag);
+			}
+
+			// Ender inventory should not end up wiped!
+			CommonTagList enderItems = savedInfo.get("EnderItems", CommonTagList.class);
+			if (enderItems != null) {
+				tagcompound.put("EnderItems", enderItems);
+			}
+
+			// Now, go ahead and save this data
+			File mainDest = getMainFile(player.getName());
+			File dest;
+			if (MyWorlds.useWorldInventories) {
+				// Use world specific save file
+				dest = getSaveFile(player);
+			} else {
+				// Use main world save file
+				dest = mainDest;
+			}
+			tagcompound.writeTo(dest);
+
+			// Finally, we need to update where the player is at right now
+			// To do so, we will write a new main world where the player is meant to be
+			// This operation is a bit optional at this point, but it avoids possible issues in case of crashes
+			// This is only needed if a main player data file doesn't exist
+			// (this should in theory never happen either...player is not joining)
+			if (mainDest.exists()) {
+				tagcompound = CommonTagCompound.readFrom(mainDest);
+				tagcompound.putUUID("World", respawnLocation.getWorld().getUID());
+				tagcompound.writeTo(mainDest);
+			}
+		} catch (Exception exception) {
+			Bukkit.getLogger().warning("Failed to save player respawned data for " + player.getName());
+			exception.printStackTrace();
+		}
+	}
+
 	@Override
 	public void onSave(HumanEntity human) {
 		try {
@@ -282,15 +367,38 @@ public class MWPlayerDataController extends PlayerDataController {
 			}
 			// Write to the source
 			tagcompound.writeTo(dest);
-			if (mainDest.equals(dest)) {
-				return; // Do not update world if same file
+
+			// Write the current position of the player to the world he is on
+			// This is needed in order for last-position to work properly
+			if (WorldConfig.get(human.getWorld()).rememberLastPlayerPosition) {
+				File posFile = getPlayerData(human.getWorld().getName(), human.getWorld(), human.getName());
+				// Don't write to it if we already wrote to it before!
+				if (!posFile.equals(dest)) {
+					if (posFile.exists()) {
+						// Load the data
+						CommonTagCompound data = read(posFile, human);
+						// Alter position information
+						Location loc = human.getLocation();
+						data.putListValues("Pos", loc.getX(), loc.getY(), loc.getZ());
+						data.putListValues("Rotation", loc.getYaw(), loc.getPitch());
+						// Save the updated data
+						data.writeTo(posFile);
+					} else {
+						// Simply write the data of the other file to it
+						tagcompound.writeTo(posFile);
+					}
+				}
 			}
-			// Update the world in the main file
-			if (mainDest.exists()) {
-				tagcompound = CommonTagCompound.readFrom(mainDest);
+
+			// Write the current world name of the player to the save file of the main world
+			if (!mainDest.equals(dest)) {
+				// Update the world in the main file
+				if (mainDest.exists()) {
+					tagcompound = CommonTagCompound.readFrom(mainDest);
+				}
+				tagcompound.putUUID("World", human.getWorld().getUID());
+				tagcompound.writeTo(mainDest);
 			}
-			tagcompound.putUUID("World", human.getWorld().getUID());
-			tagcompound.writeTo(mainDest);
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player data for " + human.getName());
 			exception.printStackTrace();

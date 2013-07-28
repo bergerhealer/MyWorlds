@@ -8,7 +8,6 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
@@ -76,11 +75,13 @@ public class TeleportPortal extends Command {
 							//Perform world teleports
 							int succcount = 0;
 							for (Player target : targets) {
-								if (EntityUtil.teleport(target, WorldManager.getSpawnLocation(w))) {
+								if (WorldManager.teleportToWorld(target, w)) {
 									//Success
 									succcount++;
 								}
 							}
+							// Show message, but don't if only the sender was teleported
+							// He already receives an enter message by the teleport listener
 							if (targets.length > 1 || targets[0] != sender) {
 								message(ChatColor.YELLOW.toString() + succcount + "/" + targets.length + 
 										" Players have been teleported to world '" + w.getName() + "'!");

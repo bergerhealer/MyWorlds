@@ -49,6 +49,7 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean showSnow = true;
 	public boolean clearInventory = false;
 	public boolean forcedRespawn = false;
+	public boolean rememberLastPlayerPosition = false;
 	public WorldInventory inventory;
 
 	public WorldConfig(String worldname) {
@@ -192,6 +193,7 @@ public class WorldConfig extends WorldConfigStore {
 		this.showSnow = node.get("showSnow", this.showSnow);
 		this.pvp = node.get("pvp", this.pvp);
 		this.forcedRespawn = node.get("forcedRespawn", this.forcedRespawn);
+		this.rememberLastPlayerPosition = node.get("rememberlastplayerpos", this.rememberLastPlayerPosition);
 		this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
 		for (String type : node.getList("deniedCreatures", String.class)) {
 			type = type.toUpperCase();
@@ -252,6 +254,7 @@ public class WorldConfig extends WorldConfigStore {
 			creatures.add(type.name());
 		}
 		node.set("forcedRespawn", this.forcedRespawn);
+		node.set("rememberlastplayerpos", this.rememberLastPlayerPosition);
 		node.set("pvp", this.pvp);
 		node.set("defaultNetherPortal", this.defaultNetherPortal);
 		node.set("defaultEndPortal", this.defaultEnderPortal);
@@ -348,6 +351,55 @@ public class WorldConfig extends WorldConfigStore {
 		this.defaultEnderPortal = destination;
 	}
 
+	/**
+	 * Fired right before a player respawns.
+	 * Note that no leave is fired after this event.
+	 * It is a replacement for leaving a world (if that is the case)
+	 * 
+	 * @param player that respawns
+	 */
+	public void onRespawn(Player player, Location respawnLocation) {
+		MyWorlds.plugin.getPlayerDataController().onRespawnSave(player, respawnLocation);
+	}
+
+	/**
+	 * Fired when a player leaves this world
+	 * 
+	 * @param player that is about to leave this world
+	 * @param quit state: True if the player left the server, False if not
+	 */
+	public void onPlayerLeave(Player player, boolean quit) {
+		// If not quiting (it saves then anyhow!) save the old information
+		if (!quit) {
+			CommonUtil.savePlayer(player);
+		}
+	}
+
+	/**
+	 * Fired when a player left this world and already joined another world.
+	 * If the old player position, inventory and etc. is important, add the logic in
+	 * {@link #onPlayerLeave(Player, boolean)} instead.
+	 * 
+	 * @param player that left this world (may no longer contain valid information)
+	 */
+	public void onPlayerLeft(Player player) {
+		this.updateReload();
+	}
+
+	/**
+	 * Fired when a player joined this world
+	 * 
+	 * @param player that just entered this world
+	 */
+	public void onPlayerEnter(Player player) {
+		// Apply world-specific settings
+		updateOP(player);
+		updateGamemode(player);
+		updateSpoutWeather(player);
+		// Refresh states based on the new world the player joined
+		MWPlayerDataController.refreshState(player);
+	}
+
 	public void onWorldLoad(World world) {
 		// Fix spawn point if needed
 		if (MaterialUtil.SUFFOCATES.get(this.spawnPoint.getBlock())) {
@@ -395,23 +447,7 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean unloadWorld() {
 		return WorldManager.unload(this.getWorld());
 	}
-	
-	public static void updateReload(Player player) {
-		updateReload(player.getWorld());
-	}
-	public static void updateReload(Location loc) {
-		updateReload(loc.getWorld());
-	}
-	public static void updateReload(World world) {
-		updateReload(world.getName());
-	}
-	public static void updateReload(final String worldname) {
-		CommonUtil.nextTick(new Runnable() {
-			public void run() {
-				get(worldname).updateReload();
-			}
-		});
-	}
+
 	public void updateSpoutWeather(World world) {
 		if (!MyWorlds.isSpoutPluginEnabled) return;
 		for (Player p : world.getPlayers()) updateSpoutWeather(p);
@@ -478,12 +514,6 @@ public class WorldConfig extends WorldConfigStore {
 		if (world != null && world.getDifficulty() != this.difficulty) {
 			world.setDifficulty(this.difficulty);
 		}
-	}
-
-	public void update(Player player) {
-		updateOP(player);
-		updateGamemode(player);
-		updateSpoutWeather(player);
 	}
 
 	/**

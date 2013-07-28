@@ -340,9 +340,6 @@ public class Portal extends PortalStore {
 								if (e instanceof Player) {
 									dest = ((Player) e).getBedSpawnLocation();
 								}
-								if (dest == null) {
-									dest = WorldManager.getSpawnLocation(w);
-								}
 							} else {
 								// Find out what location to teleport to
 								// Use source block as the location to search from
@@ -372,9 +369,14 @@ public class Portal extends PortalStore {
 									dest = new Location(destB.getWorld(), destB.getX() + 0.5, destB.getY(), destB.getZ() + 0.5, yaw, 0.0f);
 								}
 							}
-						} else {
-							// Fall-back to the main world spawn
-							dest = WorldManager.getSpawnLocation(w);
+						}
+						// No destination found or set, resort back to using world spawn
+						if (dest == null) {
+							if (e instanceof Player) {
+								dest = WorldManager.getPlayerWorldSpawn((Player) e, w);
+							} else {
+								dest = WorldManager.getSpawnLocation(w);
+							}
 						}
 					}
 				}

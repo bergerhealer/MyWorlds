@@ -39,6 +39,7 @@ public class MyWorlds extends PluginBase {
 	public boolean ignoreWeatherChanges = false;
 	// World to disable keepspawnloaded for
 	private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
+	private MWPlayerDataController dataController;
 	public static MyWorlds plugin;
 
 	@Override
@@ -139,7 +140,10 @@ public class MyWorlds extends PluginBase {
 
 		// World inventories
 		WorldInventory.load();
-		new MWPlayerDataController().assign();
+
+		// Player data controller
+		dataController = new MWPlayerDataController();
+		dataController.assign();
 	}
 
 	@Override
@@ -173,6 +177,15 @@ public class MyWorlds extends PluginBase {
 	@Override
 	public void permissions() {
 		this.loadPermissions(Permission.class);
+	}
+
+	/**
+	 * Gets an instance of the My Worlds implementation of the Player Data Controller
+	 * 
+	 * @return MW Player Data Controller
+	 */
+	public MWPlayerDataController getPlayerDataController() {
+		return dataController;
 	}
 
 	/**

@@ -32,10 +32,7 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 import com.bergerkiller.bukkit.common.collections.EntityMap;
-import com.bergerkiller.bukkit.common.conversion.Conversion;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
-import com.bergerkiller.bukkit.common.reflection.classes.EntityRef;
-import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
@@ -71,7 +68,12 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
-		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
+		WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer());
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onPlayerRespawnMonitor(PlayerRespawnEvent event) {
+		WorldConfig.get(event.getPlayer()).onRespawn(event.getPlayer(), event.getRespawnLocation());
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST)
@@ -90,13 +92,15 @@ public class MWListener implements Listener {
 				event.setRespawnLocation(loc);
 			}
 		}
-		WorldConfig.get(event.getRespawnLocation()).update(event.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		// Reload the world if the player just exited a world to be reloaded
-		WorldConfig.updateReload(event.getPlayer());
+		// Since there is no intermediary 'new world' to go to, 
+		// both methods fire simultaneously after another.
+		WorldConfig config = WorldConfig.get(event.getPlayer());
+		config.onPlayerLeave(event.getPlayer(), true);
+		config.onPlayerLeft(event.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -124,16 +128,23 @@ public class MWListener implements Listener {
 				}
 			}
 		}
-
-		// Reload the world if the player just exited a world to be reloaded
-		if (event.getFrom().getWorld() != event.getTo().getWorld()) {
-			WorldConfig.updateReload(event.getFrom());
-		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
 		teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
+		// This occurs right before we move to a new world.
+		// If this is a world change, it is time to save the old information!
+		if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
+			WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPlayerPortalMonitor(PlayerPortalEvent event) {
+		if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
+			WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
+		}
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -251,22 +262,8 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerChangedWorld(final PlayerChangedWorldEvent event) {
-		WorldConfig.updateReload(event.getFrom());
-		WorldConfig.get(event.getPlayer()).update(event.getPlayer());
-		// Execute it again the next tick to ensure changes happened
-		CommonUtil.nextTick(new Runnable() {
-			public void run() {
-				WorldConfig.get(event.getPlayer()).update(event.getPlayer());
-			}
-		});
-		if (MyWorlds.useWorldInventories && !Permission.GENERAL_KEEPINV.has(event.getPlayer())) {
-			Object playerHandle = Conversion.toEntityHandle.convert(event.getPlayer());
-			org.bukkit.World newWorld = EntityRef.world.get(playerHandle);
-			EntityRef.world.set(playerHandle, event.getFrom());
-			CommonUtil.savePlayer(event.getPlayer());
-			EntityRef.world.set(playerHandle, newWorld);
-			MWPlayerDataController.refreshState(event.getPlayer());
-		}
+		WorldConfig.get(event.getFrom()).onPlayerLeft(event.getPlayer());
+		WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

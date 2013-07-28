@@ -24,9 +24,11 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
+import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
@@ -540,12 +542,71 @@ public class WorldManager {
 			p.teleport(loc);
 		}
 	}
-	public static void teleportToWorldSpawn(World from, World to) {
+
+	/**
+	 * Tries to find a (personal) spawn location to teleport players to.
+	 * If last position remembering is turned on and a last position is known, 
+	 * this Location is returned. Otherwise, the world spawn point is returned.
+	 * 
+	 * @param player to find the world spawn for
+	 * @param world to find the world spawn in
+	 * @return Spawn location
+	 */
+	public static Location getPlayerWorldSpawn(Player player, World world) {
+		if (WorldConfig.get(world).rememberLastPlayerPosition) {
+			// Figure out the last position of the player on the world
+			System.out.println("LOOKING FOR SPAWN OF " + player.getName() + " FOR WORLD " + world.getName());
+			File playerData = MWPlayerDataController.getPlayerData(world.getName(), world, player.getName());
+			if (playerData.exists()) {
+				try {
+					CommonTagCompound data = MWPlayerDataController.read(playerData, player);
+					CommonTagList posInfo = data.getValue("Pos", CommonTagList.class);
+					if (posInfo != null && posInfo.size() == 3) {
+						// Apply position
+						Location location = new Location(world, posInfo.getValue(0, 0.0), posInfo.getValue(1, 0.0), posInfo.getValue(2, 0.0));
+						CommonTagList rotInfo = data.getValue("Rotation", CommonTagList.class);
+						if (rotInfo != null && rotInfo.size() == 2) {
+							location.setYaw(rotInfo.getValue(0, 0.0f));
+							location.setPitch(rotInfo.getValue(1, 0.0f));
+						}
+						System.out.println("FOUND: " + location);
+						return location;
+					}
+				} catch (Exception ex) {
+					MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read player position information:", ex);
+				}
+			}
+		}
+		return getSpawnLocation(world);
+	}
+
+	/**
+	 * Teleports a player to a world. If the world allows the last player position
+	 * on the world to be used, this is used instead. If no last position is known,
+	 * or last position remembering is disabled, the player is teleported to the
+	 * world spawn position.
+	 * 
+	 * @param player to teleport
+	 * @param world to teleport to
+	 * @return True if successful, False if not
+	 */
+	public static boolean teleportToWorld(Player player, World world) {
+		return EntityUtil.teleport(player, getPlayerWorldSpawn(player, world));
+	}
+
+	/**
+	 * Teleports all players from one world to the other.
+	 * 
+	 * @param from world to teleport all players from
+	 * @param to world to teleport to
+	 * @see #teleportToWorld(Player, World)
+	 */
+	public static void teleportAllPlayersToWorld(World from, World to) {
 		for (Player p : from.getPlayers().toArray(new Player[0])) {
-			p.teleport(to.getSpawnLocation());
+			teleportToWorld(p, to);
 		}
 	}
-	
+
 	/**
 	 * Repairs the chunk region file
 	 * Returns -1 if the file had to be removed
