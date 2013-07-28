@@ -7,6 +7,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,6 +19,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -26,19 +28,19 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 import com.bergerkiller.bukkit.common.collections.EntityMap;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class MWListener implements Listener {
 	// A mapping of player positions to store the actually entered portal
-	private final EntityMap<Player, Location> playerPortalEnter = new EntityMap<Player, Location>();
+	private final EntityMap<Entity, Location> portalEnterLocations = new EntityMap<Entity, Location>();
 	// Keeps track of player teleports
 	private final TeleportationTracker teleportTracker = new TeleportationTracker();
 
@@ -110,22 +112,12 @@ public class MWListener implements Listener {
 
 		// Water teleportation handling
 		Block b = event.getTo().getBlock();
-		final int statid = Material.STATIONARY_WATER.getId(); // = 9
-		if (MyWorlds.useWaterTeleport && b.getTypeId() == statid) {
-			if (b.getRelative(BlockFace.UP).getTypeId() == statid || b.getRelative(BlockFace.DOWN).getTypeId() == statid) {
-				boolean allow = false;
-				if (b.getRelative(BlockFace.NORTH).getType() == Material.AIR || b.getRelative(BlockFace.SOUTH).getType() == Material.AIR) {
-					if (Util.isSolid(b, BlockFace.WEST) && Util.isSolid(b, BlockFace.EAST)) {
-						allow = true;
-					}
-				} else if (b.getRelative(BlockFace.EAST).getType() == Material.AIR || b.getRelative(BlockFace.WEST).getType() == Material.AIR) {
-					if (Util.isSolid(b, BlockFace.NORTH) && Util.isSolid(b, BlockFace.SOUTH)) {
-						allow = true;
-					}
-				}
-				if (allow && teleportTracker.canTeleport(event.getPlayer())) {
-					Portal.handlePortalEnter(event.getPlayer(), Material.STATIONARY_WATER);
-				}
+		if (Util.isWaterPortal(b)) {
+			boolean canTeleport = teleportTracker.canTeleport(event.getPlayer());
+			teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
+			if (canTeleport) {
+				// Just like non-delay teleporting, schedule a task
+				handlePortalEnterNextTick(event.getPlayer(), event.getTo());
 			}
 		}
 	}
@@ -142,106 +134,151 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerPortalMonitor(PlayerPortalEvent event) {
+		if (event.getTo() == null) {
+			return;
+		}
 		if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
 			WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
+			teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
+		}
+	}
+
+	public void handlePortalEnterNextTick(Player player, Location from) {
+		// Handle teleportation the next tick
+		final EntityPortalEvent portalEvent = new EntityPortalEvent(player, from, null, null);
+		CommonUtil.nextTick(new Runnable() {
+			public void run() {
+				handlePortalEnter(portalEvent, false);
+				if (portalEvent.getTo() != null) {
+					// Note: We could use EntityUtil.teleport here...
+					// But why even bother, we would only add strange differences between teleports
+					portalEvent.getEntity().teleport(portalEvent.getTo());
+				}
+			}
+		});
+	}
+
+	public void handlePortalEnter(EntityPortalEvent event, boolean doTeleportCheck) {
+		final Entity entity = event.getEntity();
+
+		// By default, cancel the event until we know it works
+		event.setCancelled(true);
+
+		// Initial check for non-player entities
+		if (MyWorlds.onlyPlayerTeleportation && !(entity instanceof Player)) {
+			return;
+		}
+
+		// Get from location
+		Location enterLoc = portalEnterLocations.remove(entity);
+		if (enterLoc == null) {
+			enterLoc = event.getFrom();;
+		}
+		Block b = enterLoc.getBlock();
+
+		// Handle player teleportation - portal check
+		Material mat;
+		if (Util.isNetherPortal(b)) {
+			mat = Material.PORTAL;
+		} else if (Util.isEndPortal(b)) {
+			mat = Material.ENDER_PORTAL;
+		} else if (Util.isWaterPortal(b)) {
+			mat = Material.STATIONARY_WATER;
+		} else {
+			return;
+		}
+
+		// Player looped teleportation check (since they allow looped teleports)
+		if (entity instanceof Player && doTeleportCheck) {
+			Player player = (Player) entity;
+			boolean canTeleport = teleportTracker.canTeleport(player);
+			teleportTracker.setPortalPoint(player, enterLoc);
+			if (!canTeleport) {
+				return;
+			}
+		}
+
+		// Obtain and validate destination
+		Object loc = Portal.getPortalEnterDestination(entity, mat, false);
+		Location dest = null;
+		if (loc instanceof Portal) {
+			dest = ((Portal) loc).getDestination();
+			if (dest == null) {
+				String name = ((Portal) loc).getDestinationName();
+				if (name != null && entity instanceof Player) {
+					// Show message indicating the destination is unavailable
+					Localization.PORTAL_NOTFOUND.message((Player) entity, name);
+				}
+			}
+		} else if (loc instanceof Location) {
+			dest = (Location) loc;
+		}
+		if (dest == null) {
+			// Send a missing destination message for non-water portals
+			if (entity instanceof Player && mat != Material.STATIONARY_WATER) {
+				Localization.PORTAL_NODESTINATION.message((Player) entity);
+			}
+			return;
+		} else {
+			// Permissions
+			if (entity instanceof Player && !MWListenerPost.handleTeleportPermission((Player) entity, dest)) {
+				return;
+			} else if (WorldConfig.get(dest).spawnControl.isDenied(entity)) {
+				return;
+			}
+
+			// Only use the travel agent when not teleporting to fixed portals
+			event.useTravelAgent(!(loc instanceof Portal));
+			event.setTo(dest);
+			event.setCancelled(false);
+
+			// For later on: set up the right portal for permissions and messages
+			if (loc instanceof Portal && entity instanceof Player) {
+				MWListenerPost.setLastEntered((Player) entity, (Portal) loc);
+			}
 		}
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void onPlayerPortal(PlayerPortalEvent event) {
-		final boolean nether = event.getCause() == TeleportCause.NETHER_PORTAL;
-		final boolean end = event.getCause() == TeleportCause.END_PORTAL;
-		if (!nether && !end) {
-			return; // Ignore alternative types
-		}
-		// Cancel the internal logic
-		event.setCancelled(true);
+		// Wrap inside an Entity portal event
+		EntityPortalEvent entityEvent = new EntityPortalEvent(event.getPlayer(), event.getFrom(), event.getTo(), event.getPortalTravelAgent());
+		entityEvent.useTravelAgent(event.useTravelAgent());
+		handlePortalEnter(entityEvent, true);
+		// Now, apply them again
+		event.setTo(entityEvent.getTo());
+		event.useTravelAgent(entityEvent.useTravelAgent());
+		event.setCancelled(entityEvent.isCancelled());
+	}
 
-		// Get from location
-		Location enterLoc = playerPortalEnter.remove(event.getPlayer());
-		if (enterLoc == null) {
-			enterLoc = event.getFrom();
-		}
-		Block b = enterLoc.getBlock();
-
-		// Handle player teleportation - portal check
-		Material mat = Material.AIR;
-		if (nether) {
-			mat = Material.PORTAL;
-			if (!Util.isNetherPortal(b, true)) {
-				return; // Invalid
-			}
-		} else if (end) {
-			mat = Material.ENDER_PORTAL;
-			if (!Util.isEndPortal(b, true)) {
-				return; // Invalid
-			}
-		}
-
-		// Perform teleportation
-		if (teleportTracker.canTeleport(event.getPlayer())) {
-			teleportTracker.setPortalPoint(event.getPlayer(), enterLoc);
-			Object loc = Portal.getPortalEnterDestination(event.getPlayer(), mat, false);
-			Location dest = null;
-			if (loc instanceof Portal) {
-				dest = ((Portal) loc).getDestination();
-				if (dest == null) {
-					String name = ((Portal) loc).getDestinationName();
-					if (name != null) {
-						// Show message indicating the destination is unavailable
-						Localization.PORTAL_NOTFOUND.message(event.getPlayer(), name);
-					}
-				}
-			} else if (loc instanceof Location) {
-				dest = (Location) loc;
-			}
-			if (dest == null) {
-				Localization.PORTAL_NODESTINATION.message(event.getPlayer());
-			} else if (MWPermissionListener.handleTeleportPermission(event.getPlayer(), dest)) {
-				// Only use the travel agent when not teleporting to fixed portals
-				event.useTravelAgent(!(loc instanceof Portal));
-				event.setCancelled(false);
-				event.setTo(dest);
-				// Send teleport message
-				if (loc instanceof Portal) {
-					Localization.PORTAL_ENTER.message(event.getPlayer(), ((Portal) loc).getDestinationDisplayName());
-				} else if (dest.getWorld() != event.getPlayer().getWorld()) {
-					Localization.WORLD_ENTER.message(event.getPlayer(), dest.getWorld().getName());
-				}
-			}
-		}
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+	public void onEntityPortal(EntityPortalEvent event) {
+		handlePortalEnter(event, true);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onEntityPortalEnter(EntityPortalEnterEvent event) {
-		if (event.getEntity() instanceof Player) {
-			Player player = (Player) event.getEntity();
-
-			// If player is creative, we can instantly handle the teleport in PLAYER_PORTAL_ENTER
-			// If not but the delayed teleportation is preferred, then also let PLAYER_PORTAL_ENTER handle it
-			// If not, then we will handle the teleportation in here
-			if (PlayerUtil.isInvulnerable(player) || !MyWorlds.alwaysInstantPortal) {
-				// Store the to location - the one in the PLAYER_PORTAL_ENTER is inaccurate
-				playerPortalEnter.put(player, event.getLocation());
-				// Ignore teleportation here, handle it during PLAYER_PORTAL_ENTER
-				return;
-			}
-
-			// We are about to handle teleportation here...be sure to avoid spam
-			if (teleportTracker.canTeleport(player)) {
-				teleportTracker.setPortalPoint(player, event.getLocation());
-			} else {
-				return;
-			}
-		} else if (MyWorlds.onlyPlayerTeleportation) {
-			return; // Ignore
-		}
-		// Handle teleportation
-		Block b = event.getLocation().getBlock();
-		if (!Util.isNetherPortal(b, false) && !Util.isEndPortal(b, false)) {
+		if (!(event.getEntity() instanceof Player)) {
 			return;
 		}
-		Portal.handlePortalEnter(event.getEntity(), b.getType());
+		Player player = (Player) event.getEntity();
+
+		// If player is creative, we can instantly handle the teleport in PLAYER_PORTAL_ENTER
+		// If not but the delayed teleportation is preferred, then also let PLAYER_PORTAL_ENTER handle it
+		// If not, then we will handle the teleportation in here
+		if (PlayerUtil.isInvulnerable(player) || !MyWorlds.alwaysInstantPortal) {
+			// Store the to location - the one in the PLAYER_PORTAL_ENTER is inaccurate
+			portalEnterLocations.put(player, event.getLocation());
+			// Ignore teleportation here, handle it during PLAYER_PORTAL_ENTER
+			return;
+		}
+
+		// This event fires every tick...better try and avoid spammed tasks
+		boolean canTeleport = teleportTracker.canTeleport(player);
+		teleportTracker.setPortalPoint(player, event.getLocation());
+		if (canTeleport) {
+			this.handlePortalEnterNextTick(player, event.getLocation());
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)

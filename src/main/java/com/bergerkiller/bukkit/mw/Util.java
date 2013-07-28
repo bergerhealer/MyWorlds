@@ -18,6 +18,8 @@ import org.bukkit.block.BlockFace;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 
 public class Util {
+	private static final int STATW_ID = Material.STATIONARY_WATER.getId();
+
 	public static boolean isSolid(Block b, BlockFace direction) {
 		int maxwidth = 10;
 		while (maxwidth-- >= 0) {
@@ -46,26 +48,52 @@ public class Util {
 	}
 
 	/**
-	 * Checks if a given block is of a valid ender portal, plugin settings are applied
+	 * Checks if a given block is part of a valid water portal, plugin settings are applied
+	 * 
+	 * @param main portal block
+	 * @return True if it is a water Portal, False if not
+	 */
+	public static boolean isWaterPortal(Block main) {
+		if (!MyWorlds.useWaterTeleport || main.getTypeId() != STATW_ID) {
+			return false;
+		}
+		if (main.getRelative(BlockFace.UP).getTypeId() == STATW_ID || main.getRelative(BlockFace.DOWN).getTypeId() == STATW_ID) {
+			boolean allow = false;
+			if (main.getRelative(BlockFace.NORTH).getType() == Material.AIR || main.getRelative(BlockFace.SOUTH).getType() == Material.AIR) {
+				if (Util.isSolid(main, BlockFace.WEST) && Util.isSolid(main, BlockFace.EAST)) {
+					allow = true;
+				}
+			} else if (main.getRelative(BlockFace.EAST).getType() == Material.AIR || main.getRelative(BlockFace.WEST).getType() == Material.AIR) {
+				if (Util.isSolid(main, BlockFace.NORTH) && Util.isSolid(main, BlockFace.SOUTH)) {
+					allow = true;
+				}
+			}
+			return allow;
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if a given block is part of a valid ender portal, plugin settings are applied
 	 * 
 	 * @param main portal block
 	 * @return True if it is an end Portal, False if not
 	 */
-	public static boolean isEndPortal(Block main, boolean overrideMainType) {
-		return overrideMainType || main.getType() == Material.ENDER_PORTAL;
+	public static boolean isEndPortal(Block main) {
+		return main.getType() == Material.ENDER_PORTAL;
 	}
 
 	/**
-	 * Checks if a given block is of a valid nether portal, plugin settings are applied
+	 * Checks if a given block is part of a valid nether portal, plugin settings are applied
 	 * 
 	 * @param main portal block
 	 * @param overrideMainType - True to override the main block type checking
 	 * @return True if it is a nether Portal, False if not
 	 */
-	public static boolean isNetherPortal(Block main, boolean overrideMainType) {
+	public static boolean isNetherPortal(Block main) {
 		if (!MyWorlds.onlyObsidianPortals) {
 			// Simple check
-			return overrideMainType || main.getType() == Material.PORTAL;
+			return main.getType() == Material.PORTAL;
 		}
 		// Obsidian portal check
 		if (main.getType() != Material.PORTAL) {

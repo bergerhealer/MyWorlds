@@ -60,19 +60,13 @@ public class TeleportationTracker {
     	if (walkDistanceCheckMap.containsKey(e)) {
     		return false;
     	}
-        long currtime = System.currentTimeMillis();
-    	long lastteleport;
-    	if (portaltimes.containsKey(e)) {
-    		lastteleport = portaltimes.get(e);
-    	} else {
-    		lastteleport = currtime - MyWorlds.teleportInterval;
-    		portaltimes.put(e, lastteleport);
+    	Long lastTeleport = portaltimes.get(e);
+    	if (lastTeleport != null) {
+    		final long currtime = System.currentTimeMillis();
+    		if (currtime - lastTeleport.longValue() < MyWorlds.teleportInterval) {
+    			return false;
+    		}
     	}
-        if (currtime - lastteleport >= MyWorlds.teleportInterval) {
-        	portaltimes.put(e, currtime);
-        	return true;
-        } else {
-        	return false;
-        }
+    	return true;
 	}
 }

@@ -77,6 +77,7 @@ public class PortalStore {
 			world = WorldManager.matchWorld(portalname.substring(0, dotindex));
 			portalname = portalname.substring(dotindex + 1);
 		}
+		// Get a portal from a specified world
 		if (world != null) {
 			Position pos = getPortalLocations(world).get(portalname);
 			if (pos != null) {
@@ -86,10 +87,14 @@ public class PortalStore {
 				}
 			}
 		}
+		// Get 'a' portal whose names matches and whose location is available
 		for (HashMap<String, Position> positions : portallocations.values()) {
 			for (Map.Entry<String, Position> entry : positions.entrySet()) {
 				if (entry.getKey().equalsIgnoreCase(portalname)) {
-					return Util.getLocation(entry.getValue());
+					Location loc = Util.getLocation(entry.getValue());
+					if (loc != null) {
+						return loc;
+					}
 				}
 			}
 		}

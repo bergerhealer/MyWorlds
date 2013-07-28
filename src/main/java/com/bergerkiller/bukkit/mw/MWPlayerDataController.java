@@ -94,14 +94,7 @@ public class MWPlayerDataController extends PlayerDataController {
 	public static CommonTagCompound createEmptyData(HumanEntity human) {
 		final Vector velocity = human.getVelocity();
 		CommonTagCompound empty = new CommonTagCompound();
-		float health = 20.0f;
-		try {
-			// Note: this getMaxHealth method changed as of 1.6.1
-			// To avoid errors on 1.5.2, a try-catch is used here
-			// By default it will resort back to 20 health
-			health = (float) human.getMaxHealth();
-		} catch (Throwable t) {
-		}
+		final float health = (float) human.getMaxHealth();
 		empty.putValue("Health", (short) health);
 		empty.putValue("HealF", health); // since 1.6.1 health is a float
 		empty.putValue("HurtTime", (short) 0);

@@ -16,7 +16,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
-import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
@@ -119,9 +118,10 @@ public class Portal extends PortalStore {
 	 * @return True if successful, False if not
 	 */
 	public boolean teleportSelf(Entity entity) {
-		MWPermissionListener.lastEnteredPortal = this.getOtherEnd();
+		if (entity instanceof Player) {
+			MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd());
+		}
 		boolean rval = EntityUtil.teleport(entity, Util.spawnOffset(this.getLocation()));
-		MWPermissionListener.lastEnteredPortal = null;
 		return rval;
 	}
 
@@ -258,48 +258,6 @@ public class Portal extends PortalStore {
 			return p;
 		}
 		return null;
-	}
-
-	/**
-	 * Handles an entity entering a certain portal block
-	 * 
-	 * @param e that entered
-	 * @param portalMaterial of the block that was used as portal
-	 * @return True if a teleport was performed, False if not
-	 */
-	public static boolean handlePortalEnter(final Entity e, Material portalMaterial) {
-		final Object loc = getPortalEnterDestination(e, portalMaterial, true);
-		if (loc == null) {
-			// Only for nether and ender portals do we show a 'no destination' message
-			// Other types of portals are too generic
-			if (LogicUtil.contains(portalMaterial, Material.PORTAL, Material.ENDER_PORTAL)) {
-				CommonUtil.sendMessage(e, Localization.PORTAL_NODESTINATION.get());
-			}
-			return false;
-		}
-		CommonUtil.nextTick(new Runnable() {
-			public void run() {
-				Location dest = null;
-				if (loc instanceof Portal) {
-					MWPermissionListener.lastEnteredPortal = (Portal) loc;
-					dest = ((Portal) loc).getDestination();
-					if (dest == null) {
-						String name = ((Portal) loc).getDestinationName();
-						if (name != null && e instanceof Player) {
-							// Show message indicating the destination is unavailable
-							Localization.PORTAL_NOTFOUND.message((Player) e, name);
-						}
-					}
-				} else if (loc instanceof Location) {
-					dest = (Location) loc;
-				}
-				if (dest != null) {
-					EntityUtil.teleport(e, dest);
-				}
-				MWPermissionListener.lastEnteredPortal = null;
-			}
-		});
-		return true;
 	}
 
 	/**

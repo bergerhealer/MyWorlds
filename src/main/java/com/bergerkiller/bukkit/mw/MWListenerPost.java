@@ -10,22 +10,48 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
+import com.bergerkiller.bukkit.common.collections.EntityMap;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 
 /**
- * Handles events to manage plugin-defined permissions and messages
+ * Handles events to manage plugin-defined permissions and messages.
+ * Basically, everything that happens after performing a command
+ * or using portals is dealt with here.
  */
-public class MWPermissionListener implements Listener {
-	public static Portal lastEnteredPortal = null; // Used for permissions and TP messages
+public class MWListenerPost implements Listener {
+	private static EntityMap<Player, PortalInfo> lastEnteredPortal = new EntityMap<Player, PortalInfo>();
+
+	public static Portal getLastEntered(Player player, boolean remove) {
+		PortalInfo info = remove ? lastEnteredPortal.remove(player) : lastEnteredPortal.get(player);
+		if (info == null) {
+			return null;
+		}
+		// Information must be from the same tick, otherwise it is invalid!
+		if (player.getTicksLived() != info.tickStamp) {
+			lastEnteredPortal.remove(player);
+			return null;
+		}
+		// Done
+		return info.portal;
+	}
+
+	public static void setLastEntered(Player player, Portal portal) {
+		PortalInfo info = new PortalInfo();
+		info.portal = portal;
+		info.tickStamp = player.getTicksLived();
+		lastEnteredPortal.put(player, info);
+	}
 
 	public static boolean handleTeleportPermission(Player player, Location to) {
 		// World can be entered?
 		if (Permission.canEnter(player, to.getWorld())) {
 			// If applicable, Portal can be entered?
-			if (lastEnteredPortal != null) {
-				String name = lastEnteredPortal.getName();
+			Portal lastPortal = getLastEntered(player, false);
+			if (lastPortal != null) {
+				String name = lastPortal.getName();
 				if (name != null && !Permission.canEnterPortal(player, name)) {
 					Localization.PORTAL_NOACCESS.message(player);
 					return false;
@@ -38,6 +64,18 @@ public class MWPermissionListener implements Listener {
 		return true;
 	}
 
+	public static void handleTeleportMessage(Player player, Location to) {
+		// We are handling this at the very end, so we can remove the portal as we get it
+		Portal lastPortal = getLastEntered(player, true);
+		if (lastPortal != null) {
+			// Show the portal name
+			Localization.PORTAL_ENTER.message(player, lastPortal.getDestinationDisplayName());
+		} else if (to.getWorld() != player.getWorld()) {
+			// Show world enter message
+			Localization.WORLD_ENTER.message(player, to.getWorld().getName());
+		}
+	}
+
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onPlayerTeleportPerm(PlayerTeleportEvent event) {
 		// Sometimes TO is NULL, this fixes that. After that check the teleport permission is enforced.
@@ -48,13 +86,15 @@ public class MWPermissionListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerTeleportMsg(PlayerTeleportEvent event) {
-		if (lastEnteredPortal != null) {
-			// Show the portal name
-			Localization.PORTAL_ENTER.message(event.getPlayer(), lastEnteredPortal.getDestinationDisplayName());
-		} else if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
-			// Show world enter message
-			Localization.WORLD_ENTER.message(event.getPlayer(), event.getTo().getWorld().getName());
+		handleTeleportMessage(event.getPlayer(), event.getTo());
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPlayerPortalMsg(PlayerPortalEvent event) {
+		if (event.getTo() == null) {
+			return;
 		}
+		handleTeleportMessage(event.getPlayer(), event.getTo());
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -91,5 +131,10 @@ public class MWPermissionListener implements Listener {
 				event.setBuild(false);
 			}
 		}
+	}
+
+	private static class PortalInfo {
+		public Portal portal;
+		public int tickStamp;
 	}
 }
