@@ -370,7 +370,9 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// Write the current position of the player to the world he is on
 			// This is needed in order for last-position to work properly
-			if (WorldConfig.get(human.getWorld()).rememberLastPlayerPosition) {
+			if (WorldConfig.get(human.getWorld()).rememberLastPlayerPosition || 
+					(human instanceof Player && Permission.GENERAL_KEEPLASTPOS.has((Player) human))) {
+
 				File posFile = getPlayerData(human.getWorld().getName(), human.getWorld(), human.getName());
 				// Don't write to it if we already wrote to it before!
 				if (!posFile.equals(dest)) {

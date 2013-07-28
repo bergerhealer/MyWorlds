@@ -128,7 +128,7 @@ commands:
             /world forcedrespawn [on/off] [world]
     world rememberlastpos:
         description: Toggles last-position memory on or off
-        aliases: [world setrememberlastpos, world setrememberlastposition]
+        aliases: [world (set)rememberlast(player)pos(ition)]
         usage: |
             /world rememberlastpos [on/off]
             /world rememberlastpos [on/off] [world]

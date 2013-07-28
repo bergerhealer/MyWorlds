@@ -360,6 +360,18 @@ public class Command {
 					rval = new WorldSetRememberPlayerPos();
 				} else if (cmdLabel.equalsIgnoreCase("setrememberlastpos")) {
 					rval = new WorldSetRememberPlayerPos();
+				} else if (cmdLabel.equalsIgnoreCase("rememberlastplayerpos")) {
+					rval = new WorldSetRememberPlayerPos();
+				} else if (cmdLabel.equalsIgnoreCase("setrememberlastplayerpos")) {
+					rval = new WorldSetRememberPlayerPos();
+				} else if (cmdLabel.equalsIgnoreCase("rememberlastposition")) {
+					rval = new WorldSetRememberPlayerPos();
+				} else if (cmdLabel.equalsIgnoreCase("setrememberlastposition")) {
+					rval = new WorldSetRememberPlayerPos();
+				} else if (cmdLabel.equalsIgnoreCase("rememberlastplayerposition")) {
+					rval = new WorldSetRememberPlayerPos();
+				} else if (cmdLabel.equalsIgnoreCase("setrememberlastplayerposition")) {
+					rval = new WorldSetRememberPlayerPos();
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {

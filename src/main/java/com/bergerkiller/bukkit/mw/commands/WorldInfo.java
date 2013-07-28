@@ -70,6 +70,12 @@ public class WorldInfo extends Command {
 				} else {
 					message(ChatColor.WHITE + "Forced Respawn: " + ChatColor.GREEN + "No, allow bed spawns");
 				}
+				//Remember last position
+				if (wc.rememberLastPlayerPosition) {
+					message(ChatColor.WHITE + "Remember last pos.: " + ChatColor.GREEN + "Yes, teleport to last known position");
+				} else {
+					message(ChatColor.WHITE + "Remember last pos.: " + ChatColor.GREEN + "No, teleport to spawn point");
+				}
 				//Difficulty
 				message(ChatColor.WHITE + "Difficulty: " + ChatColor.YELLOW + wc.difficulty.toString().toLowerCase());
 				//Game mode

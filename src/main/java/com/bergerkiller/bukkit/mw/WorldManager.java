@@ -553,9 +553,13 @@ public class WorldManager {
 	 * @return Spawn location
 	 */
 	public static Location getPlayerWorldSpawn(Player player, World world) {
-		if (WorldConfig.get(world).rememberLastPlayerPosition) {
+		if (WorldConfig.get(world).rememberLastPlayerPosition || Permission.GENERAL_KEEPLASTPOS.has(player)) {
+			// Player is already in the world to go to...so we just return that instead
+			if (player.getWorld() == world) {
+				return player.getLocation();
+			}
+
 			// Figure out the last position of the player on the world
-			System.out.println("LOOKING FOR SPAWN OF " + player.getName() + " FOR WORLD " + world.getName());
 			File playerData = MWPlayerDataController.getPlayerData(world.getName(), world, player.getName());
 			if (playerData.exists()) {
 				try {
@@ -569,7 +573,6 @@ public class WorldManager {
 							location.setYaw(rotInfo.getValue(0, 0.0f));
 							location.setPitch(rotInfo.getValue(1, 0.0f));
 						}
-						System.out.println("FOUND: " + location);
 						return location;
 					}
 				} catch (Exception ex) {

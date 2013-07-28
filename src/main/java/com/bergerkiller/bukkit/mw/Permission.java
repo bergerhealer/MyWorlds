@@ -49,6 +49,7 @@ public class Permission extends PermissionEnum {
     public static final Permission GENERAL_IGNOREGM = new Permission("world.ignoregamemode", PermissionDefault.FALSE, "Sets if the player game mode is not changed by the world game mode");
     public static final Permission GENERAL_USE = new Permission("world.use", PermissionDefault.OP, "Sets if the player can interact with blocks in a certain world", 1);
     public static final Permission GENERAL_KEEPINV = new Permission("world.keepinventory", PermissionDefault.FALSE, "Sets if the player keeps his inventory while switching worlds");
+    public static final Permission GENERAL_KEEPLASTPOS = new Permission("world.keeplastpos", PermissionDefault.FALSE, "Sets if the player overrides the world rememberlastpos setting to always permit it");
     public static final Permission PORTAL_CREATE = new Permission("portal.create", PermissionDefault.OP, "Sets if the player can create teleport signs");
     public static final Permission PORTAL_OVERRIDE = new Permission("portal.override", PermissionDefault.OP, "Sets if the player can replace existing portals");
     public static final Permission PORTAL_USE = new Permission("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals", 1);
