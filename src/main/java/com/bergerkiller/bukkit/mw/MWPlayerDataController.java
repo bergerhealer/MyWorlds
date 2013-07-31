@@ -94,7 +94,14 @@ public class MWPlayerDataController extends PlayerDataController {
 	public static CommonTagCompound createEmptyData(HumanEntity human) {
 		final Vector velocity = human.getVelocity();
 		CommonTagCompound empty = new CommonTagCompound();
-		final float health = (float) human.getMaxHealth();
+
+		// Max health getting is since 1.6.2 - for 1.5.2 support, a try-catch
+		float health = 20.0f;
+		try {
+			health = (float) human.getMaxHealth();
+		} catch (Throwable t) {
+		}
+
 		empty.putValue("Health", (short) health);
 		empty.putValue("HealF", health); // since 1.6.1 health is a float
 		empty.putValue("HurtTime", (short) 0);
@@ -363,25 +370,21 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// Write the current position of the player to the world he is on
 			// This is needed in order for last-position to work properly
-			if (WorldConfig.get(human.getWorld()).rememberLastPlayerPosition || 
-					(human instanceof Player && Permission.GENERAL_KEEPLASTPOS.has((Player) human))) {
-
-				File posFile = getPlayerData(human.getWorld().getName(), human.getWorld(), human.getName());
-				// Don't write to it if we already wrote to it before!
-				if (!posFile.equals(dest)) {
-					if (posFile.exists()) {
-						// Load the data
-						CommonTagCompound data = read(posFile, human);
-						// Alter position information
-						Location loc = human.getLocation();
-						data.putListValues("Pos", loc.getX(), loc.getY(), loc.getZ());
-						data.putListValues("Rotation", loc.getYaw(), loc.getPitch());
-						// Save the updated data
-						data.writeTo(posFile);
-					} else {
-						// Simply write the data of the other file to it
-						tagcompound.writeTo(posFile);
-					}
+			File posFile = getPlayerData(human.getWorld().getName(), human.getWorld(), human.getName());
+			// Don't write to it if we already wrote to it before!
+			if (!posFile.equals(dest)) {
+				if (posFile.exists()) {
+					// Load the data
+					CommonTagCompound data = read(posFile, human);
+					// Alter position information
+					Location loc = human.getLocation();
+					data.putListValues("Pos", loc.getX(), loc.getY(), loc.getZ());
+					data.putListValues("Rotation", loc.getYaw(), loc.getPitch());
+					// Save the updated data
+					data.writeTo(posFile);
+				} else {
+					// Simply write the data of the other file to it
+					tagcompound.writeTo(posFile);
 				}
 			}
 

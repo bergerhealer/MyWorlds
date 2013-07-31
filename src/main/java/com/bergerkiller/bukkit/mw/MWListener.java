@@ -150,9 +150,15 @@ public class MWListener implements Listener {
 			public void run() {
 				handlePortalEnter(portalEvent, false);
 				if (portalEvent.getTo() != null) {
+					// Use a travel agent if needed
+					Location to = portalEvent.getTo();
+					if (portalEvent.useTravelAgent()) {
+						to = WorldUtil.findSpawnLocation(to);
+					}
+
 					// Note: We could use EntityUtil.teleport here...
 					// But why even bother, we would only add strange differences between teleports
-					portalEvent.getEntity().teleport(portalEvent.getTo());
+					portalEvent.getEntity().teleport(to);
 				}
 			}
 		});
@@ -199,7 +205,7 @@ public class MWListener implements Listener {
 		}
 
 		// Obtain and validate destination
-		Object loc = Portal.getPortalEnterDestination(entity, mat, false);
+		Object loc = Portal.getPortalEnterDestination(entity, mat);
 		Location dest = null;
 		if (loc instanceof Portal) {
 			dest = ((Portal) loc).getDestination();

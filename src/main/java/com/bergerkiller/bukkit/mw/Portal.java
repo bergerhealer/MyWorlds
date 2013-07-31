@@ -268,7 +268,7 @@ public class Portal extends PortalStore {
 	 * @param useTravelAgent sets whether to find nearby portals if required
 	 * @return A Portal object or a Location object to represent the destination
 	 */
-	public static Object getPortalEnterDestination(Entity e, Material portalMaterial, boolean useTravelAgent) {
+	public static Object getPortalEnterDestination(Entity e, Material portalMaterial) {
 		Location dest = null;
 		Portal portal = getNear(e.getLocation());
 		if (portal == null) {
@@ -311,9 +311,6 @@ public class Portal extends PortalStore {
 								}
 								Location start = e.getLocation();
 								Location end = new Location(w, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ());
-								if (useTravelAgent) {
-									end = WorldUtil.findSpawnLocation(end);
-								}
 								if (end != null) {
 									Block destB = end.getBlock();
 									// Figure out the best yaw to use here by checking for air blocks
