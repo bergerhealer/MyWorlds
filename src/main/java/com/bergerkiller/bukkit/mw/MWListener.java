@@ -149,7 +149,7 @@ public class MWListener implements Listener {
 		CommonUtil.nextTick(new Runnable() {
 			public void run() {
 				handlePortalEnter(portalEvent, false);
-				if (portalEvent.getTo() != null) {
+				if (portalEvent.getTo() != null && !portalEvent.isCancelled()) {
 					// Use a travel agent if needed
 					Location to = portalEvent.getTo();
 					if (portalEvent.useTravelAgent()) {
@@ -195,9 +195,9 @@ public class MWListener implements Listener {
 		}
 
 		// Player looped teleportation check (since they allow looped teleports)
-		if (entity instanceof Player && doTeleportCheck) {
+		if (entity instanceof Player) {
 			Player player = (Player) entity;
-			boolean canTeleport = teleportTracker.canTeleport(player);
+			boolean canTeleport = !doTeleportCheck || teleportTracker.canTeleport((Player) entity);
 			teleportTracker.setPortalPoint(player, enterLoc);
 			if (!canTeleport) {
 				return;
