@@ -30,6 +30,7 @@ import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldManager {
@@ -478,11 +479,11 @@ public class WorldManager {
 	}
 
 	public static boolean deleteWorld(String worldname) {
-		return Util.deleteFile(WorldUtil.getWorldFolder(worldname)).isEmpty();
+		return StreamUtil.deleteFile(WorldUtil.getWorldFolder(worldname)).isEmpty();
 	}
 	public static boolean copyWorld(String worldname, String newname) {
 		File destFolder = WorldUtil.getWorldFolder(newname);
-		if (!Util.tryCopyFile(WorldUtil.getWorldFolder(worldname), destFolder)) {
+		if (!StreamUtil.tryCopyFile(WorldUtil.getWorldFolder(worldname), destFolder)) {
 			return false;
 		}
 		renameWorld(newname, newname);
@@ -750,7 +751,7 @@ public class WorldManager {
 				}
 			}
 			if (editcount > 0) {
-				if ((backupfolder.exists() || backupfolder.mkdirs()) && Util.tryCopyFile(chunkfile, backupfile)) {
+				if ((backupfolder.exists() || backupfolder.mkdirs()) && StreamUtil.tryCopyFile(chunkfile, backupfile)) {
 					//Write out the new locations
 					raf.seek(0);
 					for (int location : locations) {

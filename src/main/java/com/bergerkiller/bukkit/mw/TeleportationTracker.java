@@ -26,12 +26,8 @@ public class TeleportationTracker {
 	public void setPortalPoint(Player player, Location location) {
 		walkDistanceCheckMap.put(player, location);
 		portaltimes.put(player, System.currentTimeMillis());
-		// Note: method since 1.6.2 - for 1.5.2 support this is try-catched
-		try {
-			EntityUtil.setAllowTeleportation(player, false);
-			EntityUtil.setPortalCooldown(player, EntityUtil.getPortalCooldownMaximum(player));
-		} catch (Throwable t) {
-		}
+		EntityUtil.setAllowTeleportation(player, false);
+		EntityUtil.setPortalCooldown(player, EntityUtil.getPortalCooldownMaximum(player));
 	}
 
 	/**

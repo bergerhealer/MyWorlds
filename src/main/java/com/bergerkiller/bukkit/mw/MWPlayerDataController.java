@@ -11,9 +11,13 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.bases.IntVector3;
 import com.bergerkiller.bukkit.common.controller.PlayerDataController;
 import com.bergerkiller.bukkit.common.conversion.Conversion;
+import com.bergerkiller.bukkit.common.entity.CommonEntity;
+import com.bergerkiller.bukkit.common.entity.type.CommonLivingEntity;
+import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.protocol.PacketFields;
@@ -94,22 +98,15 @@ public class MWPlayerDataController extends PlayerDataController {
 	public static CommonTagCompound createEmptyData(HumanEntity human) {
 		final Vector velocity = human.getVelocity();
 		CommonTagCompound empty = new CommonTagCompound();
-
-		// Max health getting is since 1.6.2 - for 1.5.2 support, a try-catch
-		float health = 20.0f;
-		try {
-			health = (float) human.getMaxHealth();
-		} catch (Throwable t) {
-		}
-
-		empty.putValue("Health", (short) health);
-		empty.putValue("HealF", health); // since 1.6.1 health is a float
+		CommonLivingEntity<?> livingEntity = CommonEntity.get(human);
+		empty.putValue("Health", (short) livingEntity.getMaxHealth());
+		empty.putValue("HealF", (float) livingEntity.getMaxHealth()); // since 1.6.1 health is a float
 		empty.putValue("HurtTime", (short) 0);
 		empty.putValue("DeathTime", (short) 0);
 		empty.putValue("AttackTime", (short) 0);
 		empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
 		setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
-		final Object humanHandle = Conversion.toEntityHandle.convert(human);
+		final Object humanHandle = livingEntity.getHandle();
 		IntVector3 coord = EntityHumanRef.spawnCoord.get(humanHandle);
 		if (coord != null) {
 			empty.putValue("SpawnWorld", EntityHumanRef.spawnWorld.get(humanHandle));
@@ -178,6 +175,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			return;
 		}
 		try {
+			CommonPlayer commonPlayer = CommonEntity.get(player);
 			Object playerHandle = Conversion.toEntityHandle.convert(player);
 			File source = getSaveFile(player);
 			CommonTagCompound data = read(source, player);
@@ -187,7 +185,12 @@ public class MWPlayerDataController extends PlayerDataController {
 			EntityHumanRef.exp.set(playerHandle, data.getValue("XpP", 0.0f));
 			EntityHumanRef.expLevel.set(playerHandle, data.getValue("XpLevel", 0));
 			EntityHumanRef.expTotal.set(playerHandle, data.getValue("XpTotal", 0));
-			player.setHealth(data.getValue("Health", player.getMaxHealth()));
+
+			if (Common.MC_VERSION.equals("1.5.2")) {
+				commonPlayer.setHealth(data.getValue("Health", (int) commonPlayer.getMaxHealth()));
+			} else {
+				commonPlayer.setHealth(data.getValue("HealF", (float) commonPlayer.getMaxHealth()));
+			}
 
 			// Respawn position
 			String spawnWorld = data.getValue("SpawnWorld", "");
