@@ -30,7 +30,7 @@ import com.bergerkiller.bukkit.common.utils.WorldUtil;
 public class WorldConfig extends WorldConfigStore {
 	public String worldname;
 	public boolean keepSpawnInMemory = true;
-	public WorldMode worldmode;
+	public WorldMode worldmode = WorldMode.NORMAL;
 	private String chunkGeneratorName;
 	public Difficulty difficulty = Difficulty.NORMAL;
 	public Position spawnPoint;
