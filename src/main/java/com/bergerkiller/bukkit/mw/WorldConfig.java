@@ -22,6 +22,7 @@ import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -139,13 +140,6 @@ public class WorldConfig extends WorldConfigStore {
 		return this.chunkGeneratorName;
 	}
 
-	/**
-	 * Handles the case of this configuration being made for a new world
-	 */
-	public void loadNew() {
-		this.gameMode = Bukkit.getDefaultGameMode();
-	}
-
 	public void load(WorldConfig config) {
 		this.keepSpawnInMemory = config.keepSpawnInMemory;
 		this.worldmode = config.worldmode;
@@ -172,8 +166,11 @@ public class WorldConfig extends WorldConfigStore {
 
 	public void load(ConfigurationNode node) {
 		this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
-		this.worldmode = node.get("environment", this.worldmode);
+		this.worldmode = WorldMode.get(node.get("environment", this.worldmode.getName()));
 		this.chunkGeneratorName = node.get("chunkGenerator", String.class, this.chunkGeneratorName);
+		if (LogicUtil.nullOrEmpty(this.chunkGeneratorName)) {
+			this.chunkGeneratorName = null;
+		}
 		this.difficulty = node.get("difficulty", Difficulty.class, this.difficulty);
 		this.gameMode = node.get("gamemode", GameMode.class, this.gameMode);
 		this.clearInventory = node.get("clearInventory", this.clearInventory);
@@ -223,6 +220,16 @@ public class WorldConfig extends WorldConfigStore {
     	this.OPlist = node.getList("operators", String.class, this.OPlist);
 	}
 
+	public void saveDefault(ConfigurationNode node) {
+		save(node);
+		// Remove nodes we rather not see
+		node.remove("environment");
+		node.remove("name");
+		node.remove("chunkGenerator");
+		node.remove("spawn");
+		node.remove("loaded");
+	}
+
 	public void save(ConfigurationNode node) {
 		//Set if the world can be directly accessed
 		World w = this.getWorld();
@@ -238,10 +245,10 @@ public class WorldConfig extends WorldConfigStore {
 		}
 		node.set("loaded", w != null);
 		node.set("keepSpawnLoaded", this.keepSpawnInMemory);
-		node.set("environment", this.worldmode);
-		node.set("chunkGenerator", this.getChunkGeneratorName());
+		node.set("environment", this.worldmode.getName());
+		node.set("chunkGenerator", LogicUtil.fixNull(this.getChunkGeneratorName(), ""));
 		node.set("clearInventory", this.clearInventory ? true : null);
-		node.set("gamemode", this.gameMode);
+		node.set("gamemode", this.gameMode == null ? "NONE" : this.gameMode.toString());
 
 		if (this.timeControl.isLocked()) {
 			node.set("lockedtime", this.timeControl.getTime());
@@ -265,7 +272,7 @@ public class WorldConfig extends WorldConfigStore {
 		node.set("formSnow", this.formSnow);
 		node.set("showRain", this.showRain);
 		node.set("showSnow", this.showSnow);
-		node.set("difficulty", this.difficulty.toString());
+		node.set("difficulty", this.difficulty == null ? "NONE" : this.difficulty.toString());
 		node.set("reloadWhenEmpty", this.reloadWhenEmpty);
 		if (this.spawnPoint == null) {
 			node.remove("spawn");

@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.util.Collection;
 import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -17,17 +18,34 @@ public class WorldConfigStore {
 	protected static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
 	private static FileConfiguration defaultProperties;
 
-	public static WorldConfig get(String worldname) {
+	/**
+	 * Gets the World Configuration of a world, while forcing a particular environment
+	 * 
+	 * @param worldname to get the configuration of
+	 * @param worldmode to force, use null to use the current
+	 * @return World Config of the world
+	 */
+	public static WorldConfig get(String worldname, WorldMode worldmode) {
 		WorldConfig c = worldConfigs.get(worldname);
 		if (c == null) {
 			c = new WorldConfig(worldname);
+			if (worldmode != null) {
+				c.worldmode = worldmode;
+			}
 			if (defaultProperties != null) {
 				// Load using a clone to prevent altering the original
 				c.load(defaultProperties.clone());
+				if (defaultProperties.contains(c.worldmode.getName())) {
+					c.load(defaultProperties.getNode(c.worldmode.getName()).clone());
+				}
 			}
-			c.loadNew();
+		} else if (worldmode != null) {
+			c.worldmode = worldmode;
 		}
 		return c;
+	}
+	public static WorldConfig get(String worldname) {
+		return get(worldname, null);
 	}
 	public static WorldConfig get(World world) {
 		return get(world.getName());
@@ -66,11 +84,19 @@ public class WorldConfigStore {
 		defaultProperties = new FileConfiguration(MyWorlds.plugin, "defaultproperties.yml");
 		defaultProperties.setHeader("This file contains the default world properties applied when loading or creating completely new worlds");
 		defaultProperties.addHeader("All the nodes found in the worlds.yml can be set here");
+		defaultProperties.addHeader("To set environment/worldtype-specific settings, add a new node with this name");
 		if (defaultProperties.exists()) {
 			defaultProperties.load();
 		} else {
 			// Generate new properties
-			new WorldConfig(null).save(defaultProperties);
+			WorldConfig defConfig = new WorldConfig(null);
+			defConfig.gameMode = Bukkit.getDefaultGameMode();
+			defConfig.saveDefault(defaultProperties);
+			ConfigurationNode defEnv = defaultProperties.getNode("normal");
+			defEnv.set("gamemode", "NONE");
+			defEnv.setHeader("\nAll settings applied to worlds with the normal environment");
+			defEnv.addHeader("You can add all the same world settings here and they will override the main defaults");
+			defEnv.addHeader("You can use multiple environments, of which nether, the_end and even nether_flat");
 			defaultProperties.save();
 		}
 

@@ -7,7 +7,6 @@ import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
-import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Localization;
@@ -182,7 +181,7 @@ public class Command {
 		int idx = this.worldname.indexOf('/');
 		this.forcedWorldMode = null;
 		if (idx != -1) {
-			this.forcedWorldMode = ParseUtil.parseEnum(this.worldname.substring(idx + 1), WorldMode.NORMAL);
+			this.forcedWorldMode = WorldMode.get(this.worldname.substring(idx + 1), WorldMode.NORMAL);
 			this.worldname = this.worldname.substring(0, idx);
 		}
 	}

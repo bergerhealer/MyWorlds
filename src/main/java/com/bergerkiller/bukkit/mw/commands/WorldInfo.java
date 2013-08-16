@@ -24,7 +24,7 @@ public class WorldInfo extends Command {
 			} else {
 				WorldConfig wc = WorldConfig.get(worldname);
 				message(ChatColor.YELLOW + "Information about the world: " + worldname);
-				message(ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + wc.worldmode.toString());
+				message(ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + wc.worldmode.getName());
 				String chunkGenerator = wc.getChunkGeneratorName();
 				if (chunkGenerator == null) {
 					message(ChatColor.WHITE + "Chunk generator: " + ChatColor.YELLOW + "Default");

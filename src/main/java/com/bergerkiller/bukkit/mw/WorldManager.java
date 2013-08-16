@@ -348,6 +348,7 @@ public class WorldManager {
 
 	public static boolean unload(World world) {
 		if (world == null) return false;
+		LoadChunksTask.abortWorld(world);
 		return Bukkit.getServer().unloadWorld(world, world.isAutoSave());
 	}
 

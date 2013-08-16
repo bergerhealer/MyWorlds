@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -17,17 +18,33 @@ public class LoadChunksTask extends Task {
 
 	@Override
 	public void run() {
-		for (int i = 0; i < 10; i++) {
+		// Load a maximum of 10 chunks at a time
+		for (int i = 0; i < 10;) {
 			ChunkCoord next = remaining.poll();
 			if (next == null) {
 				abort();
+				break;
 			} else {
 				if (!next.world.isChunkLoaded(next.x, next.z)) {
 					next.world.loadChunk(next.x, next.z);
+					i++;
 				}
 				if (next.taskWhenFinished != null) {
 					next.taskWhenFinished.run();
 				}
+			}
+		}
+	}
+
+	public static void abortWorld(World world) {
+		if (task == null) {
+			return;
+		}
+		Iterator<ChunkCoord> iter = task.remaining.iterator();
+		while (iter.hasNext()) {
+			ChunkCoord coord = iter.next();
+			if (coord.world == world) {
+				iter.remove();
 			}
 		}
 	}

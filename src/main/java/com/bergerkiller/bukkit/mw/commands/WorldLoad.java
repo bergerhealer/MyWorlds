@@ -21,15 +21,16 @@ public class WorldLoad extends Command {
 			if (this.handleWorld()) {
 				if (WorldManager.isLoaded(worldname)) {
 					message(ChatColor.YELLOW + "World '" + worldname + "' is already loaded!");
+				} else if (gen != null && !Permission.COMMAND_LOADSPECIAL.has(sender)) {
+					// Permission handling to change chunk generator
+					message(ChatColor.RED + "You are not allowed to change world chunk generators!");
+				} else if (this.forcedWorldMode != null && !Permission.COMMAND_LOADSPECIAL.has(sender)) {
+					// Permission handling to change world environments
+					message(ChatColor.RED + "You are not allowed to change world environments!");
 				} else {
-					com.bergerkiller.bukkit.mw.WorldConfig config = WorldConfigStore.get(this.worldname);
+					com.bergerkiller.bukkit.mw.WorldConfig config = WorldConfigStore.get(this.worldname, this.forcedWorldMode);
 					String msg = "Loading world: '" + this.worldname + "'...";
 					if (gen != null) {
-						// Permission handling to change chunk generator
-						if (!Permission.COMMAND_LOADSPECIAL.has(sender)) {
-							message(ChatColor.RED + "You are not allowed to change world chunk generators!");
-							return;
-						}
 						if (gen.equalsIgnoreCase("none")) {
 							if (config.getChunkGeneratorName() != null) {
 								msg = "Cleared old chunk generator set and loading world: '" + this.worldname + "'...";
@@ -46,12 +47,6 @@ public class WorldLoad extends Command {
 						}
 					}
 					if (this.forcedWorldMode != null) {
-						// Permission handling to change chunk generator
-						if (!Permission.COMMAND_LOADSPECIAL.has(sender)) {
-							message(ChatColor.RED + "You are not allowed to change world environments!");
-							return;
-						}
-						config.worldmode = this.forcedWorldMode;
 						message(ChatColor.YELLOW + "World will be loaded using environment " + this.forcedWorldMode.getName());
 					}
 					message(ChatColor.YELLOW + msg);

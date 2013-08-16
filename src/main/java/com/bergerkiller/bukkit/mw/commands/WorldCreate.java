@@ -5,12 +5,14 @@ import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
+import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
+import com.bergerkiller.bukkit.mw.WorldMode;
 
 public class WorldCreate extends Command {
 
@@ -27,10 +29,7 @@ public class WorldCreate extends Command {
 				long seedval = WorldManager.getRandomSeed(StringUtil.combine(" ", this.args));
 				logAction("Issued a world creation command for world: " + worldname);
 		        WorldConfig.remove(worldname);
-		        WorldConfig wc = WorldConfig.get(worldname);
-		        if (this.forcedWorldMode != null) {
-		        	wc.worldmode = this.forcedWorldMode;
-		        }
+		        WorldConfig wc = WorldConfig.get(worldname, this.forcedWorldMode);
 				if (gen == null) {
 					message(ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
 				} else {
@@ -43,6 +42,7 @@ public class WorldCreate extends Command {
 					}
 				}
 		        message(ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
+		        message(ChatColor.WHITE + "World environment: " + ChatColor.YELLOW + wc.worldmode.getName());
 		        MyWorlds.plugin.initDisableSpawn(worldname);
 		        final World world = WorldManager.createWorld(worldname, seedval, sender);
 				if (world != null) {
@@ -92,6 +92,12 @@ public class WorldCreate extends Command {
 			}
 		} else {
 			showInv();
+			MessageBuilder modes = new MessageBuilder();
+			modes.yellow("Available environments: ").setIndent(2).setSeparator(ChatColor.YELLOW, " / ");
+			for (WorldMode mode : WorldMode.values()) {
+				modes.green(mode.getName());
+			}
+			modes.send(sender);
 		}
 	}
 	
