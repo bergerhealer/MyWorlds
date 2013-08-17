@@ -42,6 +42,7 @@ public class WorldConfig extends WorldConfigStore {
 	private String defaultNetherPortal;
 	private String defaultEnderPortal;
 	public List<String> OPlist = new ArrayList<String>();
+	public boolean allowHunger = true;
 	public boolean autosave = true;
 	public boolean reloadWhenEmpty = false;
 	public boolean formSnow = true;
@@ -147,6 +148,7 @@ public class WorldConfig extends WorldConfigStore {
 		this.difficulty = config.difficulty;
 		this.spawnPoint = config.spawnPoint.clone();
 		this.gameMode = config.gameMode;
+		this.allowHunger = config.allowHunger;
 		this.holdWeather = config.holdWeather;
 		this.pvp = config.pvp;
 		this.spawnControl.deniedCreatures.clear();
@@ -190,6 +192,7 @@ public class WorldConfig extends WorldConfigStore {
 		this.showSnow = node.get("showSnow", this.showSnow);
 		this.pvp = node.get("pvp", this.pvp);
 		this.forcedRespawn = node.get("forcedRespawn", this.forcedRespawn);
+		this.allowHunger = node.get("hunger", this.allowHunger);
 		this.rememberLastPlayerPosition = node.get("rememberlastplayerpos", this.rememberLastPlayerPosition);
 		this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
 		for (String type : node.getList("deniedCreatures", String.class)) {
@@ -268,6 +271,7 @@ public class WorldConfig extends WorldConfigStore {
 		node.set("operators", this.OPlist);
 		node.set("deniedCreatures", creatures);
 		node.set("holdWeather", this.holdWeather);
+		node.set("hunger", this.allowHunger);
 		node.set("formIce", this.formIce);
 		node.set("formSnow", this.formSnow);
 		node.set("showRain", this.showRain);
@@ -403,6 +407,7 @@ public class WorldConfig extends WorldConfigStore {
 		updateOP(player);
 		updateGamemode(player);
 		updateSpoutWeather(player);
+		updateHunger(player);
 		// Refresh states based on the new world the player joined
 		MWPlayerDataController.refreshState(player);
 	}
@@ -500,6 +505,16 @@ public class WorldConfig extends WorldConfigStore {
 	public void updateOP(World world) {
 		if (MyWorlds.useWorldOperators) {
 			for (Player p : world.getPlayers()) updateOP(p);
+		}
+	}
+	public void updateHunger(Player player) {
+		if (!allowHunger) {
+			player.setFoodLevel(20);
+		}
+	}
+	public void updateHunger(World world) {
+		for (Player player : WorldUtil.getPlayers(world)) {
+			updateHunger(player);
 		}
 	}
 	public void updateGamemode(Player player) {

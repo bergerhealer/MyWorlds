@@ -27,6 +27,7 @@ commands:
             /world setnetherportal - Set nether portal destination
             /world setendportal - Set ender portal destination
             /world gamemode - Set the game mode of a world
+            /world hunger - Toggle hunger on or off
             /world difficulty - Set the difficulty of a world
             /world pvp - Toggle PVP mode on/off
             /world allowspawn - Allow mobs to spawn
@@ -106,6 +107,10 @@ commands:
             /world gamemode [mode] [world]
             /world gamemode creative
             /world gamemode survival world3
+    world hunger:
+        description: Toggle world hunger on or off
+        aliases: [world sethunger]
+        usage: /world hunger [true/false]
     world difficulty:
         description: Sets the difficulty of a world
         aliases: [world diff]

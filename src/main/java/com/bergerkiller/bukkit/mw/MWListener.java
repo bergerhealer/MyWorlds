@@ -20,6 +20,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityPortalEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -130,6 +131,11 @@ public class MWListener implements Listener {
 		if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
 			WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
 		}
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	public void onPlayerFoodChange(FoodLevelChangeEvent event) {
+		event.setCancelled(!WorldConfig.get(event.getEntity()).allowHunger);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

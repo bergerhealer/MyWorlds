@@ -371,6 +371,10 @@ public class Command {
 					rval = new WorldSetRememberPlayerPos();
 				} else if (cmdLabel.equalsIgnoreCase("setrememberlastplayerposition")) {
 					rval = new WorldSetRememberPlayerPos();
+				} else if (cmdLabel.equalsIgnoreCase("hunger")) {
+					rval = new WorldSetHunger();
+				} else if (cmdLabel.equalsIgnoreCase("sethunger")) {
+					rval = new WorldSetHunger();
 				}
 			}
 		} else if (cmdLabel.equalsIgnoreCase("tpp")) {
