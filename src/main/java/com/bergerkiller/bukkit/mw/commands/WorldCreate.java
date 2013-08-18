@@ -1,11 +1,13 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.Locale;
 import java.util.logging.Level;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
+import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
 import com.bergerkiller.bukkit.mw.MyWorlds;
@@ -23,8 +25,8 @@ public class WorldCreate extends Command {
 	public void execute() {
 		if (args.length != 0) {
 			this.worldname = this.removeArg(0);
-			this.genForcedWorldMode();
 			String gen = this.getGeneratorName();
+			this.genForcedWorldMode();
 			if (!WorldManager.worldExists(worldname)) {
 				long seedval = WorldManager.getRandomSeed(StringUtil.combine(" ", this.args));
 				logAction("Issued a world creation command for world: " + worldname);
@@ -32,13 +34,27 @@ public class WorldCreate extends Command {
 		        WorldConfig wc = WorldConfig.get(worldname, this.forcedWorldMode);
 				if (gen == null) {
 					message(ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
+					message(ChatColor.WHITE + "World generator: " + ChatColor.YELLOW + "Default (Vanilla)");
 				} else {
 					String cgenName = WorldManager.fixGeneratorName(gen);
-					if (cgenName == null) {
+					if (cgenName == null || cgenName.length() <= 1) {
 						message(ChatColor.RED + "Failed to create world because the generator '" + gen + "' is missing!");
+						return;
+					}
+					message(ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
+					if (cgenName.indexOf(':') == 0) {
+						String args = cgenName.substring(1);
+						// Write a level.dat with the options changed
+						CommonTagCompound data = WorldManager.createData(this.worldname, seedval);
+						data.putValue("generatorName", wc.worldmode.getTypeName());
+						data.putValue("generatorVersion", 0);
+						data.putValue("generatorOptions", args);
+						WorldManager.setData(this.worldname, data);
+						message(ChatColor.WHITE + "World options: " + ChatColor.YELLOW + args);
+						message(ChatColor.WHITE + "World generator: " + ChatColor.YELLOW + "Default (Vanilla)");
 					} else {
 						wc.setChunkGeneratorName(cgenName);
-						message(ChatColor.YELLOW + "Creating world '" + worldname + "' using generator '" + cgenName + "' (this can take a while) ...");
+						message(ChatColor.WHITE + "World generator: " + ChatColor.YELLOW + cgenName);
 					}
 				}
 		        message(ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);

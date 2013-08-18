@@ -144,24 +144,29 @@ public class WorldManager {
 	}
 
 	public static String fixGeneratorName(String name) {
-		if (name == null) return null;
-		String id = "";
+		if (name == null) {
+			return null;
+		}
+		String genName = name;
+		String args = "";
 		int index = name.indexOf(":");
 		if (index != -1) {
-			id = name.substring(index + 1);
-			name = name.substring(0, index);
+			args = name.substring(index + 1);
+			genName = name.substring(0, index);
 		}
-		if (!name.equals("")) {
-			name = name.toLowerCase();
-			//get plugin
-			final String pname = ParseUtil.parseArray(getGeneratorPlugins(), name, null);
+		if (genName.isEmpty()) {
+			// Only arguments (meant for default generator)
+			return ":" + args;
+		} else {
+			//get plugin name
+			final String pname = ParseUtil.parseArray(getGeneratorPlugins(), genName.toLowerCase(), null);
 			if (pname == null) {
+				// Not found
 				return null;
 			} else {
-				return pname + ":" + id;
+				// Found: append arguments
+				return pname + ":" + args;
 			}
-		} else {
-			return name + ":" + id;
 		}
 	}
 	public static ChunkGenerator getGenerator(String worldname, String name) {
@@ -224,12 +229,17 @@ public class WorldManager {
 		return generateData(worldname, getRandomSeed(seed));
 	}
 	public static boolean generateData(String worldname, long seed) {
+	    return setData(worldname, createData(worldname, seed));
+	}
+
+	public static CommonTagCompound createData(String worldname, long seed) {
 		CommonTagCompound data = new CommonTagCompound("Data");
 		data.putValue("thundering", (byte) 0);
 		data.putValue("thundering", (byte) 0);
 		data.putValue("LastPlayed", System.currentTimeMillis());
 		data.putValue("RandomSeed", seed);
-		data.putValue("version", (int) 19132);
+		data.putValue("version", (int) 19133);
+		data.putValue("initialized", (byte) 0); // Spawn point needs to be re-initialized, etc.
 		data.putValue("Time", 0L);
 		data.putValue("raining", (byte) 0);
 		data.putValue("SpawnX", 0);
@@ -239,8 +249,9 @@ public class WorldManager {
 		data.putValue("LevelName", worldname);
 		data.putValue("SizeOnDisk", getWorldSize(worldname));
 		data.putValue("rainTime", (int) 50000);
-	    return setData(worldname, data);
+		return data;
 	}
+
 	public static CommonTagCompound getData(String worldname) {
 		File f = getDataFile(worldname);
 		if (!f.exists()) {
@@ -262,7 +273,12 @@ public class WorldManager {
     	try {
 			CommonTagCompound root = new CommonTagCompound();
 			root.put(data.getName(), data);
-			data.writeTo(getDataFile(worldname));
+			FileOutputStream out = StreamUtil.createOutputStream(getDataFile(worldname));
+			try {
+				root.writeTo(out);
+			} finally {
+				out.close();
+			}
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -347,9 +363,21 @@ public class WorldManager {
 	}
 
 	public static boolean unload(World world) {
+		return world != null && unload(world, world.isAutoSave());
+	}
+
+	public static boolean unload(World world, boolean save) {
 		if (world == null) return false;
 		LoadChunksTask.abortWorld(world);
-		return Bukkit.getServer().unloadWorld(world, world.isAutoSave());
+		return Bukkit.getServer().unloadWorld(world, save);
+	}
+
+	public static boolean isInitialized(String worldname) {
+		if (!worldExists(worldname)) {
+			return false;
+		}
+		CommonTagCompound data = getData(worldname);
+		return data != null && data.getValue("initialized", true);
 	}
 
 	/**
@@ -372,7 +400,7 @@ public class WorldManager {
 	 * @return The created World, or null on failure
 	 */
 	public static World createWorld(String worldname, long seed, CommandSender sender) {
-		final boolean load = WorldManager.worldExists(worldname);
+		final boolean load = isInitialized(worldname);
 		WorldConfig wc = WorldConfig.get(worldname);
 		String chunkGeneratorName = wc.getChunkGeneratorName();
 		StringBuilder msg = new StringBuilder();

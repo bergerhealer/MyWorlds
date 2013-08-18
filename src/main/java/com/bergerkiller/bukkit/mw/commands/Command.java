@@ -195,7 +195,7 @@ public class Command {
 	public String getGeneratorName() {
 		String gen = null;
 		if (this.worldname.contains(":")) {
-			String[] parts = this.worldname.split(":");
+			String[] parts = this.worldname.split(":", -1);
 			if (parts.length == 2) {
 				this.worldname = parts[0];
 				gen = parts[1];
