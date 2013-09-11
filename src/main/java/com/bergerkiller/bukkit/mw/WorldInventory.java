@@ -34,7 +34,7 @@ public class WorldInventory {
 			if (worlds.isEmpty()) {
 				continue;
 			}
-			WorldInventory inv = new WorldInventory(sharedWorld);
+			WorldInventory inv = new WorldInventory(WorldConfig.get(sharedWorld).worldname);
 			inv.name = node.getName();
 			for (String world : worlds) {
 				inv.add(world);
@@ -103,7 +103,7 @@ public class WorldInventory {
 
 	private static String getSharedWorldName(Collection<String> worlds) {
 		for (String world : worlds) {
-			if (WorldUtil.getWorldFolder(world).exists()) {
+			if (WorldUtil.getWorldFolder(WorldConfig.get(world).worldname).exists()) {
 				return world;
 			}
 		}
@@ -136,7 +136,7 @@ public class WorldInventory {
 		config.inventory = this;
 		this.worlds.add(worldname.toLowerCase());
 		if (this.worldname == null) {
-			this.worldname = worldname;
+			this.worldname = getSharedWorldName(this.worlds);
 		}
 		return this;
 	}
