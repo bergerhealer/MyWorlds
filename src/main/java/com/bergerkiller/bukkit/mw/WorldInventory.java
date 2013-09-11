@@ -14,7 +14,10 @@ import com.bergerkiller.bukkit.common.utils.WorldUtil;
 public class WorldInventory {
 	private static final Set<WorldInventory> inventories = new HashSet<WorldInventory>();
 	private static int counter = 0;
-
+	private final Set<String> worlds = new HashSet<String>();
+	private String worldname;
+	private String name;
+	
 	public static Collection<WorldInventory> getAll() {
 		return inventories;
 	}
@@ -30,13 +33,6 @@ public class WorldInventory {
 			}
 			List<String> worlds = node.getList("worlds", String.class);
 			// Verify these worlds
-			Iterator<String> worldsIter = worlds.iterator();
-			while (worldsIter.hasNext()) {
-				String world = worldsIter.next();
-				if (world == null || !WorldUtil.getWorldFolder(world).exists()) {
-					worldsIter.remove();
-				}
-			}
 			if (worlds.isEmpty()) {
 				continue;
 			}
@@ -94,10 +90,6 @@ public class WorldInventory {
 		this();
 		this.worldname = WorldManager.matchWorld(worldFolder);
 	}
-
-	private final Set<String> worlds = new HashSet<String>();
-	private String worldname;
-	private String name;
 
 	public Collection<String> getWorlds() {
 		return this.worlds;

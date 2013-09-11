@@ -4,7 +4,7 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.64</version>
+  <version>1.65</version>
   <packaging>jar</packaging>
   <name>MyWorlds</name>
   <url>http://dev.bukkit.org/server-mods/my-worlds/</url>
