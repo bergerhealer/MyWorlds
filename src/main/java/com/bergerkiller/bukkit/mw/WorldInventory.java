@@ -3,7 +3,6 @@ package com.bergerkiller.bukkit.mw;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -32,16 +31,8 @@ public class WorldInventory {
 				continue;
 			}
 			List<String> worlds = node.getList("worlds", String.class);
-			// Verify these worlds
 			if (worlds.isEmpty()) {
 				continue;
-			}
-			// Verify shared world container
-			if (!WorldUtil.getWorldFolder(sharedWorld).exists()) {
-				sharedWorld = getSharedWorldName(worlds);
-				if (sharedWorld == null) {
-					continue;
-				}
 			}
 			WorldInventory inv = new WorldInventory(sharedWorld);
 			inv.name = node.getName();
@@ -101,6 +92,12 @@ public class WorldInventory {
 	 * @return shared world name
 	 */
 	public String getSharedWorldName() {
+		if (!WorldUtil.getWorldFolder(this.worldname).exists()) {
+			this.worldname = getSharedWorldName(this.worlds);
+			if (this.worldname == null) {
+				throw new RuntimeException("Unable to locate a valid World folder to use for player data");
+			}
+		}
 		return this.worldname;
 	}
 
