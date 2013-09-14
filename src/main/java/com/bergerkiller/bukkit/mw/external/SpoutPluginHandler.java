@@ -1,4 +1,4 @@
-package com.bergerkiller.bukkit.mw;
+package com.bergerkiller.bukkit.mw.external;
 
 import java.util.logging.Level;
 
@@ -6,6 +6,8 @@ import org.bukkit.entity.Player;
 import org.getspout.spoutapi.SpoutManager;
 import org.getspout.spoutapi.block.SpoutWeather;
 import org.getspout.spoutapi.player.SpoutPlayer;
+
+import com.bergerkiller.bukkit.mw.MyWorlds;
 
 /**
  * Deals with all SpoutPlugin related calls.

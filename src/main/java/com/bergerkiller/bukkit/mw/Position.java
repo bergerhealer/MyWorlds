@@ -9,7 +9,13 @@ public class Position extends Location implements Cloneable {
 	private String worldname;
 
 	public Position(Location location) {
-		this(location.getWorld().getName(), location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+		this(location.getWorld(), location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+	}
+	public Position(World world, double x, double y, double z, float yaw, float pitch) {
+		super(null, x, y, z, yaw, pitch);
+		if (world != null) {
+			this.worldname = world.getName();
+		}
 	}
 	public Position(String worldname, double x, double y, double z) {
 		this(worldname, x, y, z, 0, 0);

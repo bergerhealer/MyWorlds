@@ -130,12 +130,16 @@ public class WorldMode {
 		return LogicUtil.fixNull(mode, defaultMode);
 	}
 
-	public static WorldMode get(World world) {
+	public static WorldMode get(WorldType worldType, Environment environment) {
 		for (WorldMode mode : values()) {
-			if (mode.getType() == world.getWorldType() && mode.getEnvironment() == world.getEnvironment()) {
+			if (mode.getType() == worldType && mode.getEnvironment() == environment) {
 				return mode;
 			}
 		}
-		return NORMAL;
+		return new WorldMode(environment, worldType);
+	}
+
+	public static WorldMode get(World world) {
+		return get(world.getWorldType(), world.getEnvironment());
 	}
 }

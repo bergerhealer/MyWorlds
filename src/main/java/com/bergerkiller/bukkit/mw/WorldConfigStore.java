@@ -15,11 +15,18 @@ import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldConfigStore {
-	protected static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
+	private static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
 	private static FileConfiguration defaultProperties;
 
+	private static WorldConfig create(String worldname) {
+		WorldConfig wc = new WorldConfig(worldname);
+		worldConfigs.put(wc.worldname, wc);
+		wc.loadDefaults();
+		return wc;
+	}
+
 	/**
-	 * Gets the World Configuration of a world, while forcing a particular environment
+	 * Gets the World Configuration of a world, while forcing a particular environment.
 	 * 
 	 * @param worldname to get the configuration of
 	 * @param worldmode to force, use null to use the current
@@ -28,17 +35,11 @@ public class WorldConfigStore {
 	public static WorldConfig get(String worldname, WorldMode worldmode) {
 		WorldConfig c = worldConfigs.get(worldname);
 		if (c == null) {
-			c = new WorldConfig(worldname);
+			c = create(worldname);
 			if (worldmode != null) {
 				c.worldmode = worldmode;
 			}
-			if (defaultProperties != null) {
-				// Load using a clone to prevent altering the original
-				c.load(defaultProperties.clone());
-				if (defaultProperties.contains(c.worldmode.getName())) {
-					c.load(defaultProperties.getNode(c.worldmode.getName()).clone());
-				}
-			}
+			c.reset();
 		} else if (worldmode != null) {
 			c.worldmode = worldmode;
 		}
@@ -77,7 +78,7 @@ public class WorldConfigStore {
 		return worldConfigs.values();
 	}
 	public static boolean exists(String worldname) {
-		return worldConfigs.containsKey(worldname.toLowerCase());
+		return worldConfigs.containsKey(worldname);
 	}
 	public static void init() {
 		// Default configuration
@@ -107,7 +108,7 @@ public class WorldConfigStore {
 		for (ConfigurationNode node : config.getNodes()) {
 			String worldname = node.get("name", node.getName());
 			if (WorldManager.worldExists(worldname)) {
-				WorldConfig wc = new WorldConfig(worldname);
+				WorldConfig wc = create(worldname);
 				wc.load(node);
 				if (node.get("loaded", false)) {
 					wc.loadWorld();
@@ -140,7 +141,11 @@ public class WorldConfigStore {
 		defaultProperties = null;
 	}
 
+	public static ConfigurationNode getDefaultProperties() {
+		return defaultProperties == null ? null : defaultProperties.clone();
+	}
+
 	public static void remove(String worldname) {
-		worldConfigs.remove(worldname.toLowerCase());
+		worldConfigs.remove(worldname);
 	}
 }

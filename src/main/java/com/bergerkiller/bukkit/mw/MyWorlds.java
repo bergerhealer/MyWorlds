@@ -9,11 +9,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
 
 public class MyWorlds extends PluginBase {
+	private static final String MULTIVERSE_NAME = "Multiverse-Core";
 	public static int teleportInterval;
 	public static boolean useWaterTeleport;
 	public static int timeLockInterval;
@@ -26,6 +28,8 @@ public class MyWorlds extends PluginBase {
 	public static boolean useWorldOperators;
 	public static boolean onlyObsidianPortals = false;
 	public static boolean isSpoutPluginEnabled = false;
+	public static boolean isMultiverseEnabled = false;
+	public static boolean importFromMultiVerse = true;
 	public static boolean onlyPlayerTeleportation = true;
 	public static boolean useWorldInventories;
 	public static boolean calculateWorldSize;
@@ -56,6 +60,9 @@ public class MyWorlds extends PluginBase {
 		if (pluginName.equals("Spout")) {
 			isSpoutPluginEnabled = enabled;
 		}
+		if (pluginName.equals(MULTIVERSE_NAME)) {
+			isMultiverseEnabled = enabled;
+		}
 	}
 
 	@Override
@@ -67,6 +74,11 @@ public class MyWorlds extends PluginBase {
 		this.register(MWListenerPost.class);
 		this.register("tpp", "world");
 
+		// Soft Dependency evaluation beforehands
+		isSpoutPluginEnabled = CommonUtil.isPluginEnabled("Spout");
+		isMultiverseEnabled = CommonUtil.isPluginEnabled(MULTIVERSE_NAME);
+
+		// Continue loading the configuration(s)
 		FileConfiguration config = new FileConfiguration(this);
 		config.load();
 
@@ -129,6 +141,11 @@ public class MyWorlds extends PluginBase {
 
 		config.setHeader("ignoreEggSpawns", "\nWhether egg-spawned entities are allowed to spawn, even if worlds have these entities blacklisted");
 		ignoreEggSpawns = config.get("ignoreEggSpawns", true);
+
+		config.setHeader("importFromMultiVerse", "\nWhether to automatically import the world configuration of MultiVerse for new (unknown) worlds");
+		config.addHeader("importFromMultiverse", "Note that default world properties are then no longer applied, as MultiVerse takes that over");
+		config.addHeader("importFromMultiverse", "This setting is only active if MultiVerse-Core is installed.");
+		importFromMultiVerse = config.get("importFromMultiVerse", true);
 
 		config.save();
 

@@ -26,6 +26,8 @@ import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.mw.external.MultiverseHandler;
+import com.bergerkiller.bukkit.mw.external.SpoutPluginHandler;
 
 public class WorldConfig extends WorldConfigStore {
 	public String worldname;
@@ -54,13 +56,40 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean rememberLastPlayerPosition = false;
 	public WorldInventory inventory;
 
-	public WorldConfig(String worldname) {
+	protected WorldConfig(String worldname) {
 		this.worldname = worldname;
-		if (worldname == null) {
-			return;
+	}
+
+	/**
+	 * Resets all settings in this World Configuration to the defaults.
+	 * This method acts as if the world is loaded again for the first time.
+	 */
+	public void reset() {
+		// Try to import from other World Management plugins
+		if (!MyWorlds.importFromMultiVerse || !MultiverseHandler.readWorldConfiguration(this)) {
+			// Not imported, (try to) load from the default world configuration
+			ConfigurationNode defaultsConfig = getDefaultProperties();
+			if (defaultsConfig != null) {
+				// Load using a clone to prevent altering the original
+				this.load(defaultsConfig);
+				if (defaultsConfig.contains(this.worldmode.getName())) {
+					this.load(defaultsConfig.getNode(this.worldmode.getName()));
+				}
+			}
 		}
-		worldname = worldname.toLowerCase();
-		worldConfigs.put(worldname, this);
+
+		// Refresh
+		World world = getWorld();
+		if (world != null) {
+			updateAll(world);
+		}
+	}
+
+	/**
+	 * Loads the default settings for a world.
+	 * This method expects the world to be registered in the mapping prior.
+	 */
+	protected void loadDefaults() {
 		World world = this.getWorld();
 		if (world != null) {
 			// Read from the loaded world directly
@@ -108,7 +137,7 @@ public class WorldConfig extends WorldConfigStore {
 		}
 		this.inventory = new WorldInventory(this.worldname).add(worldname);
 	}
-
+	
 	/**
 	 * Sets the generator name and arguments for this World.
 	 * Note that this does not alter the generator for a possible loaded world.
@@ -413,18 +442,8 @@ public class WorldConfig extends WorldConfigStore {
 	}
 
 	public void onWorldLoad(World world) {
-		// Fix spawn point if needed
-		if (MaterialUtil.SUFFOCATES.get(this.spawnPoint.getBlock())) {
-			this.fixSpawnLocation();
-		} else if (!isOtherWorldSpawn()) {
-			world.setSpawnLocation(this.spawnPoint.getBlockX(), this.spawnPoint.getBlockY(), this.spawnPoint.getBlockZ());
-		}
-		// Update world settings
-		updatePVP(world);
-		updateKeepSpawnInMemory(world);
-		updateDifficulty(world);
-		updateAutoSave(world);
-		timeControl.updateWorld(world);
+		// Update settings
+		updateAll(world);
 		// Detect default portals
 		tryCreatePortalLink();
 	}
@@ -460,6 +479,25 @@ public class WorldConfig extends WorldConfigStore {
 		return WorldManager.unload(this.getWorld());
 	}
 
+	/**
+	 * Updates all components of this World Configuration to the loaded world specified
+	 * 
+	 * @param world to apply it to
+	 */
+	public void updateAll(World world) {
+		// Fix spawn point if needed
+		if (MaterialUtil.SUFFOCATES.get(this.spawnPoint.getBlock())) {
+			this.fixSpawnLocation();
+		} else if (!isOtherWorldSpawn()) {
+			world.setSpawnLocation(this.spawnPoint.getBlockX(), this.spawnPoint.getBlockY(), this.spawnPoint.getBlockZ());
+		}
+		// Update world settings
+		updatePVP(world);
+		updateKeepSpawnInMemory(world);
+		updateDifficulty(world);
+		updateAutoSave(world);
+		timeControl.updateWorld(world);
+	}
 	public void updateSpoutWeather(World world) {
 		if (!MyWorlds.isSpoutPluginEnabled) return;
 		for (Player p : world.getPlayers()) updateSpoutWeather(p);

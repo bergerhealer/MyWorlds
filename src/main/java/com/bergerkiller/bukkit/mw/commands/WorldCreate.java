@@ -1,6 +1,5 @@
 package com.bergerkiller.bukkit.mw.commands;
 
-import java.util.Locale;
 import java.util.logging.Level;
 
 import org.bukkit.ChatColor;
