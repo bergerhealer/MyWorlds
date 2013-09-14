@@ -5,6 +5,8 @@ import java.util.Iterator;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -33,8 +35,10 @@ import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.collections.EntityMap;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
+import com.bergerkiller.bukkit.common.server.MCPCPlusServer;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -161,6 +165,10 @@ public class MWListener implements Listener {
 					if (portalEvent.useTravelAgent()) {
 						to = WorldUtil.findSpawnLocation(to);
 					}
+					// This tends to happen with Bukkit logic...haha
+					if (to == null) {
+						return;
+					}
 
 					// Note: We could use EntityUtil.teleport here...
 					// But why even bother, we would only add strange differences between teleports
@@ -264,6 +272,46 @@ public class MWListener implements Listener {
 		event.setTo(entityEvent.getTo());
 		event.useTravelAgent(entityEvent.useTravelAgent());
 		event.setCancelled(entityEvent.isCancelled());
+
+		// For ender portals we NEED to teleport away from the end world
+		// Not doing so results in the player getting glitched
+		// Yes, this is another thing Bukkit needs to fix...
+		World fromWorld = event.getFrom().getWorld();
+		if (fromWorld.getEnvironment() != Environment.THE_END) {
+			return;
+		}
+		if (!event.isCancelled() && event.getTo() != null && event.getTo().getWorld() != fromWorld) {
+			return;
+		}
+
+		// Identify the from world as being part of the main worlds
+		World mainWorld = WorldUtil.getWorlds().iterator().next();
+		final String defaultEnderWorldName;
+		if (Common.SERVER instanceof MCPCPlusServer) {
+			defaultEnderWorldName = "DIM-1";
+		} else {
+			defaultEnderWorldName = mainWorld.getName() + "_the_end";
+		}
+		if (!fromWorld.getName().equalsIgnoreCase(defaultEnderWorldName)) {
+			return;
+		}
+
+		// Entered a portal on the main the_end world, which would cause credits to show
+		final Player player = event.getPlayer();
+		final Location safeSpawn = WorldManager.getSafeSpawn(event.getFrom(), false);
+
+		// Set a dummy destination to snap the player out of the glitch
+		event.useTravelAgent(false);
+		event.setCancelled(false);
+		event.setTo(mainWorld.getSpawnLocation());
+
+		// Teleport to the main world and back
+		CommonUtil.nextTick(new Runnable() {
+			@Override
+			public void run() {
+				player.teleport(safeSpawn);
+			}
+		});
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)

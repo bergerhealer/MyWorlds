@@ -288,10 +288,14 @@ public class Portal extends PortalStore {
 					// Is it a world spawn?
 					World w = WorldManager.getWorld(def);
 					if (w != null) {
-						if (MyWorlds.allowPersonalPortals) {
+						Environment newEnvironment = w.getEnvironment();
+						if (newEnvironment == Environment.THE_END) {
+							// Always use this location of the world as destination
+							// Anything else will cause internal logic to break
+							dest = new Location(w, 100, 50, 0);
+						} else if (MyWorlds.allowPersonalPortals) {
 							// What environment are we coming from?
 							Environment oldEnvironment = e.getWorld().getEnvironment();
-							Environment newEnvironment = w.getEnvironment();
 							if (oldEnvironment == Environment.THE_END) {
 								// No special portal type or anything is used
 								// Instead, teleport to a personal bed or otherwise world spawn

@@ -31,6 +31,7 @@ import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
+import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
@@ -52,7 +53,12 @@ public class WorldManager {
 			SAFE_SPAWN_AIR[Material.STATIONARY_LAVA.getId()] = false;
 			SAFE_SPAWN_AIR[Material.TRIPWIRE.getId()] = false;
 			SAFE_SPAWN_AIR[Material.LEAVES.getId()] = false;
+			SAFE_SPAWN_AIR[Material.PORTAL.getId()] = false;
+			SAFE_SPAWN_AIR[Material.ENDER_PORTAL.getId()] = false;
 			SAFE_SPAWN_SURFACE[Material.LEAVES.getId()]  = false;
+			SAFE_SPAWN_SURFACE[Material.DRAGON_EGG.getId()] = false;
+			SAFE_SPAWN_SURFACE[Material.PORTAL.getId()] = false;
+			SAFE_SPAWN_SURFACE[Material.ENDER_PORTAL.getId()] = false;
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
@@ -167,7 +173,7 @@ public class WorldManager {
 	}
 
 	public static String fixGeneratorName(String name) {
-		if (name == null) {
+		if (LogicUtil.nullOrEmpty(name)) {
 			return null;
 		}
 		String genName = name;
@@ -385,7 +391,6 @@ public class WorldManager {
 		return createWorld(worldname, 0);
 	}
 
-
 	public static boolean unload(World world) {
 		if (world != null) {
 			LoadChunksTask.abortWorld(world, true);
@@ -393,7 +398,6 @@ public class WorldManager {
 		}
 		return false;
 	}
-
 
 	public static boolean isInitialized(String worldname) {
 		if (!worldExists(worldname)) {
@@ -664,17 +668,30 @@ public class WorldManager {
 	 * @return A safe location to spawn at
 	 */
 	public static Location getSafeSpawn(Location startLocation) {
+		return getSafeSpawn(startLocation, true);
+	}
+
+	/**
+	 * Looks for a suitable place to spawn near the Start Location specified.
+	 * 
+	 * @param startLocation
+	 * @param allowPortals - whether portals can be designated as a safe spawn
+	 * @return A safe location to spawn at
+	 */
+	public static Location getSafeSpawn(Location startLocation, boolean allowPortals) {
 		// First, ask the internal spawn finding logic to do this for us
 		// This COULD fail, proper detection for that is key!
-		Location pos = WorldUtil.findSpawnLocation(startLocation, false);
-		if (pos != null) {
-			// Sometimes an odd 128-height location is returned (nether)
-			// This check prevents that from being used here
-			int posX = pos.getBlockX();
-			int posY = pos.getBlockY();
-			int posZ = pos.getBlockZ();
-			if (posX != 0 || posZ != 0 || (posY != 128 && posY != 256)) {
-				return pos;
+		if (allowPortals) {
+			Location pos = WorldUtil.findSpawnLocation(startLocation, false);
+			if (pos != null) {
+				// Sometimes an odd 128-height location is returned (nether)
+				// This check prevents that from being used here
+				int posX = pos.getBlockX();
+				int posY = pos.getBlockY();
+				int posZ = pos.getBlockZ();
+				if (posX != 0 || posZ != 0 || (posY != 128 && posY != 256)) {
+					return pos;
+				}
 			}
 		}
 		// Do it ourselves
@@ -705,6 +722,7 @@ public class WorldManager {
 							alterX = x;
 							alterY = y + 1;
 							alterZ = z;
+							break;
 						}
 					}
 					airCounter = 0;
@@ -712,8 +730,14 @@ public class WorldManager {
 			}
 
 			// Obtain a new column to look at
-			x = blockX + random.nextInt(128) - 63;
-			z = blockZ + random.nextInt(128) - 63;
+			// For the first 5 calls, probe around a bit < 8 blocks away
+			if (retry <= 5) {
+				x = blockX + random.nextInt(8) - 3;
+				z = blockZ + random.nextInt(8) - 3;
+			} else {
+				x = blockX + random.nextInt(128) - 63;
+				z = blockZ + random.nextInt(128) - 63;
+			}
 		}
 		// Return the alternative (unsafe) location
 		// This could occur if spawning in an ocean, for example

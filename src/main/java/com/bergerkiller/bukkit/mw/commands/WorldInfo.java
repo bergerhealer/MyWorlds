@@ -56,7 +56,7 @@ public class WorldInfo extends Command {
 				} else if (wc.getEnderPortal().isEmpty()) {
 					message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + "Disabled");
 				} else {
-					message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + wc.getNetherPortal());
+					message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + wc.getEnderPortal());
 				}
 				//PvP
 				if (wc.pvp) { 
