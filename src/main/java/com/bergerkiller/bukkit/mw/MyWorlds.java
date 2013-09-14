@@ -184,7 +184,7 @@ public class MyWorlds extends PluginBase {
 		WorldConfig.deinit();
 
 		// Abort chunk loader
-		LoadChunksTask.abort();
+		LoadChunksTask.abort(true);
 
 		plugin = null;
 	}

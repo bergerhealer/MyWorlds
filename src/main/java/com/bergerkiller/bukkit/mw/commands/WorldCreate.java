@@ -88,10 +88,17 @@ public class WorldCreate extends Command {
 							if (++current == total) {
 								t = new Runnable() {
 									public void run() {
+										WorldConfig wc = WorldConfig.get(world);
+
 										// Set to True, any mistakes in loading chunks will be corrected here
 										world.setKeepSpawnInMemory(true);
+
+										// Fix up the spawn location
+										wc.fixSpawnLocation();
+
 										// Call onLoad (it was ignored while initing to avoid chunk loads when finding spawn)
-										WorldConfig.get(world).onWorldLoad(world);
+										wc.onWorldLoad(world);
+
 										// Confirmation message
 									    message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
 									    MyWorlds.plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");

@@ -2,8 +2,10 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.World;
 
 import com.bergerkiller.bukkit.mw.AsyncHandler;
+import com.bergerkiller.bukkit.mw.LoadChunksTask;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
@@ -21,15 +23,18 @@ public class WorldDelete extends Command {
 				worldname = null;
 			}
 			if (this.handleWorld()) {
-				if (WorldManager.isLoaded(worldname)) {
+				World loadedWorld = Bukkit.getWorld(worldname);
+				if (loadedWorld != null) {
 					// Try to unload the world first
 					if (!Permission.COMMAND_UNLOAD.has(sender)) {
 						message(ChatColor.RED + "World is loaded and you have no permission to unload it!");
 						return;
 					}
 					message(ChatColor.GREEN + "Unloading world before deletion...");
+
 					// Unload the world, do not save as we are deleting it afterwards
-					if (WorldManager.unload(Bukkit.getWorld(worldname), false)) {
+					LoadChunksTask.abortWorld(loadedWorld, false);
+					if (Bukkit.unloadWorld(loadedWorld, false)) {
 						message(ChatColor.GREEN + "World unloaded, now moving on to world deletion");
 					} else {
 						message(ChatColor.RED + "Could not unload world (players on it or main world?)");

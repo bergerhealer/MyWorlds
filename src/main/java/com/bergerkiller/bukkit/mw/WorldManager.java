@@ -385,15 +385,15 @@ public class WorldManager {
 		return createWorld(worldname, 0);
 	}
 
+
 	public static boolean unload(World world) {
-		return world != null && unload(world, world.isAutoSave());
+		if (world != null) {
+			LoadChunksTask.abortWorld(world, true);
+			return Bukkit.getServer().unloadWorld(world, world.isAutoSave());
+		}
+		return false;
 	}
 
-	public static boolean unload(World world, boolean save) {
-		if (world == null) return false;
-		LoadChunksTask.abortWorld(world);
-		return Bukkit.getServer().unloadWorld(world, save);
-	}
 
 	public static boolean isInitialized(String worldname) {
 		if (!worldExists(worldname)) {
@@ -402,6 +402,7 @@ public class WorldManager {
 		CommonTagCompound data = getData(worldname);
 		return data != null && data.getValue("initialized", true);
 	}
+
 
 	/**
 	 * Creates a new World
@@ -481,13 +482,6 @@ public class WorldManager {
 				failReason = ex;
 			}
 			if (w != null) break;
-		}
-		if (w != null) {
-			// Logic for newly generated worlds
-			if (!load) {
-				// Generate a possible spawn point for this world
-				wc.fixSpawnLocation();
-			}
 		}
 		if (w == null) {
 			MyWorlds.plugin.log(Level.WARNING, "World creation failed after " + i + " retries!");

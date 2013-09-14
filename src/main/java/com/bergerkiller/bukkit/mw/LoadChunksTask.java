@@ -22,21 +22,15 @@ public class LoadChunksTask extends Task {
 		for (int i = 0; i < 10;) {
 			ChunkCoord next = remaining.poll();
 			if (next == null) {
-				abort();
+				abort(false);
 				break;
-			} else {
-				if (!next.world.isChunkLoaded(next.x, next.z)) {
-					next.world.loadChunk(next.x, next.z);
-					i++;
-				}
-				if (next.taskWhenFinished != null) {
-					next.taskWhenFinished.run();
-				}
+			} else if (next.process()) {
+				i++;
 			}
 		}
 	}
 
-	public static void abortWorld(World world) {
+	public static void abortWorld(World world, boolean process) {
 		if (task == null) {
 			return;
 		}
@@ -45,12 +39,18 @@ public class LoadChunksTask extends Task {
 			ChunkCoord coord = iter.next();
 			if (coord.world == world) {
 				iter.remove();
+				coord.process();
 			}
 		}
 	}
 
-	public static void abort() {
+	public static void abort(boolean process) {
 		Task.stop(task);
+		if (process && task != null) {
+			for (ChunkCoord chunkTask : task.remaining) {
+				chunkTask.process();
+			}
+		}
 		task = null;
 	}
 
@@ -77,5 +77,17 @@ public class LoadChunksTask extends Task {
 		public int x, z;
 		public World world;
 		public Runnable taskWhenFinished;
+
+		public boolean process() {
+			boolean loaded = false;
+			if (!world.isChunkLoaded(x, z)) {
+				world.loadChunk(x, z);
+				loaded = true;
+			}
+			if (taskWhenFinished != null) {
+				taskWhenFinished.run();
+			}
+			return loaded;
+		}
 	}
 }
