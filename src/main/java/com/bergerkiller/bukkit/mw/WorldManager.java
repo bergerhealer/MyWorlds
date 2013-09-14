@@ -15,7 +15,9 @@ import java.util.zip.ZipException;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -29,11 +31,32 @@ import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
+import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldManager {
+	private static boolean[] SAFE_SPAWN_AIR = new boolean[256];
+	private static boolean[] SAFE_SPAWN_SURFACE = new boolean[256];
+	static {
+		try {
+			for (int typeId = 0; typeId < SAFE_SPAWN_SURFACE.length; typeId++) {
+				SAFE_SPAWN_SURFACE[typeId] = MaterialUtil.ISSOLID.get(typeId);
+				SAFE_SPAWN_AIR[typeId] = !SAFE_SPAWN_SURFACE[typeId] && !MaterialUtil.SUFFOCATES.get(typeId) &&
+						!MaterialUtil.ISPRESSUREPLATE.get(typeId);
+			}
+			SAFE_SPAWN_AIR[Material.WATER.getId()] = false;
+			SAFE_SPAWN_AIR[Material.STATIONARY_WATER.getId()] = false;
+			SAFE_SPAWN_AIR[Material.LAVA.getId()] = false;
+			SAFE_SPAWN_AIR[Material.STATIONARY_LAVA.getId()] = false;
+			SAFE_SPAWN_AIR[Material.TRIPWIRE.getId()] = false;
+			SAFE_SPAWN_AIR[Material.LEAVES.getId()] = false;
+			SAFE_SPAWN_SURFACE[Material.LEAVES.getId()]  = false;
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
+	}
 
 	/**
 	 * Closes all file streams associated with the world specified.
@@ -638,6 +661,69 @@ public class WorldManager {
 		for (Player p : from.getPlayers().toArray(new Player[0])) {
 			teleportToWorld(p, to);
 		}
+	}
+
+	/**
+	 * Looks for a suitable place to spawn near the Start Location specified.
+	 * 
+	 * @param startLocation
+	 * @return A safe location to spawn at
+	 */
+	public static Location getSafeSpawn(Location startLocation) {
+		// First, ask the internal spawn finding logic to do this for us
+		// This COULD fail, proper detection for that is key!
+		Location pos = WorldUtil.findSpawnLocation(startLocation, false);
+		if (pos != null) {
+			// Sometimes an odd 128-height location is returned (nether)
+			// This check prevents that from being used here
+			int posX = pos.getBlockX();
+			int posY = pos.getBlockY();
+			int posZ = pos.getBlockZ();
+			if (posX != 0 || posZ != 0 || (posY != 128 && posY != 256)) {
+				return pos;
+			}
+		}
+		// Do it ourselves
+		final World world = startLocation.getWorld();
+		final int blockX = startLocation.getBlockX();
+		final int blockY = startLocation.getBlockY();
+		final int blockZ = startLocation.getBlockZ();
+		final int startY = world.getEnvironment() == Environment.NETHER ? 127 : (world.getMaxHeight() - 1);
+		final Random random = new Random();
+		int typeId, y, x = blockX, z = blockZ;
+		int alterX = blockX, alterY = blockY, alterZ = blockZ;
+		int airCounter;
+		for (int retry = 0; retry < 200; retry++) {
+			airCounter = world.getEnvironment() == Environment.NETHER ? 0 : 2;
+			for (y = startY; y > 0; y--) {
+				typeId = world.getBlockTypeIdAt(x, y, z);
+				if (SAFE_SPAWN_AIR[typeId]) {
+					// Air block - continue
+					airCounter++;
+				} else {
+					// Safe spawn is only there with 2 air-blocks above the surface
+					if (airCounter >= 2) {
+						if (SAFE_SPAWN_SURFACE[typeId]) {
+							// Safe place to spawn on - ENDING
+							return new Location(world, x + 0.5, y + 1.5, z + 0.5);
+						} else {
+							// Unsafe place but still a surface...set as alternative
+							alterX = x;
+							alterY = y + 1;
+							alterZ = z;
+						}
+					}
+					airCounter = 0;
+				}
+			}
+
+			// Obtain a new column to look at
+			x = blockX + random.nextInt(128) - 63;
+			z = blockZ + random.nextInt(128) - 63;
+		}
+		// Return the alternative (unsafe) location
+		// This could occur if spawning in an ocean, for example
+		return new Location(world, alterX + 0.5, alterY + 0.5, alterZ + 0.5);
 	}
 
 	/**

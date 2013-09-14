@@ -92,7 +92,7 @@ public class WorldInventory {
 	 * @return shared world name
 	 */
 	public String getSharedWorldName() {
-		if (!WorldUtil.getWorldFolder(this.worldname).exists()) {
+		if (this.worldname == null || !WorldUtil.getWorldFolder(this.worldname).exists()) {
 			this.worldname = getSharedWorldName(this.worlds);
 			if (this.worldname == null) {
 				throw new RuntimeException("Unable to locate a valid World folder to use for player data");

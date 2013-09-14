@@ -12,7 +12,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
-import org.bukkit.World.Environment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
@@ -322,39 +321,21 @@ public class WorldConfig extends WorldConfigStore {
 	/**
 	 * Regenerates the spawn point for a world if it is not properly set<br>
 	 * Also updates the spawn position in the world configuration
-	 * 
-	 * @param world to regenerate the spawn point for
 	 */
 	public void fixSpawnLocation() {
 		// Obtain the configuration and the set spawn position from it
 		World world = spawnPoint.getWorld();
-		if (world == null) {
-			return;
-		}
+		if (world != null) {
+			// Obtain a new safe position to spawn at
+			spawnPoint = new Position(WorldManager.getSafeSpawn(spawnPoint));
 
-		Environment env = world.getEnvironment();
-		if (env == Environment.NETHER || env == Environment.THE_END) {
-			// Use a portal agent to generate the world spawn point
-			Location loc = WorldUtil.findSpawnLocation(spawnPoint);
-			if (loc == null) {
-				return; // Failure?
+			// Apply position to the world if same world
+			if (!isOtherWorldSpawn()) {
+				world.setSpawnLocation(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
 			}
-			spawnPoint = new Position(loc);
-		} else {
-			spawnPoint.setY(world.getHighestBlockYAt(spawnPoint));
-		}
-
-		// Minor offset
-		spawnPoint.setX(0.5 + (double) spawnPoint.getBlockX());
-		spawnPoint.setY(0.5 + (double) spawnPoint.getBlockY());
-		spawnPoint.setZ(0.5 + (double) spawnPoint.getBlockZ());
-
-		// Apply position to the world if same world
-		if (!isOtherWorldSpawn()) {
-			world.setSpawnLocation(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
 		}
 	}
-	
+
 	public boolean isOtherWorldSpawn() {
 		return !spawnPoint.getWorldName().equalsIgnoreCase(worldname);
 	}
