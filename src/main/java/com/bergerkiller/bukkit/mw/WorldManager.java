@@ -495,30 +495,30 @@ public class WorldManager {
 		}
 	}
 
-	private static boolean renameWorld(String worldname, String newname) {
-		if (isLoaded(worldname)) {
-			return false;
-		}
-		CommonTagCompound data = getData(worldname);
-		if (data == null) {
-			return false;
-		}
-		data.putValue("LevelName", newname);
-		return setData(worldname, data);
-	}
-
 	public static boolean deleteWorld(String worldname) {
 		return StreamUtil.deleteFile(WorldUtil.getWorldFolder(worldname)).isEmpty();
 	}
+
 	public static boolean copyWorld(String worldname, String newname) {
+		// If new world name is already occupied - abort
+		if (isLoaded(newname)) {
+			return false;
+		}
+		// Copy the world folder over
 		File destFolder = WorldUtil.getWorldFolder(newname);
 		if (!StreamUtil.tryCopyFile(WorldUtil.getWorldFolder(worldname), destFolder)) {
 			return false;
 		}
-		renameWorld(newname, newname);
+		// Delete the UID file, as the new world is unique (forces regeneration)
 		File uid = new File(destFolder, "uid.dat");
 		if (uid.exists()) {
 			uid.delete();
+		}
+		// Update the name set in the level.dat for the new world
+		CommonTagCompound data = getData(newname);
+		if (data != null) {
+			data.putValue("LevelName", newname);
+			setData(newname, data);
 		}
 		return true;
 	}

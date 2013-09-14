@@ -212,7 +212,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			// Other data
 			NBTUtil.loadFoodMetaData(EntityHumanRef.foodData.get(playerHandle), data);
 			NBTUtil.loadInventory(player.getEnderChest(), data.createList("EnderItems"));
-
+			
 			// Load Mob Effects
 			clearEffects(player);
 			HashMap<Integer, Object> effects = EntityHumanRef.mobEffects.get(playerHandle);
