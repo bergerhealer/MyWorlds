@@ -27,6 +27,7 @@ import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.mw.version.NMSAttributes;
 
 public class MWPlayerDataController extends PlayerDataController {
 
@@ -138,8 +139,9 @@ public class MWPlayerDataController extends PlayerDataController {
 		}
 		return createEmptyData(human);
 	}
-
+	
 	private static void clearEffects(HumanEntity human) {
+		// Clear mob effects
 		HashMap<Integer, Object> effects = EntityHumanRef.mobEffects.get(Conversion.toEntityHandle.convert(human));
 		if (human instanceof Player) {
 			// Send mob effect removal messages
@@ -149,6 +151,8 @@ public class MWPlayerDataController extends PlayerDataController {
 			}
 		}
 		effects.clear();
+		// Clear attributes
+		NMSAttributes.resetAttributes(human);
 	}
 
 	/**
@@ -180,6 +184,14 @@ public class MWPlayerDataController extends PlayerDataController {
 			File source = getSaveFile(player);
 			CommonTagCompound data = read(source, player);
 
+			// First, clear previous player information when loading involves adding new elements
+			clearEffects(player);
+
+			// Refresh attributes
+			if (data.containsKey("Attributes")) {
+				NMSAttributes.addAttributes(player, data.get("Attributes", CommonTagList.class));
+			}
+
 			// Load the data
 			NBTUtil.loadInventory(player.getInventory(), data.createList("Inventory"));
 			EntityHumanRef.exp.set(playerHandle, data.getValue("XpP", 0.0f));
@@ -191,7 +203,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			} else {
 				commonPlayer.setHealth(data.getValue("HealF", (float) commonPlayer.getMaxHealth()));
 			}
-
+			
 			// Respawn position
 			String spawnWorld = data.getValue("SpawnWorld", "");
 			IntVector3 spawn = null;
@@ -214,7 +226,6 @@ public class MWPlayerDataController extends PlayerDataController {
 			NBTUtil.loadInventory(player.getEnderChest(), data.createList("EnderItems"));
 			
 			// Load Mob Effects
-			clearEffects(player);
 			HashMap<Integer, Object> effects = EntityHumanRef.mobEffects.get(playerHandle);
 			if (data.containsKey("ActiveEffects")) {
 				CommonTagList taglist = data.createList("ActiveEffects");
@@ -268,6 +279,10 @@ public class MWPlayerDataController extends PlayerDataController {
 				// Alter saved data to point to the main world
 				setLocation(tagcompound, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
 			}
+
+			// Minecraft bugfix here: Clear effects BEFORE loading the data
+			// This resolves issues with effects staying behind
+			clearEffects(human);
 
 			// Load the save file
 			NBTUtil.loadEntity(human, tagcompound);
