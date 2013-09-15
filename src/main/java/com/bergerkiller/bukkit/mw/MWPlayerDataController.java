@@ -57,7 +57,6 @@ public class MWPlayerDataController extends PlayerDataController {
 		} else {
 			savedWorld = WorldConfig.getMain();
 		}
-		System.out.println("SAVED FILE FOR " + player.getName() + " [" + player.getWorld().getName() + "] = " + savedWorld.worldname);
 		File playerData = savedWorld.getPlayerData(player.getName());
 		playerData.getParentFile().mkdirs();
 		return playerData;

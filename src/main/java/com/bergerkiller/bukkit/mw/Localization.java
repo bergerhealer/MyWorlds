@@ -23,6 +23,7 @@ public class Localization extends LocalizationEnum {
 	public static final Localization PORTAL_CREATE_TO = new Localization("portal.create.to", ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + "%0%" + ChatColor.GREEN + "!");
 	public static final Localization PORTAL_CREATE_MISSING = new Localization("portal.create.missing", ChatColor.YELLOW + "The destination portal still has to be placed");
 	public static final Localization PORTAL_CREATE_END = new Localization("portal.create.end", ChatColor.GREEN + "You created a new destination portal!");
+	public static final Localization PORTAL_PREPARING = new Localization("portal.preparing", ChatColor.YELLOW + "The other portal is being prepared (this can take a while...)");
 
 	private Localization(String name, String defValue) {
 		super(name, defValue);

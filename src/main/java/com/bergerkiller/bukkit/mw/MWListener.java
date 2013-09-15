@@ -40,6 +40,7 @@ import com.bergerkiller.bukkit.common.collections.EntityMap;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
 import com.bergerkiller.bukkit.common.server.MCPCPlusServer;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.MathUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
@@ -218,46 +219,24 @@ public class MWListener implements Listener {
 			}
 		}
 
-		// Obtain and validate destination
-		Object loc = Portal.getPortalEnterDestination(entity, mat);
-		Location dest = null;
-		if (loc instanceof Portal) {
-			dest = ((Portal) loc).getDestination();
-			if (dest == null) {
-				String name = ((Portal) loc).getDestinationName();
-				if (name != null && entity instanceof Player) {
-					// Show message indicating the destination is unavailable
-					Localization.PORTAL_NOTFOUND.message((Player) entity, name);
-				}
-			}
-		} else if (loc instanceof Location) {
-			dest = (Location) loc;
-		}
-		if (dest == null) {
-			// Send a missing destination message for non-water portals
-			if (entity instanceof Player && mat != Material.STATIONARY_WATER) {
-				Localization.PORTAL_NODESTINATION.message((Player) entity);
-			}
-			return;
-		} else {
-			// Permissions
+		// For further processing Portal-specific logic is needed
+		if (Portal.handlePortalEnter(event, mat)) {
+			// Send a preparation message if teleporting to non-generated areas
 			if (entity instanceof Player) {
-				// For later on: set up the right portal for permissions and messages'
-				if (loc instanceof Portal) {
-					MWListenerPost.setLastEntered((Player) entity, (Portal) loc);
+				Location to = event.getTo();
+				int chunkX = MathUtil.toChunk(to.getX());
+				int chunkZ = MathUtil.toChunk(to.getZ());
+				boolean available = true;
+				for (int dx = -4; dx <= 4 && available; dx++) {
+					for (int dz = -4; dz <= 4 && available; dz++) {
+						available = WorldUtil.isChunkAvailable(to.getWorld(), chunkX + dx, chunkZ + dz);
+					}
 				}
-				// Check permissions
-				if (!MWListenerPost.handleTeleportPermission((Player) entity, dest)) {
-					return;
+				if (!available) {
+					Localization.PORTAL_PREPARING.message((Player) entity);
 				}
-			} else if (WorldConfig.get(dest).spawnControl.isDenied(entity)) {
-				// Non-player entity was denied from teleporting there because of spawn control
-				return;
 			}
-
-			// Only use the travel agent when not teleporting to fixed portals
-			event.useTravelAgent(!(loc instanceof Portal));
-			event.setTo(dest);
+			// Undo the cancellation done earlier
 			event.setCancelled(false);
 		}
 	}
