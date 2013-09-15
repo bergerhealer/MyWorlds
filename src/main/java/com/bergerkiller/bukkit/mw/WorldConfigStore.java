@@ -146,6 +146,17 @@ public class WorldConfigStore {
 	}
 
 	public static void remove(String worldname) {
+		// Unregister the world configuration to remove it
 		worldConfigs.remove(worldname);
+		// Remove references to this World Configuration in other worlds
+		for (WorldConfig otherConfig : all()) {
+			if (worldname.equalsIgnoreCase(otherConfig.getNetherPortal())) {
+				otherConfig.setNetherPortal(null);
+			}
+			if (worldname.equalsIgnoreCase(otherConfig.getEnderPortal())) {
+				otherConfig.setEnderPortal(null);
+			}
+			otherConfig.inventory.remove(worldname, false);
+		}
 	}
 }

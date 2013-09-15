@@ -39,7 +39,9 @@ public class LoadChunksTask extends Task {
 			ChunkCoord coord = iter.next();
 			if (coord.world == world) {
 				iter.remove();
-				coord.process();
+				if (process) {
+					coord.process();
+				}
 			}
 		}
 	}
