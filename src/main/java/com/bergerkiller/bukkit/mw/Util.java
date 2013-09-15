@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.io.File;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -141,6 +143,26 @@ public class Util {
 			return null;
 		} else {
 			return name.replace("\"", "").replace("'", "");
+		}
+	}
+
+	/**
+	 * Gets the amount of bytes of data stored on disk by a specific file or folder
+	 * 
+	 * @param file to get the size of
+	 * @return File/folder size in bytes
+	 */
+	public static long getFileSize(File file) {
+		if (!file.exists()) {
+			return 0L;
+		} else if (file.isDirectory()) {
+			long size = 0;
+			for (File subfile : file.listFiles()) {
+				size += getFileSize(subfile);
+			}
+			return size;
+		} else {
+			return file.length();
 		}
 	}
 }

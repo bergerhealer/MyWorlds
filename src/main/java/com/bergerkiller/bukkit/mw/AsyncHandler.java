@@ -9,14 +9,19 @@ import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.AsyncTask;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class AsyncHandler {
-	public static void delete(final CommandSender sender, final String worldname) {
+	public static void delete(final CommandSender sender, String worldname) {
+		final WorldConfig worldConfig = WorldConfig.get(worldname);
+		if (worldConfig.isLoaded()) {
+			CommonUtil.sendMessage(sender, ChatColor.RED + "Can not delete a loaded world!");
+			return;
+		}
+		WorldConfig.remove(worldConfig.worldname);
 		new AsyncTask("World deletion thread") {
 			public void run() {
-				if (WorldManager.deleteWorld(worldname)) {
-					CommonUtil.sendMessage(sender, ChatColor.GREEN + "World '" + worldname + "' has been removed!");
+				if (worldConfig.deleteWorld()) {
+					CommonUtil.sendMessage(sender, ChatColor.GREEN + "World '" + worldConfig.worldname + "' has been removed!");
 				} else {
 					CommonUtil.sendMessage(sender, ChatColor.RED + "Failed to (completely) remove the world!");
 				}
@@ -24,9 +29,11 @@ public class AsyncHandler {
 		}.start();
 	}
 	public static void copy(final CommandSender sender, final String oldworld, final String newworld) {
+		final WorldConfig oldconfig = WorldConfig.get(oldworld);
+		final WorldConfig newconfig = WorldConfig.get(newworld);
 		new AsyncTask("World copy thread") {
 			public void run() {
-				if (WorldManager.copyWorld(oldworld, newworld)) {
+				if (oldconfig.copyTo(newconfig)) {
 					CommonUtil.sendMessage(sender, ChatColor.GREEN + "World '" + oldworld + "' has been copied as '" + newworld + "'!");
 				} else {
 					CommonUtil.sendMessage(sender, ChatColor.RED + "Failed to copy world to '" + newworld + "'!");
@@ -35,11 +42,16 @@ public class AsyncHandler {
 		}.start();
 	}
 	public static void repair(final CommandSender sender, final String worldname, final long seed) {
+		final WorldConfig config = WorldConfig.get(worldname);
+		if (config.isLoaded()) {
+			CommonUtil.sendMessage(sender, ChatColor.RED + "Can not repair a loaded world!");
+			return;
+		}
 		new AsyncTask("World repair thread") {
 			public void run() {
 				boolean hasMadeFixes = false;
-				if (WorldManager.isBroken(worldname)) {
-					if (WorldManager.generateData(worldname, seed)) {
+				if (config.isBroken()) {
+					if (config.resetData(seed)) {
 						hasMadeFixes = true;
 						CommonUtil.sendMessage(sender, ChatColor.YELLOW + "Level.dat regenerated using seed: " + seed);
 					} else {
@@ -54,7 +66,7 @@ public class AsyncHandler {
 				int totaldelfailures = 0;
 				int totalaccessfailures = 0;
 				try {
-					File regionfolder = WorldUtil.getWorldRegionFolder(worldname);
+					File regionfolder = config.getRegionFolder();
 					if (regionfolder != null) {
 						//Generate backup folder
 						Calendar cal = Calendar.getInstance();

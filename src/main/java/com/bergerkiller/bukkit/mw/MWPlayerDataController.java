@@ -38,47 +38,29 @@ public class MWPlayerDataController extends PlayerDataController {
 	 * @return Save file
 	 */
 	public static File getMainFile(String playerName) {
-		World world = MyWorlds.getMainWorld();
-		return getPlayerData(world.getName(), world, playerName);
+		File playerData =  WorldConfig.getMain().getPlayerData(playerName);
+		playerData.getParentFile().mkdirs();
+		return playerData;
 	}
 
 	/**
-	 * Gets the save file for the player in the current world
+	 * Gets the save file for the player in the current world.
+	 * World inventories settings are applied here.
 	 * 
 	 * @param player to get the save file for
 	 * @return save file
 	 */
 	public static File getSaveFile(HumanEntity player) {
-		return getSaveFile(player.getWorld().getName(), player.getName());
-	}
-
-	/**
-	 * Gets the save file for the player in a world
-	 * 
-	 * @param worldname
-	 * @return playername
-	 */
-	public static File getSaveFile(String worldName, String playerName) {
-		worldName = WorldConfig.get(worldName).inventory.getSharedWorldName();
-		return getPlayerData(worldName, Bukkit.getWorld(worldName), playerName);
-	}
-
-	/**
-	 * Gets the player data folder for a player in a certain world
-	 * 
-	 * @param worldName to use as backup
-	 * @param world to use as main goal (can be null)
-	 * @param playerName for the data
-	 * @return Player data file
-	 */
-	public static File getPlayerData(String worldName, World world, String playerName) {
-		final File playersFolder;
-		if (world == null) {
-			playersFolder = new File(WorldUtil.getWorldFolder(worldName), "players");
+		final WorldConfig savedWorld;
+		if (MyWorlds.useWorldInventories) {
+			savedWorld = WorldConfig.get(WorldConfig.get(player).inventory.getSharedWorldName());
 		} else {
-			playersFolder = WorldUtil.getPlayersFolder(world);
+			savedWorld = WorldConfig.getMain();
 		}
-		return new File(playersFolder, playerName + ".dat");
+		System.out.println("SAVED FILE FOR " + player.getName() + " [" + player.getWorld().getName() + "] = " + savedWorld.worldname);
+		File playerData = savedWorld.getPlayerData(player.getName());
+		playerData.getParentFile().mkdirs();
+		return playerData;
 	}
 
 	private static void setLocation(CommonTagCompound tagCompound, Location location) {
@@ -267,7 +249,7 @@ public class MWPlayerDataController extends PlayerDataController {
 						World world = Bukkit.getWorld(tagcompound.getUUID("World"));
 						if (world != null) {
 							// Switch to the save file of the loaded world
-							main = getSaveFile(world.getName(), human.getName());
+							main = WorldConfig.get(world).getPlayerData(human.getName());
 						}
 					} catch (Throwable t) {
 						// Stick with the current world for now.
@@ -344,14 +326,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// Now, go ahead and save this data
 			File mainDest = getMainFile(player.getName());
-			File dest;
-			if (MyWorlds.useWorldInventories) {
-				// Use world specific save file
-				dest = getSaveFile(player);
-			} else {
-				// Use main world save file
-				dest = mainDest;
-			}
+			File dest = getSaveFile(player);
 			tagcompound.writeTo(dest);
 
 			// Finally, we need to update where the player is at right now
@@ -375,35 +350,24 @@ public class MWPlayerDataController extends PlayerDataController {
 		try {
 			CommonTagCompound tagcompound = NBTUtil.saveEntity(human, null);
 			File mainDest = getMainFile(human.getName());
-			File dest;
-			if (MyWorlds.useWorldInventories) {
-				// Use world specific save file
-				dest = getSaveFile(human);
-			} else {
-				// Use main world save file
-				dest = mainDest;
-			}
+			File dest = getSaveFile(human);
+
 			// Write to the source
 			tagcompound.writeTo(dest);
 
 			// Write the current position of the player to the world he is on
 			// This is needed in order for last-position to work properly
-			File posFile = getPlayerData(human.getWorld().getName(), human.getWorld(), human.getName());
+			File posFile = WorldConfig.get(human).getPlayerData(human.getName());
 			// Don't write to it if we already wrote to it before!
 			if (!posFile.equals(dest)) {
-				if (posFile.exists()) {
-					// Load the data
-					CommonTagCompound data = read(posFile, human);
-					// Alter position information
-					Location loc = human.getLocation();
-					data.putListValues("Pos", loc.getX(), loc.getY(), loc.getZ());
-					data.putListValues("Rotation", loc.getYaw(), loc.getPitch());
-					// Save the updated data
-					data.writeTo(posFile);
-				} else {
-					// Simply write the data of the other file to it
-					tagcompound.writeTo(posFile);
-				}
+				// Load the data
+				CommonTagCompound data = read(posFile, human);
+				// Alter position information
+				Location loc = human.getLocation();
+				data.putListValues("Pos", loc.getX(), loc.getY(), loc.getZ());
+				data.putListValues("Rotation", loc.getYaw(), loc.getPitch());
+				// Save the updated data
+				data.writeTo(posFile);
 			}
 
 			// Write the current world name of the player to the save file of the main world

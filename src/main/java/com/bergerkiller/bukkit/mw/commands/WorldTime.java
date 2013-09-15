@@ -51,10 +51,11 @@ public class WorldTime extends Command {
 		}
 		worldname = WorldManager.getWorldName(sender, args, useWorld);
 		if (this.handleWorld()) {
+			WorldConfig wc = WorldConfig.get(worldname);
 			if (time == -1) {
 				World w = WorldManager.getWorld(worldname);
 				if (w == null) {
-					WorldInfo i = WorldManager.getInfo(worldname);
+					WorldInfo i = wc.getInfo();
 					if (i == null) {
 						time = 0;
 					} else {
@@ -68,12 +69,12 @@ public class WorldTime extends Command {
 				message(ChatColor.YELLOW + "The current time of world '" + 
 						worldname + "' is " + TimeUtil.getTimeString(time));
 			} else {
-				TimeControl tc = WorldConfig.get(worldname).timeControl;
+				TimeControl tc = wc.timeControl;
 				boolean wasLocked = tc.isLocked();
 				tc.setLocking(lock);
 				tc.setTime(time);
 				if (lock) {
-					if (WorldManager.isLoaded(worldname)) {
+					if (wc.isLoaded()) {
 						message(ChatColor.GREEN + "Time of world '" + worldname + "' locked to " + 
 								TimeUtil.getTimeString(time) + "!");
 					} else {
@@ -82,7 +83,7 @@ public class WorldTime extends Command {
 								TimeUtil.getTimeString(time) + " as soon it is loaded!");
 					}
 				} else {
-					World w = WorldManager.getWorld(worldname);
+					World w = wc.getWorld();
 					if (w != null) {
 						if (wasLocked) {
 							message(ChatColor.GREEN + "Time of world '" + worldname + "' unlocked and set to " + 

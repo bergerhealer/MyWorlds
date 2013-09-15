@@ -12,6 +12,7 @@ import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfigStore;
+import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldConfig extends Command {
 
@@ -41,6 +42,9 @@ public class WorldConfig extends Command {
 				for (String worldName : toReset) {
 					if (WorldConfigStore.exists(worldName)) {
 						WorldConfigStore.get(worldName).reset();
+						affected.add(worldName);
+					} else if (WorldManager.worldExists(worldName)) {
+						WorldConfigStore.get(worldName);
 						affected.add(worldName);
 					}
 				}

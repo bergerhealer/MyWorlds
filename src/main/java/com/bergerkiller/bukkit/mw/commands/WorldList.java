@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Permission;
+import com.bergerkiller.bukkit.mw.WorldConfigStore;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldList extends Command {
@@ -24,7 +25,7 @@ public class WorldList extends Command {
 			for (String world : WorldUtil.getLoadableWorlds()) {
 				if (WorldManager.isLoaded(world)) {
 					builder.green(world);
-				} else if (WorldManager.getData(world) == null) {
+				} else if (WorldConfigStore.get(world).isBroken()) {
 					builder.dark_red(world);
 				} else {
 					builder.red(world);
@@ -38,7 +39,7 @@ public class WorldList extends Command {
 				String status = "[Unloaded]";
 				if (WorldManager.isLoaded(world)) {
 					status = "[Loaded]";
-				} else if (WorldManager.getData(world) == null) {
+				} else if (WorldConfigStore.get(world).isBroken()) {
 					status = "[Broken]";
 				}
 				sender.sendMessage("    " + world + " " + status);

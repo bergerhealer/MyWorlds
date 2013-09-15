@@ -1,6 +1,8 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -17,13 +19,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 
-import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.external.MultiverseHandler;
 import com.bergerkiller.bukkit.mw.external.SpoutPluginHandler;
@@ -104,7 +106,7 @@ public class WorldConfig extends WorldConfigStore {
 			this.spawnPoint = new Position(worldname, 0, 128, 0);
 			if (WorldManager.worldExists(this.worldname)) {
 				// Open up the level.dat of the World and read the settings from it
-				CommonTagCompound data = WorldManager.getData(this.worldname);
+				CommonTagCompound data = this.getData();
 				if (data != null) {
 					// Read the settings from it
 					this.spawnPoint.setX(data.getValue("SpawnX", this.spawnPoint.getBlockX()));
@@ -113,7 +115,7 @@ public class WorldConfig extends WorldConfigStore {
 				}
 				// Figure out the world mode by inspecting the region files in the world
 				// On failure, it will resort to using the world name to figure it out
-				File regions = Common.SERVER.getWorldRegionFolder(this.worldname);
+				File regions = this.getRegionFolder();
 				if (regions != null && regions.isDirectory()) {
 					// Skip the 'region' folder found in the dimension folder
 					regions = regions.getParentFile();
@@ -134,7 +136,7 @@ public class WorldConfig extends WorldConfigStore {
 				this.OPlist.add(op.getName());
 			}
 		}
-		this.inventory = new WorldInventory(this.worldname).add(worldname);
+		this.inventory = WorldInventory.create(this.worldname);
 	}
 	
 	/**
@@ -169,6 +171,13 @@ public class WorldConfig extends WorldConfigStore {
 		return this.chunkGeneratorName;
 	}
 
+	/**
+	 * Loads all settings of a world over from another world configuration.
+	 * This method can be called Async and does not update the settings on any
+	 * loaded worlds.
+	 * 
+	 * @param config to load from
+	 */
 	public void load(WorldConfig config) {
 		this.keepSpawnInMemory = config.keepSpawnInMemory;
 		this.worldmode = config.worldmode;
@@ -674,5 +683,289 @@ public class WorldConfig extends WorldConfigStore {
 			return "";
 		}
 		return lower;
+	}
+
+	/**
+	 * Gets the File folder where the data of this World is stored
+	 * 
+	 * @return World Folder
+	 */
+	public File getWorldFolder() {
+		return WorldUtil.getWorldFolder(this.worldname);
+	}
+
+	/**
+	 * Gets the File folder where player data of this World is saved
+	 * 
+	 * @return Player data folder
+	 */
+	public File getPlayerFolder() {
+		World world = getWorld();
+		if (world == null) {
+			return new File(getWorldFolder(), "players");
+		} else {
+			return WorldUtil.getPlayersFolder(world);
+		}
+	}
+
+	/**
+	 * Gets the File where player data for this world could be saved
+	 * 
+	 * @param playerName (case-sensitive)
+	 * @param mkDir - True to create the player folder
+	 * @return Player Data File
+	 */
+	public File getPlayerData(String playerName) {
+		return new File(getPlayerFolder(), playerName + ".dat");
+	}
+
+	/**
+	 * Gets the File Location where the regions of this world are contained
+	 * 
+	 * @return Region Folder
+	 */
+	public File getRegionFolder() {
+		return WorldUtil.getWorldRegionFolder(this.worldname);
+	}
+
+	/**
+	 * Gets the File pointing to the level.dat of the world
+	 * 
+	 * @return Data File
+	 */
+	public File getDataFile() {
+		return new File(getWorldFolder(), "level.dat");
+	}
+
+	/**
+	 * Gets the File pointing to the uid.dat of the world
+	 * 
+	 * @return UID File
+	 */
+	public File getUIDFile() {
+		return new File(getWorldFolder(), "uid.dat");
+	}
+
+	/**
+	 * Gets the amount of bytes of data stored on disk about this World
+	 * 
+	 * @return World file size
+	 */
+	public long getWorldSize() {
+		return Util.getFileSize(getWorldFolder());
+	}
+
+	/**
+	 * Creates a new Data compound for this World, storing the default values
+	 * 
+	 * @param seed to use
+	 * @return Data compound
+	 */
+	public CommonTagCompound createData(long seed) {
+		CommonTagCompound data = new CommonTagCompound("Data");
+		data.putValue("thundering", (byte) 0);
+		data.putValue("thundering", (byte) 0);
+		data.putValue("LastPlayed", System.currentTimeMillis());
+		data.putValue("RandomSeed", seed);
+		data.putValue("version", (int) 19133);
+		data.putValue("initialized", (byte) 0); // Spawn point needs to be re-initialized, etc.
+		data.putValue("Time", 0L);
+		data.putValue("raining", (byte) 0);
+		data.putValue("SpawnX", 0);
+		data.putValue("thunderTime", (int) 200000000);
+		data.putValue("SpawnY", 64);
+		data.putValue("SpawnZ", 0);
+		data.putValue("LevelName", worldname);
+		data.putValue("SizeOnDisk", getWorldSize());
+		data.putValue("rainTime", (int) 50000);
+		return data;
+	}
+
+	/**
+	 * Gets the Data compound stored for this World
+	 * 
+	 * @return World Data
+	 */
+	public CommonTagCompound getData() {
+		File f = getDataFile();
+		if (!f.exists()) {
+			return null;
+		}
+		try {
+			CommonTagCompound root = CommonTagCompound.readFrom(f);
+			if (root != null) {
+				return root.get("Data", CommonTagCompound.class);
+			} else {
+				return null;
+			}
+		} catch (Exception ex) {
+			return null;
+		}
+	}
+
+	/**
+	 * Sets the Data compound stored by this world
+	 * 
+	 * @param data to set to
+	 * @return True if successful, False if not
+	 */
+	public boolean setData(CommonTagCompound data) {
+    	try {
+			CommonTagCompound root = new CommonTagCompound();
+			root.put(data.getName(), data);
+			FileOutputStream out = StreamUtil.createOutputStream(getDataFile());
+			try {
+				root.writeTo(out);
+			} finally {
+				out.close();
+			}
+			return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	/**
+	 * Recreates the data file of a world
+	 * 
+	 * @param seed to store in the new data file
+	 * @return True if successful, False if not
+	 */
+	public boolean resetData(String seed) {
+		return resetData(WorldManager.getRandomSeed(seed));
+	}
+
+	/**
+	 * Recreates the data file of a world
+	 * 
+	 * @param seed to store in the new data file
+	 * @return True if successful, False if not
+	 */
+	public boolean resetData(long seed) {
+	    return setData(createData(seed));
+	}
+
+	/**
+	 * Reads the WorldInfo structure from this World
+	 * 
+	 * @return WorldInfo structure
+	 */
+	public WorldInfo getInfo() {
+		WorldInfo info = null;
+		try {
+			CommonTagCompound t = getData();
+			if (t != null) {
+				info = new WorldInfo();
+				info.seed = t.getValue("RandomSeed", 0L);
+				info.time = t.getValue("Time", 0L);
+				info.raining = t.getValue("raining", (byte) 0) != 0;
+		        info.thundering = t.getValue("thundering", (byte) 0) != 0;
+			}
+		} catch (Exception ex) {}
+		World w = getWorld();
+		if (w != null) {
+			if (info == null) {
+				info = new WorldInfo();
+			}
+			info.seed = w.getSeed();
+			info.time = w.getFullTime();
+			info.raining = w.hasStorm();
+	        info.thundering = w.isThundering();
+		}
+		if (info != null && MyWorlds.calculateWorldSize) {
+			info.size = getWorldSize();
+		}
+		return info;
+	}
+
+	/**
+	 * Gets whether this World exists on disk at all.
+	 * If this is not the case, this configuration is either temporary or invalid.
+	 * Non-existing World Configurations will automatically get purged upon saving.
+	 * 
+	 * @return True if existing, False if not
+	 */
+	public boolean isExisting() {
+		return WorldManager.worldExists(this.worldname);
+	}
+
+	/**
+	 * Gets whether this World is currently loaded
+	 * 
+	 * @return True if loaded, False if not
+	 */
+	public boolean isLoaded() {
+		return getWorld() != null;
+	}
+
+	/**
+	 * Gets whether this World is broken (and needs repairs to properly load)
+	 * 
+	 * @return True if broken, False if not
+	 */
+	public boolean isBroken() {
+		return getData() == null && !isLoaded();
+	}
+
+	/**
+	 * Gets whether the world data of this World has been initialized.
+	 * If not initialized, then the spawn position needs to be calculated, among other things.
+	 * 
+	 * @return True if initialized, False if not
+	 */
+	public boolean isInitialized() {
+		CommonTagCompound data = getData();
+		return data != null && data.getValue("initialized", true);
+	}
+
+	/**
+	 * Copies this World and all of it's set configuration to a new world under a new name.
+	 * The World Configuration must be gotten prior as to support Async operations.
+	 * 
+	 * @param newWorldConfig for the world to copy to
+	 * @return True if successful, False if the operation (partially) failed
+	 */
+	public boolean copyTo(WorldConfig newWorldConfig) {
+		// If new world name is already occupied - abort
+		if (WorldManager.worldExists(newWorldConfig.worldname)) {
+			return false;
+		}
+
+		// Copy the world folder over
+		if (!StreamUtil.tryCopyFile(this.getWorldFolder(), newWorldConfig.getWorldFolder())) {
+			return false;
+		}
+
+		// Take over the world configuration
+		newWorldConfig.load(this);
+
+		// Delete the UID file, as the new world is unique (forces regeneration)
+		File uid = newWorldConfig.getUIDFile();
+		if (uid.exists()) {
+			uid.delete();
+		}
+
+		// Update the name set in the level.dat for the new world
+		CommonTagCompound data = newWorldConfig.getData();
+		if (data != null) {
+			data.putValue("LevelName", newWorldConfig.worldname);
+			newWorldConfig.setData(data);
+		}
+		return true;
+	}
+
+	/**
+	 * Deletes this world from disk and removes all configuration associated with it
+	 * 
+	 * @return True if successful, False if not
+	 */
+	public boolean deleteWorld() {
+		if (this.isLoaded()) {
+			return false;
+		}
+		File worldFolder = this.getWorldFolder();
+		WorldConfig.remove(this.worldname);
+		return StreamUtil.deleteFile(worldFolder).isEmpty();
 	}
 }

@@ -4,7 +4,6 @@ import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.mw.AsyncHandler;
 import com.bergerkiller.bukkit.mw.Permission;
-import com.bergerkiller.bukkit.mw.WorldConfigStore;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldCopy extends Command {
@@ -22,9 +21,6 @@ public class WorldCopy extends Command {
 				if (!WorldManager.worldExists(newname)) {
 					logAction("Issued a world copy command for world: " + worldname + " to '" + newname + "'!");
 					message(ChatColor.YELLOW + "Copying world '" + worldname + "' to '" + newname + "'...");
-					// Copy configuration
-					WorldConfigStore.copy(WorldConfigStore.get(this.worldname), newname);
-					// Copy world files
 					AsyncHandler.copy(this.sender, this.worldname, newname);
 				} else {
 					message(ChatColor.RED + "Can not copy to an existing world!");

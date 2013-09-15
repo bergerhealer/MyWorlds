@@ -12,7 +12,6 @@ import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Position;
 import com.bergerkiller.bukkit.mw.WorldConfig;
-import com.bergerkiller.bukkit.mw.WorldManager;
 import com.bergerkiller.bukkit.mw.WorldMode;
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.WorldProperties;
@@ -61,7 +60,7 @@ public class MultiverseHandler {
 				config.gameMode = world.getGameMode();
 				config.keepSpawnInMemory = world.isKeepingSpawnInMemory();
 				config.worldmode = WorldMode.get(config.worldmode.getType(), world.getEnvironment());
-				config.setChunkGeneratorName(WorldManager.fixGeneratorName(world.getGenerator()));
+				config.setChunkGeneratorName(world.getGenerator());
 
 				// Apply the (re)spawn point
 				String respawnWorldName = world.getRespawnToWorld();

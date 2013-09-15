@@ -21,6 +21,10 @@ public class WorldInventory {
 		return inventories;
 	}
 
+	public static WorldInventory create(String worldName) {
+		return new WorldInventory(worldName).add(worldName);
+	}
+
 	public static void load() {
 		inventories.clear();
 		FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "inventories.yml");
@@ -66,20 +70,16 @@ public class WorldInventory {
 	}
 
 	public static void merge(Collection<String> worldnames) {
-		WorldInventory inv = new WorldInventory();
+		WorldInventory inv = new WorldInventory(null);
 		for (String world : worldnames) {
 			inv.add(world);
 		}
 	}
 
-	private WorldInventory() {
+	private WorldInventory(String sharedWorldName) {
 		inventories.add(this);
 		this.name = "inv" + counter++;
-	}
-
-	public WorldInventory(String worldFolder) {
-		this();
-		this.worldname = WorldManager.matchWorld(worldFolder);
+		this.worldname = sharedWorldName;
 	}
 
 	public Collection<String> getWorlds() {
@@ -103,7 +103,7 @@ public class WorldInventory {
 
 	private static String getSharedWorldName(Collection<String> worlds) {
 		for (String world : worlds) {
-			if (WorldUtil.getWorldFolder(WorldConfig.get(world).worldname).exists()) {
+			if (WorldConfig.get(world).getWorldFolder().exists()) {
 				return world;
 			}
 		}
@@ -119,7 +119,7 @@ public class WorldInventory {
 		}
 		if (this.worlds.isEmpty()) {
 			inventories.remove(this);
-		} else if (this.worldname.equalsIgnoreCase(worldname)) {
+		} else if (worldname.equalsIgnoreCase(this.worldname)) {
 			this.worldname = getSharedWorldName(this.worlds);
 			if (this.worldname == null) {
 				inventories.remove(this);

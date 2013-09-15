@@ -199,7 +199,9 @@ public class WorldManager {
 		}
 	}
 	public static ChunkGenerator getGenerator(String worldname, String name) {
-		if (name == null) return null;
+		if (name == null) {
+			return null;
+		}
 		String id = "";
 		int index = name.indexOf(":");
 		if (index != -1) {
@@ -227,6 +229,7 @@ public class WorldManager {
 		}
 		return seedval;
 	}
+
 	public static long getRandomSeed(String seed) {
 		long seedval = getSeed(seed);
 		if (seedval == 0) {
@@ -239,6 +242,7 @@ public class WorldManager {
 		String alternative = (args == null || args.length == 0) ? null : args[args.length - 1];
 		return getWorldName(sender, alternative, useAlternative);
 	}
+
 	public static String getWorldName(CommandSender sender, String alternative, boolean useAlternative) {
 		String worldname = null;
 		if (useAlternative) {
@@ -254,104 +258,6 @@ public class WorldManager {
 		return worldname;
 	}
 
-	public static boolean generateData(String worldname, String seed) {
-		return generateData(worldname, getRandomSeed(seed));
-	}
-	public static boolean generateData(String worldname, long seed) {
-	    return setData(worldname, createData(worldname, seed));
-	}
-
-	public static CommonTagCompound createData(String worldname, long seed) {
-		CommonTagCompound data = new CommonTagCompound("Data");
-		data.putValue("thundering", (byte) 0);
-		data.putValue("thundering", (byte) 0);
-		data.putValue("LastPlayed", System.currentTimeMillis());
-		data.putValue("RandomSeed", seed);
-		data.putValue("version", (int) 19133);
-		data.putValue("initialized", (byte) 0); // Spawn point needs to be re-initialized, etc.
-		data.putValue("Time", 0L);
-		data.putValue("raining", (byte) 0);
-		data.putValue("SpawnX", 0);
-		data.putValue("thunderTime", (int) 200000000);
-		data.putValue("SpawnY", 64);
-		data.putValue("SpawnZ", 0);
-		data.putValue("LevelName", worldname);
-		data.putValue("SizeOnDisk", getWorldSize(worldname));
-		data.putValue("rainTime", (int) 50000);
-		return data;
-	}
-
-	public static CommonTagCompound getData(String worldname) {
-		File f = getDataFile(worldname);
-		if (!f.exists()) {
-			return null;
-		}
-		try {
-			CommonTagCompound root = CommonTagCompound.readFrom(f);
-			if (root != null) {
-				return root.get("Data", CommonTagCompound.class);
-			} else {
-				return null;
-			}
-		} catch (Exception ex) {
-			return null;
-		}
-	}
-
-	public static boolean setData(String worldname, CommonTagCompound data) {
-    	try {
-			CommonTagCompound root = new CommonTagCompound();
-			root.put(data.getName(), data);
-			FileOutputStream out = StreamUtil.createOutputStream(getDataFile(worldname));
-			try {
-				root.writeTo(out);
-			} finally {
-				out.close();
-			}
-			return true;
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
-		}
-	}
-
-	public static File getDataFile(String worldname) {
-		return new File(WorldUtil.getWorldFolder(worldname), "level.dat");
-	}
-	public static File getUIDFile(String worldname) {
-		return new File(WorldUtil.getWorldFolder(worldname), "uid.dat");
-	}
-
-	public static long getWorldSize(String worldname) {
-		return getFolderSize(WorldUtil.getWorldFolder(worldname));
-	}
-	public static WorldInfo getInfo(String worldname) {
-		WorldInfo info = null;
-		try {
-			CommonTagCompound t = getData(worldname);
-			if (t != null) {
-				info = new WorldInfo();
-				info.seed = t.getValue("RandomSeed", 0L);
-				info.time = t.getValue("Time", 0L);
-				info.raining = t.getValue("raining", (byte) 0) != 0;
-		        info.thundering = t.getValue("thundering", (byte) 0) != 0;
-			}
-		} catch (Exception ex) {}
-		World w = getWorld(worldname);
-		if (w != null) {
-			if (info == null) {
-				info = new WorldInfo();
-			}
-			info.seed = w.getSeed();
-			info.time = w.getFullTime();
-			info.raining = w.hasStorm();
-	        info.thundering = w.isThundering();
-		}
-		if (info != null && MyWorlds.calculateWorldSize) {
-			info.size = getWorldSize(worldname);
-		}
-		return info;
-	}
 	public static String matchWorld(String matchname) {
 		if (matchname == null || matchname.isEmpty()) {
 			return null;
@@ -366,6 +272,7 @@ public class WorldManager {
 		}
 		return null;
 	}
+
 	public static World getWorld(String worldname) {
 		if (worldname == null) return null;
 		try {
@@ -375,12 +282,10 @@ public class WorldManager {
 		}
 	}
 
-	public static boolean isBroken(String worldname) {
-		return getData(worldname) == null && !isLoaded(worldname);
-	}
 	public static boolean isLoaded(String worldname) {
 		return getWorld(worldname) != null;
 	}
+
 	public static boolean worldExists(String worldname) {
 		return worldname != null && WorldUtil.isLoadableWorld(worldname);
 	}
@@ -398,15 +303,6 @@ public class WorldManager {
 		}
 		return false;
 	}
-
-	public static boolean isInitialized(String worldname) {
-		if (!worldExists(worldname)) {
-			return false;
-		}
-		CommonTagCompound data = getData(worldname);
-		return data != null && data.getValue("initialized", true);
-	}
-
 
 	/**
 	 * Creates a new World
@@ -428,8 +324,8 @@ public class WorldManager {
 	 * @return The created World, or null on failure
 	 */
 	public static World createWorld(String worldname, long seed, CommandSender sender) {
-		final boolean load = isInitialized(worldname);
 		WorldConfig wc = WorldConfig.get(worldname);
+		final boolean load = wc.isInitialized();
 		String chunkGeneratorName = wc.getChunkGeneratorName();
 		StringBuilder msg = new StringBuilder();
 		if (load) {
@@ -503,47 +399,6 @@ public class WorldManager {
 		return w;
 	}
 
-	private static long getFolderSize(File folder) {
-		if (!folder.exists()) return 0;
-		if (folder.isDirectory()) {
-			long size = 0;
-			for (File subfile : folder.listFiles()) {
-				size += getFolderSize(subfile);
-			}
-			return size;
-		} else {
-			return folder.length();
-		}
-	}
-
-	public static boolean deleteWorld(String worldname) {
-		return StreamUtil.deleteFile(WorldUtil.getWorldFolder(worldname)).isEmpty();
-	}
-
-	public static boolean copyWorld(String worldname, String newname) {
-		// If new world name is already occupied - abort
-		if (isLoaded(newname)) {
-			return false;
-		}
-		// Copy the world folder over
-		File destFolder = WorldUtil.getWorldFolder(newname);
-		if (!StreamUtil.tryCopyFile(WorldUtil.getWorldFolder(worldname), destFolder)) {
-			return false;
-		}
-		// Delete the UID file, as the new world is unique (forces regeneration)
-		File uid = new File(destFolder, "uid.dat");
-		if (uid.exists()) {
-			uid.delete();
-		}
-		// Update the name set in the level.dat for the new world
-		CommonTagCompound data = getData(newname);
-		if (data != null) {
-			data.putValue("LevelName", newname);
-			setData(newname, data);
-		}
-		return true;
-	}
-
 	public static Location getEvacuation(Player player) {
 		World world = player.getWorld();
 		String[] portalnames;
@@ -611,7 +466,7 @@ public class WorldManager {
 			}
 
 			// Figure out the last position of the player on the world
-			File playerData = MWPlayerDataController.getPlayerData(world.getName(), world, player.getName());
+			File playerData = WorldConfig.get(world).getPlayerData(player.getName());
 			if (playerData.exists()) {
 				try {
 					CommonTagCompound data = MWPlayerDataController.read(playerData, player);
@@ -916,5 +771,70 @@ public class WorldManager {
 		} catch (Exception ex) {
 			return -3;
 		}
+	}
+
+	@Deprecated
+	public static boolean generateData(String worldname, String seed) {
+		return WorldConfig.get(worldname).resetData(seed);
+	}
+
+	@Deprecated
+	public static boolean generateData(String worldname, long seed) {
+	    return WorldConfig.get(worldname).resetData(seed);
+	}
+
+	@Deprecated
+	public static CommonTagCompound createData(String worldname, long seed) {
+		return WorldConfig.get(worldname).createData(seed);
+	}
+
+	@Deprecated
+	public static CommonTagCompound getData(String worldname) {
+		return WorldConfig.get(worldname).getData();
+	}
+
+	@Deprecated
+	public static boolean setData(String worldname, CommonTagCompound data) {
+    	return WorldConfig.get(worldname).setData(data);
+	}
+
+	@Deprecated
+	public static File getDataFile(String worldname) {
+		return WorldConfig.get(worldname).getDataFile();
+	}
+
+	@Deprecated
+	public static File getUIDFile(String worldname) {
+		return WorldConfig.get(worldname).getUIDFile();
+	}
+
+	@Deprecated
+	public static long getWorldSize(String worldname) {
+		return WorldConfig.get(worldname).getWorldSize();
+	}
+
+	@Deprecated
+	public static WorldInfo getInfo(String worldname) {
+		return WorldConfig.get(worldname).getInfo();
+	}
+
+	@Deprecated
+	public static boolean isBroken(String worldname) {
+		return WorldConfig.get(worldname).isBroken();
+	}
+
+	@Deprecated
+	public static boolean isInitialized(String worldname) {
+		return WorldConfig.get(worldname).isInitialized();
+	}
+
+	@Deprecated
+	public static boolean copyWorld(String worldname, String newname) {
+		return WorldConfig.get(worldname).copyTo(WorldConfig.get(newname));
+	}
+
+	@Deprecated
+	public static boolean deleteWorld(String worldname) {
+		return WorldConfig.get(worldname).deleteWorld();
 	}
 }

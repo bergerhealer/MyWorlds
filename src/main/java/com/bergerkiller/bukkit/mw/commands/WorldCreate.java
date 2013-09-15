@@ -44,11 +44,11 @@ public class WorldCreate extends Command {
 					if (cgenName.indexOf(':') == 0) {
 						String args = cgenName.substring(1);
 						// Write a level.dat with the options changed
-						CommonTagCompound data = WorldManager.createData(this.worldname, seedval);
+						CommonTagCompound data = wc.createData(seedval);
 						data.putValue("generatorName", wc.worldmode.getTypeName());
 						data.putValue("generatorVersion", 0);
 						data.putValue("generatorOptions", args);
-						WorldManager.setData(this.worldname, data);
+						wc.setData(data);
 						message(ChatColor.WHITE + "World options: " + ChatColor.YELLOW + args);
 						message(ChatColor.WHITE + "World generator: " + ChatColor.YELLOW + "Default (Vanilla)");
 					} else {

@@ -7,7 +7,6 @@ import org.bukkit.World;
 
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
-import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldInfo extends Command {
 	
@@ -18,11 +17,11 @@ public class WorldInfo extends Command {
 	public void execute() {
 		this.genWorldname(0);
 		if (worldname != null) {
-			com.bergerkiller.bukkit.mw.WorldInfo info = WorldManager.getInfo(worldname);
+			WorldConfig wc = WorldConfig.get(worldname);
+			com.bergerkiller.bukkit.mw.WorldInfo info = wc.getInfo();
 			if (info == null) {
 				message(ChatColor.RED + "' " + worldname + "' is broken, no information can be shown!");
 			} else {
-				WorldConfig wc = WorldConfig.get(worldname);
 				message(ChatColor.YELLOW + "Information about the world: " + worldname);
 				message(ChatColor.WHITE + "Environment: " + ChatColor.YELLOW + wc.worldmode.getName());
 				String chunkGenerator = wc.getChunkGeneratorName();
