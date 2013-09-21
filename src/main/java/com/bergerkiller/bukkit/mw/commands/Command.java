@@ -339,10 +339,6 @@ public class Command {
 					rval = new WorldFormSnow();
 				} else if (cmdLabel.equalsIgnoreCase("formice")) {
 					rval = new WorldFormIce();
-				} else if (cmdLabel.equalsIgnoreCase("showsnow")) {
-					rval = new WorldShowSnow();
-				} else if (cmdLabel.equalsIgnoreCase("showrain")) {
-					rval = new WorldShowRain();
 				} else if (cmdLabel.equalsIgnoreCase("teleport")) {
 					rval = new TeleportPortal();
 				} else if (cmdLabel.equalsIgnoreCase("tp")) {

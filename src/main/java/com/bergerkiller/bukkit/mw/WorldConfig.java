@@ -28,7 +28,6 @@ import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.external.MultiverseHandler;
-import com.bergerkiller.bukkit.mw.external.SpoutPluginHandler;
 
 public class WorldConfig extends WorldConfigStore {
 	public String worldname;
@@ -50,8 +49,6 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean reloadWhenEmpty = false;
 	public boolean formSnow = true;
 	public boolean formIce = true;
-	public boolean showRain = true;
-	public boolean showSnow = true;
 	public boolean clearInventory = false;
 	public boolean forcedRespawn = false;
 	public boolean rememberLastPlayerPosition = false;
@@ -196,8 +193,6 @@ public class WorldConfig extends WorldConfigStore {
 		this.reloadWhenEmpty = config.reloadWhenEmpty;
 		this.formSnow = config.formSnow;
 		this.formIce = config.formIce;
-		this.showRain = config.showRain;
-		this.showSnow = config.showSnow;
 		this.clearInventory = config.clearInventory;
 		this.forcedRespawn = config.forcedRespawn;
 		this.inventory = config.inventory.add(this.worldname);
@@ -225,8 +220,6 @@ public class WorldConfig extends WorldConfigStore {
 		this.holdWeather = node.get("holdWeather", this.holdWeather);
 		this.formIce = node.get("formIce", this.formIce);
 		this.formSnow = node.get("formSnow", this.formSnow);
-		this.showRain = node.get("showRain", this.showRain);
-		this.showSnow = node.get("showSnow", this.showSnow);
 		this.pvp = node.get("pvp", this.pvp);
 		this.forcedRespawn = node.get("forcedRespawn", this.forcedRespawn);
 		this.allowHunger = node.get("hunger", this.allowHunger);
@@ -311,8 +304,6 @@ public class WorldConfig extends WorldConfigStore {
 		node.set("hunger", this.allowHunger);
 		node.set("formIce", this.formIce);
 		node.set("formSnow", this.formSnow);
-		node.set("showRain", this.showRain);
-		node.set("showSnow", this.showSnow);
 		node.set("difficulty", this.difficulty == null ? "NONE" : this.difficulty.toString());
 		node.set("reloadWhenEmpty", this.reloadWhenEmpty);
 		if (this.spawnPoint == null) {
@@ -425,7 +416,6 @@ public class WorldConfig extends WorldConfigStore {
 		// Apply world-specific settings
 		updateOP(player);
 		updateGamemode(player);
-		updateSpoutWeather(player);
 		updateHunger(player);
 		// Refresh states based on the new world the player joined
 		MWPlayerDataController.refreshState(player);
@@ -487,15 +477,6 @@ public class WorldConfig extends WorldConfigStore {
 		updateDifficulty(world);
 		updateAutoSave(world);
 		timeControl.updateWorld(world);
-	}
-	public void updateSpoutWeather(World world) {
-		if (!MyWorlds.isSpoutPluginEnabled) return;
-		for (Player p : world.getPlayers()) updateSpoutWeather(p);
-	}
-	public void updateSpoutWeather(Player player) {
-		if (MyWorlds.isSpoutPluginEnabled) {
-			SpoutPluginHandler.setPlayerWeather(player, showRain, showSnow);
-		}
 	}
 	public void updateReload() {
 		World world = this.getWorld();

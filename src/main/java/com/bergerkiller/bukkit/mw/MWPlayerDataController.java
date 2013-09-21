@@ -27,7 +27,6 @@ import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
-import com.bergerkiller.bukkit.mw.version.NMSAttributes;
 
 public class MWPlayerDataController extends PlayerDataController {
 
@@ -133,7 +132,7 @@ public class MWPlayerDataController extends PlayerDataController {
 		}
 		effects.clear();
 		// Clear attributes
-		NMSAttributes.resetAttributes(human);
+		MyWorlds.plugin.getAttributesUtil().resetAttributes(human);
 	}
 
 	/**
@@ -170,7 +169,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// Refresh attributes
 			if (data.containsKey("Attributes")) {
-				NMSAttributes.addAttributes(player, data.get("Attributes", CommonTagList.class));
+				MyWorlds.plugin.getAttributesUtil().addAttributes(player, data.get("Attributes", CommonTagList.class));
 			}
 
 			// Load the data

@@ -14,6 +14,8 @@ import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
+import com.bergerkiller.bukkit.mw.version.AttributesUtil;
+import com.bergerkiller.bukkit.mw.version.BKCAttributes;
 import com.bergerkiller.bukkit.mw.version.NMSAttributes;
 
 public class MyWorlds extends PluginBase {
@@ -46,6 +48,7 @@ public class MyWorlds extends PluginBase {
 	// World to disable keepspawnloaded for
 	private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
 	private MWPlayerDataController dataController;
+	private AttributesUtil attributesUtil;
 	public static MyWorlds plugin;
 
 	@Override
@@ -72,10 +75,14 @@ public class MyWorlds extends PluginBase {
 		plugin = this;
 
 		// Additional detection that the server is supported
-		if (!NMSAttributes.isValid()) {
-			log(Level.SEVERE, "The server is not supported: Entity Attributes can not be properly updated!");
-			Bukkit.getPluginManager().disablePlugin(this);
-			return;
+		attributesUtil = new BKCAttributes();
+		if (!attributesUtil.isValid()) {
+			attributesUtil = new NMSAttributes();
+			if (!attributesUtil.isValid()) {
+				log(Level.SEVERE, "The server is not supported: Entity Attributes can not be properly updated!");
+				Bukkit.getPluginManager().disablePlugin(this);
+				return;
+			}
 		}
 
 		// Event registering
@@ -203,6 +210,15 @@ public class MyWorlds extends PluginBase {
 	@Override
 	public void permissions() {
 		this.loadPermissions(Permission.class);
+	}
+
+	/**
+	 * Gets the Utility class used to load, save and reset Entity attributes
+	 * 
+	 * @return Entity attributes utility Class
+	 */
+	public AttributesUtil getAttributesUtil() {
+		return attributesUtil;
 	}
 
 	/**

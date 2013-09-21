@@ -69,8 +69,6 @@ public class MWListener implements Listener {
 	public void onWeatherChange(WeatherChangeEvent event) {
 		if (!MyWorlds.plugin.ignoreWeatherChanges && WorldConfig.get(event.getWorld()).holdWeather) {
 			event.setCancelled(true);
-		} else {
-			WorldConfig.get(event.getWorld()).updateSpoutWeather(event.getWorld());
 		}
 	}
 

@@ -4,7 +4,7 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.65</version>
+  <version>1.66</version>
   <packaging>jar</packaging>
   <name>MyWorlds</name>
   <url>http://dev.bukkit.org/server-mods/my-worlds/</url>
@@ -18,11 +18,6 @@
     <repository>
       <id>bukkit-repo</id>
       <url>http://repo.bukkit.org/content/groups/public</url>
-    </repository>
-    <!-- Repo for access to SpoutPlugin -->
-    <repository>
-      <id>spout-repo</id>
-      <url>http://repo.spout.org</url>
     </repository>
     <!-- Repo for access to BKCommonLib -->
     <repository>
@@ -42,11 +37,6 @@
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
       <version>1.54</version>
-  	</dependency>
-  	<dependency>
-      <groupId>org.getspout</groupId>
-      <artifactId>spoutplugin</artifactId>
-      <version>1.4.7-R1.0-SNAPSHOT</version>
   	</dependency>
     <dependency>
       <groupId>com.onarandombox</groupId>
