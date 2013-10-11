@@ -42,6 +42,7 @@ public class MyWorlds extends PluginBase {
 	public static boolean forceMainWorldSpawn;
 	public static boolean alwaysInstantPortal;
 	public static boolean allowPersonalPortals;
+	public static boolean enablePortals;
 	public static boolean ignoreEggSpawns;
 	// Whether weather changes handling is ignored
 	public boolean ignoreWeatherChanges = false;
@@ -149,7 +150,11 @@ public class MyWorlds extends PluginBase {
 
 		config.setHeader("maxPortalSignDistance", "\nThe maximum distance to look for a portal sign when entering a portal");
 		maxPortalSignDistance = config.get("maxPortalSignDistance", 5.0);
-		
+
+		config.setHeader("enablePortals", "\nTurns portal usage on or off on a global level");
+		config.addHeader("enablePortals", "When disabled, portal teleportation will not be handled by MyWorlds whatsoever");
+		enablePortals = config.get("enablePortals", true);
+
 		config.setHeader("allowPersonalPortals", "\nWhether individually placed nether/end portals create their own destination portal");
 		config.addHeader("allowPersonalPortals", "False: Players are teleported to the spawn point of the world");
 		config.addHeader("allowPersonalPortals", "True: Players are teleported to their own portal on the other world");

@@ -115,13 +115,15 @@ public class MWListener implements Listener {
 		teleportTracker.updatePlayerPosition(event.getPlayer(), event.getTo());
 
 		// Water teleportation handling
-		Block b = event.getTo().getBlock();
-		if (Util.isWaterPortal(b)) {
-			boolean canTeleport = teleportTracker.canTeleport(event.getPlayer());
-			teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
-			if (canTeleport) {
-				// Just like non-delay teleporting, schedule a task
-				handlePortalEnterNextTick(event.getPlayer(), event.getTo());
+		if (MyWorlds.enablePortals) {
+			Block b = event.getTo().getBlock();
+			if (Util.isWaterPortal(b)) {
+				boolean canTeleport = teleportTracker.canTeleport(event.getPlayer());
+				teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
+				if (canTeleport) {
+					// Just like non-delay teleporting, schedule a task
+					handlePortalEnterNextTick(event.getPlayer(), event.getTo());
+				}
 			}
 		}
 	}
@@ -241,6 +243,9 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void onPlayerPortal(PlayerPortalEvent event) {
+		if (!MyWorlds.enablePortals) {
+			return;
+		}
 		// Wrap inside an Entity portal event
 		EntityPortalEvent entityEvent = new EntityPortalEvent(event.getPlayer(), event.getFrom(), event.getTo(), event.getPortalTravelAgent());
 		entityEvent.useTravelAgent(event.useTravelAgent());
@@ -298,7 +303,7 @@ public class MWListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onEntityPortalEnter(EntityPortalEnterEvent event) {
-		if (!(event.getEntity() instanceof Player)) {
+		if (!(event.getEntity() instanceof Player) || !MyWorlds.enablePortals) {
 			return;
 		}
 		Player player = (Player) event.getEntity();
