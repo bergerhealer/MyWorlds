@@ -131,6 +131,41 @@ public class WorldManager {
 		if (pos.length > 0) return pos[0].toLocation();
 		return onWorld.getSpawnLocation();
 	}
+
+	/**
+	 * Gets the Spawn Position of a World, which permits unloaded worlds to be checked
+	 * 
+	 * @param onWorldName of the World to get the spawn of
+	 * @return Spawn position
+	 */
+	public static Position getSpawnPosition(String onWorldName) {
+		WorldConfig worldC = WorldConfig.get(onWorldName);
+		// Same world spawn
+		if (worldC.spawnPoint.getWorldName().equalsIgnoreCase(onWorldName)) {
+			return worldC.spawnPoint;
+		}
+		// Loop other worlds with a possible spawn point there
+		for (WorldConfig wc : WorldConfig.all()) {
+			if (wc.spawnPoint.getWorldName().equalsIgnoreCase(onWorldName)) {
+				return wc.spawnPoint;
+			}
+		}
+		// No spawn available, request it from the World (if loaded)
+		World world = worldC.getWorld();
+		if (world != null) {
+			return new Position(world.getSpawnLocation());
+		}
+		// Read from level.dat (if available)
+		CommonTagCompound data = worldC.getData();
+		if (data != null) {
+			double[] pos = data.getValue("Pos", double[].class);
+			float[] rot = data.getValue("Rotation", float[].class);
+			return new Position(onWorldName, pos[0], pos[1], pos[2], rot[0], rot[1]);
+		}
+		// Absolutely NO idea, return a generic position
+		return new Position(onWorldName, 0, 64, 0);
+	}
+
 	public static Position[] getSpawnPoints() {
 		Collection<WorldConfig> all = WorldConfig.all();
 		Position[] pos = new Position[all.size()];

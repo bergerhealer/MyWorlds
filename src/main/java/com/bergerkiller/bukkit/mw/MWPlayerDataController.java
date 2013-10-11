@@ -43,6 +43,20 @@ public class MWPlayerDataController extends PlayerDataController {
 	}
 
 	/**
+	 * Gets the World Configuration of the world player data is saved in.
+	 * 
+	 * @param player to get the save file world for
+	 * @return save file world
+	 */
+	public static WorldConfig getSaveWorld(HumanEntity player) {
+		if (MyWorlds.useWorldInventories) {
+			return WorldConfig.get(WorldConfig.get(player).inventory.getSharedWorldName());
+		} else {
+			return WorldConfig.getMain();
+		}
+	}
+
+	/**
 	 * Gets the save file for the player in the current world.
 	 * World inventories settings are applied here.
 	 * 
@@ -50,13 +64,7 @@ public class MWPlayerDataController extends PlayerDataController {
 	 * @return save file
 	 */
 	public static File getSaveFile(HumanEntity player) {
-		final WorldConfig savedWorld;
-		if (MyWorlds.useWorldInventories) {
-			savedWorld = WorldConfig.get(WorldConfig.get(player).inventory.getSharedWorldName());
-		} else {
-			savedWorld = WorldConfig.getMain();
-		}
-		File playerData = savedWorld.getPlayerData(player.getName());
+		File playerData = getSaveWorld(player).getPlayerData(player.getName());
 		playerData.getParentFile().mkdirs();
 		return playerData;
 	}
@@ -347,17 +355,35 @@ public class MWPlayerDataController extends PlayerDataController {
 	public void onSave(HumanEntity human) {
 		try {
 			CommonTagCompound tagcompound = NBTUtil.saveEntity(human, null);
-			File mainDest = getMainFile(human.getName());
-			File dest = getSaveFile(human);
 
-			// Write to the source
-			tagcompound.writeTo(dest);
-
-			// Write the current position of the player to the world he is on
-			// This is needed in order for last-position to work properly
+			// Request several locations where player data is stored
+			// Main file: the Main World folder where only the current World is stored
+			// Pos file: the folder of the World the player is on where the position is stored			
+			// Dest file: the inventory-merged folder where player info is stored
+			File mainFile = getMainFile(human.getName());
 			File posFile = WorldConfig.get(human).getPlayerData(human.getName());
-			// Don't write to it if we already wrote to it before!
-			if (!posFile.equals(dest)) {
+			File destFile = getSaveFile(human);
+
+			if (posFile.equals(destFile)) {
+				// Saving data to the same world the player is on: simplified logic
+				tagcompound.writeTo(destFile);
+			} else {
+				// Saving data to a different world than the player is on
+				// Back up the Pos/Rotation in the dest file
+				if (destFile.exists()) {
+					CommonTagCompound oldData = CommonTagCompound.readFrom(destFile);
+					tagcompound.put("Pos", oldData.get("Pos"));
+					tagcompound.put("Rotation", oldData.get("Rotation"));
+				} else {
+					// No data found - assume the world spawn to be correct
+					// This is not completely accurate, but will prevent possible bugs
+					Position spawn = WorldManager.getSpawnPosition(getSaveWorld(human).worldname);
+					tagcompound.putListValues("Pos", spawn.getX(), spawn.getY(), spawn.getZ());
+					tagcompound.putListValues("Rotation", spawn.getYaw(), spawn.getPitch());
+				}
+				tagcompound.writeTo(destFile);
+				
+				// Write the Pos/Rot to the official world file instead
 				// Load the data
 				CommonTagCompound data = read(posFile, human);
 				// Alter position information
@@ -369,13 +395,13 @@ public class MWPlayerDataController extends PlayerDataController {
 			}
 
 			// Write the current world name of the player to the save file of the main world
-			if (!mainDest.equals(dest)) {
+			if (!mainFile.equals(destFile)) {
 				// Update the world in the main file
-				if (mainDest.exists()) {
-					tagcompound = CommonTagCompound.readFrom(mainDest);
+				if (mainFile.exists()) {
+					tagcompound = CommonTagCompound.readFrom(mainFile);
 				}
 				tagcompound.putUUID("World", human.getWorld().getUID());
-				tagcompound.writeTo(mainDest);
+				tagcompound.writeTo(mainFile);
 			}
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player data for " + human.getName());
