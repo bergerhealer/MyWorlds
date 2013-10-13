@@ -36,7 +36,6 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 import com.bergerkiller.bukkit.common.Common;
-import com.bergerkiller.bukkit.common.collections.EntityMap;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
 import com.bergerkiller.bukkit.common.server.MCPCPlusServer;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
@@ -45,8 +44,6 @@ import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class MWListener implements Listener {
-	// A mapping of player positions to store the actually entered portal
-	private final EntityMap<Entity, Location> portalEnterLocations = new EntityMap<Entity, Location>();
 	// Keeps track of player teleports
 	private final TeleportationTracker teleportTracker = new TeleportationTracker();
 
@@ -191,21 +188,11 @@ public class MWListener implements Listener {
 		}
 
 		// Get from location
-		Location enterLoc = portalEnterLocations.remove(entity);
-		if (enterLoc == null) {
-			enterLoc = event.getFrom();
-		}
-		Block b = enterLoc.getBlock();
+		Location enterLoc = event.getFrom();
 
 		// Handle player teleportation - portal check
-		Material mat;
-		if (Util.isNetherPortal(b)) {
-			mat = Material.PORTAL;
-		} else if (Util.isEndPortal(b)) {
-			mat = Material.ENDER_PORTAL;
-		} else if (Util.isWaterPortal(b)) {
-			mat = Material.STATIONARY_WATER;
-		} else {
+		Material mat = Util.findPortalMaterial(enterLoc.getWorld(), enterLoc.getBlockX(), enterLoc.getBlockY(), enterLoc.getBlockZ());
+		if (mat == null) {
 			return;
 		}
 
@@ -312,9 +299,6 @@ public class MWListener implements Listener {
 		// If not but the delayed teleportation is preferred, then also let PLAYER_PORTAL_ENTER handle it
 		// If not, then we will handle the teleportation in here
 		if (PlayerUtil.isInvulnerable(player) || !MyWorlds.alwaysInstantPortal) {
-			// Store the to location - the one in the PLAYER_PORTAL_ENTER is inaccurate
-			portalEnterLocations.put(player, event.getLocation());
-			// Ignore teleportation here, handle it during PLAYER_PORTAL_ENTER
 			return;
 		}
 

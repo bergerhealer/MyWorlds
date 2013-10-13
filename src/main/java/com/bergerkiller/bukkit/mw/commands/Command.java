@@ -281,6 +281,10 @@ public class Command {
 					rval = new WorldSetNetherPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setendportal")) {
 					rval = new WorldSetEnderPortal();
+				} else if (cmdLabel.equalsIgnoreCase("setenderportal")) {
+					rval = new WorldSetEnderPortal();
+				} else if (cmdLabel.equalsIgnoreCase("settheendportal")) {
+					rval = new WorldSetEnderPortal();
 				} else if (cmdLabel.equalsIgnoreCase("setspawn")) {
 					rval = new WorldSetSpawn();
 				} else if (cmdLabel.equalsIgnoreCase("gamemode")) {

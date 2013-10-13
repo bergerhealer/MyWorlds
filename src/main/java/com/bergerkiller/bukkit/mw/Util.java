@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 
@@ -37,6 +38,53 @@ public class Util {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Attempts to find the type of Portal that is near a specific Block
+	 * 
+	 * @param world to look in
+	 * @param x - coordinate to look nearby
+	 * @param y - coordinate to look nearby
+	 * @param z - coordinate to look nearby
+	 * @return Portal material, or NULL if no Portal is found
+	 */
+	public static Material findPortalMaterial(World world, int x, int y, int z) {
+		// Check self
+		Material mat = findPortalMaterialSingle(world, x, y, z);
+		if (mat == null) {
+			// Check in a 3x3x3 cube area
+			int dx, dy, dz;
+			for (dx = -1; dx <= 1; dx++) {
+				for (dy = -1; dy <= 1; dy++) {
+					for (dz = -1; dz <= 1; dz++) {
+						mat = findPortalMaterialSingle(world, x + dx, y + dy, z + dz);
+						if (mat != null) {
+							return mat;
+						}
+					}
+				}
+			}
+		}
+		return mat;
+	}
+
+	private static Material findPortalMaterialSingle(World world, int x, int y, int z) {
+		int typeId = world.getBlockTypeIdAt(x, y, z);
+		if (typeId == STATW_ID) {
+			if (isWaterPortal(world.getBlockAt(x, y, z))) {
+				return Material.STATIONARY_WATER;
+			}
+		} else if (typeId == Material.PORTAL.getId()) {
+			if (isNetherPortal(world.getBlockAt(x, y, z))) {
+				return Material.PORTAL;
+			}
+		} else if (typeId == Material.ENDER_PORTAL.getId()) {
+			if (isEndPortal(world.getBlockAt(x, y, z))) {
+				return Material.ENDER_PORTAL;
+			}
+		}
+		return null;
 	}
 
 	/**
