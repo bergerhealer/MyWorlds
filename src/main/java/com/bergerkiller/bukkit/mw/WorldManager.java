@@ -26,7 +26,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
-import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
@@ -501,24 +500,9 @@ public class WorldManager {
 			}
 
 			// Figure out the last position of the player on the world
-			File playerData = WorldConfig.get(world).getPlayerData(player.getName());
-			if (playerData.exists()) {
-				try {
-					CommonTagCompound data = MWPlayerDataController.read(playerData, player);
-					CommonTagList posInfo = data.getValue("Pos", CommonTagList.class);
-					if (posInfo != null && posInfo.size() == 3) {
-						// Apply position
-						Location location = new Location(world, posInfo.getValue(0, 0.0), posInfo.getValue(1, 0.0), posInfo.getValue(2, 0.0));
-						CommonTagList rotInfo = data.getValue("Rotation", CommonTagList.class);
-						if (rotInfo != null && rotInfo.size() == 2) {
-							location.setYaw(rotInfo.getValue(0, 0.0f));
-							location.setPitch(rotInfo.getValue(1, 0.0f));
-						}
-						return location;
-					}
-				} catch (Exception ex) {
-					MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read player position information:", ex);
-				}
+			Location location = MWPlayerDataController.readLastLocation(player, world);
+			if (location != null) {
+				return location;
 			}
 		}
 		return getSpawnLocation(world);

@@ -40,6 +40,7 @@ public class MyWorlds extends PluginBase {
 	public static double maxPortalSignDistance;
 	private static String mainWorld;
 	public static boolean forceMainWorldSpawn;
+	public static boolean overridePortalPhysics;
 	public static boolean alwaysInstantPortal;
 	public static boolean allowPersonalPortals;
 	public static boolean enablePortals;
@@ -162,6 +163,9 @@ public class MyWorlds extends PluginBase {
 
 		config.setHeader("ignoreEggSpawns", "\nWhether egg-spawned entities are allowed to spawn, even if worlds have these entities blacklisted");
 		ignoreEggSpawns = config.get("ignoreEggSpawns", true);
+
+		config.setHeader("overridePortalPhysics", "\nWhether Vanilla portal physics are overrided to allow them to be built/stacked");
+		overridePortalPhysics = config.get("overridePortalPhysics", true);
 
 		config.setHeader("importFromMultiVerse", "\nWhether to automatically import the world configuration of MultiVerse for new (unknown) worlds");
 		config.addHeader("importFromMultiverse", "Note that default world properties are then no longer applied, as MultiVerse takes that over");

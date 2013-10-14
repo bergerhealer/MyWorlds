@@ -29,6 +29,8 @@ import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class MWPlayerDataController extends PlayerDataController {
+	public static final String DATA_TAG_LASTPOS = "MyWorlds.playerPos";
+	public static final String DATA_TAG_LASTROT = "MyWorlds.playerRot";
 
 	/**
 	 * Gets the Main world save file for the playerName specified
@@ -88,6 +90,7 @@ public class MWPlayerDataController extends PlayerDataController {
 		final Vector velocity = human.getVelocity();
 		CommonTagCompound empty = new CommonTagCompound();
 		CommonLivingEntity<?> livingEntity = CommonEntity.get(human);
+		empty.putUUID("", human.getUniqueId());
 		empty.putValue("Health", (short) livingEntity.getMaxHealth());
 		empty.putValue("HealF", (float) livingEntity.getMaxHealth()); // since 1.6.1 health is a float
 		empty.putValue("HurtTime", (short) 0);
@@ -104,6 +107,33 @@ public class MWPlayerDataController extends PlayerDataController {
 			empty.putValue("SpawnZ", coord.z);
 		}
 		return empty;
+	}
+
+	/**
+	 * Attempts to read the last known Player position on a specific World
+	 * 
+	 * @param player to get the last position for
+	 * @param world to get the last position for
+	 * @return Last known Location, or null if not found/stored
+	 */
+	public static Location readLastLocation(Player player, World world) {
+		File posFile = WorldConfig.get(world).getPlayerData(player.getName());
+		if (!posFile.exists()) {
+			return null;
+		}
+		CommonTagCompound data = read(posFile, player);
+		CommonTagList posInfo = data.getValue(DATA_TAG_LASTPOS, CommonTagList.class);
+		if (posInfo != null && posInfo.size() == 3) {
+			// Apply position
+			Location location = new Location(world, posInfo.getValue(0, 0.0), posInfo.getValue(1, 0.0), posInfo.getValue(2, 0.0));
+			CommonTagList rotInfo = data.getValue(DATA_TAG_LASTROT, CommonTagList.class);
+			if (rotInfo != null && rotInfo.size() == 2) {
+				location.setYaw(rotInfo.getValue(0, 0.0f));
+				location.setPitch(rotInfo.getValue(1, 0.0f));
+			}
+			return location;
+		}
+		return null;
 	}
 
 	/**
@@ -246,22 +276,24 @@ public class MWPlayerDataController extends PlayerDataController {
 			// Get the source file to use for loading
 			main = getMainFile(human.getName());
 			hasPlayedBefore = main.exists();
-			if (MyWorlds.useWorldInventories) {
-				// Find out where to find the save file
-				if (hasPlayedBefore && !MyWorlds.forceMainWorldSpawn) {
-					try {
-						// Allow switching worlds and positions
-						tagcompound = CommonTagCompound.readFrom(main);
-						World world = Bukkit.getWorld(tagcompound.getUUID("World"));
-						if (world != null) {
-							// Switch to the save file of the loaded world
-							main = WorldConfig.get(world).getPlayerData(human.getName());
-						}
-					} catch (Throwable t) {
-						// Stick with the current world for now.
+
+			// Find out where to find the save file
+			// No need to check for this if not using world inventories - it is always the main file then
+			if (MyWorlds.useWorldInventories && hasPlayedBefore && !MyWorlds.forceMainWorldSpawn) {
+				try {
+					// Allow switching worlds and positions
+					tagcompound = CommonTagCompound.readFrom(main);
+					World world = Bukkit.getWorld(tagcompound.getUUID("World"));
+					if (world != null) {
+						// Switch to the save file of the loaded world
+						String saveWorld = WorldConfig.get(world).inventory.getSharedWorldName();
+						main = WorldConfig.get(saveWorld).getPlayerData(human.getName());
 					}
+				} catch (Throwable t) {
+					// Stick with the current world for now.
 				}
 			}
+
 			tagcompound = read(main, human);
 			if (!hasPlayedBefore || MyWorlds.forceMainWorldSpawn) {
 				// Alter saved data to point to the main world
@@ -364,44 +396,41 @@ public class MWPlayerDataController extends PlayerDataController {
 			File posFile = WorldConfig.get(human).getPlayerData(human.getName());
 			File destFile = getSaveFile(human);
 
+			Location loc = human.getLocation();
 			if (posFile.equals(destFile)) {
-				// Saving data to the same world the player is on: simplified logic
-				tagcompound.writeTo(destFile);
+				// Append the Last Pos/Rot to the data
+				tagcompound.putListValues(DATA_TAG_LASTPOS, loc.getX(), loc.getY(), loc.getZ());
+				tagcompound.putListValues(DATA_TAG_LASTROT, loc.getYaw(), loc.getPitch());
 			} else {
-				// Saving data to a different world than the player is on
-				// Back up the Pos/Rotation in the dest file
+				// Append original last position (if available) to the data
 				if (destFile.exists()) {
-					CommonTagCompound oldData = CommonTagCompound.readFrom(destFile);
-					tagcompound.put("Pos", oldData.get("Pos"));
-					tagcompound.put("Rotation", oldData.get("Rotation"));
-				} else {
-					// No data found - assume the world spawn to be correct
-					// This is not completely accurate, but will prevent possible bugs
-					Position spawn = WorldManager.getSpawnPosition(getSaveWorld(human).worldname);
-					tagcompound.putListValues("Pos", spawn.getX(), spawn.getY(), spawn.getZ());
-					tagcompound.putListValues("Rotation", spawn.getYaw(), spawn.getPitch());
+					CommonTagCompound data = read(destFile, human);
+					if (data.containsKey(DATA_TAG_LASTPOS)) {
+						tagcompound.put(DATA_TAG_LASTPOS, data.get(DATA_TAG_LASTPOS));
+					}
+					if (data.containsKey(DATA_TAG_LASTROT)) {
+						tagcompound.put(DATA_TAG_LASTROT, data.get(DATA_TAG_LASTROT));
+					}
 				}
-				tagcompound.writeTo(destFile);
-				
-				// Write the Pos/Rot to the official world file instead
-				// Load the data
+
+				// Write the Last Pos/Rot to the official world file instead
 				CommonTagCompound data = read(posFile, human);
-				// Alter position information
-				Location loc = human.getLocation();
-				data.putListValues("Pos", loc.getX(), loc.getY(), loc.getZ());
-				data.putListValues("Rotation", loc.getYaw(), loc.getPitch());
-				// Save the updated data
+				data.putListValues(DATA_TAG_LASTPOS, loc.getX(), loc.getY(), loc.getZ());
+				data.putListValues(DATA_TAG_LASTROT, loc.getYaw(), loc.getPitch());
 				data.writeTo(posFile);
 			}
+
+			// Save data to the destination file
+			tagcompound.writeTo(destFile);
 
 			// Write the current world name of the player to the save file of the main world
 			if (!mainFile.equals(destFile)) {
 				// Update the world in the main file
-				if (mainFile.exists()) {
-					tagcompound = CommonTagCompound.readFrom(mainFile);
-				}
-				tagcompound.putUUID("World", human.getWorld().getUID());
-				tagcompound.writeTo(mainFile);
+				CommonTagCompound maincompound = read(mainFile, human);
+				maincompound.put("Pos", tagcompound.get("Pos"));
+				maincompound.put("Rotation", tagcompound.get("Rotation"));
+				maincompound.putUUID("World", human.getWorld().getUID());
+				maincompound.writeTo(mainFile);
 			}
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player data for " + human.getName());
