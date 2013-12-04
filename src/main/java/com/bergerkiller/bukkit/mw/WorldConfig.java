@@ -743,7 +743,7 @@ public class WorldConfig extends WorldConfigStore {
 	 * @return Data compound
 	 */
 	public CommonTagCompound createData(long seed) {
-		CommonTagCompound data = new CommonTagCompound("Data");
+		CommonTagCompound data = new CommonTagCompound();
 		data.putValue("thundering", (byte) 0);
 		data.putValue("thundering", (byte) 0);
 		data.putValue("LastPlayed", System.currentTimeMillis());
@@ -793,7 +793,7 @@ public class WorldConfig extends WorldConfigStore {
 	public boolean setData(CommonTagCompound data) {
     	try {
 			CommonTagCompound root = new CommonTagCompound();
-			root.put(data.getName(), data);
+			root.put("Data", data);
 			FileOutputStream out = StreamUtil.createOutputStream(getDataFile());
 			try {
 				root.writeTo(out);

@@ -20,6 +20,7 @@ import org.bukkit.material.MaterialData;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
+import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
@@ -352,7 +353,7 @@ public class Portal extends PortalStore {
 					// Figure out the best yaw to use here by checking for air blocks
 					float yaw = 0.0f;
 					for (BlockFace face : FaceUtil.AXIS) {
-						if (destB.getRelative(face).getTypeId() == Material.AIR.getId()) {
+						if (MaterialUtil.isType(destB.getRelative(face), Material.AIR)) {
 							yaw = FaceUtil.faceToYaw(face) + 90f;
 							break;
 						}

@@ -20,7 +20,7 @@ import com.bergerkiller.bukkit.common.entity.type.CommonLivingEntity;
 import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
-import com.bergerkiller.bukkit.common.protocol.PacketFields;
+import com.bergerkiller.bukkit.common.protocol.PacketType;
 import com.bergerkiller.bukkit.common.reflection.classes.EntityHumanRef;
 import com.bergerkiller.bukkit.common.reflection.classes.MobEffectRef;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
@@ -165,12 +165,12 @@ public class MWPlayerDataController extends PlayerDataController {
 			// Send mob effect removal messages
 			Player player = (Player) human;
 			for (Object effect : effects.values()) {
-				PacketUtil.sendPacket(player, PacketFields.REMOVE_MOB_EFFECT.newInstance(player.getEntityId(), effect));
+				PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_REMOVE.newInstance(player.getEntityId(), effect));
 			}
 		}
 		effects.clear();
 		// Clear attributes
-		MyWorlds.plugin.getAttributesUtil().resetAttributes(human);
+		NBTUtil.resetAttributes(human);
 	}
 
 	/**
@@ -207,7 +207,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// Refresh attributes
 			if (data.containsKey("Attributes")) {
-				MyWorlds.plugin.getAttributesUtil().addAttributes(player, data.get("Attributes", CommonTagList.class));
+				NBTUtil.loadAttributes(player, data.get("Attributes", CommonTagList.class));
 			}
 
 			// Load the data
@@ -256,7 +256,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// Send add messages for all (new) effects
 			for (Object effect : effects.values()) {
-				PacketUtil.sendPacket(player, PacketFields.MOB_EFFECT.newInstance(player.getEntityId(), effect));
+				PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_ADD.newInstance(player.getEntityId(), effect));
 			}
 
 			// Perform post loading

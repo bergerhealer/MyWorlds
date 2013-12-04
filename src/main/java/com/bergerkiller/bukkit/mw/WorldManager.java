@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -25,6 +26,7 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.bergerkiller.bukkit.common.MaterialTypeProperty;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileCacheRef;
 import com.bergerkiller.bukkit.common.reflection.classes.RegionFileRef;
@@ -37,30 +39,26 @@ import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldManager {
-	private static boolean[] SAFE_SPAWN_AIR = new boolean[256];
-	private static boolean[] SAFE_SPAWN_SURFACE = new boolean[256];
+	private static final MaterialTypeProperty SAFE_SPAWN_AIR;
+	private static final MaterialTypeProperty SAFE_SPAWN_SURFACE;
 	static {
+		HashSet<Material> safeAir = new HashSet<Material>();
+		HashSet<Material> safeSurface = new HashSet<Material>();
 		try {
-			for (int typeId = 0; typeId < SAFE_SPAWN_SURFACE.length; typeId++) {
-				SAFE_SPAWN_SURFACE[typeId] = MaterialUtil.ISSOLID.get(typeId);
-				SAFE_SPAWN_AIR[typeId] = !SAFE_SPAWN_SURFACE[typeId] && !MaterialUtil.SUFFOCATES.get(typeId) &&
-						!MaterialUtil.ISPRESSUREPLATE.get(typeId);
+			boolean isSafeSurface;
+			for (Material type : Material.values()) {
+				LogicUtil.addOrRemove(safeSurface, type, isSafeSurface = MaterialUtil.ISSOLID.get(type));
+				LogicUtil.addOrRemove(safeAir, type, !isSafeSurface && 
+						!MaterialUtil.SUFFOCATES.get(type) && !MaterialUtil.ISPRESSUREPLATE.get(type));
 			}
-			SAFE_SPAWN_AIR[Material.WATER.getId()] = false;
-			SAFE_SPAWN_AIR[Material.STATIONARY_WATER.getId()] = false;
-			SAFE_SPAWN_AIR[Material.LAVA.getId()] = false;
-			SAFE_SPAWN_AIR[Material.STATIONARY_LAVA.getId()] = false;
-			SAFE_SPAWN_AIR[Material.TRIPWIRE.getId()] = false;
-			SAFE_SPAWN_AIR[Material.LEAVES.getId()] = false;
-			SAFE_SPAWN_AIR[Material.PORTAL.getId()] = false;
-			SAFE_SPAWN_AIR[Material.ENDER_PORTAL.getId()] = false;
-			SAFE_SPAWN_SURFACE[Material.LEAVES.getId()]  = false;
-			SAFE_SPAWN_SURFACE[Material.DRAGON_EGG.getId()] = false;
-			SAFE_SPAWN_SURFACE[Material.PORTAL.getId()] = false;
-			SAFE_SPAWN_SURFACE[Material.ENDER_PORTAL.getId()] = false;
+			LogicUtil.removeArray(safeAir, Material.WATER, Material.STATIONARY_WATER, Material.LAVA, Material.STATIONARY_LAVA);
+			LogicUtil.removeArray(safeAir, Material.TRIPWIRE, Material.LEAVES, Material.PORTAL, Material.ENDER_PORTAL);
+			LogicUtil.removeArray(safeSurface, Material.LEAVES, Material.DRAGON_EGG, Material.PORTAL, Material.ENDER_PORTAL);
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
+		SAFE_SPAWN_AIR = new MaterialTypeProperty(safeAir.toArray(new Material[0]));
+		SAFE_SPAWN_SURFACE = new MaterialTypeProperty(safeSurface.toArray(new Material[0]));
 	}
 
 	/**
@@ -575,20 +573,21 @@ public class WorldManager {
 		final int blockZ = startLocation.getBlockZ();
 		final int startY = world.getEnvironment() == Environment.NETHER ? 127 : (world.getMaxHeight() - 1);
 		final Random random = new Random();
-		int typeId, y, x = blockX, z = blockZ;
+		int y, x = blockX, z = blockZ;
 		int alterX = blockX, alterY = blockY, alterZ = blockZ;
 		int airCounter;
+		Material type;
 		for (int retry = 0; retry < 200; retry++) {
 			airCounter = world.getEnvironment() == Environment.NETHER ? 0 : 2;
 			for (y = startY; y > 0; y--) {
-				typeId = world.getBlockTypeIdAt(x, y, z);
-				if (SAFE_SPAWN_AIR[typeId]) {
+				type = WorldUtil.getBlockType(world, x, y, z);
+				if (SAFE_SPAWN_AIR.get(type)) {
 					// Air block - continue
 					airCounter++;
 				} else {
 					// Safe spawn is only there with 2 air-blocks above the surface
 					if (airCounter >= 2) {
-						if (SAFE_SPAWN_SURFACE[typeId]) {
+						if (SAFE_SPAWN_SURFACE.get(type)) {
 							// Safe place to spawn on - ENDING
 							return new Location(world, x + 0.5, y + 1.5, z + 0.5);
 						} else {

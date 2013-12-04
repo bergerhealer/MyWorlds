@@ -9,18 +9,19 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class Util {
-	private static final int STATW_ID = Material.STATIONARY_WATER.getId();
+	private static final Material STATW_TYPE = Material.STATIONARY_WATER;
 
 	public static boolean isSolid(Block b, BlockFace direction) {
 		int maxwidth = 10;
 		while (maxwidth-- >= 0) {
-			int id = b.getTypeId();
-			if (MaterialUtil.isType(id, Material.WATER, Material.STATIONARY_WATER)) {
+			Material type = b.getType();
+			if (MaterialUtil.isType(type, Material.WATER, Material.STATIONARY_WATER)) {
 				b = b.getRelative(direction);
 			} else {
-				return id != 0;
+				return type != Material.AIR;
 			}
 		}
 		return false;
@@ -70,16 +71,16 @@ public class Util {
 	}
 
 	private static Material findPortalMaterialSingle(World world, int x, int y, int z) {
-		int typeId = world.getBlockTypeIdAt(x, y, z);
-		if (typeId == STATW_ID) {
+		Material type = WorldUtil.getBlockType(world, x, y, z);
+		if (type == STATW_TYPE) {
 			if (isWaterPortal(world.getBlockAt(x, y, z))) {
 				return Material.STATIONARY_WATER;
 			}
-		} else if (typeId == Material.PORTAL.getId()) {
+		} else if (type == Material.PORTAL) {
 			if (isNetherPortal(world.getBlockAt(x, y, z))) {
 				return Material.PORTAL;
 			}
-		} else if (typeId == Material.ENDER_PORTAL.getId()) {
+		} else if (type == Material.ENDER_PORTAL) {
 			if (isEndPortal(world.getBlockAt(x, y, z))) {
 				return Material.ENDER_PORTAL;
 			}
@@ -94,10 +95,10 @@ public class Util {
 	 * @return True if it is a water Portal, False if not
 	 */
 	public static boolean isWaterPortal(Block main) {
-		if (!MyWorlds.useWaterTeleport || main.getTypeId() != STATW_ID) {
+		if (!MyWorlds.useWaterTeleport || main.getType() != STATW_TYPE) {
 			return false;
 		}
-		if (main.getRelative(BlockFace.UP).getTypeId() == STATW_ID || main.getRelative(BlockFace.DOWN).getTypeId() == STATW_ID) {
+		if (main.getRelative(BlockFace.UP).getType() == STATW_TYPE || main.getRelative(BlockFace.DOWN).getType() == STATW_TYPE) {
 			boolean allow = false;
 			if (main.getRelative(BlockFace.NORTH).getType() == Material.AIR || main.getRelative(BlockFace.SOUTH).getType() == Material.AIR) {
 				if (Util.isSolid(main, BlockFace.WEST) && Util.isSolid(main, BlockFace.EAST)) {
