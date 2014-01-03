@@ -1,7 +1,7 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
 version: ${project.version}
-authors: [bergerkiller, lenis0012]
+authors: [bergerkiller, lenis0012, timstans]
 softdepend: [Spout, Multiverse-Core]
 depend: [BKCommonLib]
 loadbefore: [MobArena, RegionForSale, CreativeGates, HeroStronghold]
