@@ -683,7 +683,7 @@ public class WorldConfig extends WorldConfigStore {
 	public File getPlayerFolder() {
 		World world = getWorld();
 		if (world == null) {
-			return new File(getWorldFolder(), "players");
+			return new File(getWorldFolder(), "playerdata");
 		} else {
 			return WorldUtil.getPlayersFolder(world);
 		}

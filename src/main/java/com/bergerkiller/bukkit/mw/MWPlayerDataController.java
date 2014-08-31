@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.zip.ZipException;
 
 import org.bukkit.Bukkit;
@@ -38,8 +39,8 @@ public class MWPlayerDataController extends PlayerDataController {
 	 * @param playerName
 	 * @return Save file
 	 */
-	public static File getMainFile(String playerName) {
-		File playerData =  WorldConfig.getMain().getPlayerData(playerName);
+	public static File getMainFile(UUID uuid) {
+		File playerData =  WorldConfig.getMain().getPlayerData(uuid.toString());
 		playerData.getParentFile().mkdirs();
 		return playerData;
 	}
@@ -274,7 +275,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			CommonTagCompound tagcompound;
 			boolean hasPlayedBefore = false;
 			// Get the source file to use for loading
-			main = getMainFile(human.getName());
+			main = getMainFile(human.getUniqueId());
 			hasPlayedBefore = main.exists();
 
 			// Find out where to find the save file
@@ -363,7 +364,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			}
 
 			// Now, go ahead and save this data
-			File mainDest = getMainFile(player.getName());
+			File mainDest = getMainFile(player.getUniqueId());
 			File dest = getSaveFile(player);
 			tagcompound.writeTo(dest);
 
@@ -392,7 +393,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			// Main file: the Main World folder where only the current World is stored
 			// Pos file: the folder of the World the player is on where the position is stored			
 			// Dest file: the inventory-merged folder where player info is stored
-			File mainFile = getMainFile(human.getName());
+			File mainFile = getMainFile(human.getUniqueId());
 			File posFile = WorldConfig.get(human).getPlayerData(human.getName());
 			File destFile = getSaveFile(human);
 
