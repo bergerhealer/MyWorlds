@@ -27,7 +27,7 @@ public class WorldCreate extends Command {
 			String gen = this.getGeneratorName();
 			this.genForcedWorldMode();
 			if (!WorldManager.worldExists(worldname)) {
-				long seedval = WorldManager.getRandomSeed(StringUtil.combine(" ", this.args));
+				long seedval = WorldManager.getRandomSeed(StringUtil.join(" ", this.args));
 				logAction("Issued a world creation command for world: " + worldname);
 		        WorldConfig.remove(worldname);
 		        WorldConfig wc = WorldConfig.get(worldname, this.forcedWorldMode);

@@ -748,17 +748,17 @@ public class WorldConfig extends WorldConfigStore {
 		data.putValue("thundering", (byte) 0);
 		data.putValue("LastPlayed", System.currentTimeMillis());
 		data.putValue("RandomSeed", seed);
-		data.putValue("version", (int) 19133);
+		data.putValue("version", 19133);
 		data.putValue("initialized", (byte) 0); // Spawn point needs to be re-initialized, etc.
 		data.putValue("Time", 0L);
 		data.putValue("raining", (byte) 0);
 		data.putValue("SpawnX", 0);
-		data.putValue("thunderTime", (int) 200000000);
+		data.putValue("thunderTime", 200000000);
 		data.putValue("SpawnY", 64);
 		data.putValue("SpawnZ", 0);
 		data.putValue("LevelName", worldname);
 		data.putValue("SizeOnDisk", getWorldSize());
-		data.putValue("rainTime", (int) 50000);
+		data.putValue("rainTime", 50000);
 		return data;
 	}
 

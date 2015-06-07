@@ -4,8 +4,9 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.67</version>
+  <version>1.67-SNAPSHOT</version>
   <packaging>jar</packaging>
+
   <name>MyWorlds</name>
   <url>http://dev.bukkit.org/server-mods/my-worlds/</url>
 
@@ -16,13 +17,17 @@
   <repositories>
     <!-- Repo for access to CraftBukkit -->
     <repository>
+      <id>spigot-repo</id>
+      <url>http://repo.md-5.net/content/groups/public/</url>
+    </repository>
+    <repository>
       <id>bukkit-repo</id>
-      <url>http://repo.bukkit.org/content/groups/public</url>
+      <url>http://hub.spigotmc.org/nexus/content/groups/public/</url>
     </repository>
     <!-- Repo for access to BKCommonLib -->
     <repository>
-      <id>dj-tcraft-repo</id>
-      <url>http://ci.dj-tcraft.nl/plugin/repository/everything/</url>
+      <id>mg-dev-repo</id>
+      <url>http://maven.mg-dev.eu/</url>
     </repository>
   </repositories>
 
@@ -30,13 +35,13 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.7.2-R0.1-SNAPSHOT</version>
+      <version>1.8.7-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
-      <version>1.57-SNAPSHOT</version>
+      <version>1.62-SNAPSHOT</version>
       <scope>provided</scope>
   	</dependency>
     <dependency>
@@ -71,14 +76,45 @@
 
 	<!-- Plugins -->
 	<plugins>
-	  <!-- Compiler plugin -->
+
+      <!-- Copy artifacts to non-versioned jar name -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>com.bergerkiller.bukkit</groupId>
+                  <artifactId>MyWorlds</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                  <destFileName>${project.name}.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Compiler plugin -->
 	  <plugin>
 	    <groupId>org.apache.maven.plugins</groupId>
 		<artifactId>maven-compiler-plugin</artifactId>
-		<version>2.4</version>
+		<version>3.1</version>
 		<configuration>
-		  <source>1.6</source>
-		  <target>1.6</target>
+		  <source>1.7</source>
+		  <target>1.7</target>
 		  <showWarnings>false</showWarnings>
 		  <showDeprecation>true</showDeprecation>
 		</configuration>
