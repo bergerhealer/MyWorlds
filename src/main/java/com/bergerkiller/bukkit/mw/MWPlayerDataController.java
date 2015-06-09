@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.zip.ZipException;
 
-import net.minecraft.server.v1_8_R3.EntityLiving;
-import net.minecraft.server.v1_8_R3.GenericAttributes;
-
+import com.bergerkiller.bukkit.common.reflection.classes.AttributeMapServerRef;
+import com.bergerkiller.bukkit.common.reflection.classes.GenericAtrributesRef;
+import com.bergerkiller.bukkit.common.wrappers.PlayerAbilities;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -38,7 +38,7 @@ public class MWPlayerDataController extends PlayerDataController {
 	/**
 	 * Gets the Main world save file for the playerName specified
 	 * 
-	 * @param playerName
+	 * @param uuid
 	 * @return Save file
 	 */
 	public static File getMainFile(UUID uuid) {
@@ -305,17 +305,33 @@ public class MWPlayerDataController extends PlayerDataController {
 			clearEffects(human);
 
 			// Insert default attributes to not run into errors
-			EntityLiving h = ((EntityLiving) Conversion.toEntityHandle.convert(human));
-			h.getAttributeMap().b(GenericAttributes.maxHealth);
-			h.getAttributeMap().a(GenericAttributes.maxHealth).setValue(20);
-			h.getAttributeMap().b(GenericAttributes.MOVEMENT_SPEED);
-			h.getAttributeMap().a(GenericAttributes.MOVEMENT_SPEED).setValue(1);
-			h.getAttributeMap().b(GenericAttributes.FOLLOW_RANGE);
-			h.getAttributeMap().a(GenericAttributes.FOLLOW_RANGE).setValue(0);
-			h.getAttributeMap().b(GenericAttributes.c);
-			h.getAttributeMap().a(GenericAttributes.c).setValue(1);
-			h.getAttributeMap().b(GenericAttributes.ATTACK_DAMAGE);
-			h.getAttributeMap().a(GenericAttributes.ATTACK_DAMAGE).setValue(1);
+			EntityHumanRef h = (EntityHumanRef) Conversion.toEntityHandle.convert(human);
+            PlayerAbilities playerAbilities = new PlayerAbilities(h);
+            playerAbilities.setFlySpeed(1);
+            playerAbilities.setWalkSpeed(1);
+            EntityHumanRef.abilities.set(h, playerAbilities);
+
+
+            AttributeMapServerRef attributeMap = (AttributeMapServerRef) EntityHumanRef.getAttributesMap.invoke(h);
+            AttributeMapServerRef.b.invoke(attributeMap, GenericAtrributesRef.maxHealth);
+            //AttributeMapServerRef.a.invoke(attributeMap, new Object[]{GenericAtrributesRef.maxHealth}).setValue(20);
+            AttributeMapServerRef.b.invoke(attributeMap, GenericAtrributesRef.MOVEMENT_SPEED);
+            AttributeMapServerRef.b.invoke(attributeMap, GenericAtrributesRef.ATTACKT_DAMAGE);
+            AttributeMapServerRef.b.invoke(attributeMap, GenericAtrributesRef.FOLLOW_RANGE);
+            AttributeMapServerRef.b.invoke(attributeMap, GenericAtrributesRef.c);
+            /*
+            h.getAttributeMap().a(GenericAttributes.maxHealth).setValue(20);
+            h.getAttributeMap().b(GenericAttributes.MOVEMENT_SPEED);
+            h.getAttributeMap().a(GenericAttributes.MOVEMENT_SPEED).setValue(1);
+            h.getAttributeMap().b(GenericAttributes.FOLLOW_RANGE);
+            h.getAttributeMap().a(GenericAttributes.FOLLOW_RANGE).setValue(0);
+            h.getAttributeMap().b(GenericAttributes.c);
+            h.getAttributeMap().a(GenericAttributes.c).setValue(1);
+            h.getAttributeMap().b(GenericAttributes.ATTACK_DAMAGE);
+            h.getAttributeMap().a(GenericAttributes.ATTACK_DAMAGE).setValue(1);
+            */
+
+
 			// Load the save file
 			NBTUtil.loadEntity(human, tagcompound);
 			if (human instanceof Player) {
