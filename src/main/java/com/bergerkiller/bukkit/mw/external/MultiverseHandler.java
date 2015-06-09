@@ -14,8 +14,8 @@ import com.bergerkiller.bukkit.mw.Position;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldMode;
 import com.onarandombox.MultiverseCore.MultiverseCore;
-import com.onarandombox.MultiverseCore.WorldProperties;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
+import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 
 /**
  * Deals with accessing Multiverse to take over the configuration for new worlds
@@ -34,8 +34,9 @@ public class MultiverseHandler {
 
 				// Obtain the world configuration information in MV
 				MVWorldManager manager = core.getMVWorldManager();
-				Map<String, WorldProperties> propsMap = SafeField.get(manager, "worldsFromTheConfig");
-				WorldProperties world = propsMap.get(config.worldname);
+				Map<String, MultiverseWorld> propsMap = SafeField.get(manager, "worlds");
+				Map<String, String> defaultGens = SafeField.get(manager, "defaultGens");
+				MultiverseWorld world = propsMap.get(config.worldname);
 
 				// Newly created world: no configuration in MV is available
 				if (world == null) {
@@ -60,11 +61,11 @@ public class MultiverseHandler {
 				config.gameMode = world.getGameMode();
 				config.keepSpawnInMemory = world.isKeepingSpawnInMemory();
 				config.worldmode = WorldMode.get(config.worldmode.getType(), world.getEnvironment());
-				config.setChunkGeneratorName(world.getGenerator());
+				config.setChunkGeneratorName(defaultGens.get(world.getName()));
 
 				// Apply the (re)spawn point
-				String respawnWorldName = world.getRespawnToWorld();
-				WorldProperties respawnWorld = propsMap.get(respawnWorldName);
+				String respawnWorldName = world.getRespawnToWorld().getName();
+				MultiverseWorld respawnWorld = propsMap.get(respawnWorldName);
 				if (respawnWorld == null) {
 					respawnWorld = world;
 					respawnWorldName = config.worldname;

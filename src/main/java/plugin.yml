@@ -1,11 +1,10 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: ${project.version}
-authors: [bergerkiller, lenis0012, timstans, bubba1234119, KamikazePlatypus, mg_1999, Friwi]
+version: 1.70
+authors: [KamikazePlatypus, mg_1999, Friwi, bergerkiller, lenis0012, timstans, bubba1234119]
 softdepend: [Spout, Multiverse-Core]
 depend: [BKCommonLib]
 loadbefore: [MobArena, RegionForSale, CreativeGates, HeroStronghold]
-dev-url: ${project.url}
 metrics: true
 commands:
     world:
@@ -106,6 +105,8 @@ commands:
             /world gamemode [mode]
             /world gamemode [mode] [world]
             /world gamemode creative
+            /world gamemode adventure
+            /world gamemode spectator
             /world gamemode survival world3
     world hunger:
         description: Toggle world hunger on or off

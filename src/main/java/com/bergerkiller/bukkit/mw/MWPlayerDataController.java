@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.zip.ZipException;
 
+import net.minecraft.server.v1_8_R3.EntityLiving;
+import net.minecraft.server.v1_8_R3.GenericAttributes;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -12,7 +15,6 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.bases.IntVector3;
 import com.bergerkiller.bukkit.common.controller.PlayerDataController;
 import com.bergerkiller.bukkit.common.conversion.Conversion;
@@ -217,11 +219,8 @@ public class MWPlayerDataController extends PlayerDataController {
 			EntityHumanRef.expLevel.set(playerHandle, data.getValue("XpLevel", 0));
 			EntityHumanRef.expTotal.set(playerHandle, data.getValue("XpTotal", 0));
 
-			if (Common.MC_VERSION.equals("1.5.2")) {
-				commonPlayer.setHealth(data.getValue("Health", (int) commonPlayer.getMaxHealth()));
-			} else {
-				commonPlayer.setHealth(data.getValue("HealF", (float) commonPlayer.getMaxHealth()));
-			}
+//			data.getValue("Bukkit.MaxHealth", (float) commonPlayer.getMaxHealth());
+			commonPlayer.setHealth((double) data.getValue("HealF", (float) commonPlayer.getMaxHealth()));
 			
 			// Respawn position
 			String spawnWorld = data.getValue("SpawnWorld", "");
@@ -305,6 +304,18 @@ public class MWPlayerDataController extends PlayerDataController {
 			// This resolves issues with effects staying behind
 			clearEffects(human);
 
+			// Insert default attributes to not run into errors
+			EntityLiving h = ((EntityLiving) Conversion.toEntityHandle.convert(human));
+			h.getAttributeMap().b(GenericAttributes.maxHealth);
+			h.getAttributeMap().a(GenericAttributes.maxHealth).setValue(20);
+			h.getAttributeMap().b(GenericAttributes.MOVEMENT_SPEED);
+			h.getAttributeMap().a(GenericAttributes.MOVEMENT_SPEED).setValue(1);
+			h.getAttributeMap().b(GenericAttributes.FOLLOW_RANGE);
+			h.getAttributeMap().a(GenericAttributes.FOLLOW_RANGE).setValue(0);
+			h.getAttributeMap().b(GenericAttributes.c);
+			h.getAttributeMap().a(GenericAttributes.c).setValue(1);
+			h.getAttributeMap().b(GenericAttributes.ATTACK_DAMAGE);
+			h.getAttributeMap().a(GenericAttributes.ATTACK_DAMAGE).setValue(1);
 			// Load the save file
 			NBTUtil.loadEntity(human, tagcompound);
 			if (human instanceof Player) {

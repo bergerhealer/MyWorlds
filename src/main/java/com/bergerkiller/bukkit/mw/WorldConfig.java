@@ -106,9 +106,9 @@ public class WorldConfig extends WorldConfigStore {
 				CommonTagCompound data = this.getData();
 				if (data != null) {
 					// Read the settings from it
-					this.spawnPoint.setX(data.getValue("SpawnX", this.spawnPoint.getBlockX()));
-					this.spawnPoint.setY(data.getValue("SpawnY", this.spawnPoint.getBlockY()));
-					this.spawnPoint.setZ(data.getValue("SpawnZ", this.spawnPoint.getBlockZ()));
+					this.spawnPoint.setX((double) data.getValue("SpawnX", this.spawnPoint.getBlockX()));
+					this.spawnPoint.setY((double) data.getValue("SpawnY", this.spawnPoint.getBlockY()));
+					this.spawnPoint.setZ((double) data.getValue("SpawnZ", this.spawnPoint.getBlockZ()));
 				}
 				// Figure out the world mode by inspecting the region files in the world
 				// On failure, it will resort to using the world name to figure it out
@@ -238,7 +238,7 @@ public class WorldConfig extends WorldConfigStore {
 				}
 			}
 		}
-    	long time = node.get("lockedtime", Integer.MIN_VALUE);
+    	long time = (long) node.get("lockedtime", Integer.MIN_VALUE);
     	if (time != Integer.MIN_VALUE) {
 			this.timeControl.setTime(time);
 			this.timeControl.setLocking(true);
