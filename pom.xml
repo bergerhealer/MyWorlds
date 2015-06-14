@@ -39,6 +39,13 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.bukkit</groupId>
+      <artifactId>craftbukkit</artifactId>
+      <version>1.8.7-R0.1-SNAPSHOT</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/lib/spigot.jar</systemPath>
+    </dependency>
+    <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
       <version>1.62-SNAPSHOT</version>
