@@ -1,6 +1,6 @@
 name: My Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
-version: 1.70
+version: 1.71
 authors: [KamikazePlatypus, mg_1999, Friwi, bergerkiller, lenis0012, timstans, bubba1234119]
 softdepend: [Spout, Multiverse-Core]
 depend: [BKCommonLib]

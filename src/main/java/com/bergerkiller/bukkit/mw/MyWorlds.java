@@ -86,8 +86,8 @@ public class MyWorlds extends PluginBase {
 
 		config.setHeader("This is the configuration of MyWorlds");
 		config.addHeader("For more information, you can visit the following websites:");
-		config.addHeader("http://dev.bukkit.org/server-mods/my-worlds/");
-		config.addHeader("http://forums.bukkit.org/threads/myworlds.31718");
+		config.addHeader("https://www.spigotmc.org/resources/myworlds.8011/");
+		config.addHeader("https://www.spigotmc.org/threads/myworlds.70876/");
 
 		config.setHeader("teleportInterval", "\nThe interval in miliseconds a player has to wait before being teleported again");
 		teleportInterval = config.get("teleportInterval", 2000);

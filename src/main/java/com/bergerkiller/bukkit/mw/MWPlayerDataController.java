@@ -11,6 +11,7 @@ import net.minecraft.server.v1_8_R3.GenericAttributes;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -95,7 +96,7 @@ public class MWPlayerDataController extends PlayerDataController {
 		CommonLivingEntity<?> livingEntity = CommonEntity.get(human);
 		empty.putUUID("", human.getUniqueId());
 		empty.putValue("Health", (short) livingEntity.getMaxHealth());
-		empty.putValue("HealF", (float) livingEntity.getMaxHealth()); // since 1.6.1 health is a float
+		empty.putValue(GenericAttributes.maxHealth.getName(), (float) livingEntity.getMaxHealth()); // since 1.6.1 health is a float
 		empty.putValue("HurtTime", (short) 0);
 		empty.putValue("DeathTime", (short) 0);
 		empty.putValue("AttackTime", (short) 0);
@@ -207,6 +208,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// First, clear previous player information when loading involves adding new elements
 			clearEffects(player);
+			initEntity(((CraftPlayer)player).getHandle());
 
 			// Refresh attributes
 			if (data.containsKey("Attributes")) {
@@ -220,7 +222,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			EntityHumanRef.expTotal.set(playerHandle, data.getValue("XpTotal", 0));
 
 //			data.getValue("Bukkit.MaxHealth", (float) commonPlayer.getMaxHealth());
-			commonPlayer.setHealth((double) data.getValue("HealF", (float) commonPlayer.getMaxHealth()));
+			commonPlayer.setHealth((double) data.getValue(GenericAttributes.maxHealth.getName(), (float) commonPlayer.getMaxHealth()));
 			
 			// Respawn position
 			String spawnWorld = data.getValue("SpawnWorld", "");
@@ -306,16 +308,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// Insert default attributes to not run into errors
 			EntityLiving h = ((EntityLiving) Conversion.toEntityHandle.convert(human));
-			h.getAttributeMap().b(GenericAttributes.maxHealth);
-			h.getAttributeMap().a(GenericAttributes.maxHealth).setValue(20);
-			h.getAttributeMap().b(GenericAttributes.MOVEMENT_SPEED);
-			h.getAttributeMap().a(GenericAttributes.MOVEMENT_SPEED).setValue(1);
-			h.getAttributeMap().b(GenericAttributes.FOLLOW_RANGE);
-			h.getAttributeMap().a(GenericAttributes.FOLLOW_RANGE).setValue(0);
-			h.getAttributeMap().b(GenericAttributes.c);
-			h.getAttributeMap().a(GenericAttributes.c).setValue(1);
-			h.getAttributeMap().b(GenericAttributes.ATTACK_DAMAGE);
-			h.getAttributeMap().a(GenericAttributes.ATTACK_DAMAGE).setValue(1);
+			initEntity(h);
 			// Load the save file
 			NBTUtil.loadEntity(human, tagcompound);
 			if (human instanceof Player) {
@@ -334,6 +327,19 @@ public class MWPlayerDataController extends PlayerDataController {
 			exception.printStackTrace();
 			return super.onLoad(human);
 		}
+	}
+
+	private static void initEntity(EntityLiving h) {
+		h.getAttributeMap().b(GenericAttributes.maxHealth);
+		h.getAttributeMap().a(GenericAttributes.maxHealth).setValue(20);
+		h.getAttributeMap().b(GenericAttributes.MOVEMENT_SPEED);
+		h.getAttributeMap().a(GenericAttributes.MOVEMENT_SPEED).setValue(1);
+		h.getAttributeMap().b(GenericAttributes.FOLLOW_RANGE);
+		h.getAttributeMap().a(GenericAttributes.FOLLOW_RANGE).setValue(0);
+		h.getAttributeMap().b(GenericAttributes.c);
+		h.getAttributeMap().a(GenericAttributes.c).setValue(1);
+		h.getAttributeMap().b(GenericAttributes.ATTACK_DAMAGE);
+		h.getAttributeMap().a(GenericAttributes.ATTACK_DAMAGE).setValue(1);
 	}
 
 	/**
