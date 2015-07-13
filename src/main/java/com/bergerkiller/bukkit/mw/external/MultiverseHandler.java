@@ -64,7 +64,9 @@ public class MultiverseHandler {
 				config.setChunkGeneratorName(defaultGens.get(world.getName()));
 
 				// Apply the (re)spawn point
-				String respawnWorldName = world.getRespawnToWorld().getName();
+				String respawnWorldName = null;
+				if(world.getRespawnToWorld()==null)respawnWorldName = world.getName();
+				else respawnWorldName = world.getRespawnToWorld().getName();
 				MultiverseWorld respawnWorld = propsMap.get(respawnWorldName);
 				if (respawnWorld == null) {
 					respawnWorld = world;
