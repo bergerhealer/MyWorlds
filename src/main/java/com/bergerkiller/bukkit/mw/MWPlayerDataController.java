@@ -39,7 +39,7 @@ public class MWPlayerDataController extends PlayerDataController {
 	/**
 	 * Gets the Main world save file for the playerName specified
 	 * 
-	 * @param playerName
+	 * @param uuid
 	 * @return Save file
 	 */
 	public static File getMainFile(UUID uuid) {
