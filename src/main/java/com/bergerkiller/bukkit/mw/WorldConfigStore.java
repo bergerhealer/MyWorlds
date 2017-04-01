@@ -94,7 +94,7 @@ public class WorldConfigStore {
 		} else {
 			// Generate new properties
 			WorldConfig defConfig = new WorldConfig(null);
-			defConfig.gameMode = Bukkit.getDefaultGameMode();
+			defConfig.gameMode = null;
 			defConfig.saveDefault(defaultProperties);
 			ConfigurationNode defEnv = defaultProperties.getNode("normal");
 			defEnv.set("gamemode", "NONE");

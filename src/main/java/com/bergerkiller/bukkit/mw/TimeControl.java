@@ -3,7 +3,6 @@ package com.bergerkiller.bukkit.mw;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.Task;
-import com.bergerkiller.bukkit.common.reflection.SafeMethod;
 import com.bergerkiller.bukkit.common.utils.TimeUtil;
 
 public class TimeControl {
@@ -103,10 +102,7 @@ public class TimeControl {
 			if (world == null && !canUseGameRule) {
 				this.lockingTask.stop();
 			} else if (world != null) {
-				this.canUseGameRule = SafeMethod.contains(World.class, "setGameRuleValue", String.class, String.class);
-				if (this.canUseGameRule) {
-					this.canUseGameRule = this.world.isGameRule(LOCKING_RULE);
-				}
+				this.canUseGameRule = this.world.isGameRule(LOCKING_RULE);
 				if (canUseGameRule) {
 					this.world.setGameRuleValue(LOCKING_RULE, Boolean.valueOf(!locking).toString());
 				} else {

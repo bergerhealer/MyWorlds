@@ -1,17 +1,13 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.zip.ZipException;
-
-import net.minecraft.server.v1_8_R3.EntityLiving;
-import net.minecraft.server.v1_8_R3.GenericAttributes;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -25,12 +21,13 @@ import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.protocol.PacketType;
-import com.bergerkiller.bukkit.common.reflection.classes.EntityHumanRef;
-import com.bergerkiller.bukkit.common.reflection.classes.MobEffectRef;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.reflection.net.minecraft.server.NMSEntityHuman;
+import com.bergerkiller.reflection.net.minecraft.server.NMSEntityLiving;
+import com.bergerkiller.reflection.net.minecraft.server.NMSMobEffect;
 
 public class MWPlayerDataController extends PlayerDataController {
 	public static final String DATA_TAG_LASTPOS = "MyWorlds.playerPos";
@@ -96,16 +93,16 @@ public class MWPlayerDataController extends PlayerDataController {
 		CommonLivingEntity<?> livingEntity = CommonEntity.get(human);
 		empty.putUUID("", human.getUniqueId());
 		empty.putValue("Health", (short) livingEntity.getMaxHealth());
-		empty.putValue(GenericAttributes.maxHealth.getName(), (float) livingEntity.getMaxHealth()); // since 1.6.1 health is a float
+		empty.putValue("Max Health", (float) livingEntity.getMaxHealth()); // since 1.6.1 health is a float
 		empty.putValue("HurtTime", (short) 0);
 		empty.putValue("DeathTime", (short) 0);
 		empty.putValue("AttackTime", (short) 0);
 		empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
 		setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
 		final Object humanHandle = livingEntity.getHandle();
-		IntVector3 coord = EntityHumanRef.spawnCoord.get(humanHandle);
+		IntVector3 coord = NMSEntityHuman.spawnCoord.get(humanHandle);
 		if (coord != null) {
-			empty.putValue("SpawnWorld", EntityHumanRef.spawnWorld.get(humanHandle));
+			empty.putValue("SpawnWorld", NMSEntityHuman.spawnWorld.get(humanHandle));
 			empty.putValue("SpawnX", coord.x);
 			empty.putValue("SpawnY", coord.y);
 			empty.putValue("SpawnZ", coord.z);
@@ -150,7 +147,7 @@ public class MWPlayerDataController extends PlayerDataController {
 	public static CommonTagCompound read(File sourceFile, HumanEntity human) {
 		try {
 			if (sourceFile.exists()) {
-				return CommonTagCompound.readFrom(sourceFile);
+				return CommonTagCompound.readFromFile(sourceFile, true);
 			}
 		} catch (ZipException ex) {
 			Bukkit.getLogger().warning("Failed to read player data for " + human.getName() + " (ZIP-exception: file corrupted)");
@@ -164,7 +161,7 @@ public class MWPlayerDataController extends PlayerDataController {
 	
 	private static void clearEffects(HumanEntity human) {
 		// Clear mob effects
-		HashMap<Integer, Object> effects = EntityHumanRef.mobEffects.get(Conversion.toEntityHandle.convert(human));
+		Map<Object, Object> effects = NMSEntityHuman.mobEffects.get(Conversion.toEntityHandle.convert(human));
 		if (human instanceof Player) {
 			// Send mob effect removal messages
 			Player player = (Player) human;
@@ -208,7 +205,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// First, clear previous player information when loading involves adding new elements
 			clearEffects(player);
-			initEntity(((CraftPlayer)player).getHandle());
+			initEntity(Conversion.toEntityHandle.convert(player));
 
 			// Refresh attributes
 			if (data.containsKey("Attributes")) {
@@ -217,12 +214,12 @@ public class MWPlayerDataController extends PlayerDataController {
 
 			// Load the data
 			NBTUtil.loadInventory(player.getInventory(), data.createList("Inventory"));
-			EntityHumanRef.exp.set(playerHandle, data.getValue("XpP", 0.0f));
-			EntityHumanRef.expLevel.set(playerHandle, data.getValue("XpLevel", 0));
-			EntityHumanRef.expTotal.set(playerHandle, data.getValue("XpTotal", 0));
+			NMSEntityHuman.exp.set(playerHandle, data.getValue("XpP", 0.0f));
+			NMSEntityHuman.expLevel.set(playerHandle, data.getValue("XpLevel", 0));
+			NMSEntityHuman.expTotal.set(playerHandle, data.getValue("XpTotal", 0));
 
 //			data.getValue("Bukkit.MaxHealth", (float) commonPlayer.getMaxHealth());
-			commonPlayer.setHealth((double) data.getValue(GenericAttributes.maxHealth.getName(), (float) commonPlayer.getMaxHealth()));
+			commonPlayer.setHealth((double) data.getValue("Max Health", (float) commonPlayer.getMaxHealth()));
 			
 			// Respawn position
 			String spawnWorld = data.getValue("SpawnWorld", "");
@@ -237,24 +234,24 @@ public class MWPlayerDataController extends PlayerDataController {
 					spawnWorld = ""; //reset, invalid coordinates
 				}
 			}
-			EntityHumanRef.spawnCoord.set(playerHandle, spawn);
-			EntityHumanRef.spawnWorld.set(playerHandle, spawnWorld);
-			EntityHumanRef.spawnForced.set(playerHandle, data.getValue("SpawnForced", false));
+			NMSEntityHuman.spawnCoord.set(playerHandle, spawn);
+			NMSEntityHuman.spawnWorld.set(playerHandle, spawnWorld);
+			NMSEntityHuman.spawnForced.set(playerHandle, data.getValue("SpawnForced", false));
 
 			// Other data
-			NBTUtil.loadFoodMetaData(EntityHumanRef.foodData.get(playerHandle), data);
+			NBTUtil.loadFoodMetaData(NMSEntityHuman.foodData.get(playerHandle), data);
 			NBTUtil.loadInventory(player.getEnderChest(), data.createList("EnderItems"));
 			
 			// Load Mob Effects
-			HashMap<Integer, Object> effects = EntityHumanRef.mobEffects.get(playerHandle);
+			Map<Object, Object> effects = NMSEntityHuman.mobEffects.get(playerHandle);
 			if (data.containsKey("ActiveEffects")) {
 				CommonTagList taglist = data.createList("ActiveEffects");
 				for (int i = 0; i < taglist.size(); ++i) {
 					Object mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) taglist.get(i));
-					effects.put(MobEffectRef.effectId.get(mobEffect), mobEffect);
+					effects.put(NMSMobEffect.effectList.get(mobEffect), mobEffect);
 				}
 			}
-			EntityHumanRef.updateEffects.set(playerHandle, true);
+			NMSEntityHuman.updateEffects.set(playerHandle, true);
 
 			// Send add messages for all (new) effects
 			for (Object effect : effects.values()) {
@@ -284,7 +281,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			if (MyWorlds.useWorldInventories && hasPlayedBefore && !MyWorlds.forceMainWorldSpawn) {
 				try {
 					// Allow switching worlds and positions
-					tagcompound = CommonTagCompound.readFrom(main);
+					tagcompound = CommonTagCompound.readFromFile(main, true);
 					World world = Bukkit.getWorld(tagcompound.getUUID("World"));
 					if (world != null) {
 						// Switch to the save file of the loaded world
@@ -307,8 +304,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			clearEffects(human);
 
 			// Insert default attributes to not run into errors
-			EntityLiving h = ((EntityLiving) Conversion.toEntityHandle.convert(human));
-			initEntity(h);
+			initEntity(Conversion.toEntityHandle.convert(human));
 			// Load the save file
 			NBTUtil.loadEntity(human, tagcompound);
 			if (human instanceof Player) {
@@ -329,17 +325,8 @@ public class MWPlayerDataController extends PlayerDataController {
 		}
 	}
 
-	private static void initEntity(EntityLiving h) {
-		h.getAttributeMap().b(GenericAttributes.maxHealth);
-		h.getAttributeMap().a(GenericAttributes.maxHealth).setValue(20);
-		h.getAttributeMap().b(GenericAttributes.MOVEMENT_SPEED);
-		h.getAttributeMap().a(GenericAttributes.MOVEMENT_SPEED).setValue(1);
-		h.getAttributeMap().b(GenericAttributes.FOLLOW_RANGE);
-		h.getAttributeMap().a(GenericAttributes.FOLLOW_RANGE).setValue(0);
-		h.getAttributeMap().b(GenericAttributes.c);
-		h.getAttributeMap().a(GenericAttributes.c).setValue(1);
-		h.getAttributeMap().b(GenericAttributes.ATTACK_DAMAGE);
-		h.getAttributeMap().a(GenericAttributes.ATTACK_DAMAGE).setValue(1);
+	private static void initEntity(Object hEntityLiving) {
+	    NMSEntityLiving.initAttributes.invoke(hEntityLiving);
 	}
 
 	/**
@@ -383,7 +370,7 @@ public class MWPlayerDataController extends PlayerDataController {
 			// Now, go ahead and save this data
 			File mainDest = getMainFile(player.getUniqueId());
 			File dest = getSaveFile(player);
-			tagcompound.writeTo(dest);
+			tagcompound.writeToFile(dest, true);
 
 			// Finally, we need to update where the player is at right now
 			// To do so, we will write a new main world where the player is meant to be
@@ -391,9 +378,9 @@ public class MWPlayerDataController extends PlayerDataController {
 			// This is only needed if a main player data file doesn't exist
 			// (this should in theory never happen either...player is not joining)
 			if (mainDest.exists()) {
-				tagcompound = CommonTagCompound.readFrom(mainDest);
+				tagcompound = CommonTagCompound.readFromFile(mainDest, true);
 				tagcompound.putUUID("World", respawnLocation.getWorld().getUID());
-				tagcompound.writeTo(mainDest);
+				tagcompound.writeToFile(mainDest, true);
 			}
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player respawned data for " + player.getName());
@@ -435,11 +422,11 @@ public class MWPlayerDataController extends PlayerDataController {
 				CommonTagCompound data = read(posFile, human);
 				data.putListValues(DATA_TAG_LASTPOS, loc.getX(), loc.getY(), loc.getZ());
 				data.putListValues(DATA_TAG_LASTROT, loc.getYaw(), loc.getPitch());
-				data.writeTo(posFile);
+				data.writeToFile(posFile, true);
 			}
 
 			// Save data to the destination file
-			tagcompound.writeTo(destFile);
+			tagcompound.writeToFile(destFile, true);
 
 			// Write the current world name of the player to the save file of the main world
 			if (!mainFile.equals(destFile)) {
@@ -448,7 +435,7 @@ public class MWPlayerDataController extends PlayerDataController {
 				maincompound.put("Pos", tagcompound.get("Pos"));
 				maincompound.put("Rotation", tagcompound.get("Rotation"));
 				maincompound.putUUID("World", human.getWorld().getUID());
-				maincompound.writeTo(mainFile);
+				maincompound.writeToFile(mainFile, true);
 			}
 		} catch (Exception exception) {
 			Bukkit.getLogger().warning("Failed to save player data for " + human.getName());

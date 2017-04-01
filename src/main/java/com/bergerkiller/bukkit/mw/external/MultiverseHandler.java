@@ -1,27 +1,34 @@
 package com.bergerkiller.bukkit.mw.external;
 
+import com.bergerkiller.bukkit.mw.WorldConfig;
+
+/*
 import java.util.Map;
 import java.util.logging.Level;
 
 import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 
-import com.bergerkiller.bukkit.common.reflection.SafeField;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
-import com.bergerkiller.bukkit.mw.Position;
 import com.bergerkiller.bukkit.mw.WorldConfig;
-import com.bergerkiller.bukkit.mw.WorldMode;
+import com.bergerkiller.reflection.SafeField;
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
+*/
 
 /**
  * Deals with accessing Multiverse to take over the configuration for new worlds
  */
 public class MultiverseHandler {
 
+    public static boolean readWorldConfiguration(WorldConfig config) {
+        return false;
+    }
+    
+    /*
 	public static boolean readWorldConfiguration(WorldConfig config) {
 		if (MyWorlds.isMultiverseEnabled) {
 			try {
@@ -34,8 +41,8 @@ public class MultiverseHandler {
 
 				// Obtain the world configuration information in MV
 				MVWorldManager manager = core.getMVWorldManager();
-				Map<String, MultiverseWorld> propsMap = SafeField.get(manager, "worlds");
-				Map<String, String> defaultGens = SafeField.get(manager, "defaultGens");
+				Map<String, MultiverseWorld> propsMap = SafeField.get(manager, "worlds", Map.class);
+				Map<String, String> defaultGens = SafeField.get(manager, "defaultGens", Map.class);
 				MultiverseWorld world = propsMap.get(config.worldname);
 
 				// Newly created world: no configuration in MV is available
@@ -102,4 +109,5 @@ public class MultiverseHandler {
 		}
 		return false;
 	}
+	*/
 }

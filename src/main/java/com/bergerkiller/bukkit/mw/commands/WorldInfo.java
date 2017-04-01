@@ -88,7 +88,7 @@ public class WorldInfo extends Command {
 				String timestr = wc.timeControl.getTime(info.time);
 				message(ChatColor.WHITE + "Time: " + ChatColor.YELLOW + timestr);
 				//Weather
-				if (wc.holdWeather) {
+				if (info.weather_endless) {
 					if (info.raining) {
 						if (info.thundering) {
 							message(ChatColor.WHITE + "Weather: " + ChatColor.YELLOW + "Endless storm with lightning");
