@@ -4,7 +4,7 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.72-SNAPSHOT</version>
+  <version>1.8-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>MyWorlds</name>
@@ -15,40 +15,43 @@
   </properties>
 
   <repositories>
-    <!-- Repo for access to CraftBukkit -->
-    <repository>
-      <id>spigot-repo</id>
-      <url>http://repo.md-5.net/content/groups/public/</url>
-    </repository>
-    <repository>
-      <id>bukkit-repo</id>
-      <url>http://hub.spigotmc.org/nexus/content/groups/public/</url>
-    </repository>
-    <!-- Repo for access to BKCommonLib -->
-    <repository>
-      <id>mg-dev-repo</id>
-      <url>http://maven.mg-dev.eu/</url>
-    </repository>
+        <!-- Repo for access to CraftBukkit -->
+        <repository>
+          <id>spigot-repo</id>
+          <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+        </repository>
+
+        <!-- Repo for access to Objenesis -->
+        <repository>
+            <id>mvnrepository</id>
+            <url>https://mvnrepository.com/artifact/</url>
+        </repository>
+        
+        <repository>
+        	<id>vault-repo</id>
+        	<url>http://nexus.hc.to/content/repositories/pub_releases</url>
+        </repository>
   </repositories>
 
   <dependencies>
-    <dependency>
-      <groupId>org.bukkit</groupId>
-      <artifactId>bukkit</artifactId>
-      <version>1.8.7-R0.1-SNAPSHOT</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.bukkit</groupId>
-      <artifactId>craftbukkit</artifactId>
-      <version>1.8.7-R0.1-SNAPSHOT</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/spigot.jar</systemPath>
-    </dependency>
-    <dependency>
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.11.2-R0.1-SNAPSHOT</version>
+        </dependency>
+        <!--
+        <dependency>
+            <groupId>org.bukkit</groupId>
+            <artifactId>craftbukkit</artifactId>
+            <version>1.11.2-R0.1-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/spigot-1.11.2.jar</systemPath>
+        </dependency>
+        -->
+        <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
-      <version>1.62-SNAPSHOT</version>
+      <version>1.8-SNAPSHOT</version>
       <scope>provided</scope>
   	</dependency>
     <dependency>
