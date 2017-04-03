@@ -29,85 +29,85 @@ public class MultiverseHandler {
     }
     
     /*
-	public static boolean readWorldConfiguration(WorldConfig config) {
-		if (MyWorlds.isMultiverseEnabled) {
-			try {
-				// Obtain Multiverse
-				MultiverseCore core = CommonUtil.tryCast(CommonUtil.getPlugin("Multiverse-Core"), MultiverseCore.class);
-				if (core == null) {
-					MyWorlds.plugin.log(Level.WARNING, "Could not find Multiverse Core main plugin instance");
-					return false;
-				}
+    public static boolean readWorldConfiguration(WorldConfig config) {
+        if (MyWorlds.isMultiverseEnabled) {
+            try {
+                // Obtain Multiverse
+                MultiverseCore core = CommonUtil.tryCast(CommonUtil.getPlugin("Multiverse-Core"), MultiverseCore.class);
+                if (core == null) {
+                    MyWorlds.plugin.log(Level.WARNING, "Could not find Multiverse Core main plugin instance");
+                    return false;
+                }
 
-				// Obtain the world configuration information in MV
-				MVWorldManager manager = core.getMVWorldManager();
-				Map<String, MultiverseWorld> propsMap = SafeField.get(manager, "worlds", Map.class);
-				Map<String, String> defaultGens = SafeField.get(manager, "defaultGens", Map.class);
-				MultiverseWorld world = propsMap.get(config.worldname);
+                // Obtain the world configuration information in MV
+                MVWorldManager manager = core.getMVWorldManager();
+                Map<String, MultiverseWorld> propsMap = SafeField.get(manager, "worlds", Map.class);
+                Map<String, String> defaultGens = SafeField.get(manager, "defaultGens", Map.class);
+                MultiverseWorld world = propsMap.get(config.worldname);
 
-				// Newly created world: no configuration in MV is available
-				if (world == null) {
-					MyWorlds.plugin.log(Level.WARNING, "World Configuration for '" + config.worldname + 
-							"' could not be imported from Multiverse: No configuration available");
-					return false;
-				}
+                // Newly created world: no configuration in MV is available
+                if (world == null) {
+                    MyWorlds.plugin.log(Level.WARNING, "World Configuration for '" + config.worldname + 
+                            "' could not be imported from Multiverse: No configuration available");
+                    return false;
+                }
 
-				// Serialization could be incomplete - this is a (hackish) check for that
-				try {
-					world.getDifficulty();
-				} catch (NullPointerException ex) {
-					return false;
-				}
+                // Serialization could be incomplete - this is a (hackish) check for that
+                try {
+                    world.getDifficulty();
+                } catch (NullPointerException ex) {
+                    return false;
+                }
 
-				// Apply general world settings
-				config.difficulty = world.getDifficulty();
-				config.allowHunger = world.getHunger();
-				config.forcedRespawn = !world.getBedRespawn();
-				config.holdWeather = !world.isWeatherEnabled();
-				config.pvp = world.isPVPEnabled();
-				config.gameMode = world.getGameMode();
-				config.keepSpawnInMemory = world.isKeepingSpawnInMemory();
-				config.worldmode = WorldMode.get(config.worldmode.getType(), world.getEnvironment());
-				config.setChunkGeneratorName(defaultGens.get(world.getName()));
+                // Apply general world settings
+                config.difficulty = world.getDifficulty();
+                config.allowHunger = world.getHunger();
+                config.forcedRespawn = !world.getBedRespawn();
+                config.holdWeather = !world.isWeatherEnabled();
+                config.pvp = world.isPVPEnabled();
+                config.gameMode = world.getGameMode();
+                config.keepSpawnInMemory = world.isKeepingSpawnInMemory();
+                config.worldmode = WorldMode.get(config.worldmode.getType(), world.getEnvironment());
+                config.setChunkGeneratorName(defaultGens.get(world.getName()));
 
-				// Apply the (re)spawn point
-				String respawnWorldName = null;
-				if(world.getRespawnToWorld()==null)respawnWorldName = world.getName();
-				else respawnWorldName = world.getRespawnToWorld().getName();
-				MultiverseWorld respawnWorld = propsMap.get(respawnWorldName);
-				if (respawnWorld == null) {
-					respawnWorld = world;
-					respawnWorldName = config.worldname;
-				}
-				Location respawnLoc = respawnWorld.getSpawnLocation();
-				if (respawnLoc != null) {
-					config.spawnPoint = new Position(respawnLoc);
-					if (respawnLoc.getWorld() == null) {
-						config.spawnPoint.setWorldName(respawnWorldName);
-					}
-				}
+                // Apply the (re)spawn point
+                String respawnWorldName = null;
+                if(world.getRespawnToWorld()==null)respawnWorldName = world.getName();
+                else respawnWorldName = world.getRespawnToWorld().getName();
+                MultiverseWorld respawnWorld = propsMap.get(respawnWorldName);
+                if (respawnWorld == null) {
+                    respawnWorld = world;
+                    respawnWorldName = config.worldname;
+                }
+                Location respawnLoc = respawnWorld.getSpawnLocation();
+                if (respawnLoc != null) {
+                    config.spawnPoint = new Position(respawnLoc);
+                    if (respawnLoc.getWorld() == null) {
+                        config.spawnPoint.setWorldName(respawnWorldName);
+                    }
+                }
 
-				// Apply world animal/monster spawning rules
-				config.spawnControl.deniedCreatures.clear();
-				config.spawnControl.setAnimals(world.canAnimalsSpawn());
-				config.spawnControl.setMonsters(world.canMonstersSpawn());
-				for (EntityType type : EntityType.values()) {
-					if (!EntityUtil.isAnimal(type) && !EntityUtil.isMonster(type)) {
-						continue;
-					}
-					if (!world.getMonsterList().contains(type.getName()) && !world.getAnimalList().contains(type.getName())) {
-						config.spawnControl.deniedCreatures.add(type);
-					}
-				}
+                // Apply world animal/monster spawning rules
+                config.spawnControl.deniedCreatures.clear();
+                config.spawnControl.setAnimals(world.canAnimalsSpawn());
+                config.spawnControl.setMonsters(world.canMonstersSpawn());
+                for (EntityType type : EntityType.values()) {
+                    if (!EntityUtil.isAnimal(type) && !EntityUtil.isMonster(type)) {
+                        continue;
+                    }
+                    if (!world.getMonsterList().contains(type.getName()) && !world.getAnimalList().contains(type.getName())) {
+                        config.spawnControl.deniedCreatures.add(type);
+                    }
+                }
 
-				// Confirmation message and successful return
-				MyWorlds.plugin.log(Level.WARNING, "World Configuration for '" + config.worldname + "' imported from Multiverse!");
-				return true;
-			} catch (Throwable t) {
-				MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read World Configuration from Multiverse:", t);
-			}
-		}
-		return false;
-	}
-	*/
+                // Confirmation message and successful return
+                MyWorlds.plugin.log(Level.WARNING, "World Configuration for '" + config.worldname + "' imported from Multiverse!");
+                return true;
+            } catch (Throwable t) {
+                MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read World Configuration from Multiverse:", t);
+            }
+        }
+        return false;
+    }
+    */
 }

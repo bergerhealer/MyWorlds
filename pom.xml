@@ -15,45 +15,47 @@
   </properties>
 
   <repositories>
-        <!-- Repo for access to CraftBukkit -->
-        <repository>
-          <id>spigot-repo</id>
-          <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
-        </repository>
+    <!-- Repo for access to CraftBukkit -->
+    <repository>
+      <id>spigot-repo</id>
+      <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+    </repository>
 
-        <!-- Repo for access to Objenesis -->
-        <repository>
-            <id>mvnrepository</id>
-            <url>https://mvnrepository.com/artifact/</url>
-        </repository>
-        
-        <repository>
-        	<id>vault-repo</id>
-        	<url>http://nexus.hc.to/content/repositories/pub_releases</url>
-        </repository>
+    <!-- Repo for access to Objenesis -->
+    <repository>
+      <id>mvnrepository</id>
+      <url>https://mvnrepository.com/artifact/</url>
+    </repository>
+
+    <repository>
+      <id>vault-repo</id>
+      <url>http://nexus.hc.to/content/repositories/pub_releases</url>
+    </repository>
   </repositories>
 
   <dependencies>
-        <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.11.2-R0.1-SNAPSHOT</version>
-        </dependency>
-        <!--
-        <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>craftbukkit</artifactId>
-            <version>1.11.2-R0.1-SNAPSHOT</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/spigot-1.11.2.jar</systemPath>
-        </dependency>
-        -->
-        <dependency>
+    <dependency>
+      <groupId>org.spigotmc</groupId>
+      <artifactId>spigot-api</artifactId>
+      <version>1.11.2-R0.1-SNAPSHOT</version>
+    </dependency>
+
+    <!--
+    <dependency>
+      <groupId>org.bukkit</groupId>
+      <artifactId>craftbukkit</artifactId>
+      <version>1.11.2-R0.1-SNAPSHOT</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/lib/spigot-1.11.2.jar</systemPath>
+    </dependency>
+    -->
+
+    <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
       <version>1.8-SNAPSHOT</version>
       <scope>provided</scope>
-  	</dependency>
+    </dependency>
     <dependency>
       <groupId>com.onarandombox</groupId>
       <artifactId>MultiverseCore</artifactId>
@@ -72,8 +74,8 @@
 
   <!-- Build -->
   <build>
-	<!-- Resources (the filtering allows us to use project properties in plugin.yml) -->
-	<resources>
+    <!-- Resources (the filtering allows us to use project properties in plugin.yml) -->
+    <resources>
       <resource>
         <directory>src/main/java</directory>
         <filtering>true</filtering>
@@ -81,11 +83,11 @@
           <include>plugin.yml</include>
         </includes>
       </resource>
-	</resources>
-	<defaultGoal>clean install</defaultGoal>
+    </resources>
+    <defaultGoal>clean install</defaultGoal>
 
-	<!-- Plugins -->
-	<plugins>
+    <!-- Plugins -->
+    <plugins>
 
       <!-- Copy artifacts to non-versioned jar name -->
       <plugin>
@@ -118,16 +120,16 @@
       </plugin>
 
       <!-- Compiler plugin -->
-	  <plugin>
-	    <groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-compiler-plugin</artifactId>
-		<version>3.1</version>
-		<configuration>
-		  <source>1.7</source>
-		  <target>1.7</target>
-		  <showWarnings>false</showWarnings>
-		  <showDeprecation>true</showDeprecation>
-		</configuration>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+          <showWarnings>false</showWarnings>
+          <showDeprecation>true</showDeprecation>
+        </configuration>
       </plugin>
     </plugins>
   </build>

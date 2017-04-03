@@ -7,20 +7,20 @@ import org.bukkit.permissions.PermissionDefault;
 import com.bergerkiller.bukkit.common.permissions.PermissionEnum;
 
 public class Permission extends PermissionEnum {
-	public static final Permission COMMAND_LIST = new Permission("world.list", PermissionDefault.OP, "Sets if the player can list all worlds on the server");
-	public static final Permission COMMAND_INFO = new Permission("world.info", PermissionDefault.OP, "Sets if the player can see world information, such as the seed and size");
-	public static final Permission COMMAND_CONFIG = new Permission("world.config", PermissionDefault.OP, "Sets if the player can manually load, save and reset the world configuration");
-	public static final Permission COMMAND_PORTALS = new Permission("world.portals", PermissionDefault.OP, "Sets if the player can list all portals on the server");
-	public static final Permission COMMAND_LISTGEN = new Permission("world.listgenerators", PermissionDefault.OP, "Sets if the player can list all chunk generators on the server");
-	public static final Permission COMMAND_SETPORTAL = new Permission("world.setportal", PermissionDefault.OP, "Sets if the player can change the default portal destination on the world");
-	public static final Permission COMMAND_LOAD = new Permission("world.load", PermissionDefault.OP, "Sets if the player can load unloaded worlds (not create)");
-	public static final Permission COMMAND_LOADSPECIAL = new Permission("world.loadspecial", PermissionDefault.OP, "Sets if a player can load a world with a new chunk generator (can corrupt worlds!)");
-	public static final Permission COMMAND_UNLOAD = new Permission("world.unload", PermissionDefault.OP, "Sets if the player can unload loaded worlds (not create)");
-	public static final Permission COMMAND_CREATE = new Permission("world.create", PermissionDefault.OP, "Sets if the player can create worlds (not replace)");
-	public static final Permission COMMAND_SPAWN = new Permission("world.spawn", PermissionDefault.OP, "Sets if the player can teleport to world spawn points");
-	public static final Permission COMMAND_EVACUATE = new Permission("world.evacuate", PermissionDefault.OP, "Sets if the player can clear a world from its players");
-	public static final Permission COMMAND_REPAIR = new Permission("world.repair", PermissionDefault.OP, "Sets if the player can repair damaged worlds (only if broken)");
-	public static final Permission COMMAND_SAVE = new Permission("world.save", PermissionDefault.OP, "Sets if the player can save worlds");
+    public static final Permission COMMAND_LIST = new Permission("world.list", PermissionDefault.OP, "Sets if the player can list all worlds on the server");
+    public static final Permission COMMAND_INFO = new Permission("world.info", PermissionDefault.OP, "Sets if the player can see world information, such as the seed and size");
+    public static final Permission COMMAND_CONFIG = new Permission("world.config", PermissionDefault.OP, "Sets if the player can manually load, save and reset the world configuration");
+    public static final Permission COMMAND_PORTALS = new Permission("world.portals", PermissionDefault.OP, "Sets if the player can list all portals on the server");
+    public static final Permission COMMAND_LISTGEN = new Permission("world.listgenerators", PermissionDefault.OP, "Sets if the player can list all chunk generators on the server");
+    public static final Permission COMMAND_SETPORTAL = new Permission("world.setportal", PermissionDefault.OP, "Sets if the player can change the default portal destination on the world");
+    public static final Permission COMMAND_LOAD = new Permission("world.load", PermissionDefault.OP, "Sets if the player can load unloaded worlds (not create)");
+    public static final Permission COMMAND_LOADSPECIAL = new Permission("world.loadspecial", PermissionDefault.OP, "Sets if a player can load a world with a new chunk generator (can corrupt worlds!)");
+    public static final Permission COMMAND_UNLOAD = new Permission("world.unload", PermissionDefault.OP, "Sets if the player can unload loaded worlds (not create)");
+    public static final Permission COMMAND_CREATE = new Permission("world.create", PermissionDefault.OP, "Sets if the player can create worlds (not replace)");
+    public static final Permission COMMAND_SPAWN = new Permission("world.spawn", PermissionDefault.OP, "Sets if the player can teleport to world spawn points");
+    public static final Permission COMMAND_EVACUATE = new Permission("world.evacuate", PermissionDefault.OP, "Sets if the player can clear a world from its players");
+    public static final Permission COMMAND_REPAIR = new Permission("world.repair", PermissionDefault.OP, "Sets if the player can repair damaged worlds (only if broken)");
+    public static final Permission COMMAND_SAVE = new Permission("world.save", PermissionDefault.OP, "Sets if the player can save worlds");
     public static final Permission COMMAND_SETSAVING = new Permission("world.setsaving", PermissionDefault.OP, "Sets if the player can toggle world auto-saving on or off");
     public static final Permission COMMAND_DELETE = new Permission("world.delete", PermissionDefault.OP, "Sets if the player can permanently delete worlds");
     public static final Permission COMMAND_COPY = new Permission("world.copy", PermissionDefault.FALSE, "Sets if the player can clone worlds");
@@ -57,73 +57,73 @@ public class Permission extends PermissionEnum {
     public static final Permission PORTAL_TELEPORT = new Permission("portal.teleport", PermissionDefault.OP, "Sets the portals a player can teleport to using /tpp", 1);
     public static final Permission PORTAL_ENTER = new Permission("portal.enter", PermissionDefault.OP, "Sets if the player can enter a certain portal", 1);
 
-	private Permission(final String name, final PermissionDefault def, final String desc) {
-		super("myworlds." + name, def, desc, 0);
-	}
+    private Permission(final String name, final PermissionDefault def, final String desc) {
+        super("myworlds." + name, def, desc, 0);
+    }
 
-	private Permission(final String name, final PermissionDefault def, final String desc, final int argCount) {
-		super("myworlds." + name, def, desc, argCount);
-	}
+    private Permission(final String name, final PermissionDefault def, final String desc, final int argCount) {
+        super("myworlds." + name, def, desc, argCount);
+    }
 
-	public static boolean canEnter(Player player, Portal portal) {
-		return canEnterPortal(player, portal.getName());
-	}
-	public static boolean canEnter(Player player, World world) {
-		return canEnterWorld(player, world.getName());
-	}
-	public static boolean canEnterPortal(Player player, String portalname) {
-		if (!Permission.PORTAL_USE.has(player, portalname)) {
-			return false;
-		}
-		if (!MyWorlds.usePortalEnterPermissions) {
-			return true;
-		}
-		return Permission.PORTAL_ENTER.has(player, portalname);
-	}
-	public static boolean canEnterWorld(Player player, String worldname) {
-		if (!MyWorlds.useWorldEnterPermissions) {
-			return true;
-		}
-		if (player.getWorld().getName().equalsIgnoreCase(worldname)) {
-			return true;
-		}
-		return Permission.GENERAL_ENTER.has(player, worldname);
-	}
+    public static boolean canEnter(Player player, Portal portal) {
+        return canEnterPortal(player, portal.getName());
+    }
+    public static boolean canEnter(Player player, World world) {
+        return canEnterWorld(player, world.getName());
+    }
+    public static boolean canEnterPortal(Player player, String portalname) {
+        if (!Permission.PORTAL_USE.has(player, portalname)) {
+            return false;
+        }
+        if (!MyWorlds.usePortalEnterPermissions) {
+            return true;
+        }
+        return Permission.PORTAL_ENTER.has(player, portalname);
+    }
+    public static boolean canEnterWorld(Player player, String worldname) {
+        if (!MyWorlds.useWorldEnterPermissions) {
+            return true;
+        }
+        if (player.getWorld().getName().equalsIgnoreCase(worldname)) {
+            return true;
+        }
+        return Permission.GENERAL_ENTER.has(player, worldname);
+    }
 
-	public static boolean canBuild(Player player) {
-		if (player == null) return true;
-		return canBuild(player, player.getWorld().getName());
-	}
-	public static boolean canUse(Player player) {
-		if (player == null) return true;
-		return canUse(player, player.getWorld().getName());
-	}
-	public static boolean canBuild(Player player, String worldname) {
-		if (player == null) return true;
-		if (!MyWorlds.useWorldBuildPermissions) return true;
-		return Permission.GENERAL_BUILD.has(player, worldname);
-	}
-	public static boolean canUse(Player player, String worldname) {
-		if (player == null) return true;
-		if (!MyWorlds.useWorldUsePermissions) return true;
-		return Permission.GENERAL_USE.has(player, worldname);
-	}
-	
-	public static boolean canChat(Player player) {
-		return canChat(player, player);
-	}
-	public static boolean canChat(Player player, Player with) {
-		if (player == null) return true;
-		if (!MyWorlds.useWorldChatPermissions) return true;
-		final String from = player.getWorld().getName().toLowerCase();
-		final String to = with.getWorld().getName().toLowerCase();
-		if (Permission.GENERAL_CHAT.has(player, from, to)) {
-			return true;
-		}
-		if (from.equals(to)) {
-			return Permission.GENERAL_CHAT.has(player, from);
-		} else {
-			return false;
-		}
-	}
+    public static boolean canBuild(Player player) {
+        if (player == null) return true;
+        return canBuild(player, player.getWorld().getName());
+    }
+    public static boolean canUse(Player player) {
+        if (player == null) return true;
+        return canUse(player, player.getWorld().getName());
+    }
+    public static boolean canBuild(Player player, String worldname) {
+        if (player == null) return true;
+        if (!MyWorlds.useWorldBuildPermissions) return true;
+        return Permission.GENERAL_BUILD.has(player, worldname);
+    }
+    public static boolean canUse(Player player, String worldname) {
+        if (player == null) return true;
+        if (!MyWorlds.useWorldUsePermissions) return true;
+        return Permission.GENERAL_USE.has(player, worldname);
+    }
+    
+    public static boolean canChat(Player player) {
+        return canChat(player, player);
+    }
+    public static boolean canChat(Player player, Player with) {
+        if (player == null) return true;
+        if (!MyWorlds.useWorldChatPermissions) return true;
+        final String from = player.getWorld().getName().toLowerCase();
+        final String to = with.getWorld().getName().toLowerCase();
+        if (Permission.GENERAL_CHAT.has(player, from, to)) {
+            return true;
+        }
+        if (from.equals(to)) {
+            return Permission.GENERAL_CHAT.has(player, from);
+        } else {
+            return false;
+        }
+    }
 }
