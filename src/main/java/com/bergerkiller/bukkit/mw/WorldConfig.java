@@ -15,6 +15,7 @@ import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -686,14 +687,13 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     /**
-     * Gets the File where player data for this world could be saved
+     * Gets the File where player data for this world is saved
      * 
-     * @param playerName (case-sensitive)
-     * @param mkDir - True to create the player folder
+     * @param player to get this world's save file for
      * @return Player Data File
      */
-    public File getPlayerData(String playerName) {
-        return new File(getPlayerFolder(), playerName + ".dat");
+    public File getPlayerData(HumanEntity player) {
+        return new File(getPlayerFolder(), player.getUniqueId().toString() + ".dat");
     }
 
     /**
