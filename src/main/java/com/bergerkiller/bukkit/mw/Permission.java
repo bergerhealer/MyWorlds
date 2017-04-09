@@ -11,6 +11,7 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_INFO = new Permission("world.info", PermissionDefault.OP, "Sets if the player can see world information, such as the seed and size");
     public static final Permission COMMAND_CONFIG = new Permission("world.config", PermissionDefault.OP, "Sets if the player can manually load, save and reset the world configuration");
     public static final Permission COMMAND_PORTALS = new Permission("world.portals", PermissionDefault.OP, "Sets if the player can list all portals on the server");
+    public static final Permission COMMAND_GIVE_PORTAL = new Permission("world.giveportal", PermissionDefault.OP, "Sets if the player can give himself portal blocks for building portal structures");
     public static final Permission COMMAND_LISTGEN = new Permission("world.listgenerators", PermissionDefault.OP, "Sets if the player can list all chunk generators on the server");
     public static final Permission COMMAND_SETPORTAL = new Permission("world.setportal", PermissionDefault.OP, "Sets if the player can change the default portal destination on the world");
     public static final Permission COMMAND_LOAD = new Permission("world.load", PermissionDefault.OP, "Sets if the player can load unloaded worlds (not create)");

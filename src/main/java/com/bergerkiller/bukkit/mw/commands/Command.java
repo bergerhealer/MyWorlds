@@ -227,6 +227,8 @@ public class Command {
                     rval = new WorldPortals();
                 } else if (cmdLabel.equalsIgnoreCase("portal")) {
                     rval = new WorldPortals();
+                } else if (cmdLabel.equalsIgnoreCase("giveportal")) {
+                    rval = new WorldGivePortal();
                 } else if (cmdLabel.equalsIgnoreCase("load")) {
                     rval = new WorldLoad();
                 } else if (cmdLabel.equalsIgnoreCase("unload")) {

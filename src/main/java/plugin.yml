@@ -191,6 +191,12 @@ commands:
         description: Repairs an unloaded world
         aliases: [world rep]
         usage: /world repair [world]
+    world giveportal:
+        description: Gives you a stack of portal blocks for building structures
+        usage: |
+            /world giveportal - Give nether portal block
+            /world giveportal nether - give nether portal block
+            /world giveportal end - give end portal block
     world setnetherportal:
         description: Sets the nether portal destination for a world
         usage: |

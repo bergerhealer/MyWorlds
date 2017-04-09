@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
@@ -33,14 +34,19 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
+import org.bukkit.inventory.ItemStack;
 
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
+import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.server.MCPCPlusServer;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.FaceUtil;
+import com.bergerkiller.bukkit.common.utils.ItemUtil;
 import com.bergerkiller.bukkit.common.utils.MathUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.wrappers.BlockData;
 
 public class MWListener implements Listener {
     // Keeps track of player teleports
@@ -373,6 +379,36 @@ public class MWListener implements Listener {
         if (portal != null && portal.remove()) {
             event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
             MyWorlds.plugin.logAction(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
+        }
+    }
+
+    /* Handle placement of MyWorlds portals in a special way */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockPlace(BlockPlaceEvent event) {
+        ItemStack item = event.getItemInHand();
+        CommonTagCompound tag = ItemUtil.getMetaTag(item);
+        if (tag != null) {
+            int specialportal = tag.getValue("myworlds.specialportal", -1);
+            if (specialportal != -1) {
+                event.setCancelled(true);
+                final Material m = Material.getMaterial(specialportal);
+                final Block b = event.getBlock();
+                final BlockData d;
+                if (m == Material.PORTAL) {
+                    BlockFace f = FaceUtil.yawToFace(event.getPlayer().getLocation().getYaw());
+                    d = BlockData.fromMaterialData(m, FaceUtil.isAlongZ(f) ? 0x2 : 0x0);
+                } else {
+                    d = BlockData.fromMaterial(m);
+                }
+                if (m != null) {
+                    CommonUtil.nextTick(new Runnable() {
+                        @Override
+                        public void run() {
+                            WorldUtil.setBlockDataFast(b, d);
+                        }
+                    });
+                }
+            }
         }
     }
 
