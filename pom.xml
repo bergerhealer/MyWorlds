@@ -4,7 +4,7 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.8-SNAPSHOT</version>
+  <version>1.11.2-v1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>MyWorlds</name>
@@ -12,6 +12,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.mcversion>v1_11_R1</project.mcversion>
+    <project.serverversion>1.11.2-R0.1</project.serverversion>
+    <project.bkcversion>1.11.2-v1-SNAPSHOT</project.bkcversion>
   </properties>
 
   <repositories>
@@ -37,23 +40,13 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.11.2-R0.1-SNAPSHOT</version>
+      <version>${project.serverversion}-SNAPSHOT</version>
     </dependency>
-
-    <!--
-    <dependency>
-      <groupId>org.bukkit</groupId>
-      <artifactId>craftbukkit</artifactId>
-      <version>1.11.2-R0.1-SNAPSHOT</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/spigot-1.11.2.jar</systemPath>
-    </dependency>
-    -->
 
     <dependency>
       <groupId>com.bergerkiller.bukkit</groupId>
       <artifactId>BKCommonLib</artifactId>
-      <version>1.8-SNAPSHOT</version>
+      <version>${project.bkcversion}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
