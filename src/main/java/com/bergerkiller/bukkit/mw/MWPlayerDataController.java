@@ -98,7 +98,7 @@ public class MWPlayerDataController extends PlayerDataController {
         if (human instanceof Player) {
             // Send mob effect removal messages
             Player player = (Player) human;
-            for (Object effect : effects.values()) {
+            for (Object effect : effects.keySet()) {
                 PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_REMOVE.newInstance(player.getEntityId(), effect));
             }
         }
@@ -171,7 +171,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 CommonTagList taglist = playerData.createList("ActiveEffects");
                 for (int i = 0; i < taglist.size(); ++i) {
                     Object mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) taglist.get(i));
-                    effects.put(NMSMobEffect.effectList.get(mobEffect), mobEffect);
+                    effects.put(NMSMobEffect.effectType.getInternal(mobEffect), mobEffect);
                 }
             }
             NMSEntityHuman.updateEffects.set(playerHandle, true);
