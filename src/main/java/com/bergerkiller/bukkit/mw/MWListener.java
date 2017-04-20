@@ -138,17 +138,6 @@ public class MWListener implements Listener {
         event.setCancelled(!WorldConfig.get(event.getEntity()).allowHunger);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerPortalMonitor(PlayerPortalEvent event) {
-        if (event.getTo() == null) {
-            return;
-        }
-        if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
-            WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
-            teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
-        }
-    }
-
     public void handlePortalEnterNextTick(Player player, Location from) {
         // Handle teleportation the next tick
         final EntityPortalEvent portalEvent = new EntityPortalEvent(player, from, null, null);
@@ -205,7 +194,7 @@ public class MWListener implements Listener {
         }
 
         // For further processing Portal-specific logic is needed
-        if (Portal.handlePortalEnter(event, mat)) {
+        if (Portal.handlePortalEnter(event, mat) && event.getTo() != null) {
             // Send a preparation message if teleporting to non-generated areas
             if (entity instanceof Player) {
                 Location to = event.getTo();
@@ -226,17 +215,32 @@ public class MWListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerPortalMonitor(PlayerPortalEvent event) {
+        if (event.getTo() == null) {
+            return;
+        }
+        if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
+            WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
+            teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
+        }
+    }
+
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
         if (!MyWorlds.enablePortals) {
             return;
         }
+        //Note! Event.getTo() can be null! Account for it!
+
         // Wrap inside an Entity portal event
         EntityPortalEvent entityEvent = new EntityPortalEvent(event.getPlayer(), event.getFrom(), event.getTo(), event.getPortalTravelAgent());
         entityEvent.useTravelAgent(event.useTravelAgent());
         handlePortalEnter(entityEvent, true);
         // Now, apply them again
-        event.setTo(entityEvent.getTo());
+        if (entityEvent.getTo() != null) {
+            event.setTo(entityEvent.getTo());
+        }
         event.useTravelAgent(entityEvent.useTravelAgent());
         event.setCancelled(entityEvent.isCancelled());
 
