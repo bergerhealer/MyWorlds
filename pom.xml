@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.mcversion>v1_11_R1</project.mcversion>
     <project.serverversion>1.11.2-R0.1</project.serverversion>
-    <project.bkcversion>1.11.2-v1</project.bkcversion>
+    <project.bkcversion>1.11.2-v2-SNAPSHOT</project.bkcversion>
   </properties>
 
   <repositories>
@@ -22,6 +22,12 @@
     <repository>
       <id>spigot-repo</id>
       <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+    </repository>
+
+    <!-- Repo for access to BKCommonLib -->
+    <repository>
+      <id>mgdev-repo</id>
+      <url>https://maven.mg-dev.eu</url>
     </repository>
 
     <!-- Repo for access to Objenesis -->
