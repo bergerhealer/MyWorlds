@@ -1,4 +1,4 @@
-# MyWorlds [![Build Status](https://drone.io/github.com/bergerhealer/MyWorlds/status.png)](https://drone.io/github.com/bergerhealer/MyWorlds/latest)
-[Spigot Resource Page](https://www.spigotmc.org/resources/myworlds.8011/) | [Dev Builds](https://drone.io/github.com/bergerhealer/MyWorlds/files)
+# MyWorlds
+[Spigot Resource Page](https://www.spigotmc.org/resources/myworlds.39594/) | [Dev Builds](https://ci.mg-dev.eu/job/MyWorlds/)
 
 World Management plugin for Bukkit.
