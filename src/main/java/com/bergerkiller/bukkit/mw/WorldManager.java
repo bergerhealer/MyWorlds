@@ -765,6 +765,7 @@ public class WorldManager {
                     }
                 } else {
                     MyWorlds.plugin.log(Level.WARNING, "Failed to make a copy of the file, no changes are made.");
+                    raf.close();
                     return -2;
                 }
             }

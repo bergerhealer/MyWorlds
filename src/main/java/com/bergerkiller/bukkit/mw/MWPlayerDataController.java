@@ -25,6 +25,7 @@ import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.generated.net.minecraft.server.EntityLivingHandle;
 import com.bergerkiller.reflection.net.minecraft.server.NMSEntityHuman;
 import com.bergerkiller.reflection.net.minecraft.server.NMSEntityLiving;
 import com.bergerkiller.reflection.net.minecraft.server.NMSMobEffect;

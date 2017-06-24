@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import com.bergerkiller.bukkit.common.utils.ItemUtil;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.Permission;
 
 public class WorldGivePortal extends Command {
@@ -29,10 +30,14 @@ public class WorldGivePortal extends Command {
         if (args.length == 1) {
             String typeStr = args[0].toLowerCase(Locale.ENGLISH);
             if (typeStr.contains("gate")) {
-                type = Material.END_GATEWAY;
-                visualType = Material.COAL_BLOCK;
-                visualData = 0;
-                visualName = "End Gateway";
+                // Only available >= 1.10.2
+                Material m = ParseUtil.parseEnum(Material.class, "END_GATEWAY", null);
+                if (m != null) {
+                    type = m;
+                    visualType = Material.COAL_BLOCK;
+                    visualData = 0;
+                    visualName = "End Gateway";
+                }
             } else if (typeStr.contains("end")) {
                 type = Material.ENDER_PORTAL;
                 visualData = 15;
