@@ -25,8 +25,8 @@
 
     <!-- Repo for access to BKCommonLib -->
     <repository>
-      <id>mgdev-repo</id>
-      <url>https://maven.mg-dev.eu</url>
+        <id>MG-Dev Jenkins CI Maven Repository</id>
+        <url>https://ci.mg-dev.eu/plugin/repository/everything</url>
     </repository>
 
     <!-- Repo for access to Objenesis -->
