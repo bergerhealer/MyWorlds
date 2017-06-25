@@ -26,6 +26,8 @@ import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.generated.net.minecraft.server.EntityLivingHandle;
+import com.bergerkiller.generated.net.minecraft.server.MobEffectHandle;
+import com.bergerkiller.generated.net.minecraft.server.MobEffectListHandle;
 import com.bergerkiller.reflection.net.minecraft.server.NMSEntityHuman;
 import com.bergerkiller.reflection.net.minecraft.server.NMSEntityLiving;
 import com.bergerkiller.reflection.net.minecraft.server.NMSMobEffect;
@@ -95,11 +97,13 @@ public class MWPlayerDataController extends PlayerDataController {
 
     private static void clearEffects(HumanEntity human) {
         // Clear mob effects
-        Map<Object, Object> effects = NMSEntityHuman.mobEffects.get(Conversion.toEntityHandle.convert(human));
+        EntityLivingHandle livingHandle = EntityLivingHandle.fromBukkit(human);
+
+        Map<MobEffectListHandle, MobEffectHandle> effects = livingHandle.getMobEffects();
         if (human instanceof Player) {
             // Send mob effect removal messages
             Player player = (Player) human;
-            for (Object effect : effects.keySet()) {
+            for (MobEffectListHandle effect : effects.keySet()) {
                 PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_REMOVE.newInstance(player.getEntityId(), effect));
             }
         }
@@ -138,6 +142,7 @@ public class MWPlayerDataController extends PlayerDataController {
             files.log("refreshing state");
 
             CommonPlayer commonPlayer = CommonEntity.get(player);
+            EntityLivingHandle livingPlayer = EntityLivingHandle.fromBukkit(player);
             Object playerHandle = commonPlayer.getHandle();
 
             // First, clear previous player information when loading involves adding new elements
@@ -167,15 +172,15 @@ public class MWPlayerDataController extends PlayerDataController {
             // data.getValue("Bukkit.MaxHealth", (float) commonPlayer.getMaxHealth());
 
             // Load Mob Effects
-            Map<Object, Object> effects = NMSEntityHuman.mobEffects.get(playerHandle);
+            Map<MobEffectListHandle, MobEffectHandle> effects = livingPlayer.getMobEffects();
             if (playerData.containsKey("ActiveEffects")) {
                 CommonTagList taglist = playerData.createList("ActiveEffects");
                 for (int i = 0; i < taglist.size(); ++i) {
-                    Object mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) taglist.get(i));
-                    effects.put(NMSMobEffect.effectType.getInternal(mobEffect), mobEffect);
+                    MobEffectHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) taglist.get(i));
+                    effects.put(mobEffect.getEffectList(), mobEffect);
                 }
             }
-            NMSEntityHuman.updateEffects.set(playerHandle, true);
+            livingPlayer.setUpdateEffects(true);
 
             // Send add messages for all (new) effects
             for (Object effect : effects.values()) {
