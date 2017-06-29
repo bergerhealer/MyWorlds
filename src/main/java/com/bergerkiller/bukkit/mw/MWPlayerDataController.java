@@ -159,7 +159,14 @@ public class MWPlayerDataController extends PlayerDataController {
             commonPlayer.write(NMSEntityHuman.exp, playerData.getValue("XpP", 0.0f));
             commonPlayer.write(NMSEntityHuman.expLevel, playerData.getValue("XpLevel", 0));
             commonPlayer.write(NMSEntityHuman.expTotal, playerData.getValue("XpTotal", 0));
-            commonPlayer.setHealth((double) playerData.getValue("Max Health", (float) commonPlayer.getMaxHealth()));
+
+            if (playerData.containsKey("HealF")) {
+                // Legacy stuff
+                commonPlayer.setHealth(playerData.getValue("HealF", float.class));
+            } else {
+                commonPlayer.setHealth(playerData.getValue("Health", commonPlayer.getMaxHealth()));
+            }
+
             commonPlayer.setSpawnPoint(playerData.getBlockLocation("Spawn"));
             commonPlayer.write(NMSEntityHuman.spawnForced, playerData.getValue("SpawnForced", false));
             NBTUtil.loadFoodMetaData(NMSEntityHuman.foodData.get(playerHandle), playerData);
