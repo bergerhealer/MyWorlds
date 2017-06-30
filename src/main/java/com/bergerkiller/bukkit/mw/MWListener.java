@@ -287,7 +287,9 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent event) {
-        handlePortalEnter(event, true);
+        if (MyWorlds.enablePortals) {
+            handlePortalEnter(event, true);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
