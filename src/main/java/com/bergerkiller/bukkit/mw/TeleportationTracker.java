@@ -27,7 +27,13 @@ public class TeleportationTracker {
         walkDistanceCheckMap.put(player, location);
         portaltimes.put(player, System.currentTimeMillis());
         EntityUtil.setAllowTeleportation(player, false);
-        EntityUtil.setPortalCooldown(player, EntityUtil.getPortalCooldownMaximum(player));
+
+        int maxCoolDown = EntityUtil.getPortalCooldownMaximum(player);
+        if (maxCoolDown <= 2) {
+            maxCoolDown = 300; // workaround for BKCommonLib bug
+            // If that bug occurs again; prevents rapid infinite loop
+        }
+        EntityUtil.setPortalCooldown(player, maxCoolDown);
     }
 
     /**
