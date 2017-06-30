@@ -10,7 +10,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 import com.bergerkiller.bukkit.common.collections.EntityMap;
@@ -86,14 +85,6 @@ public class MWListenerPost implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleportMsg(PlayerTeleportEvent event) {
-        handleTeleportMessage(event.getPlayer(), event.getTo());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerPortalMsg(PlayerPortalEvent event) {
-        if (event.getTo() == null) {
-            return;
-        }
         handleTeleportMessage(event.getPlayer(), event.getTo());
     }
 
