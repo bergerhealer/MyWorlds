@@ -6,6 +6,7 @@ import java.util.HashSet;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
@@ -183,6 +184,11 @@ public class MyWorlds extends PluginBase {
 
         // Abort chunk loader
         LoadChunksTask.abort(true);
+
+        // Make sure to save all players before disabling - this prevents lost state
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            CommonUtil.savePlayer(player);
+        }
 
         // Detach data controller
         if (dataController != null) {
