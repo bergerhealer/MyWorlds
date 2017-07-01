@@ -184,6 +184,12 @@ public class MyWorlds extends PluginBase {
         // Abort chunk loader
         LoadChunksTask.abort(true);
 
+        // Detach data controller
+        if (dataController != null) {
+            dataController.detach();
+            dataController = null;
+        }
+
         plugin = null;
     }
 
