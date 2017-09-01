@@ -49,7 +49,7 @@ public class MyWorlds extends PluginBase {
 
     @Override
     public int getMinimumLibVersion() {
-        return Common.VERSION;
+        return 11200; //Common.VERSION;
     }
 
     public String root() {
@@ -190,8 +190,13 @@ public class MyWorlds extends PluginBase {
             CommonUtil.savePlayer(player);
         }
 
-        // Detach data controller
-        if (dataController != null) {
+        // Detach data controller. Only do so when reloading, do not do it when
+        // shutting down so we handle player saving correctly.
+        boolean isShuttingDown = false;
+        try {
+            isShuttingDown = CommonUtil.isShuttingDown();
+        } catch (Throwable t) {} // to handle old version of BKCommonLib
+        if (!isShuttingDown && dataController != null) {
             dataController.detach();
             dataController = null;
         }
