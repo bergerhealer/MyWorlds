@@ -21,6 +21,7 @@ import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.protocol.PacketType;
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
@@ -329,6 +330,26 @@ public class MWPlayerDataController extends PlayerDataController {
                 }
             }
             postLoad(human);
+
+            // When set as flying, there appears to be a problem or bug where this is reset
+            // This causes the player to come falling down upon (re-)join, which is really annoying
+            // For now this is fixed by explicitly calling setFlying one tick later
+            if (human instanceof Player && playerData.containsKey("abilities")) {
+                CommonTagCompound abilities = (CommonTagCompound) playerData.get("abilities");
+                if (abilities.getValue("flying", false)) {
+                    final Player player = (Player) human;
+                    CommonUtil.nextTick(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (player.isOnline()) {
+                                try {
+                                    player.setFlying(true);
+                                } catch (IllegalArgumentException ex) {}
+                            }
+                        }
+                    });
+                }
+            }
 
             return playerData;
         } catch (Exception exception) {
