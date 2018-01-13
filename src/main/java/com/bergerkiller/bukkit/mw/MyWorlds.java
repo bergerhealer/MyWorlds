@@ -13,6 +13,7 @@ import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.protocol.PacketType;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
 import com.bergerkiller.bukkit.common.AsyncTask;
 import com.bergerkiller.bukkit.common.PluginBase;
 import com.bergerkiller.bukkit.common.Task;
@@ -47,7 +48,7 @@ public class MyWorlds extends PluginBase {
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
     private MWPlayerDataController dataController;
-    private final MWCreativeSlotSuppressor creativeSlotSuppressor = new MWCreativeSlotSuppressor();
+    private final WorldInventoriesDupingPatch worldDupingPatch = new WorldInventoriesDupingPatch();
     public static MyWorlds plugin;
 
     @Override
@@ -74,7 +75,7 @@ public class MyWorlds extends PluginBase {
         plugin = this;
 
         // Event registering
-        this.creativeSlotSuppressor.enable(this);
+        this.worldDupingPatch.enable(this);
         this.register(MWListener.class);
         this.register(MWListenerPost.class);
         this.register("tpp", "world");
@@ -205,7 +206,7 @@ public class MyWorlds extends PluginBase {
             dataController = null;
         }
 
-        this.creativeSlotSuppressor.disable(this);
+        this.worldDupingPatch.disable();
         plugin = null;
     }
 
@@ -223,16 +224,6 @@ public class MyWorlds extends PluginBase {
     @Override
     public void permissions() {
         this.loadPermissions(Permission.class);
-    }
-
-    /**
-     * Gets the creative slot suppressor, responsible for cancelling creative slot packets to
-     * thwart item duping when switching inventories.
-     * 
-     * @return creative slot suppessor
-     */
-    public MWCreativeSlotSuppressor getCreativeSlotSuppressor() {
-        return this.creativeSlotSuppressor;
     }
 
     /**

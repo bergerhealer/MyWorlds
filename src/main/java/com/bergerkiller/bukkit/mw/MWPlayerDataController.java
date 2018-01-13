@@ -197,11 +197,6 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // Perform post loading
             postLoad(player);
-
-            // Deny creative set slot packets for a few ticks
-            if (MyWorlds.plugin != null) {
-                MyWorlds.plugin.getCreativeSlotSuppressor().setTimeout(player);
-            }
         } catch (Exception exception) {
             Bukkit.getLogger().warning("Failed to load player data for " + player.getName());
             exception.printStackTrace();
