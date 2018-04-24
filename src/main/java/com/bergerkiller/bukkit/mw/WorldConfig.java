@@ -410,12 +410,12 @@ public class WorldConfig extends WorldConfigStore {
      * @param player that just entered this world
      */
     public void onPlayerEnter(Player player) {
+        // Refresh states based on the new world the player joined
+        MWPlayerDataController.refreshState(player);
         // Apply world-specific settings
         updateOP(player);
         updateGamemode(player);
         updateHunger(player);
-        // Refresh states based on the new world the player joined
-        MWPlayerDataController.refreshState(player);
     }
 
     public void onWorldLoad(World world) {
