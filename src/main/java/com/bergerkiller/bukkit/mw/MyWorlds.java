@@ -45,6 +45,7 @@ public class MyWorlds extends PluginBase {
     public static boolean allowPersonalPortals;
     public static boolean enablePortals;
     public static boolean ignoreEggSpawns;
+    public static boolean debugLogGMChanges;
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
     private MWPlayerDataController dataController;
@@ -159,6 +160,10 @@ public class MyWorlds extends PluginBase {
         config.addHeader("importFromMultiverse", "Note that default world properties are then no longer applied, as MultiVerse takes that over");
         config.addHeader("importFromMultiverse", "This setting is only active if MultiVerse-Core is installed.");
         importFromMultiVerse = config.get("importFromMultiVerse", true);
+
+        config.setHeader("debugLogGMChanges", "\nWhether game mode changes are logged to console, including plugin name and stack trace");
+        config.addHeader("debugLogGMChanges", "This helps to debug problems where game modes spuriously change, or fail to change properly");
+        debugLogGMChanges = config.get("debugLogGMChanges", false);
 
         config.save();
 

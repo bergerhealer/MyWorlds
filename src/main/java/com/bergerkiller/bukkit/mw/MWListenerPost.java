@@ -1,5 +1,8 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -9,11 +12,15 @@ import org.bukkit.event.Event.Result;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.collections.EntityMap;
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
+import com.bergerkiller.bukkit.common.utils.StringUtil;
 
 /**
  * Handles events to manage plugin-defined permissions and messages.
@@ -121,6 +128,33 @@ public class MWListenerPost implements Listener {
                 Localization.WORLD_NOBUILD.message(event.getPlayer());
                 event.setBuild(false);
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onGameModeChange(PlayerGameModeChangeEvent event) {
+        if (!MyWorlds.debugLogGMChanges) {
+            return;
+        }
+
+        ArrayList<StackTraceElement> elements = new ArrayList<StackTraceElement>(Arrays.asList(Thread.currentThread().getStackTrace()));
+        while (!elements.isEmpty() && !elements.get(0).toString().startsWith("org.bukkit.plugin.SimplePluginManager.callEvent")) {
+            elements.remove(0);
+        }
+
+        System.out.println("Game Mode of " + event.getPlayer().getName() + " changed from " +
+                event.getPlayer().getGameMode() + " to " + event.getNewGameMode());
+        ArrayList<String> pluginNames = new ArrayList<String>();
+        for (Plugin plugin : CommonUtil.findPlugins(elements)) {
+            pluginNames.add(plugin.getName());
+        }
+        if (pluginNames.isEmpty()) {
+            System.out.println("This was likely initiated by the server. Stack trace:");
+        } else {
+            System.out.println("This was likely initiated by " + StringUtil.join(" OR ", pluginNames) + ". Stack trace:");
+        }
+        for (StackTraceElement element : elements) {
+            System.out.println("  at " + element);
         }
     }
 
