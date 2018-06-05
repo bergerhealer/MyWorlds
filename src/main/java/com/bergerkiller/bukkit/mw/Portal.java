@@ -314,6 +314,7 @@ public class Portal extends PortalStore {
                 }
             } else if (entity instanceof Player) {
                 // For later on: set up the right portal for permissions and messages
+                destinationLoc = destinationLoc.clone().add(0.0, 1.0, 0.0); // Fix
                 MWListenerPost.setLastEntered((Player) entity, enteredPortal);
             }
         }
@@ -328,6 +329,7 @@ public class Portal extends PortalStore {
                 if (newEnvironment == Environment.THE_END) {
                     // Always use this location of the world as destination
                     // Anything else will cause internal logic to break
+                    // SERIOUSLY ANYTHING ELSE WILL COMPLETELY BREAK THIS!!!
                     destinationLoc = new Location(enteredWorld, 100, 50, 0);
                     useTravelAgent = true;
                 } else if (oldEnvironment == Environment.THE_END) {
@@ -381,7 +383,7 @@ public class Portal extends PortalStore {
         } else if (canTeleportTo(entity, destinationLoc)) {
             // Successful teleport
             event.useTravelAgent(useTravelAgent);
-            event.setTo(destinationLoc.clone().add(0.0, 1.0, 0.0));
+            event.setTo(destinationLoc);
             return true;
         }
         return false;
