@@ -507,6 +507,22 @@ public class WorldManager {
     }
 
     /**
+     * Whether a previous spawn location is available for a player to teleport to.
+     * See {@link #getPlayerWorldSpawn(Player, World)}.
+     * 
+     * @param player
+     * @param world
+     * @return spawn position is available
+     */
+    public static boolean hasLastKnownPosition(Player player, World world) {
+        if (WorldConfig.get(world).rememberLastPlayerPosition || Permission.GENERAL_KEEPLASTPOS.has(player)) {
+            return MWPlayerDataController.readLastLocation(player, world) != null;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * Teleports a player to a world. If the world allows the last player position
      * on the world to be used, this is used instead. If no last position is known,
      * or last position remembering is disabled, the player is teleported to the

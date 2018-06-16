@@ -17,6 +17,7 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
@@ -73,16 +74,31 @@ public class Portal extends PortalStore {
     /**
      * Gets the destination location of this Portal
      * 
+     * @param player for which to get the destination. Null to ignore.
      * @return Portal destination
      */
     public Location getDestination() {
+        return getDestination(null);
+    }
+
+    /**
+     * Gets the destination location of this Portal
+     * 
+     * @param player for which to get the destination. Null to ignore.
+     * @return Portal destination
+     */
+    public Location getDestination(Player player) {
         final String worldName = this.location == null ? null : this.location.getWorld().getName();
         Location loc = getPortalLocation(this.destination, worldName, true);
         if (loc == null) {
             String portalname = WorldManager.matchWorld(this.destination);
             World w = WorldManager.getWorld(portalname);
             if (w != null) {
-                loc = WorldManager.getSpawnLocation(w);
+                if (MyWorlds.portalToLastPosition && player != null) {
+                    loc = WorldManager.getPlayerWorldSpawn(player, w);
+                } else {
+                    loc = WorldManager.getSpawnLocation(w);
+                }
             }
         }
         return loc;
@@ -97,7 +113,7 @@ public class Portal extends PortalStore {
         if (this.destination == null || this.destination.trim().isEmpty()) {
             return false;
         }
-        return getDestination() != null;
+        return getDestination(null) != null;
     }
 
     /**
@@ -303,7 +319,8 @@ public class Portal extends PortalStore {
 
         // Further handle portal entering
         if (enteredPortal != null) {
-            destinationLoc = enteredPortal.getDestination();
+            Player p = CommonUtil.tryCast(entity, Player.class);
+            destinationLoc = enteredPortal.getDestination(p);
             if (destinationLoc == null) {
                 String name = enteredPortal.getDestinationName();
                 if (name != null && entity instanceof Player) {
@@ -317,6 +334,17 @@ public class Portal extends PortalStore {
                 destinationLoc = destinationLoc.clone().add(0.0, 1.0, 0.0); // Fix
                 MWListenerPost.setLastEntered((Player) entity, enteredPortal);
             }
+        }
+
+        // Check for teleporting to the last-known position
+        if (enteredWorld != null &&
+            MyWorlds.allowPersonalPortals &&
+            MyWorlds.portalToLastPositionPersonal &&
+            entity instanceof Player &&
+            WorldManager.hasLastKnownPosition((Player) entity, enteredWorld))
+        {
+            destinationLoc = WorldManager.getPlayerWorldSpawn((Player) entity, enteredWorld);
+            enteredWorld = null;
         }
 
         // Further handle teleportation to worlds

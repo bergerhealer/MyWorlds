@@ -10,13 +10,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
-import com.bergerkiller.bukkit.common.protocol.PacketType;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
-import com.bergerkiller.bukkit.common.AsyncTask;
 import com.bergerkiller.bukkit.common.PluginBase;
-import com.bergerkiller.bukkit.common.Task;
 
 public class MyWorlds extends PluginBase {
     private static final String MULTIVERSE_NAME = "Multiverse-Core";
@@ -46,6 +43,8 @@ public class MyWorlds extends PluginBase {
     public static boolean enablePortals;
     public static boolean ignoreEggSpawns;
     public static boolean debugLogGMChanges;
+    public static boolean portalToLastPosition;
+    public static boolean portalToLastPositionPersonal;
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
     private MWPlayerDataController dataController;
@@ -164,6 +163,17 @@ public class MyWorlds extends PluginBase {
         config.setHeader("debugLogGMChanges", "\nWhether game mode changes are logged to console, including plugin name and stack trace");
         config.addHeader("debugLogGMChanges", "This helps to debug problems where game modes spuriously change, or fail to change properly");
         debugLogGMChanges = config.get("debugLogGMChanges", false);
+
+        config.setHeader("portalToLastPosition", "\nWhether players are teleported to their last-known position on the world when they take a portal");
+        config.addHeader("portalToLastPosition", "This is only active when 'remember last position' is enabled for the world");
+        config.addHeader("portalToLastPosition", "It makes that option work not just for /tpp, but also when taking portals to a world");
+        portalToLastPosition = config.get("portalToLastPosition", true);
+
+        config.setHeader("portalToLastPositionPersonal", "\nWhether personal portals (portals player build themselves) teleport them to the last");
+        config.addHeader("portalToLastPositionPersonal", "position on the world they are teleporting to, instead of a matching location from the portal");
+        config.addHeader("portalToLastPositionPersonal", "This is only active when 'remember last position' is enabled for the world");
+        config.addHeader("portalToLastPositionPersonal", "Note that when this is the first time the player enters a world, a personal portal is created anyway");
+        portalToLastPositionPersonal = config.get("portalToLastPositionPersonal", true);
 
         config.save();
 
