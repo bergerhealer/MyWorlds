@@ -26,6 +26,7 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -136,6 +137,24 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerFoodChange(FoodLevelChangeEvent event) {
         event.setCancelled(!WorldConfig.get(event.getEntity()).allowHunger);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerBedLeave(PlayerBedLeaveEvent event) {
+        Block bed = event.getBed();
+        if (bed == null) {
+            return;
+        }
+        final WorldConfig config = WorldConfig.get(bed.getWorld());
+        if (!config.bedRespawnEnabled) {
+            final Player player = event.getPlayer();
+            CommonUtil.nextTick(new Runnable() {
+                @Override
+                public void run() {
+                    config.updateBedSpawnPoint(player);
+                }
+            });
+        }
     }
 
     public void handlePortalEnterNextTick(Player player, Location from) {

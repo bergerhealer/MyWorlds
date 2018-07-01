@@ -25,6 +25,17 @@ public class WorldConfigStore {
     }
 
     /**
+     * Gets the World Configuration of a world, if it exists presently.
+     * Returns null if it does not exist.
+     * 
+     * @param worldname
+     * @return World Config of the world, null if not found
+     */
+    public static WorldConfig getIfExists(String worldname) {
+        return worldConfigs.get(worldname);
+    }
+
+    /**
      * Gets the World Configuration of a world, while forcing a particular environment.
      * 
      * @param worldname to get the configuration of

@@ -35,6 +35,7 @@ commands:
             /world saving - Toggle world saving on/off
             /world spawnloaded - Toggle spawn loaded on/off
             /world forcedrespawn - Toggle forced respawn on/off
+            /world bedrespawn - Toggle bed respawns on/off
             /world rememberlastpos - Toggles last-position memory on/off
             /world evacuate - Evacuate all players of a world
             /world delete - Delete a world permanently
@@ -132,6 +133,12 @@ commands:
         usage: |
             /world forcedrespawn [on/off]
             /world forcedrespawn [on/off] [world]
+    world bedrespawn:
+        description: Toggles respawning at bed on or off
+        aliases: [world respawnbed, world bedspawn]
+        usage: |
+            /world bedrespawn [on/off]
+            /world bedrespawn [on/off] [world]
     world rememberlastpos:
         description: Toggles last-position memory on or off
         aliases: [world (set)rememberlast(player)pos(ition)]

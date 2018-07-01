@@ -363,6 +363,12 @@ public class Command {
                     rval = new WorldSetForcedRespawn();
                 } else if (cmdLabel.equalsIgnoreCase("forcedrespawn")) {
                     rval = new WorldSetForcedRespawn();
+                } else if (cmdLabel.equalsIgnoreCase("bedrespawn")) {
+                    rval = new WorldBedRespawn();
+                } else if (cmdLabel.equalsIgnoreCase("respawnbed")) {
+                    rval = new WorldBedRespawn();
+                } else if (cmdLabel.equalsIgnoreCase("bedspawn")) {
+                    rval = new WorldBedRespawn();
                 } else if (cmdLabel.equalsIgnoreCase("rememberlastpos")) {
                     rval = new WorldSetRememberPlayerPos();
                 } else if (cmdLabel.equalsIgnoreCase("setrememberlastpos")) {

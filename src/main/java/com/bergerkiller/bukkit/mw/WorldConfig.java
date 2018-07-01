@@ -52,6 +52,7 @@ public class WorldConfig extends WorldConfigStore {
     public boolean clearInventory = false;
     public boolean forcedRespawn = false;
     public boolean rememberLastPlayerPosition = false;
+    public boolean bedRespawnEnabled = true;
     public WorldInventory inventory;
 
     protected WorldConfig(String worldname) {
@@ -194,6 +195,7 @@ public class WorldConfig extends WorldConfigStore {
         this.formIce = config.formIce;
         this.clearInventory = config.clearInventory;
         this.forcedRespawn = config.forcedRespawn;
+        this.bedRespawnEnabled = config.bedRespawnEnabled;
         this.inventory = config.inventory.add(this.worldname);
     }
 
@@ -223,6 +225,7 @@ public class WorldConfig extends WorldConfigStore {
         this.allowHunger = node.get("hunger", this.allowHunger);
         this.rememberLastPlayerPosition = node.get("rememberlastplayerpos", this.rememberLastPlayerPosition);
         this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
+        this.bedRespawnEnabled = node.get("bedRespawnEnabled", this.bedRespawnEnabled);
         for (String type : node.getList("deniedCreatures", String.class)) {
             type = type.toUpperCase();
             if (type.equals("ANIMALS")) {
@@ -303,6 +306,7 @@ public class WorldConfig extends WorldConfigStore {
         node.set("formSnow", this.formSnow);
         node.set("difficulty", this.difficulty == null ? "NONE" : this.difficulty.toString());
         node.set("reloadWhenEmpty", this.reloadWhenEmpty);
+        node.set("bedRespawnEnabled", this.bedRespawnEnabled);
         if (this.spawnPoint == null) {
             node.remove("spawn");
         } else {
@@ -416,6 +420,7 @@ public class WorldConfig extends WorldConfigStore {
         updateOP(player);
         updateGamemode(player);
         updateHunger(player);
+        updateBedSpawnPoint(player);
     }
 
     public void onWorldLoad(World world) {
@@ -526,6 +531,11 @@ public class WorldConfig extends WorldConfigStore {
     public void updateGamemode(Player player) {
         if (this.gameMode != null && !Permission.GENERAL_IGNOREGM.has(player)) {
             player.setGameMode(this.gameMode);
+        }
+    }
+    public void updateBedSpawnPoint(Player player) {
+        if (!this.bedRespawnEnabled) {
+            player.setBedSpawnLocation(null);
         }
     }
     public void updatePVP(World world) {

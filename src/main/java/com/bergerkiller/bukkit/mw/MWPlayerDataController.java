@@ -207,6 +207,20 @@ public class MWPlayerDataController extends PlayerDataController {
         NMSEntityLiving.initAttributes.invoke(hEntityLiving);
     }
 
+    private static void removeBedSpawnPointIfDisabled(CommonTagCompound playerData) {
+        String bedSpawnWorld = playerData.getValue("SpawnWorld", "");
+        if (bedSpawnWorld != null && !bedSpawnWorld.isEmpty()) {
+            WorldConfig config = WorldConfig.getIfExists(bedSpawnWorld);
+            if (config != null && !config.bedRespawnEnabled) {
+                playerData.removeValue("SpawnWorld");
+                playerData.removeValue("SpawnForced");
+                playerData.removeValue("SpawnX");
+                playerData.removeValue("SpawnY");
+                playerData.removeValue("SpawnZ");
+            }
+        }
+    }
+
     /**
      * Fired when a player respawns and all it's settings will be wiped.
      * The player contains all information right before respawning.
@@ -245,6 +259,9 @@ public class MWPlayerDataController extends PlayerDataController {
             if (enderItems != null) {
                 savedData.put("EnderItems", enderItems);
             }
+
+            // Disable bed spawn if not enabled for that world
+            removeBedSpawnPointIfDisabled(savedData);
 
             // Now, go ahead and save this data
             files.currentFile.write(savedData);
@@ -306,6 +323,9 @@ public class MWPlayerDataController extends PlayerDataController {
                 playerData = files.currentFile.read();
             }
 
+            // Disable bed spawn if not enabled for that world
+            removeBedSpawnPointIfDisabled(playerData);
+
             // When main world spawning is forced, reset location to there
             if (!hasPlayedBefore || MyWorlds.forceMainWorldSpawn) {
                 setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
@@ -364,6 +384,9 @@ public class MWPlayerDataController extends PlayerDataController {
         try {
             final PlayerFileCollection files = new PlayerFileCollection(human);
             final CommonTagCompound savedData = NBTUtil.saveEntity(human, null);
+
+            // Disable bed spawn if not enabled for that world
+            removeBedSpawnPointIfDisabled(savedData);
 
             files.log("saving data");
 
