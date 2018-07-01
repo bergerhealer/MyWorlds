@@ -41,6 +41,7 @@ public class WorldCreate extends Command {
                         return;
                     }
                     message(ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
+                    wc.setChunkGeneratorName(cgenName);
                     if (cgenName.indexOf(':') == 0) {
                         String args = cgenName.substring(1);
                         // Write a level.dat with the options changed
@@ -49,10 +50,16 @@ public class WorldCreate extends Command {
                         data.putValue("generatorVersion", 0);
                         data.putValue("generatorOptions", args);
                         wc.setData(data);
-                        message(ChatColor.WHITE + "World options: " + ChatColor.YELLOW + args);
+
+                        // Log options, limit it to 200 chars
+                        if (args.length() > 200) {
+                            message(ChatColor.WHITE + "World options: " + ChatColor.YELLOW + args.substring(0, 200) + "(...)");
+                        } else {
+                            message(ChatColor.WHITE + "World options: " + ChatColor.YELLOW + args);
+                        }
+
                         message(ChatColor.WHITE + "World generator: " + ChatColor.YELLOW + "Default (Vanilla)");
                     } else {
-                        wc.setChunkGeneratorName(cgenName);
                         message(ChatColor.WHITE + "World generator: " + ChatColor.YELLOW + cgenName);
                     }
                 }

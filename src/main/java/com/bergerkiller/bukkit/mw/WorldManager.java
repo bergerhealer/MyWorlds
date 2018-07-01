@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.logging.Level;
@@ -35,6 +36,8 @@ import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.generated.net.minecraft.server.MinecraftServerHandle;
+import com.bergerkiller.mountiplex.reflection.SafeField;
 import com.bergerkiller.reflection.net.minecraft.server.NMSRegionFile;
 import com.bergerkiller.reflection.net.minecraft.server.NMSRegionFileCache;
 
@@ -215,21 +218,33 @@ public class WorldManager {
             args = name.substring(index + 1);
             genName = name.substring(0, index);
         }
-        if (genName.isEmpty()) {
-            // Only arguments (meant for default generator)
-            return ":" + args;
+
+        genName = fixGeneratorName_noargs(genName);
+        if (genName == null) {
+            return null;
+        } else if (args.isEmpty()) {
+            return genName;
         } else {
-            //get plugin name
-            final String pname = ParseUtil.parseArray(getGeneratorPlugins(), genName.toLowerCase(), null);
-            if (pname == null) {
-                // Not found
-                return null;
-            } else {
-                // Found: append arguments
-                return pname + ":" + args;
-            }
+            return genName + ":" + args;
         }
     }
+
+    private static String fixGeneratorName_noargs(String name) {
+        // No generator
+        if (name.isEmpty()) {
+            return name;
+        }
+
+        // Name of a plugin
+        final String pname = ParseUtil.parseArray(getGeneratorPlugins(), name.toLowerCase(Locale.ENGLISH), null);
+        if (pname != null) {
+            return pname;
+        }
+
+        // Not found
+        return null;
+    }
+
     public static ChunkGenerator getGenerator(String worldname, String name) {
         if (name == null) {
             return null;
@@ -388,7 +403,7 @@ public class WorldManager {
             }
         } catch (Exception ex) {}
         if (cgen == null) {
-            if (chunkGeneratorName != null) {
+            if (chunkGeneratorName != null && chunkGeneratorName.indexOf(':') != 0) {
                 msg.setLength(0);
                 msg.append("World '").append(worldname);
                 msg.append("' could not be created because the chunk generator '");
@@ -408,6 +423,19 @@ public class WorldManager {
                 if (seed != 0) {
                     c.seed(seed);
                 }
+
+                // Parse args from chunkgenerator name
+                String options = "";
+                if (chunkGeneratorName != null) {
+                    int chunkGenArgsStart = chunkGeneratorName.indexOf(':');
+                    if (chunkGenArgsStart != -1) {
+                        options = chunkGeneratorName.substring(chunkGenArgsStart + 1);
+                    }
+                }
+                if (!options.isEmpty()) {
+                    c.generatorSettings(options);
+                }
+
                 c.generator(cgen);
                 w = c.createWorld();
             } catch (Exception ex) {
@@ -421,7 +449,7 @@ public class WorldManager {
                 if (sender != null) {
                     sender.sendMessage(ChatColor.RED + "Failed to create world: " + failReason.getMessage());
                 }
-                CommonUtil.filterStackTrace(failReason).printStackTrace();
+                failReason.printStackTrace();
             }
         } else if (i == 1) {
             MyWorlds.plugin.log(Level.INFO, "World creation succeeded after 1 retry!");
@@ -429,6 +457,28 @@ public class WorldManager {
             MyWorlds.plugin.log(Level.INFO, "World creation succeeded after " + i + " retries!");
         }
         return w;
+    }
+
+    /**
+     * Reads the generator-settings field in server.properties
+     * 
+     * @return default generator settings
+     */
+    public static String readDefaultGeneratorSettings() {
+        try {
+            // Retrieve 'propertyManager' in DedicatedServer instance
+            Class<?> PropertyManagerType = CommonUtil.getNMSClass("PropertyManager");
+            Object propertyManager = SafeField.get(MinecraftServerHandle.instance().getRaw(), "propertyManager", PropertyManagerType);
+
+            // Retrieve java.util.Properties field from PropertyManager instance
+            java.util.Properties properties = SafeField.get(propertyManager, "properties", java.util.Properties.class);
+
+            // Query
+            return properties.getProperty("generator-settings", "");
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return "";
     }
 
     public static Location getEvacuation(Player player) {

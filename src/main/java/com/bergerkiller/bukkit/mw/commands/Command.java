@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.logging.Level;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -194,14 +196,18 @@ public class Command {
      */
     public String getGeneratorName() {
         String gen = null;
-        if (this.worldname.contains(":")) {
-            String[] parts = this.worldname.split(":", -1);
-            if (parts.length == 2) {
-                this.worldname = parts[0];
-                gen = parts[1];
+        int gen_start = this.worldname.indexOf(':');
+        if (gen_start != -1) {
+            gen = this.worldname.substring(gen_start + 1);
+            this.worldname = this.worldname.substring(0, gen_start);
+        } else {
+            // Use defaults from server.properties when creating a world and no args are set
+            gen = WorldManager.readDefaultGeneratorSettings();
+            if (!gen.isEmpty()) {
+                MyWorlds.plugin.log(Level.INFO, "Using world generator settings from server.properties: " + gen);
+                gen = ":" + gen;
             } else {
-                this.worldname = parts[0];
-                gen = parts[1] + ":" + parts[2];
+                gen = null;
             }
         }
         return gen;
