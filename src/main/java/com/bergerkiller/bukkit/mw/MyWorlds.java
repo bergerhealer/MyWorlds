@@ -37,6 +37,7 @@ public class MyWorlds extends PluginBase {
     public static double maxPortalSignDistance;
     private static String mainWorld;
     public static boolean forceMainWorldSpawn;
+    public static boolean forceGamemodeChanges;
     public static boolean overridePortalPhysics;
     public static boolean alwaysInstantPortal;
     public static boolean allowPersonalPortals;
@@ -133,6 +134,10 @@ public class MyWorlds extends PluginBase {
 
         config.setHeader("forceMainWorldSpawn", "\nWhether all players respawn on the main world at all times");
         forceMainWorldSpawn = config.get("forceMainWorldSpawn", false);
+
+        config.setHeader("forceGamemodeChanges", "\nWhether the world game mode is applied to all players, even those with the");
+        config.addHeader("forceGamemodeChanges", "myworlds.world.ignoregamemode permission");
+        forceGamemodeChanges = config.get("forceGamemodeChanges", false);
 
         config.setHeader("alwaysInstantPortal", "\nWhether survival players instantly teleport when entering a nether portal");
         alwaysInstantPortal = config.get("alwaysInstantPortal", true);

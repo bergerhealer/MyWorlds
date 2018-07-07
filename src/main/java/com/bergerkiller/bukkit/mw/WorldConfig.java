@@ -529,7 +529,7 @@ public class WorldConfig extends WorldConfigStore {
         }
     }
     public void updateGamemode(Player player) {
-        if (this.gameMode != null && !Permission.GENERAL_IGNOREGM.has(player)) {
+        if (this.gameMode != null && (MyWorlds.forceGamemodeChanges || !Permission.GENERAL_IGNOREGM.has(player))) {
             player.setGameMode(this.gameMode);
         }
     }
