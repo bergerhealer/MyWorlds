@@ -104,11 +104,13 @@ public class MWListenerPost implements Listener {
             if (!Permission.canBuild(event.getPlayer())) {
                 Localization.WORLD_NOBUILD.message(event.getPlayer());
                 event.setUseInteractedBlock(Result.DENY);
+                event.setCancelled(true);
             }
         } else if (MaterialUtil.ISINTERACTABLE.get(event.getClickedBlock())) {
             if (!Permission.canUse(event.getPlayer())) {
                 Localization.WORLD_NOUSE.message(event.getPlayer());
                 event.setUseInteractedBlock(Result.DENY);
+                event.setCancelled(true);
             }
         }
     }
