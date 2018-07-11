@@ -14,7 +14,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.bergerkiller.bukkit.common.controller.PlayerDataController;
-import com.bergerkiller.bukkit.common.conversion.Conversion;
 import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.common.entity.type.CommonHumanEntity;
 import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
@@ -111,6 +110,7 @@ public class MWPlayerDataController extends PlayerDataController {
         effects.clear();
         // Clear attributes
         NBTUtil.resetAttributes(human);
+        NMSEntityLiving.initAttributes.invoke(livingHandle.getRaw());
     }
 
     /**
@@ -148,7 +148,6 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // First, clear previous player information when loading involves adding new elements
             clearEffects(player);
-            initEntity(Conversion.toEntityHandle.convert(player));
 
             // Refresh attributes
             if (playerData.containsKey("Attributes")) {
@@ -201,10 +200,6 @@ public class MWPlayerDataController extends PlayerDataController {
             Bukkit.getLogger().warning("Failed to load player data for " + player.getName());
             exception.printStackTrace();
         }
-    }
-
-    private static void initEntity(Object hEntityLiving) {
-        NMSEntityLiving.initAttributes.invoke(hEntityLiving);
     }
 
     private static void removeBedSpawnPointIfDisabled(CommonTagCompound playerData) {
@@ -334,9 +329,6 @@ public class MWPlayerDataController extends PlayerDataController {
             // Minecraft bugfix here: Clear effects BEFORE loading the data
             // This resolves issues with effects staying behind
             clearEffects(human);
-
-            // Insert default attributes to not run into errors
-            initEntity(Conversion.toEntityHandle.convert(human));
 
             // Load the entity using the player data compound
             NBTUtil.loadEntity(human, playerData);
