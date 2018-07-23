@@ -111,6 +111,21 @@ public class MWPlayerDataController extends PlayerDataController {
         // Clear attributes
         NBTUtil.resetAttributes(human);
         NMSEntityLiving.initAttributes.invoke(livingHandle.getRaw());
+
+        // Clear inventory
+        human.getInventory().clear();
+
+        // Reset health and experience
+        human.setHealth(human.getMaxHealth());
+        if (human instanceof Player) {
+            Player player = (Player) human;
+            player.setExp(0.0f);
+            player.setTotalExperience(0);
+            player.setLevel(0);
+            player.setFoodLevel(20);
+            player.setSaturation(5.0f);
+            player.setExhaustion(0.0f);
+        }
     }
 
     /**
@@ -120,7 +135,6 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     private static void postLoad(HumanEntity human) {
         if (WorldConfig.get(human.getWorld()).clearInventory) {
-            human.getInventory().clear();
             clearEffects(human);
         }
     }
