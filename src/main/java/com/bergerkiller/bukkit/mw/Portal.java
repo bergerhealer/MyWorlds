@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
@@ -21,7 +20,6 @@ import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
-import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
@@ -286,10 +284,10 @@ public class Portal extends PortalStore {
      * failed.
      * 
      * @param event of the entering
-     * @param portalMaterial of the block that was used as portal
+     * @param portalType of the portal
      * @return True if a new destination was set, False if not
      */
-    public static boolean handlePortalEnter(EntityPortalEvent event, Material portalMaterial) {
+    public static boolean handlePortalEnter(EntityPortalEvent event, PortalType portalType) {
         // First, see whether a portal or default world will be used
         Entity entity = event.getEntity();
         Portal enteredPortal = getNear(entity.getLocation());
@@ -297,9 +295,9 @@ public class Portal extends PortalStore {
         if (enteredPortal == null) {
             // Default portals
             String def = null;
-            if (portalMaterial == Material.PORTAL) {
+            if (portalType == PortalType.NETHER) {
                 def = WorldConfig.get(entity).getNetherPortal();
-            } else if (portalMaterial == Material.ENDER_PORTAL) {
+            } else if (portalType == PortalType.END) {
                 def = WorldConfig.get(entity).getEnderPortal();
             }
             if (def != null) {
@@ -383,7 +381,7 @@ public class Portal extends PortalStore {
                     // Figure out the best yaw to use here by checking for air blocks
                     float yaw = 0.0f;
                     for (BlockFace face : FaceUtil.AXIS) {
-                        if (MaterialUtil.isType(destB.getRelative(face), Material.AIR)) {
+                        if (Util.IS_AIR.get(destB.getRelative(face))) {
                             yaw = FaceUtil.faceToYaw(face) + 90f;
                             break;
                         }
@@ -405,7 +403,7 @@ public class Portal extends PortalStore {
         if (destinationLoc == null) {
             // No destination available
             // Send a missing destination message for non-water portals
-            if (entity instanceof Player && portalMaterial != Material.STATIONARY_WATER) {
+            if (entity instanceof Player && portalType != PortalType.WATER) {
                 Localization.PORTAL_NODESTINATION.message((Player) entity);
             }
         } else if (canTeleportTo(entity, destinationLoc)) {

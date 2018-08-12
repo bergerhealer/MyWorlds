@@ -1,6 +1,7 @@
 name: My_Worlds
 main: com.bergerkiller.bukkit.mw.MyWorlds
 version: ${project.version}
+api-version: 1.13
 authors: [KamikazePlatypus, mg_1999, Friwi, bergerkiller, lenis0012, timstans, bubba1234119]
 softdepend: [Spout, Multiverse-Core]
 depend: [BKCommonLib]

@@ -3,7 +3,6 @@ package com.bergerkiller.bukkit.mw;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map.Entry;
@@ -17,7 +16,6 @@ import java.util.zip.ZipException;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
@@ -27,7 +25,7 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.bergerkiller.bukkit.common.MaterialTypeProperty;
+import com.bergerkiller.bukkit.common.MaterialBlockProperty;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
@@ -36,33 +34,49 @@ import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.wrappers.BlockData;
 import com.bergerkiller.generated.net.minecraft.server.MinecraftServerHandle;
 import com.bergerkiller.mountiplex.reflection.SafeField;
 import com.bergerkiller.reflection.net.minecraft.server.NMSRegionFile;
 import com.bergerkiller.reflection.net.minecraft.server.NMSRegionFileCache;
 
 public class WorldManager {
-    private static final MaterialTypeProperty SAFE_SPAWN_AIR;
-    private static final MaterialTypeProperty SAFE_SPAWN_SURFACE;
-    static {
-        HashSet<Material> safeAir = new HashSet<Material>();
-        HashSet<Material> safeSurface = new HashSet<Material>();
-        try {
-            boolean isSafeSurface;
-            for (Material type : Material.values()) {
-                LogicUtil.addOrRemove(safeSurface, type, isSafeSurface = MaterialUtil.ISSOLID.get(type));
-                LogicUtil.addOrRemove(safeAir, type, !isSafeSurface && 
-                        !MaterialUtil.SUFFOCATES.get(type) && !MaterialUtil.ISPRESSUREPLATE.get(type));
+    private static final MaterialBlockProperty<Boolean> SAFE_SPAWN_AIR = new MaterialBlockProperty<Boolean>() {
+        @Override
+        public Boolean get(BlockData blockData) {
+            if (MaterialUtil.ISSOLID.get(blockData)) {
+                return false;
             }
-            LogicUtil.removeArray(safeAir, Material.WATER, Material.STATIONARY_WATER, Material.LAVA, Material.STATIONARY_LAVA);
-            LogicUtil.removeArray(safeAir, Material.TRIPWIRE, Material.LEAVES, Material.PORTAL, Material.ENDER_PORTAL);
-            LogicUtil.removeArray(safeSurface, Material.LEAVES, Material.DRAGON_EGG, Material.PORTAL, Material.ENDER_PORTAL);
-        } catch (Throwable t) {
-            t.printStackTrace();
+            if (MaterialUtil.SUFFOCATES.get(blockData)) {
+                return false;
+            }
+            if (MaterialUtil.ISPRESSUREPLATE.get(blockData)) {
+                return false;
+            }
+            if (MaterialUtil.ISLIQUID.get(blockData)) {
+                return false;
+            }
+            
+            return true;
         }
-        SAFE_SPAWN_AIR = new MaterialTypeProperty(safeAir.toArray(new Material[0]));
-        SAFE_SPAWN_SURFACE = new MaterialTypeProperty(safeSurface.toArray(new Material[0]));
-    }
+    };
+    private static final MaterialBlockProperty<Boolean> SAFE_SPAWN_SURFACE = new MaterialBlockProperty<Boolean>() {
+        @Override
+        public Boolean get(BlockData blockData) {
+            if (!MaterialUtil.ISSOLID.get(blockData)) {
+                return false;
+            }
+            if (Util.IS_END_PORTAL.get(blockData) || Util.IS_NETHER_PORTAL.get(blockData)) {
+                return false;
+            }
+            if (MaterialUtil.ISLEAVES.get(blockData)) {
+                return false;
+            }
+            
+            
+            return true;
+        }
+    };
 
     /**
      * Closes all file streams associated with the world specified.
@@ -642,18 +656,18 @@ public class WorldManager {
         int y, x = blockX, z = blockZ;
         int alterX = blockX, alterY = blockY, alterZ = blockZ;
         int airCounter;
-        Material type;
+        BlockData data;
         for (int retry = 0; retry < 200; retry++) {
             airCounter = world.getEnvironment() == Environment.NETHER ? 0 : 2;
             for (y = startY; y > 0; y--) {
-                type = WorldUtil.getBlockType(world, x, y, z);
-                if (SAFE_SPAWN_AIR.get(type)) {
+                data = WorldUtil.getBlockData(world, x, y, z);
+                if (SAFE_SPAWN_AIR.get(data)) {
                     // Air block - continue
                     airCounter++;
                 } else {
                     // Safe spawn is only there with 2 air-blocks above the surface
                     if (airCounter >= 2) {
-                        if (SAFE_SPAWN_SURFACE.get(type)) {
+                        if (SAFE_SPAWN_SURFACE.get(data)) {
                             // Safe place to spawn on - ENDING
                             return new Location(world, x + 0.5, y + 1.5, z + 0.5);
                         } else {

@@ -3,25 +3,31 @@ package com.bergerkiller.bukkit.mw;
 import java.io.File;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 
+import com.bergerkiller.bukkit.common.MaterialTypeProperty;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.wrappers.BlockData;
 
 public class Util {
-    private static final Material STATW_TYPE = Material.STATIONARY_WATER;
+    public static final MaterialTypeProperty IS_NETHER_PORTAL = new MaterialTypeProperty("NETHER_PORTAL", "LEGACY_PORTAL");
+    public static final MaterialTypeProperty IS_END_PORTAL = new MaterialTypeProperty("END_PORTAL", "LEGACY_ENDER_PORTAL");
+    public static final MaterialTypeProperty IS_OBSIDIAN = new MaterialTypeProperty("OBSIDIAN", "LEGACY_OBSIDIAN");
+    public static final MaterialTypeProperty IS_AIR = new MaterialTypeProperty("AIR", "LEGACY_AIR");
+    public static final MaterialTypeProperty IS_ICE = new MaterialTypeProperty("ICE", "LEGACY_ICE");
+    public static final MaterialTypeProperty IS_SNOW = new MaterialTypeProperty("SNOW", "LEGACY_SNOW");
 
     public static boolean isSolid(Block b, BlockFace direction) {
         int maxwidth = 10;
         while (maxwidth-- >= 0) {
-            Material type = b.getType();
-            if (MaterialUtil.isType(type, Material.WATER, Material.STATIONARY_WATER)) {
+            BlockData data = WorldUtil.getBlockData(b);
+            if (MaterialUtil.ISWATER.get(data)) {
                 b = b.getRelative(direction);
             } else {
-                return type != Material.AIR;
+                return !IS_AIR.get(data);
             }
         }
         return false;
@@ -29,10 +35,10 @@ public class Util {
 
     private static boolean isObsidianPortal(Block main, BlockFace direction) {
         for (int counter = 0; counter < 20; counter++) {
-            Material type = main.getType();
-            if (type == Material.PORTAL) {
+            BlockData data = WorldUtil.getBlockData(main);
+            if (IS_NETHER_PORTAL.get(data)) {
                 main = main.getRelative(direction);
-            } else if (type == Material.OBSIDIAN) {
+            } else if (IS_OBSIDIAN.get(data)) {
                 return true;
             } else {
                 return false;
@@ -48,41 +54,41 @@ public class Util {
      * @param x - coordinate to look nearby
      * @param y - coordinate to look nearby
      * @param z - coordinate to look nearby
-     * @return Portal material, or NULL if no Portal is found
+     * @return Portal type, or NULL if no Portal is found
      */
-    public static Material findPortalMaterial(World world, int x, int y, int z) {
+    public static PortalType findPortalType(World world, int x, int y, int z) {
         // Check self
-        Material mat = findPortalMaterialSingle(world, x, y, z);
-        if (mat == null) {
+        PortalType type = findPortalTypeSingle(world, x, y, z);
+        if (type == null) {
             // Check in a 3x3x3 cube area
             int dx, dy, dz;
             for (dx = -1; dx <= 1; dx++) {
                 for (dy = -1; dy <= 1; dy++) {
                     for (dz = -1; dz <= 1; dz++) {
-                        mat = findPortalMaterialSingle(world, x + dx, y + dy, z + dz);
-                        if (mat != null) {
-                            return mat;
+                        type = findPortalTypeSingle(world, x + dx, y + dy, z + dz);
+                        if (type != null) {
+                            return type;
                         }
                     }
                 }
             }
         }
-        return mat;
+        return type;
     }
 
-    private static Material findPortalMaterialSingle(World world, int x, int y, int z) {
-        Material type = WorldUtil.getBlockType(world, x, y, z);
-        if (type == STATW_TYPE) {
+    private static PortalType findPortalTypeSingle(World world, int x, int y, int z) {
+        BlockData data = WorldUtil.getBlockData(world, x, y, z);
+        if (MaterialUtil.ISWATER.get(data)) {
             if (isWaterPortal(world.getBlockAt(x, y, z))) {
-                return Material.STATIONARY_WATER;
+                return PortalType.WATER;
             }
-        } else if (type == Material.PORTAL) {
+        } else if (IS_NETHER_PORTAL.get(data)) {
             if (isNetherPortal(world.getBlockAt(x, y, z))) {
-                return Material.PORTAL;
+                return PortalType.NETHER;
             }
-        } else if (type == Material.ENDER_PORTAL) {
+        } else if (IS_END_PORTAL.get(data)) {
             if (isEndPortal(world.getBlockAt(x, y, z))) {
-                return Material.ENDER_PORTAL;
+                return PortalType.END;
             }
         }
         return null;
@@ -95,21 +101,19 @@ public class Util {
      * @return True if it is a water Portal, False if not
      */
     public static boolean isWaterPortal(Block main) {
-        if (!MyWorlds.useWaterTeleport || main.getType() != STATW_TYPE) {
+        if (!MyWorlds.useWaterTeleport || !MaterialUtil.ISWATER.get(main)) {
             return false;
         }
-        if (main.getRelative(BlockFace.UP).getType() == STATW_TYPE || main.getRelative(BlockFace.DOWN).getType() == STATW_TYPE) {
-            boolean allow = false;
-            if (main.getRelative(BlockFace.NORTH).getType() == Material.AIR || main.getRelative(BlockFace.SOUTH).getType() == Material.AIR) {
+        if (MaterialUtil.ISWATER.get(main.getRelative(BlockFace.UP)) || MaterialUtil.ISWATER.get(main.getRelative(BlockFace.DOWN))) {
+            if (IS_AIR.get(main.getRelative(BlockFace.NORTH)) || IS_AIR.get(main.getRelative(BlockFace.SOUTH))) {
                 if (Util.isSolid(main, BlockFace.WEST) && Util.isSolid(main, BlockFace.EAST)) {
-                    allow = true;
+                    return true;
                 }
-            } else if (main.getRelative(BlockFace.EAST).getType() == Material.AIR || main.getRelative(BlockFace.WEST).getType() == Material.AIR) {
+            } else if (IS_AIR.get(main.getRelative(BlockFace.EAST)) || IS_AIR.get(main.getRelative(BlockFace.WEST))) {
                 if (Util.isSolid(main, BlockFace.NORTH) && Util.isSolid(main, BlockFace.SOUTH)) {
-                    allow = true;
+                    return true;
                 }
             }
-            return allow;
         }
         return false;
     }
@@ -121,7 +125,7 @@ public class Util {
      * @return True if it is an end Portal, False if not
      */
     public static boolean isEndPortal(Block main) {
-        return main.getType() == Material.ENDER_PORTAL;
+        return IS_END_PORTAL.get(main);
     }
 
     /**
@@ -132,14 +136,15 @@ public class Util {
      * @return True if it is a nether Portal, False if not
      */
     public static boolean isNetherPortal(Block main) {
-        if (!MyWorlds.onlyObsidianPortals) {
-            // Simple check
-            return main.getType() == Material.PORTAL;
-        }
-        // Obsidian portal check
-        if (main.getType() != Material.PORTAL) {
+        if (!IS_NETHER_PORTAL.get(main)) {
             return false;
         }
+
+        if (!MyWorlds.onlyObsidianPortals) {
+            // Simple check
+            return true;
+        }
+
         if (isObsidianPortal(main, BlockFace.UP) && isObsidianPortal(main, BlockFace.DOWN)) {
             if (isObsidianPortal(main, BlockFace.NORTH) && isObsidianPortal(main, BlockFace.SOUTH)) {
                 return true;

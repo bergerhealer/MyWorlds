@@ -4,11 +4,9 @@ import java.util.Iterator;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -39,11 +37,8 @@ import org.bukkit.inventory.ItemStack;
 
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
-import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.server.MCPCPlusServer;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
-import com.bergerkiller.bukkit.common.utils.FaceUtil;
-import com.bergerkiller.bukkit.common.utils.ItemUtil;
 import com.bergerkiller.bukkit.common.utils.MathUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -197,8 +192,8 @@ public class MWListener implements Listener {
         Location enterLoc = event.getFrom();
 
         // Handle player teleportation - portal check
-        Material mat = Util.findPortalMaterial(enterLoc.getWorld(), enterLoc.getBlockX(), enterLoc.getBlockY(), enterLoc.getBlockZ());
-        if (mat == null) {
+        PortalType type = Util.findPortalType(enterLoc.getWorld(), enterLoc.getBlockX(), enterLoc.getBlockY(), enterLoc.getBlockZ());
+        if (type == null) {
             return;
         }
 
@@ -213,7 +208,7 @@ public class MWListener implements Listener {
         }
 
         // For further processing Portal-specific logic is needed
-        if (Portal.handlePortalEnter(event, mat) && event.getTo() != null) {
+        if (Portal.handlePortalEnter(event, type) && event.getTo() != null) {
             // Send a preparation message if teleporting to non-generated areas
             if (entity instanceof Player) {
                 Location to = event.getTo();
@@ -376,12 +371,12 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBlockForm(BlockFormEvent event) {
         // Snow/Ice forming cancelling based on world settings
-        Material type = event.getNewState().getType();
-        if (type == Material.SNOW) {
+        BlockData data = BlockData.fromBlockState(event.getNewState());
+        if (Util.IS_SNOW.get(data)) {
             if (!WorldConfig.get(event.getBlock()).formSnow) {
                 event.setCancelled(true);
             }
-        } else if (type == Material.ICE) {
+        } else if (Util.IS_ICE.get(data)) {
             if (!WorldConfig.get(event.getBlock()).formIce) {
                 event.setCancelled(true);
             }
@@ -391,10 +386,8 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBlockPhysics(BlockPhysicsEvent event) {
         // Allows portals to be placed without physics killing it
-        if (MyWorlds.overridePortalPhysics && event.getBlock().getType() == Material.PORTAL) {
-            if (!(event.getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR)) {
-                event.setCancelled(true);
-            }
+        if (MyWorlds.overridePortalPhysics && Util.IS_NETHER_PORTAL.get(event.getBlock())) {
+            event.setCancelled(true);
         }
     }
 
@@ -411,29 +404,19 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
         ItemStack item = event.getItemInHand();
-        CommonTagCompound tag = ItemUtil.getMetaTag(item);
-        if (tag != null) {
-            int specialportal = tag.getValue("myworlds.specialportal", -1);
-            if (specialportal != -1) {
-                event.setCancelled(true);
-                final Material m = Material.getMaterial(specialportal);
-                final Block b = event.getBlock();
-                final BlockData d;
-                if (m == Material.PORTAL) {
-                    BlockFace f = FaceUtil.yawToFace(event.getPlayer().getLocation().getYaw());
-                    d = BlockData.fromMaterialData(m, FaceUtil.isAlongZ(f) ? 0x2 : 0x0);
-                } else {
-                    d = BlockData.fromMaterial(m);
+        PortalItemType type = PortalItemType.fromItem(item);
+        if (type != null) {
+            event.setCancelled(true);
+            final Block b = event.getBlock();
+            final BlockData d = type.getPlacedData(event.getPlayer().getEyeLocation().getYaw());
+
+            CommonUtil.nextTick(new Runnable() {
+                @Override
+                public void run() {
+                    WorldUtil.setBlockDataFast(b, d);
+                    WorldUtil.queueBlockSend(b);
                 }
-                if (m != null) {
-                    CommonUtil.nextTick(new Runnable() {
-                        @Override
-                        public void run() {
-                            WorldUtil.setBlockDataFast(b, d);
-                        }
-                    });
-                }
-            }
+            });
         }
     }
 
