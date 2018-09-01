@@ -42,7 +42,7 @@ public class MWPlayerDataController extends PlayerDataController {
         final World world = location.getWorld();
         tagCompound.putValue("World", world.getName());
         tagCompound.putUUID("World", world.getUID());
-        tagCompound.putValue("Dimension", WorldUtil.getDimension(world));
+        tagCompound.putValue("Dimension", WorldUtil.getDimension(world).getId());
     }
 
     /**

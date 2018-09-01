@@ -13,6 +13,7 @@ import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
 
 public class MyWorlds extends PluginBase {
@@ -54,7 +55,7 @@ public class MyWorlds extends PluginBase {
 
     @Override
     public int getMinimumLibVersion() {
-        return 11200; //Common.VERSION;
+        return Common.VERSION;
     }
 
     public String root() {
@@ -217,11 +218,7 @@ public class MyWorlds extends PluginBase {
 
         // Detach data controller. Only do so when reloading, do not do it when
         // shutting down so we handle player saving correctly.
-        boolean isShuttingDown = false;
-        try {
-            isShuttingDown = CommonUtil.isShuttingDown();
-        } catch (Throwable t) {} // to handle old version of BKCommonLib
-        if (!isShuttingDown && dataController != null) {
+        if (!CommonUtil.isShuttingDown() && dataController != null) {
             dataController.detach();
             dataController = null;
         }
