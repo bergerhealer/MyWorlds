@@ -229,7 +229,7 @@ public class Portal extends PortalStore {
 
     public static Portal get(Location signloc) {
         if (signloc == null) return null;
-        return get(signloc.getBlock(), false);
+        return get(signloc.getBlock(), true);
     }
 
     public static Portal get(Block signblock, boolean loadchunk) {
