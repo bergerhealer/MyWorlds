@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.AsyncHandler;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
 import com.bergerkiller.bukkit.mw.Permission;
@@ -35,6 +36,7 @@ public class WorldDelete extends Command {
                     // Unload the world, do not save as we are deleting it afterwards
                     LoadChunksTask.abortWorld(loadedWorld, false);
                     if (Bukkit.unloadWorld(loadedWorld, false)) {
+                        WorldUtil.closeWorldStreams(loadedWorld);
                         message(ChatColor.GREEN + "World unloaded, now moving on to world deletion");
                     } else {
                         message(ChatColor.RED + "Could not unload world (players on it or main world?)");

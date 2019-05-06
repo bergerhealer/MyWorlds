@@ -19,13 +19,13 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
+import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.bergerkiller.bukkit.common.MaterialBlockProperty;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
@@ -38,77 +38,33 @@ import com.bergerkiller.bukkit.common.wrappers.BlockData;
 import com.bergerkiller.generated.net.minecraft.server.MinecraftServerHandle;
 import com.bergerkiller.mountiplex.reflection.SafeField;
 import com.bergerkiller.reflection.net.minecraft.server.NMSRegionFile;
-import com.bergerkiller.reflection.net.minecraft.server.NMSRegionFileCache;
 
 public class WorldManager {
-    private static final MaterialBlockProperty<Boolean> SAFE_SPAWN_AIR = new MaterialBlockProperty<Boolean>() {
-        @Override
-        public Boolean get(BlockData blockData) {
-            if (MaterialUtil.ISSOLID.get(blockData)) {
-                return false;
-            }
-            if (MaterialUtil.SUFFOCATES.get(blockData)) {
-                return false;
-            }
-            if (MaterialUtil.ISPRESSUREPLATE.get(blockData)) {
-                return false;
-            }
-            if (MaterialUtil.ISLIQUID.get(blockData)) {
-                return false;
-            }
-            
-            return true;
-        }
-    };
-    private static final MaterialBlockProperty<Boolean> SAFE_SPAWN_SURFACE = new MaterialBlockProperty<Boolean>() {
-        @Override
-        public Boolean get(BlockData blockData) {
-            if (!MaterialUtil.ISSOLID.get(blockData)) {
-                return false;
-            }
-            if (Util.IS_END_PORTAL.get(blockData) || Util.IS_NETHER_PORTAL.get(blockData)) {
-                return false;
-            }
-            if (MaterialUtil.ISLEAVES.get(blockData)) {
-                return false;
-            }
-            
-            
-            return true;
-        }
-    };
 
-    /**
-     * Closes all file streams associated with the world specified.
-     * 
-     * @param world to close
-     */
-    public static void closeWorldStreams(World world) {
-        // Wait until all chunks of this world are saved
-        WorldUtil.saveToDisk(world);
-        // Close the region files
-        synchronized (NMSRegionFileCache.T.getType()) {
-            try {
-                String worldPart = "." + File.separator + world.getName();
-                Iterator<Entry<File, Object>> iter = NMSRegionFileCache.FILES.entrySet().iterator();
-                Entry<File, Object> entry;
-                while (iter.hasNext()) {
-                    entry = iter.next();
-                    if (!entry.getKey().toString().startsWith(worldPart) || entry.getValue() == null) {
-                        continue;
-                    }
-                    try {
-                        NMSRegionFile.close.invoke(entry.getValue());
-                        iter.remove();
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            } catch (Exception ex) {
-                MyWorlds.plugin.log(Level.WARNING, "Exception while removing world reference for '" + world.getName() + "'!");
-                ex.printStackTrace();
-            }
+    private static boolean isSafeSpawnAir(BlockData blockData, Block block) {
+        if (MaterialUtil.ISLIQUID.get(blockData)) {
+            return false;
         }
+        if (MaterialUtil.ISPRESSUREPLATE.get(blockData)) {
+            return false;
+        }
+        if (blockData.isSuffocating(block) || blockData.isOccluding(block)) {
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean isSafeSpawnSurface(BlockData blockData, Block block) {
+        if (Util.IS_END_PORTAL.get(blockData) || Util.IS_NETHER_PORTAL.get(blockData)) {
+            return false;
+        }
+        if (MaterialUtil.ISLEAVES.get(blockData)) {
+            return false;
+        }
+        if (!blockData.isOccluding(block)) {
+            return false;
+        }
+        return true;
     }
 
     /*
@@ -360,7 +316,10 @@ public class WorldManager {
     public static boolean unload(World world) {
         if (world != null) {
             LoadChunksTask.abortWorld(world, true);
-            return Bukkit.getServer().unloadWorld(world, world.isAutoSave());
+            if (Bukkit.getServer().unloadWorld(world, world.isAutoSave())) {
+                WorldUtil.closeWorldStreams(world);
+                return true;
+            }
         }
         return false;
     }
@@ -657,17 +616,19 @@ public class WorldManager {
         int alterX = blockX, alterY = blockY, alterZ = blockZ;
         int airCounter;
         BlockData data;
+        Block block;
         for (int retry = 0; retry < 200; retry++) {
             airCounter = world.getEnvironment() == Environment.NETHER ? 0 : 2;
             for (y = startY; y > 0; y--) {
-                data = WorldUtil.getBlockData(world, x, y, z);
-                if (SAFE_SPAWN_AIR.get(data)) {
+                block = world.getBlockAt(x, y, z);
+                data = WorldUtil.getBlockData(block);
+                if (isSafeSpawnAir(data, block)) {
                     // Air block - continue
                     airCounter++;
                 } else {
                     // Safe spawn is only there with 2 air-blocks above the surface
                     if (airCounter >= 2) {
-                        if (SAFE_SPAWN_SURFACE.get(data)) {
+                        if (isSafeSpawnSurface(data, block)) {
                             // Safe place to spawn on - ENDING
                             return new Location(world, x + 0.5, y + 1.5, z + 0.5);
                         } else {

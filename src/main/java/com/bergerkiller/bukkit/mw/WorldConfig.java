@@ -22,6 +22,7 @@ import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
+import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
@@ -468,7 +469,7 @@ public class WorldConfig extends WorldConfigStore {
      */
     public void updateAll(World world) {
         // Fix spawn point if needed
-        if (MaterialUtil.SUFFOCATES.get(this.spawnPoint.getBlock())) {
+        if (BlockUtil.isSuffocating(this.spawnPoint.getBlock())) {
             this.fixSpawnLocation();
         } else if (!isOtherWorldSpawn()) {
             world.setSpawnLocation(this.spawnPoint.getBlockX(), this.spawnPoint.getBlockY(), this.spawnPoint.getBlockZ());
