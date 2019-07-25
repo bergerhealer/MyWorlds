@@ -408,7 +408,9 @@ public class Portal extends PortalStore {
             }
         } else if (canTeleportTo(entity, destinationLoc)) {
             // Successful teleport
-            event.useTravelAgent(useTravelAgent);
+            if (Util.hasTravelAgentField) {
+                event.useTravelAgent(useTravelAgent);
+            }
             event.setTo(destinationLoc);
             return true;
         }

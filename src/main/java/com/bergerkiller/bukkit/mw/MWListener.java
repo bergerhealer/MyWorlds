@@ -153,14 +153,14 @@ public class MWListener implements Listener {
 
     public void handlePortalEnterNextTick(Player player, Location from) {
         // Handle teleportation the next tick
-        final EntityPortalEvent portalEvent = new EntityPortalEvent(player, from, null, null);
+        final EntityPortalEvent portalEvent = Util.createEntityPortalEvent(player, from);
         CommonUtil.nextTick(new Runnable() {
             public void run() {
                 handlePortalEnter(portalEvent, false);
                 if (portalEvent.getTo() != null && !portalEvent.isCancelled()) {
                     // Use a travel agent if needed
                     Location to = portalEvent.getTo();
-                    if (portalEvent.useTravelAgent()) {
+                    if (Util.useTravelAgent(portalEvent)) {
                         to = WorldUtil.findSpawnLocation(to);
                     }
                     // This tends to happen with Bukkit logic...haha
@@ -247,14 +247,15 @@ public class MWListener implements Listener {
         //Note! Event.getTo() can be null! Account for it!
 
         // Wrap inside an Entity portal event
-        EntityPortalEvent entityEvent = new EntityPortalEvent(event.getPlayer(), event.getFrom(), event.getTo(), event.getPortalTravelAgent());
-        entityEvent.useTravelAgent(event.useTravelAgent());
+        EntityPortalEvent entityEvent = Util.createEntityPortalEvent(event.getPlayer(), event.getFrom());
+        entityEvent.setTo(event.getTo());
+        Util.copyTravelAgent(event, entityEvent);
         handlePortalEnter(entityEvent, true);
         // Now, apply them again
         if (entityEvent.getTo() != null) {
             event.setTo(entityEvent.getTo());
         }
-        event.useTravelAgent(entityEvent.useTravelAgent());
+        Util.copyTravelAgent(entityEvent, event);
         event.setCancelled(entityEvent.isCancelled());
 
         // For ender portals we NEED to teleport away from the end world

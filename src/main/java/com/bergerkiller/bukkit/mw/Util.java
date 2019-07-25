@@ -1,16 +1,21 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
 
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
+import org.bukkit.event.entity.EntityPortalEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 
 import com.bergerkiller.bukkit.common.MaterialTypeProperty;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
+import com.bergerkiller.mountiplex.reflection.SafeConstructor;
 
 public class Util {
     public static final MaterialTypeProperty IS_NETHER_PORTAL = new MaterialTypeProperty("NETHER_PORTAL", "LEGACY_PORTAL");
@@ -218,5 +223,61 @@ public class Util {
         } else {
             return file.length();
         }
+    }
+
+    public static final boolean hasTravelAgentField;
+    private static final Constructor<EntityPortalEvent> entityPortalEventConstructor;
+    static {
+        Constructor<EntityPortalEvent> constr = null;
+        boolean hasTAField = false;
+        try {
+            Class<?> ta_type = Class.forName("org.bukkit.TravelAgent");
+            constr = EntityPortalEvent.class.getConstructor(Entity.class, Location.class, Location.class, ta_type);
+            hasTAField = true;
+        } catch (Throwable t1) {
+            try {
+                constr = EntityPortalEvent.class.getConstructor(Entity.class, Location.class, Location.class);
+            } catch (Throwable t2) {
+                t2.printStackTrace();
+            }
+        }
+        entityPortalEventConstructor = constr;
+        hasTravelAgentField = hasTAField;
+    }
+
+    public static EntityPortalEvent createEntityPortalEvent(Entity entity, Location from) {
+        try {
+            if (hasTravelAgentField) {
+                return entityPortalEventConstructor.newInstance(entity, from, null, null);
+            } else {
+                return entityPortalEventConstructor.newInstance(entity, from, null);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+            return null;
+        }
+    }
+
+    public static boolean useTravelAgent(EntityPortalEvent input) {
+        if (!hasTravelAgentField) {
+            return false;
+        }
+        return input.useTravelAgent();
+    }
+
+    public static void copyTravelAgent(EntityPortalEvent input, PlayerPortalEvent output) {
+        if (!hasTravelAgentField) {
+            return;
+        }
+        output.useTravelAgent(input.useTravelAgent());
+        output.setPortalTravelAgent(input.getPortalTravelAgent());
+    }
+
+    public static void copyTravelAgent(PlayerPortalEvent input, EntityPortalEvent output) {
+        if (!hasTravelAgentField) {
+            return;
+        }
+        output.useTravelAgent(input.useTravelAgent());
+        output.setPortalTravelAgent(input.getPortalTravelAgent());
     }
 }
