@@ -118,13 +118,21 @@ public class MWPlayerDataController extends PlayerDataController {
         // Reset health and experience
         human.setHealth(human.getMaxHealth());
         if (human instanceof Player) {
-            Player player = (Player) human;
+            final Player player = (Player) human;
             player.setExp(0.0f);
             player.setTotalExperience(0);
             player.setLevel(0);
             player.setFoodLevel(20);
             player.setSaturation(5.0f);
             player.setExhaustion(0.0f);
+
+            // Resend items (PATCH)
+            CommonUtil.nextTick(new Runnable() {
+                @Override
+                public void run() {
+                    player.updateInventory();
+                }
+            });
         }
     }
 
