@@ -15,7 +15,6 @@ import com.bergerkiller.bukkit.common.MaterialTypeProperty;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
-import com.bergerkiller.mountiplex.reflection.SafeConstructor;
 
 public class Util {
     public static final MaterialTypeProperty IS_NETHER_PORTAL = new MaterialTypeProperty("NETHER_PORTAL", "LEGACY_PORTAL");
@@ -106,7 +105,7 @@ public class Util {
      * @return True if it is a water Portal, False if not
      */
     public static boolean isWaterPortal(Block main) {
-        if (!MyWorlds.useWaterTeleport || !MaterialUtil.ISWATER.get(main)) {
+        if (!MyWorlds.waterPortalEnabled || !MaterialUtil.ISWATER.get(main)) {
             return false;
         }
         if (MaterialUtil.ISWATER.get(main.getRelative(BlockFace.UP)) || MaterialUtil.ISWATER.get(main.getRelative(BlockFace.DOWN))) {
@@ -130,7 +129,7 @@ public class Util {
      * @return True if it is an end Portal, False if not
      */
     public static boolean isEndPortal(Block main) {
-        return IS_END_PORTAL.get(main);
+        return MyWorlds.endPortalEnabled && IS_END_PORTAL.get(main);
     }
 
     /**
@@ -141,7 +140,7 @@ public class Util {
      * @return True if it is a nether Portal, False if not
      */
     public static boolean isNetherPortal(Block main) {
-        if (!IS_NETHER_PORTAL.get(main)) {
+        if (!MyWorlds.netherPortalEnabled || !IS_NETHER_PORTAL.get(main)) {
             return false;
         }
 

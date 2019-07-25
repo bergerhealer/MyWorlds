@@ -9,6 +9,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -19,7 +20,6 @@ import com.bergerkiller.bukkit.common.PluginBase;
 public class MyWorlds extends PluginBase {
     private static final String MULTIVERSE_NAME = "Multiverse-Core";
     public static int teleportInterval;
-    public static boolean useWaterTeleport;
     public static int timeLockInterval;
     public static boolean useWorldEnterPermissions;
     public static boolean usePortalEnterPermissions;
@@ -42,11 +42,16 @@ public class MyWorlds extends PluginBase {
     public static boolean overridePortalPhysics;
     public static boolean alwaysInstantPortal;
     public static boolean allowPersonalPortals;
-    public static boolean enablePortals;
     public static boolean ignoreEggSpawns;
     public static boolean debugLogGMChanges;
     public static boolean portalToLastPosition;
     public static boolean portalToLastPositionPersonal;
+
+    // Portals
+    public static boolean waterPortalEnabled;
+    public static boolean endPortalEnabled;
+    public static boolean netherPortalEnabled;
+
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
     private MWPlayerDataController dataController;
@@ -98,9 +103,6 @@ public class MyWorlds extends PluginBase {
         config.setHeader("teleportInterval", "\nThe interval in miliseconds a player has to wait before being teleported again");
         teleportInterval = config.get("teleportInterval", 2000);
 
-        config.setHeader("useWaterTeleport", "\nWhether water stream portals are allowed");
-        useWaterTeleport = config.get("useWaterTeleport", true);
-
         config.setHeader("timeLockInterval", "\nThe tick interval at which time is kept locked");
         timeLockInterval = config.get("timeLockInterval", 20);
 
@@ -146,9 +148,33 @@ public class MyWorlds extends PluginBase {
         config.setHeader("maxPortalSignDistance", "\nThe maximum distance to look for a portal sign when entering a portal");
         maxPortalSignDistance = config.get("maxPortalSignDistance", 5.0);
 
-        config.setHeader("enablePortals", "\nTurns portal usage on or off on a global level");
-        config.addHeader("enablePortals", "When disabled, portal teleportation will not be handled by MyWorlds whatsoever");
-        enablePortals = config.get("enablePortals", true);
+        config.setHeader("enabledPortals", "\nTurns different types of portals on or off");
+        config.addHeader("enabledPortals", "When the portal is disabled, MyWorlds will not handle the portal's logic");
+
+        ConfigurationNode enabledPortals = config.getNode("enabledPortals");
+        enabledPortals.setHeader("netherPortal", "Turns handling of nether portal teleportation on or off");
+        enabledPortals.addHeader("netherPortal", "Vanilla Minecraft will handle nether portals when disabled");
+        enabledPortals.setHeader("endPortal", "Turns handling of end portal teleportation on or off");
+        enabledPortals.addHeader("endPortal", "Vanilla Minecraft will handle end portals when disabled");
+        enabledPortals.setHeader("waterPortal", "Enables or disables the water stream portals");
+
+        // Transfer legacy options
+        if (config.contains("useWaterTeleport")) {
+            enabledPortals.set("waterPortal", config.get("useWaterTeleport", true));
+            config.remove("useWaterTeleport");
+        }
+        if (config.contains("enablePortals")) {
+            if (!config.get("enablePortals", true)) {
+                enabledPortals.set("netherPortal", false);
+                enabledPortals.set("endPortal", false);
+                enabledPortals.set("waterPortal", false);
+            }
+            config.remove("enablePortals");
+        }
+
+        netherPortalEnabled = enabledPortals.get("netherPortal", true);
+        endPortalEnabled = enabledPortals.get("endPortal", true);
+        waterPortalEnabled = enabledPortals.get("waterPortal", true);
 
         config.setHeader("allowPersonalPortals", "\nWhether individually placed nether/end portals create their own destination portal");
         config.addHeader("allowPersonalPortals", "False: Players are teleported to the spawn point of the world");
