@@ -216,7 +216,7 @@ public class MWListener implements Listener {
                 boolean available = true;
                 for (int dx = -4; dx <= 4 && available; dx++) {
                     for (int dz = -4; dz <= 4 && available; dz++) {
-                        available = WorldUtil.isChunkAvailable(to.getWorld(), chunkX + dx, chunkZ + dz);
+                        available &= WorldUtil.isChunkAvailable(to.getWorld(), chunkX + dx, chunkZ + dz);
                     }
                 }
                 if (!available) {
@@ -286,7 +286,9 @@ public class MWListener implements Listener {
         final Location safeSpawn = WorldManager.getSafeSpawn(event.getFrom(), false);
 
         // Set a dummy destination to snap the player out of the glitch
-        event.useTravelAgent(false);
+        if (Util.hasTravelAgentField) {
+            event.useTravelAgent(false);
+        }
         event.setCancelled(false);
         event.setTo(mainWorld.getSpawnLocation());
 
