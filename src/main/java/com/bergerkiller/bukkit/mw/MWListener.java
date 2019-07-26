@@ -67,13 +67,31 @@ public class MWListener implements Listener {
         WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer());
     }
 
+    private static boolean checkRespawnValid(PlayerRespawnEvent event) {
+        // Bukkit bug since MC 1.14: respawn event also occurs when players teleport back to the main world from the end
+        if (Common.evaluateMCVersion(">=", "1.14")) {
+            return event.getPlayer().getHealth() <= 0.0;
+        }
+
+        // Only occurred during an actual respawn on earlier versions
+        return true;
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawnMonitor(PlayerRespawnEvent event) {
+        if (!checkRespawnValid(event)) {
+            return;
+        }
+
         WorldConfig.get(event.getPlayer()).onRespawn(event.getPlayer(), event.getRespawnLocation());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
+        if (!checkRespawnValid(event)) {
+            return;
+        }
+
         // Update spawn position based on world configuration
         org.bukkit.World respawnWorld = event.getPlayer().getWorld();
         if (MyWorlds.forceMainWorldSpawn) {
