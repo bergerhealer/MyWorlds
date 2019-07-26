@@ -80,6 +80,8 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawnMonitor(PlayerRespawnEvent event) {
         if (!checkRespawnValid(event)) {
+            // Save inventory before it is reloaded again
+            MyWorlds.plugin.getPlayerDataController().onSave(event.getPlayer());
             return;
         }
 
