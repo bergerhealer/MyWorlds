@@ -14,6 +14,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
@@ -25,7 +26,6 @@ import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
-import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -325,11 +325,20 @@ public class WorldConfig extends WorldConfigStore {
      * Also updates the spawn position in the world configuration
      */
     public void fixSpawnLocation() {
+        fixSpawnLocation(spawnPoint.getWorld());
+    }
+
+    /**
+     * Regenerates the spawn point for a world if it is not properly set<br>
+     * Also updates the spawn position in the world configuration
+     * 
+     * @param world of the spawn point (in case world isn't accessible by name yet)
+     */
+    public void fixSpawnLocation(World world) {
         // Obtain the configuration and the set spawn position from it
-        World world = spawnPoint.getWorld();
         if (world != null) {
             // Obtain a new safe position to spawn at
-            spawnPoint = new Position(WorldManager.getSafeSpawn(spawnPoint));
+            spawnPoint = new Position(WorldManager.getSafeSpawn(spawnPoint.toLocation(world)));
 
             // Apply position to the world if same world
             if (!isOtherWorldSpawn()) {
@@ -469,11 +478,21 @@ public class WorldConfig extends WorldConfigStore {
      */
     public void updateAll(World world) {
         // Fix spawn point if needed
-        if (BlockUtil.isSuffocating(this.spawnPoint.getBlock())) {
-            this.fixSpawnLocation();
-        } else if (!isOtherWorldSpawn()) {
+        Block spawnPointBlock;
+        if (this.isOtherWorldSpawn()) {
+            spawnPointBlock = this.spawnPoint.getBlock();
+        } else {
+            spawnPointBlock = this.spawnPoint.getBlock(world);
+        }
+        if (spawnPointBlock != null && BlockUtil.isSuffocating(spawnPointBlock)) {
+            this.fixSpawnLocation(spawnPointBlock.getWorld());
+        }
+
+        // Apply configured spawn point to world
+        if (!isOtherWorldSpawn()) {
             world.setSpawnLocation(this.spawnPoint.getBlockX(), this.spawnPoint.getBlockY(), this.spawnPoint.getBlockZ());
         }
+
         // Update world settings
         updatePVP(world);
         updateKeepSpawnInMemory(world);

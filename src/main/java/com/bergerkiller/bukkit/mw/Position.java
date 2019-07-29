@@ -29,16 +29,16 @@ public class Position extends Location implements Cloneable {
     public World getWorld() {
         return Bukkit.getServer().getWorld(this.worldname);
     }
-    
+
     public String getWorldName() {
         return this.worldname;
     }
-    
+
     @Override
     public void setWorld(World world) {
         this.setWorldName(world.getName());
     }
-    
+
     public void setWorldName(String worldname) {
         this.worldname = worldname;
     }
@@ -57,9 +57,22 @@ public class Position extends Location implements Cloneable {
         return new Location(this.getWorld(), this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch());
     }
 
+    public Location toLocation(World world) {
+        return new Location(world, this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch());
+    }
+
     @Override
     public Block getBlock() {
-        World world = getWorld();
+        return getBlock(getWorld());
+    }
+
+    /**
+     * Gets the Block, specifying the World to get the Block in
+     * 
+     * @param world
+     * @return Block
+     */
+    public Block getBlock(World world) {
         return world == null ? null : world.getBlockAt(this);
     }
 
