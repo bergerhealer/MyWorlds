@@ -3,9 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Locale;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.zip.DeflaterOutputStream;
@@ -35,9 +33,6 @@ import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
-import com.bergerkiller.generated.net.minecraft.server.MinecraftServerHandle;
-import com.bergerkiller.mountiplex.reflection.SafeField;
-import com.bergerkiller.reflection.net.minecraft.server.NMSRegionFile;
 
 public class WorldManager {
 
@@ -438,20 +433,7 @@ public class WorldManager {
      * @return default generator settings
      */
     public static String readDefaultGeneratorSettings() {
-        try {
-            // Retrieve 'propertyManager' in DedicatedServer instance
-            Class<?> PropertyManagerType = CommonUtil.getNMSClass("PropertyManager");
-            Object propertyManager = SafeField.get(MinecraftServerHandle.instance().getRaw(), "propertyManager", PropertyManagerType);
-
-            // Retrieve java.util.Properties field from PropertyManager instance
-            java.util.Properties properties = SafeField.get(propertyManager, "properties", java.util.Properties.class);
-
-            // Query
-            return properties.getProperty("generator-settings", "");
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        return "";
+        return CommonUtil.getServerProperty("generator-settings", "");
     }
 
     public static Location getEvacuation(Player player) {
