@@ -46,7 +46,7 @@ public class WorldSpawning extends Command {
                 } else if (args[0].equalsIgnoreCase("creatures")) {
                     type = "mob";
                 } else if (args[0].equalsIgnoreCase("all")) {
-                    type = "mob";
+                    type = "all";
                 } else if (args[0].equalsIgnoreCase("npc")) {
                     type = "npc";
                 } else {
@@ -71,6 +71,9 @@ public class WorldSpawning extends Command {
                         } else if (type.equals("npc")) {
                             sc.setNPC(false);
                         } else if (type.equals("mob")) {
+                            sc.setAnimals(false);
+                            sc.setMonsters(false);
+                        } else if (type.equals("all")) {
                             sc.deniedCreatures.clear();
                         } else {
                             sc.deniedCreatures.remove(EntityType.valueOf(type.toUpperCase(Locale.ENGLISH)));
@@ -90,6 +93,10 @@ public class WorldSpawning extends Command {
                         } else if (type.equals("mob")) {
                             sc.setAnimals(true);
                             sc.setMonsters(true);
+                        } else if (type.equals("all")) {
+                            sc.setAnimals(true);
+                            sc.setMonsters(true);
+                            sc.setNPC(true);
                         } else {
                             sc.deniedCreatures.add(EntityType.valueOf(type.toUpperCase(Locale.ENGLISH)));
                         }
