@@ -26,11 +26,9 @@ import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.generated.net.minecraft.server.EntityLivingHandle;
+import com.bergerkiller.generated.net.minecraft.server.EntityPlayerHandle;
 import com.bergerkiller.generated.net.minecraft.server.MobEffectHandle;
 import com.bergerkiller.generated.net.minecraft.server.MobEffectListHandle;
-import com.bergerkiller.reflection.net.minecraft.server.NMSEntityHuman;
-import com.bergerkiller.reflection.net.minecraft.server.NMSEntityLiving;
-import com.bergerkiller.reflection.net.minecraft.server.NMSMobEffect;
 
 public class MWPlayerDataController extends PlayerDataController {
     public static final String DATA_TAG_LASTPOS = "MyWorlds.playerPos";
@@ -95,10 +93,14 @@ public class MWPlayerDataController extends PlayerDataController {
         return null;
     }
 
-    private static void clearEffects(HumanEntity human) {
-        // Clear mob effects
+    /**
+     * Removes all set mob effects for a human, sending entity effect remove packets to a player
+     * for player human entities.
+     * 
+     * @param human
+     */
+    private static void resetCurrentMobEffects(HumanEntity human) {
         EntityLivingHandle livingHandle = EntityLivingHandle.fromBukkit(human);
-
         Map<MobEffectListHandle, MobEffectHandle> effects = livingHandle.getMobEffects();
         if (human instanceof Player) {
             // Send mob effect removal messages
@@ -108,9 +110,28 @@ public class MWPlayerDataController extends PlayerDataController {
             }
         }
         effects.clear();
+    }
+
+    /**
+     * Resets the state associated with 'clear inventory' rules. This includes:
+     * <ul>
+     * <li>Attributes applied</li>
+     * <li>Potion effects / mob effects</li>
+     * <li>Inventory</li>
+     * <li>Experience, Health, Hunger, Exhaustion</li>
+     * </ul>
+     * 
+     * @param human
+     * @param firstTimeLoad
+     */
+    private static void resetState(HumanEntity human) {
+        // Clear mob effects
+        resetCurrentMobEffects(human);
+
         // Clear attributes
+        EntityLivingHandle livingHandle = EntityLivingHandle.fromBukkit(human);
         NBTUtil.resetAttributes(human);
-        NMSEntityLiving.initAttributes.invoke(livingHandle.getRaw());
+        livingHandle.resetAttributes();
 
         // Clear inventory
         human.getInventory().clear();
@@ -143,7 +164,7 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     private static void postLoad(HumanEntity human) {
         if (WorldConfig.get(human.getWorld()).clearInventory) {
-            clearEffects(human);
+            resetState(human);
         }
     }
 
@@ -165,11 +186,10 @@ public class MWPlayerDataController extends PlayerDataController {
             files.log("refreshing state");
 
             CommonPlayer commonPlayer = CommonEntity.get(player);
-            EntityLivingHandle livingPlayer = EntityLivingHandle.fromBukkit(player);
-            Object playerHandle = commonPlayer.getHandle();
+            EntityPlayerHandle playerHandle = EntityPlayerHandle.fromBukkit(player);
 
             // First, clear previous player information when loading involves adding new elements
-            clearEffects(player);
+            resetState(player);
 
             // Refresh attributes
             if (playerData.containsKey("Attributes")) {
@@ -178,9 +198,9 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // Load the data
             NBTUtil.loadInventory(player.getInventory(), playerData.createList("Inventory"));
-            commonPlayer.write(NMSEntityHuman.exp, playerData.getValue("XpP", 0.0f));
-            commonPlayer.write(NMSEntityHuman.expLevel, playerData.getValue("XpLevel", 0));
-            commonPlayer.write(NMSEntityHuman.expTotal, playerData.getValue("XpTotal", 0));
+            playerHandle.setExp(playerData.getValue("XpP", 0.0f));
+            playerHandle.setExpLevel(playerData.getValue("XpLevel", 0));
+            playerHandle.setExpTotal(playerData.getValue("XpTotal", 0));
 
             if (playerData.containsKey("HealF")) {
                 // Legacy stuff
@@ -190,8 +210,8 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             commonPlayer.setSpawnPoint(playerData.getBlockLocation("Spawn"));
-            commonPlayer.write(NMSEntityHuman.spawnForced, playerData.getValue("SpawnForced", false));
-            NBTUtil.loadFoodMetaData(NMSEntityHuman.foodData.get(playerHandle), playerData);
+            playerHandle.setSpawnForced(playerData.getValue("SpawnForced", false));
+            NBTUtil.loadFoodMetaData(playerHandle.getFoodDataRaw(), playerData);
             NBTUtil.loadInventory(player.getEnderChest(), playerData.createList("EnderItems"));
 
             if (playerData.containsKey("playerGameType")) {
@@ -201,7 +221,7 @@ public class MWPlayerDataController extends PlayerDataController {
             // data.getValue("Bukkit.MaxHealth", (float) commonPlayer.getMaxHealth());
 
             // Load Mob Effects
-            Map<MobEffectListHandle, MobEffectHandle> effects = livingPlayer.getMobEffects();
+            Map<MobEffectListHandle, MobEffectHandle> effects = playerHandle.getMobEffects();
             if (playerData.containsKey("ActiveEffects")) {
                 CommonTagList taglist = playerData.createList("ActiveEffects");
                 for (int i = 0; i < taglist.size(); ++i) {
@@ -209,7 +229,7 @@ public class MWPlayerDataController extends PlayerDataController {
                     effects.put(mobEffect.getEffectList(), mobEffect);
                 }
             }
-            livingPlayer.setUpdateEffects(true);
+            playerHandle.setUpdateEffects(true);
 
             // Send add messages for all (new) effects
             for (Object effect : effects.values()) {
@@ -348,9 +368,33 @@ public class MWPlayerDataController extends PlayerDataController {
                 setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
             }
 
-            // Minecraft bugfix here: Clear effects BEFORE loading the data
+            // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
+            World playerCurrentWorld = Bukkit.getWorld(mainWorldData.getUUID("World"));
+            if (playerCurrentWorld != null && WorldConfig.get(playerCurrentWorld).clearInventory) {
+                // Create an empty CommonTagList with the right type information, by adding a compound and removing it
+                // There is no good api in BKCommonLib to make an empty list of a given element type (TODO!)
+                {
+                    CommonTagList emptyInventory = new CommonTagList();
+                    emptyInventory.add(new CommonTagCompound());
+                    emptyInventory.remove(0);
+                    playerData.put("Inventory", emptyInventory);
+                }
+
+                playerData.remove("Attributes");
+                playerData.remove("ActiveEffects");
+                playerData.putValue("XpLevel", 0);
+                playerData.putValue("XpTotal", 0);
+                playerData.putValue("XpP", 0.0F);
+                playerData.remove("HealF");
+                playerData.remove("Health");
+
+                // Save this player data back to file to make sure clear inventory is adhered
+                files.currentFile.write(playerData);
+            }
+
+            // Minecraft bugfix here: Clear mob/potion effects BEFORE loading the data
             // This resolves issues with effects staying behind
-            clearEffects(human);
+            resetCurrentMobEffects(human);
 
             // Load the entity using the player data compound
             NBTUtil.loadEntity(human, playerData);
@@ -363,7 +407,9 @@ public class MWPlayerDataController extends PlayerDataController {
                     PlayerUtil.setFirstPlayed((Player) human, files.mainWorldFile.lastModified());
                 }
             }
-            postLoad(human);
+
+            // DISABLED: NPE on some servers when inventory clear is called this early
+            // postLoad(human);
 
             // When set as flying, there appears to be a problem or bug where this is reset
             // This causes the player to come falling down upon (re-)join, which is really annoying
