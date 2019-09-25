@@ -300,6 +300,12 @@ public class MWPlayerDataController extends PlayerDataController {
             // Disable bed spawn if not enabled for that world
             removeBedSpawnPointIfDisabled(savedData);
 
+            // If gamerule keep inventory is active for the world the player died in, also save the
+            // original items in the inventory
+            if ("true".equals(player.getWorld().getGameRuleValue("keepInventory"))) {
+                NBTUtil.saveInventory(player.getInventory(), savedData.createList("Inventory"));
+            }
+
             // Now, go ahead and save this data
             files.currentFile.write(savedData);
 
