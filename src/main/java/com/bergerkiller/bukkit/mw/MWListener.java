@@ -376,7 +376,14 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
         // Any creature spawns we couldn't cancel in PreSpawn we will cancel here
-        if (event.getSpawnReason() != SpawnReason.CUSTOM && (!MyWorlds.ignoreEggSpawns || event.getSpawnReason() != SpawnReason.SPAWNER_EGG)) {
+        boolean isCustomSpawn = (event.getSpawnReason() == SpawnReason.CUSTOM);
+        if (isCustomSpawn) {
+            String name = event.getEntityType().name();
+            if ("WANDERING_TRADER".equals(name) || "TRADER_LLAMA".equals(name)) {
+                isCustomSpawn = false;
+            }
+        }
+        if (!isCustomSpawn && (!MyWorlds.ignoreEggSpawns || event.getSpawnReason() != SpawnReason.SPAWNER_EGG)) {
             if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
                 event.setCancelled(true);
             }
