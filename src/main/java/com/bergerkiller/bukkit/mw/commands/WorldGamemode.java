@@ -26,8 +26,16 @@ public class WorldGamemode extends Command {
                     message(msg + ChatColor.YELLOW + mode.name().toLowerCase());
                 }
             } else {
-                //Parse the gamemode
-                GameMode mode = ParseUtil.parseEnum(GameMode.class, args[0], null);
+                // Try to parse the gamemode as integer first
+                GameMode mode;
+                if (ParseUtil.isNumeric(args[0])) {
+                    int value = ParseUtil.parseInt(args[0], null);
+                    mode = GameMode.getByValue(value);
+                } else {
+                    mode = ParseUtil.parseEnum(GameMode.class, args[0], null);
+                }
+
+                // Parse the gamemode
                 WorldConfig wc = WorldConfig.get(worldname);
                 wc.setGameMode(mode);
                 if (mode == null) {
