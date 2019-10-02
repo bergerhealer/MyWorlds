@@ -375,7 +375,7 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
-            World playerCurrentWorld = Bukkit.getWorld(mainWorldData.getUUID("World"));
+            World playerCurrentWorld = Bukkit.getWorld(((mainWorldData != null) ? mainWorldData : playerData).getUUID("World"));
             if (playerCurrentWorld != null && WorldConfig.get(playerCurrentWorld).clearInventory) {
                 // Create an empty CommonTagList with the right type information, by adding a compound and removing it
                 // There is no good api in BKCommonLib to make an empty list of a given element type (TODO!)
