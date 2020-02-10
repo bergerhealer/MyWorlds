@@ -373,16 +373,22 @@ public class MWListener implements Listener {
         WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer());
     }
 
+    // Spawn reason is incorrect on these versions of Minecraft
+    private static final boolean TRADER_SPAWNS_BORKED = Common.evaluateMCVersion(">=", "1.14") && Common.evaluateMCVersion("<=", "1.14.4");
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
         // Any creature spawns we couldn't cancel in PreSpawn we will cancel here
         boolean isCustomSpawn = (event.getSpawnReason() == SpawnReason.CUSTOM);
-        if (isCustomSpawn) {
+
+        // Spawn reason is incorrect on Minecraft 1.14 - 1.14.4 and use Spawn Reason CUSTOM anyway
+        if (TRADER_SPAWNS_BORKED && isCustomSpawn) {
             String name = event.getEntityType().name();
             if ("WANDERING_TRADER".equals(name) || "TRADER_LLAMA".equals(name)) {
                 isCustomSpawn = false;
             }
         }
+
         if (!isCustomSpawn && (!MyWorlds.ignoreEggSpawns || event.getSpawnReason() != SpawnReason.SPAWNER_EGG)) {
             if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
                 event.setCancelled(true);
