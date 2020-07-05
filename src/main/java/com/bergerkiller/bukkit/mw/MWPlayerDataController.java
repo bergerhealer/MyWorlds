@@ -9,17 +9,20 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import com.bergerkiller.bukkit.common.Common;
+import com.bergerkiller.bukkit.common.bases.IntVector3;
 import com.bergerkiller.bukkit.common.controller.PlayerDataController;
 import com.bergerkiller.bukkit.common.entity.CommonEntity;
-import com.bergerkiller.bukkit.common.entity.type.CommonHumanEntity;
 import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.protocol.PacketType;
+import com.bergerkiller.bukkit.common.resources.ResourceCategory;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
@@ -27,10 +30,12 @@ import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.generated.net.minecraft.server.EntityLivingHandle;
 import com.bergerkiller.generated.net.minecraft.server.EntityPlayerHandle;
+import com.bergerkiller.generated.net.minecraft.server.MinecraftKeyHandle;
 import com.bergerkiller.generated.net.minecraft.server.MobEffectHandle;
 import com.bergerkiller.generated.net.minecraft.server.MobEffectListHandle;
 
 public class MWPlayerDataController extends PlayerDataController {
+    private static final boolean SPAWN_WORLD_IS_DIMENSION_KEY = Common.evaluateMCVersion(">=", "1.16");
     public static final String DATA_TAG_LASTPOS = "MyWorlds.playerPos";
     public static final String DATA_TAG_LASTROT = "MyWorlds.playerRot";
 
@@ -40,28 +45,40 @@ public class MWPlayerDataController extends PlayerDataController {
         final World world = location.getWorld();
         tagCompound.putValue("World", world.getName());
         tagCompound.putUUID("World", world.getUID());
-        tagCompound.putValue("Dimension", WorldUtil.getDimension(world).getId());
+        tagCompound.putValue("Dimension", WorldUtil.getDimensionType(world).getId());
     }
 
     /**
-     * Creates new human data information as if the human just joined the server.
+     * Creates new player data information as if the player just joined the server.
      * 
-     * @param human to generate information about
+     * @param player to generate information about
      * @return empty data
      */
-    public static CommonTagCompound createEmptyData(HumanEntity human) {
-        final Vector velocity = human.getVelocity();
+    public static CommonTagCompound createEmptyData(Player player) {
+        final Vector velocity = player.getVelocity();
         CommonTagCompound empty = new CommonTagCompound();
-        CommonHumanEntity<?> humanEntity = CommonEntity.get(human);
-        empty.putUUID("", human.getUniqueId());
-        empty.putValue("Health", (short) humanEntity.getMaxHealth());
-        empty.putValue("Max Health", (float) humanEntity.getMaxHealth()); // since 1.6.1 health is a float
+        CommonPlayer playerEntity = CommonEntity.get(player);
+        empty.putUUID("", player.getUniqueId());
+        empty.putValue("Health", (short) playerEntity.getMaxHealth());
+        empty.putValue("Max Health", (float) playerEntity.getMaxHealth()); // since 1.6.1 health is a float
         empty.putValue("HurtTime", (short) 0);
         empty.putValue("DeathTime", (short) 0);
         empty.putValue("AttackTime", (short) 0);
         empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
         setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
-        empty.putBlockLocation("Spawn", humanEntity.getSpawnPoint());
+
+        Block spawnPoint = playerEntity.getSpawnPoint();
+        if (SPAWN_WORLD_IS_DIMENSION_KEY) {
+            empty.putMinecraftKey("SpawnDimension", WorldUtil.getDimensionKey(spawnPoint.getWorld()).getName());
+        } else {
+            empty.putValue("SpawnWorld", (spawnPoint == null) ? "" : spawnPoint.getWorld().getName());
+        }
+        if (spawnPoint != null) {
+            empty.putValue("SpawnX", spawnPoint.getX());
+            empty.putValue("SpawnY", spawnPoint.getY());
+            empty.putValue("SpawnZ", spawnPoint.getZ());
+        }
+
         return empty;
     }
 
@@ -209,8 +226,19 @@ public class MWPlayerDataController extends PlayerDataController {
                 commonPlayer.setHealth(playerData.getValue("Health", commonPlayer.getMaxHealth()));
             }
 
-            commonPlayer.setSpawnPoint(playerData.getBlockLocation("Spawn"));
+            // Initialize spawn point
+            World spawnWorld = readSpawnWorld(playerData);
+            IntVector3 spawnPosition = playerData.getValue("Spawn", IntVector3.class, null);
+            if (spawnWorld != null && spawnPosition != null) {
+                System.out.println("Setting spawn point to " + spawnWorld + " " + spawnPosition);
+                commonPlayer.setSpawnPoint(spawnPosition.toBlock(spawnWorld));
+            } else {
+                System.out.println("Setting spawn point to NONE");
+                commonPlayer.setSpawnPoint(null);
+            }
+
             playerHandle.setSpawnForced(playerData.getValue("SpawnForced", false));
+
             NBTUtil.loadFoodMetaData(playerHandle.getFoodDataRaw(), playerData);
             NBTUtil.loadInventory(player.getEnderChest(), playerData.createList("EnderItems"));
 
@@ -245,16 +273,14 @@ public class MWPlayerDataController extends PlayerDataController {
     }
 
     private static void removeBedSpawnPointIfDisabled(CommonTagCompound playerData) {
-        String bedSpawnWorld = playerData.getValue("SpawnWorld", "");
-        if (bedSpawnWorld != null && !bedSpawnWorld.isEmpty()) {
-            WorldConfig config = WorldConfig.getIfExists(bedSpawnWorld);
-            if (config != null && !config.bedRespawnEnabled) {
-                playerData.removeValue("SpawnWorld");
-                playerData.removeValue("SpawnForced");
-                playerData.removeValue("SpawnX");
-                playerData.removeValue("SpawnY");
-                playerData.removeValue("SpawnZ");
-            }
+        World bedSpawnWorld = readSpawnWorld(playerData);
+        if (bedSpawnWorld != null && !WorldConfig.get(bedSpawnWorld).bedRespawnEnabled) {
+            playerData.removeValue("SpawnWorld");
+            playerData.removeValue("SpawnDimension");
+            playerData.removeValue("SpawnForced");
+            playerData.removeValue("SpawnX");
+            playerData.removeValue("SpawnY");
+            playerData.removeValue("SpawnZ");
         }
     }
 
@@ -329,9 +355,9 @@ public class MWPlayerDataController extends PlayerDataController {
     }
 
     @Override
-    public CommonTagCompound onLoad(HumanEntity human) {
+    public CommonTagCompound onLoad(final Player player) {
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(human);
+            final PlayerFileCollection files = new PlayerFileCollection(player);
 
             CommonTagCompound mainWorldData = null;
             boolean hasPlayedBefore = false;
@@ -400,30 +426,28 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // Minecraft bugfix here: Clear mob/potion effects BEFORE loading the data
             // This resolves issues with effects staying behind
-            resetCurrentMobEffects(human);
+            resetCurrentMobEffects(player);
 
             // Load the entity using the player data compound
-            NBTUtil.loadEntity(human, playerData);
-            if (human instanceof Player) {
-                // Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
-                // Make sure the player is marked as being new
-                PlayerUtil.setHasPlayedBefore((Player) human, hasPlayedBefore);
-                if (hasPlayedBefore) {
-                    // As specified in the WorldNBTStorage implementation, set this
-                    PlayerUtil.setFirstPlayed((Player) human, files.mainWorldFile.lastModified());
-                }
+            NBTUtil.loadEntity(player, playerData);
+
+            // Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
+            // Make sure the player is marked as being new
+            PlayerUtil.setHasPlayedBefore(player, hasPlayedBefore);
+            if (hasPlayedBefore) {
+                // As specified in the WorldNBTStorage implementation, set this
+                PlayerUtil.setFirstPlayed(player, files.mainWorldFile.lastModified());
             }
 
             // DISABLED: NPE on some servers when inventory clear is called this early
-            // postLoad(human);
+            // postLoad(player);
 
             // When set as flying, there appears to be a problem or bug where this is reset
             // This causes the player to come falling down upon (re-)join, which is really annoying
             // For now this is fixed by explicitly calling setFlying one tick later
-            if (human instanceof Player && playerData.containsKey("abilities")) {
+            if (playerData.containsKey("abilities")) {
                 CommonTagCompound abilities = (CommonTagCompound) playerData.get("abilities");
                 if (abilities.getValue("flying", false)) {
-                    final Player player = (Player) human;
                     CommonUtil.nextTick(new Runnable() {
                         @Override
                         public void run() {
@@ -439,24 +463,24 @@ public class MWPlayerDataController extends PlayerDataController {
 
             return playerData;
         } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to load player data for " + human.getName());
+            Bukkit.getLogger().warning("Failed to load player data for " + player.getName());
             exception.printStackTrace();
-            return super.onLoad(human);
+            return super.onLoad(player);
         }
     }
 
     @Override
-    public void onSave(HumanEntity human) {
+    public void onSave(final Player player) {
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(human);
-            final CommonTagCompound savedData = NBTUtil.saveEntity(human, null);
+            final PlayerFileCollection files = new PlayerFileCollection(player);
+            final CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
 
             // Disable bed spawn if not enabled for that world
             removeBedSpawnPointIfDisabled(savedData);
 
             files.log("saving data");
 
-            final Location loc = human.getLocation();
+            final Location loc = player.getLocation();
             if (files.isSingleDataFile()) {
                 // Append the Last Pos/Rot to the data
                 savedData.putListValues(DATA_TAG_LASTPOS, loc.getX(), loc.getY(), loc.getZ());
@@ -494,14 +518,31 @@ public class MWPlayerDataController extends PlayerDataController {
                     public void update(CommonTagCompound data) {
                         data.put("Pos", savedData.get("Pos"));
                         data.put("Rotation", savedData.get("Rotation"));
-                        data.putUUID("World", files.human.getWorld().getUID());
+                        data.putUUID("World", files.player.getWorld().getUID());
                     }
                 });
             }
         } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to save player data for " + human.getName());
+            Bukkit.getLogger().warning("Failed to save player data for " + player.getName());
             exception.printStackTrace();
         }
+    }
+
+    private static World readSpawnWorld(CommonTagCompound playerData) {
+        if (SPAWN_WORLD_IS_DIMENSION_KEY) {
+            MinecraftKeyHandle spawnDimensionName = playerData.getMinecraftKey("SpawnDimension");
+            if (spawnDimensionName != null) {
+                return WorldUtil.getWorldByDimensionKey(ResourceCategory.dimension.createKey(spawnDimensionName));
+            }
+        }
+
+        // Migrate "SpawnWorld" to "SpawnDimension" if needed when dimension key is used
+        if (playerData.containsKey("SpawnWorld")) {
+            return Bukkit.getWorld(playerData.getValue("SpawnWorld", String.class));
+        }
+
+        // None
+        return null;
     }
 
     public interface DataUpdater {
@@ -509,16 +550,16 @@ public class MWPlayerDataController extends PlayerDataController {
     }
 
     public static class PlayerFile {
-        public final HumanEntity human;
+        public final Player player;
         public final File file;
 
-        public PlayerFile(HumanEntity human, String worldName) {
-            this(human, WorldConfig.get(worldName));
+        public PlayerFile(Player player, String worldName) {
+            this(player, WorldConfig.get(worldName));
         }
 
-        public PlayerFile(HumanEntity human, WorldConfig worldConfig) {
-            this.human = human;
-            this.file = worldConfig.getPlayerData(human);
+        public PlayerFile(Player player, WorldConfig worldConfig) {
+            this.player = player;
+            this.file = worldConfig.getPlayerData(player);
             this.file.getParentFile().mkdirs();
         }
 
@@ -536,13 +577,13 @@ public class MWPlayerDataController extends PlayerDataController {
                     return CommonTagCompound.readFromFile(file, true);
                 }
             } catch (ZipException ex) {
-                Bukkit.getLogger().warning("Failed to read player data for " + human.getName() + " (ZIP-exception: file corrupted)");
+                Bukkit.getLogger().warning("Failed to read player data for " + player.getName() + " (ZIP-exception: file corrupted)");
             } catch (Throwable t) {
                 // Return an empty data constant for now
-                Bukkit.getLogger().warning("Failed to read player data for " + human.getName());
+                Bukkit.getLogger().warning("Failed to read player data for " + player.getName());
                 t.printStackTrace();
             }
-            return createEmptyData(human);
+            return createEmptyData(player);
         }
 
         public void write(CommonTagCompound data) throws IOException {
@@ -557,27 +598,27 @@ public class MWPlayerDataController extends PlayerDataController {
     }
 
     public static class PlayerFileCollection {
-        public final HumanEntity human;
+        public final Player player;
         public PlayerFile mainWorldFile; /* Stores the name of the main world the player is on */
         public PlayerFile positionFile;  /* Stores the position of the player on a particular world */
         public PlayerFile currentFile;   /* Stores the inventory and data of the player on a particular world. Merge/split rules apply. */
 
-        public PlayerFileCollection(HumanEntity human) {
-            this.human = human;
-            this.mainWorldFile = new PlayerFile(human, WorldConfig.getMain());
-            setCurrentWorld(human.getWorld());
+        public PlayerFileCollection(Player player) {
+            this.player = player;
+            this.mainWorldFile = new PlayerFile(player, WorldConfig.getMain());
+            setCurrentWorld(player.getWorld());
         }
 
         /**
-         * Sets the current world the human is in, switching the file locations
+         * Sets the current world the player is in, switching the file locations
          * 
-         * @param currentWorld the human is in
+         * @param currentWorld the player is in
          */
         public void setCurrentWorld(World currentWorld) {
             WorldConfig currentWorldConfig = WorldConfig.get(currentWorld);
-            this.positionFile = new PlayerFile(human, currentWorldConfig);
+            this.positionFile = new PlayerFile(player, currentWorldConfig);
             if (MyWorlds.useWorldInventories) {
-                this.currentFile = new PlayerFile(human, currentWorldConfig.inventory.getSharedWorldName());
+                this.currentFile = new PlayerFile(player, currentWorldConfig.inventory.getSharedWorldName());
             } else {
                 this.currentFile = this.mainWorldFile;
             }
@@ -605,7 +646,7 @@ public class MWPlayerDataController extends PlayerDataController {
         /* Debug */
         public void log(String title) {
             /*
-            System.out.println("Files used " + title + " for player " + human.getName() + " world " + human.getWorld().getName() + ":");
+            System.out.println("Files used " + title + " for player " + player.getName() + " world " + player.getWorld().getName() + ":");
             System.out.println("  mainWorldFile: " + mainWorldFile.file);
             System.out.println("  positionFile: " + positionFile.file);
             System.out.println("  inventoryFile: " + currentFile.file);
