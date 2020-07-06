@@ -230,10 +230,8 @@ public class MWPlayerDataController extends PlayerDataController {
             World spawnWorld = readSpawnWorld(playerData);
             IntVector3 spawnPosition = playerData.getValue("Spawn", IntVector3.class, null);
             if (spawnWorld != null && spawnPosition != null) {
-                System.out.println("Setting spawn point to " + spawnWorld + " " + spawnPosition);
                 commonPlayer.setSpawnPoint(spawnPosition.toBlock(spawnWorld));
             } else {
-                System.out.println("Setting spawn point to NONE");
                 commonPlayer.setSpawnPoint(null);
             }
 
