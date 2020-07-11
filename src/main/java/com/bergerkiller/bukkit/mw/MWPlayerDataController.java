@@ -68,12 +68,12 @@ public class MWPlayerDataController extends PlayerDataController {
         setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
 
         Block spawnPoint = playerEntity.getSpawnPoint();
-        if (SPAWN_WORLD_IS_DIMENSION_KEY) {
-            empty.putMinecraftKey("SpawnDimension", WorldUtil.getDimensionKey(spawnPoint.getWorld()).getName());
-        } else {
-            empty.putValue("SpawnWorld", (spawnPoint == null) ? "" : spawnPoint.getWorld().getName());
-        }
         if (spawnPoint != null) {
+            if (SPAWN_WORLD_IS_DIMENSION_KEY) {
+                empty.putMinecraftKey("SpawnDimension", WorldUtil.getDimensionKey(spawnPoint.getWorld()).getName());
+            } else {
+                empty.putValue("SpawnWorld", spawnPoint.getWorld().getName());
+            }
             empty.putValue("SpawnX", spawnPoint.getX());
             empty.putValue("SpawnY", spawnPoint.getY());
             empty.putValue("SpawnZ", spawnPoint.getZ());
