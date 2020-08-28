@@ -110,6 +110,10 @@ public class WorldInventory {
         return null;
     }
 
+    public boolean contains(String worldname) {
+        return this.worlds.contains(worldname.toLowerCase());
+    }
+
     public WorldInventory remove(String worldname, boolean createNew) {
         if (this.worlds.remove(worldname.toLowerCase())) {
             //constructor handles world config update

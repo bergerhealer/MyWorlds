@@ -14,6 +14,10 @@ import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
+import com.bergerkiller.bukkit.mw.portal.PlayerRespawnHandler;
+import com.bergerkiller.bukkit.mw.portal.EntityStasisHandler;
+import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
+import com.bergerkiller.bukkit.mw.portal.PortalTeleportationCooldown;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
 
@@ -41,11 +45,9 @@ public class MyWorlds extends PluginBase {
     public static boolean forceGamemodeChanges;
     public static boolean overridePortalPhysics;
     public static boolean alwaysInstantPortal;
-    public static boolean allowPersonalPortals;
     public static boolean ignoreEggSpawns;
     public static boolean debugLogGMChanges;
     public static boolean portalToLastPosition;
-    public static boolean portalToLastPositionPersonal;
 
     // Portals
     public static boolean waterPortalEnabled;
@@ -54,9 +56,30 @@ public class MyWorlds extends PluginBase {
 
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
+    private MWListener listener;
     private MWPlayerDataController dataController;
     private final WorldInventoriesDupingPatch worldDupingPatch = new WorldInventoriesDupingPatch();
+    private final NetherPortalSearcher netherPortalSearcher = new NetherPortalSearcher(this);
+    private final PortalTeleportationCooldown portalTeleportationCooldown = new PortalTeleportationCooldown(this);
+    private final EntityStasisHandler entityStasisHandler = new EntityStasisHandler(this);
+    private final PlayerRespawnHandler endRespawnHandler = new PlayerRespawnHandler(this);
     public static MyWorlds plugin;
+
+    public PlayerRespawnHandler getEndRespawnHandler() {
+        return this.endRespawnHandler;
+    }
+
+    public EntityStasisHandler getEntityStasisHandler() {
+        return this.entityStasisHandler;
+    }
+
+    public PortalTeleportationCooldown getPortalTeleportationCooldown() {
+        return this.portalTeleportationCooldown;
+    }
+
+    public NetherPortalSearcher getNetherPortalSearcher() {
+        return this.netherPortalSearcher;
+    }
 
     @Override
     public int getMinimumLibVersion() {
@@ -83,13 +106,19 @@ public class MyWorlds extends PluginBase {
 
         // Event registering
         this.worldDupingPatch.enable(this);
-        this.register(MWListener.class);
-        this.register(MWListenerPost.class);
+        this.listener = new MWListener(this);
+        this.register(listener);
+        this.register(new MWListenerPost(this));
         this.register("tpp", "world");
 
         // Soft Dependency evaluation beforehands
         isSpoutPluginEnabled = CommonUtil.isPluginEnabled("Spout");
         isMultiverseEnabled = CommonUtil.isPluginEnabled(MULTIVERSE_NAME);
+
+        // Initialize the portal teleport cooldown logic
+        portalTeleportationCooldown.enable();
+        entityStasisHandler.enable();
+        endRespawnHandler.enable();
 
         // Continue loading the configuration(s)
         FileConfiguration config = new FileConfiguration(this);
@@ -176,11 +205,6 @@ public class MyWorlds extends PluginBase {
         endPortalEnabled = enabledPortals.get("endPortal", true);
         waterPortalEnabled = enabledPortals.get("waterPortal", true);
 
-        config.setHeader("allowPersonalPortals", "\nWhether individually placed nether/end portals create their own destination portal");
-        config.addHeader("allowPersonalPortals", "False: Players are teleported to the spawn point of the world");
-        config.addHeader("allowPersonalPortals", "True: Players are teleported to their own portal on the other world");
-        allowPersonalPortals = config.get("allowPersonalPortals", true);
-
         config.setHeader("ignoreEggSpawns", "\nWhether egg-spawned entities are allowed to spawn, even if worlds have these entities blacklisted");
         ignoreEggSpawns = config.get("ignoreEggSpawns", true);
 
@@ -201,13 +225,10 @@ public class MyWorlds extends PluginBase {
         config.addHeader("portalToLastPosition", "It makes that option work not just for /tpp, but also when taking portals to a world");
         portalToLastPosition = config.get("portalToLastPosition", true);
 
-        config.setHeader("portalToLastPositionPersonal", "\nWhether personal portals (portals player build themselves) teleport them to the last");
-        config.addHeader("portalToLastPositionPersonal", "position on the world they are teleporting to, instead of a matching location from the portal");
-        config.addHeader("portalToLastPositionPersonal", "This is only active when 'remember last position' is enabled for the world");
-        config.addHeader("portalToLastPositionPersonal", "Note that when this is the first time the player enters a world, a personal portal is created anyway");
-        portalToLastPositionPersonal = config.get("portalToLastPositionPersonal", true);
-
         config.save();
+
+        // Start automatic cleanup of portals we haven't been visited in a while
+        netherPortalSearcher.enable();
 
         // World configurations have to be loaded first
         WorldConfig.init();
@@ -227,6 +248,12 @@ public class MyWorlds extends PluginBase {
     public void disable() {
         // Portals
         Portal.deinit(this.getDataFile("portals.txt"));
+
+        // Stop this
+        netherPortalSearcher.disable();
+        portalTeleportationCooldown.disable();
+        entityStasisHandler.disable();
+        endRespawnHandler.disable();
 
         // World inventories
         WorldInventory.save();

@@ -19,6 +19,38 @@ public class TeleportPortal extends Command {
         super(Permission.COMMAND_TPP, "tpp");
     }
 
+    @Override
+    public boolean hasPermission() {
+        if (super.hasPermission()) {
+            return true;
+        }
+
+        // If no args specified, allow, just show invalid
+        if (args.length == 0) {
+            return true;
+        }
+
+        // If more than one argument is specified, that would teleport other players
+        // Disallow at all times
+        if (args.length != 1) {
+            return false;
+        }
+
+        // is this a portal that is specified
+        Location tele = Portal.getPortalLocation(args[0], player.getWorld().getName(), true);
+        if (tele != null) {
+            Portal portal = Portal.getNear(tele, 3);
+            if (portal == null) {
+                return false;
+            }
+            return Permission.PORTAL_TELEPORT.has(player, portal.getName());
+        }
+
+        // World name, alternatively
+        String worldname = WorldManager.matchWorld(args[0]);
+        return Permission.GENERAL_TELEPORT.has(player, (worldname == null) ? args[0] : worldname);
+    }
+
     public void execute() {
         if (args.length >= 1) {
             Player[] targets = null;

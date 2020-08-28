@@ -22,6 +22,7 @@ import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 
 public class Portal extends PortalStore {
     private String name;
@@ -93,7 +94,7 @@ public class Portal extends PortalStore {
             World w = WorldManager.getWorld(portalname);
             if (w != null) {
                 if (MyWorlds.portalToLastPosition && player != null) {
-                    loc = WorldManager.getPlayerWorldSpawn(player, w);
+                    loc = WorldManager.getPlayerWorldSpawn(player, w, true);
                 } else {
                     loc = WorldManager.getSpawnLocation(w);
                 }
@@ -135,7 +136,7 @@ public class Portal extends PortalStore {
      */
     public boolean teleportSelf(Entity entity) {
         if (entity instanceof Player) {
-            MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd());
+            MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
         }
         boolean rval = EntityUtil.teleport(entity, Util.spawnOffset(this.getLocation()));
         return rval;
@@ -277,147 +278,14 @@ public class Portal extends PortalStore {
     }
 
     /**
-     * Handles an entity entering a certain portal block.
-     * If this method returns False, the caller should set the event to cancelled.
-     * The destination Location and travel agent are updated by this method if True
-     * is returned. If the Entity is a Player, messages are sent when teleportation
-     * failed.
+     * Gets whether teleportation to another location is at all possible for an entity to do.
+     * Checks world configuration and permissions, if the entity is a player.
      * 
-     * @param event of the entering
-     * @param portalType of the portal
-     * @return True if a new destination was set, False if not
+     * @param e Entity to teleport
+     * @param dest Destination Location to teleport to
+     * @return True if teleportation is (possibly) allowed
      */
-    public static boolean handlePortalEnter(EntityPortalEvent event, PortalType portalType) {
-        // First, see whether a portal or default world will be used
-        Entity entity = event.getEntity();
-        Portal enteredPortal = getNear(entity.getLocation());
-        World enteredWorld = null;
-        if (enteredPortal == null) {
-            // Default portals
-            String def = null;
-            if (portalType == PortalType.NETHER) {
-                def = WorldConfig.get(entity).getNetherPortal();
-            } else if (portalType == PortalType.END) {
-                def = WorldConfig.get(entity).getEnderPortal();
-            }
-            if (def != null) {
-                enteredPortal = get(getPortalLocation(def, entity.getWorld().getName()));
-                if (enteredPortal != null) {
-                    // Teleport to a specific portal - change perspective
-                    enteredPortal = enteredPortal.getOtherEnd();
-                } else {
-                    // Resort back to a potential default world
-                    enteredWorld = WorldManager.getWorld(def);
-                }
-            }
-        }
-        // Proceed to further handle this request
-        Location destinationLoc = null;
-        boolean useTravelAgent = false;
-
-        // Further handle portal entering
-        if (enteredPortal != null) {
-            Player p = CommonUtil.tryCast(entity, Player.class);
-            destinationLoc = enteredPortal.getDestination(p);
-            if (destinationLoc == null) {
-                String name = enteredPortal.getDestinationName();
-                if (name != null && entity instanceof Player) {
-                    // Show message indicating the destination is unavailable
-                    Localization.PORTAL_NOTFOUND.message((Player) entity, name);
-                    // Return here to avoid an additional 'no destination' message later on
-                    return false;
-                }
-            } else if (entity instanceof Player) {
-                // For later on: set up the right portal for permissions and messages
-                destinationLoc = destinationLoc.clone().add(0.0, 1.0, 0.0); // Fix
-                MWListenerPost.setLastEntered((Player) entity, enteredPortal);
-            }
-        }
-
-        // Check for teleporting to the last-known position
-        if (enteredWorld != null &&
-            MyWorlds.allowPersonalPortals &&
-            MyWorlds.portalToLastPositionPersonal &&
-            entity instanceof Player &&
-            WorldManager.hasLastKnownPosition((Player) entity, enteredWorld))
-        {
-            destinationLoc = WorldManager.getPlayerWorldSpawn((Player) entity, enteredWorld);
-            enteredWorld = null;
-        }
-
-        // Further handle teleportation to worlds
-        if (enteredWorld != null) {
-            if (MyWorlds.allowPersonalPortals) {
-                // Personal portals - which means a portal may have to be created on the other end
-                // To find out where to place this portal, compare the from and to environments
-                Environment oldEnvironment = entity.getWorld().getEnvironment();
-                Environment newEnvironment = enteredWorld.getEnvironment();
-                if (newEnvironment == Environment.THE_END) {
-                    // Always use this location of the world as destination
-                    // Anything else will cause internal logic to break
-                    // SERIOUSLY ANYTHING ELSE WILL COMPLETELY BREAK THIS!!!
-                    destinationLoc = new Location(enteredWorld, 100, 50, 0);
-                    useTravelAgent = true;
-                } else if (oldEnvironment == Environment.THE_END) {
-                    // No special portal type or anything is used
-                    // Instead, teleport to a personal bed or otherwise world spawn
-                    if (entity instanceof Player) {
-                        destinationLoc = ((Player) entity).getBedSpawnLocation();
-                    }
-                } else {
-                    // Find out what location to teleport to
-                    // Use source block as the location to search from
-                    double blockRatio = 1.0;
-                    if (oldEnvironment != newEnvironment) {
-                        if (newEnvironment == Environment.NETHER) {
-                            blockRatio = 0.125;
-                        } else if (oldEnvironment == Environment.NETHER) {
-                            blockRatio = 8.0;
-                        }
-                    }
-                    Location start = entity.getLocation();
-                    Location end = new Location(enteredWorld, blockRatio * start.getX(), start.getY(), blockRatio * start.getZ());
-                    Block destB = end.getBlock();
-                    // Figure out the best yaw to use here by checking for air blocks
-                    float yaw = 0.0f;
-                    for (BlockFace face : FaceUtil.AXIS) {
-                        if (Util.IS_AIR.get(destB.getRelative(face))) {
-                            yaw = FaceUtil.faceToYaw(face) + 90f;
-                            break;
-                        }
-                    }
-                    destinationLoc = new Location(destB.getWorld(), destB.getX() + 0.5, destB.getY(), destB.getZ() + 0.5, yaw, 0.0f);
-                    useTravelAgent = true;
-                }
-            }
-            // No destination found or set, resort back to using world spawn
-            if (destinationLoc == null) {
-                if (entity instanceof Player) {
-                    destinationLoc = WorldManager.getPlayerWorldSpawn((Player) entity, enteredWorld);
-                } else {
-                    destinationLoc = WorldManager.getSpawnLocation(enteredWorld);
-                }
-            }
-        }
-
-        if (destinationLoc == null) {
-            // No destination available
-            // Send a missing destination message for non-water portals
-            if (entity instanceof Player && portalType != PortalType.WATER) {
-                Localization.PORTAL_NODESTINATION.message((Player) entity);
-            }
-        } else if (canTeleportTo(entity, destinationLoc)) {
-            // Successful teleport
-            if (Util.hasTravelAgentField) {
-                event.useTravelAgent(useTravelAgent);
-            }
-            event.setTo(destinationLoc);
-            return true;
-        }
-        return false;
-    }
-
-    private static boolean canTeleportTo(Entity e, Location dest) {
+    public static boolean canTeleportEntityTo(Entity e, Location dest) {
         // Check permissions for players
         if (e instanceof Player) {
             return MWListenerPost.handleTeleportPermission((Player) e, dest);

@@ -81,11 +81,14 @@ commands:
             /world setspawn - set spawn of current world
             /world setspawn [worldname] - set spawn of a world
     world spawn:
-        description: Teleports you or players specified to the world spawn
+        description: Teleports you to the world spawn
         usage: |
             /world spawn - Teleport to current world spawn
             /world spawn [world] - Teleport to world spawn
-            /world spawn [world] [playernames] - Teleport players
+    world rejoin:
+        description: Teleports you or players specified to the last world and position of a world group
+        usage: |
+            /world rejoin [world] - Rejoins the world, or a linked world of world
     world time:
         description: Sets the time of a world
         usage: |
@@ -215,6 +218,10 @@ commands:
         usage: |
             /world setendportal [portal/world]
             /world setendportal    - Reset to default
+    world enablecredits:
+        description: Enables showing the end-game credits a second time
+        usage: |
+            /world enablecredits - Enable for self
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World

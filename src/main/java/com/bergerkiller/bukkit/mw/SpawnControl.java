@@ -6,6 +6,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
+import com.bergerkiller.bukkit.common.utils.EntityGroupingUtil.EntityCategory;
 
 public class SpawnControl {
     public HashSet<EntityType> deniedCreatures = new HashSet<EntityType>();
@@ -20,7 +21,7 @@ public class SpawnControl {
 
     public boolean getAnimals() {
         for (EntityType type : EntityType.values()) {
-            if (EntityUtil.isAnimal(type)) {
+            if (EntityUtil.isEntityType(type, EntityCategory.ANIMAL)) {
                 if (!this.deniedCreatures.contains(type)) {
                     return false;
                 }
@@ -31,7 +32,7 @@ public class SpawnControl {
 
     public boolean getMonsters() {
         for (EntityType type : EntityType.values()) {
-            if (EntityUtil.isMonster(type)) {
+            if (EntityUtil.isEntityType(type, EntityCategory.MONSTER)) {
                 if (!this.deniedCreatures.contains(type)) {
                     return false;
                 }
@@ -42,7 +43,7 @@ public class SpawnControl {
 
     public void setAnimals(boolean deny) {
         for (EntityType type : EntityType.values()) {
-            if (EntityUtil.isAnimal(type)) {
+            if (EntityUtil.isEntityType(type, EntityCategory.ANIMAL)) {
                 if (deny) {
                     deniedCreatures.add(type);
                 } else {
@@ -54,7 +55,7 @@ public class SpawnControl {
 
     public void setMonsters(boolean deny) {
         for (EntityType type : EntityType.values()) {
-            if (EntityUtil.isMonster(type)) {
+            if (EntityUtil.isEntityType(type, EntityCategory.MONSTER)) {
                 if (deny) {
                     deniedCreatures.add(type);
                 } else {
@@ -66,7 +67,7 @@ public class SpawnControl {
 
     public void setNPC(boolean deny) {
         for (EntityType type : EntityType.values()) {
-            if (EntityUtil.isNPC(type)) {
+            if (EntityUtil.isEntityType(type, EntityCategory.NPC)) {
                 if (deny) {
                     deniedCreatures.add(type);
                 } else {

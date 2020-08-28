@@ -50,7 +50,7 @@ public class WorldManager {
     }
 
     private static boolean isSafeSpawnSurface(BlockData blockData, Block block) {
-        if (Util.IS_END_PORTAL.get(blockData) || Util.IS_NETHER_PORTAL.get(blockData)) {
+        if (Util.IS_END_PORTAL.get(blockData) || MaterialUtil.ISNETHERPORTAL.get(blockData)) {
             return false;
         }
         if (MaterialUtil.ISLEAVES.get(blockData)) {
@@ -87,7 +87,7 @@ public class WorldManager {
     public static Location getRespawnLocation(World ofWorld) {
         return getRespawnLocation(ofWorld.getName());
     }
-    
+
     /*
      * Gets a possible teleport position on a certain world
      */
@@ -487,15 +487,63 @@ public class WorldManager {
     }
 
     /**
+     * Tries to read player data to find a stored bed or world anchor respawn location for a Player
+     * on another world.
+     * 
+     * @param player The player to find a bed spawn of
+     * @param world The world on which to find a bed spawn
+     * @return bed spawn location
+     */
+    public static Location getPlayerRespawnPosition(Player player, World world) {
+        return MWPlayerDataController.readRespawnPoint(player, world).findSafeSpawn();
+    }
+
+    /**
+     * Attempts to let a player rejoin a world, or group of worlds, a player was on
+     * based on inventory sharing rules. If the player has no known previous
+     * world/position information for the world, then the player rejoins the
+     * world parameter instead.
+     * 
+     * @param player Player to find a rejoin location for
+     * @param world World to rejoin
+     * @return Rejoined location
+     */
+    public static Location getPlayerRejoinPosition(Player player, World world) {
+        // If player is already currently on a world part of the world group,
+        // just return the player's current position
+        if (WorldConfig.get(world).inventory.contains(player.getWorld().getName())) {
+            return player.getLocation();
+        }
+
+        // Check player data what the last world was the player was on
+        // Return the position on that world
+        Location rejoinedLoc = MWPlayerDataController.readLastLocationOfWorldGroup(player, world);
+        if (rejoinedLoc != null) {
+            return rejoinedLoc;
+        }
+
+        // Try a bed spawn
+        Location bedSpawnLocation = getPlayerRespawnPosition(player, world);
+        if (bedSpawnLocation != null) {
+            return bedSpawnLocation;
+        }
+
+        // World spawn point
+        return getSpawnLocation(world);
+    }
+
+    /**
      * Tries to find a (personal) spawn location to teleport players to.
      * If last position remembering is turned on and a last position is known, 
-     * this Location is returned. Otherwise, the world spawn point is returned.
+     * this Location is returned. If lacking, and the player has a bed spawn there,
+     * that one is used. Otherwise, the world spawn point is returned.
      * 
-     * @param player to find the world spawn for
-     * @param world to find the world spawn in
+     * @param player Player to find the world spawn for
+     * @param world World to find the world spawn in
+     * @param playerRespawnPoint Whether to use the player respawn point (bed) if available
      * @return Spawn location
      */
-    public static Location getPlayerWorldSpawn(Player player, World world) {
+    public static Location getPlayerWorldSpawn(Player player, World world, boolean playerRespawnPoint) {
         if (WorldConfig.get(world).rememberLastPlayerPosition || Permission.GENERAL_KEEPLASTPOS.has(player)) {
             // Player is already in the world to go to...so we just return that instead
             if (player.getWorld() == world) {
@@ -508,6 +556,16 @@ public class WorldManager {
                 return location;
             }
         }
+
+        // Try a bed spawn
+        if (playerRespawnPoint) {
+            Location bedSpawnLocation = getPlayerRespawnPosition(player, world);
+            if (bedSpawnLocation != null) {
+                return bedSpawnLocation;
+            }
+        }
+
+        // World spawn point
         return getSpawnLocation(world);
     }
 
@@ -538,7 +596,7 @@ public class WorldManager {
      * @return True if successful, False if not
      */
     public static boolean teleportToWorld(Player player, World world) {
-        return EntityUtil.teleport(player, getPlayerWorldSpawn(player, world));
+        return EntityUtil.teleport(player, getPlayerWorldSpawn(player, world, false));
     }
 
     /**
@@ -558,35 +616,10 @@ public class WorldManager {
      * Looks for a suitable place to spawn near the Start Location specified.
      * 
      * @param startLocation
-     * @return A safe location to spawn at
-     */
-    public static Location getSafeSpawn(Location startLocation) {
-        return getSafeSpawn(startLocation, true);
-    }
-
-    /**
-     * Looks for a suitable place to spawn near the Start Location specified.
-     * 
-     * @param startLocation
      * @param allowPortals - whether portals can be designated as a safe spawn
      * @return A safe location to spawn at
      */
-    public static Location getSafeSpawn(Location startLocation, boolean allowPortals) {
-        // First, ask the internal spawn finding logic to do this for us
-        // This COULD fail, proper detection for that is key!
-        if (allowPortals) {
-            Location pos = WorldUtil.findSpawnLocation(startLocation, false);
-            if (pos != null) {
-                // Sometimes an odd 128-height location is returned (nether)
-                // This check prevents that from being used here
-                int posX = pos.getBlockX();
-                int posY = pos.getBlockY();
-                int posZ = pos.getBlockZ();
-                if (posX != 0 || posZ != 0 || (posY != 128 && posY != 256)) {
-                    return pos;
-                }
-            }
-        }
+    public static Location getSafeSpawn(Location startLocation) {
         // Do it ourselves
         final World world = startLocation.getWorld();
         final int blockX = startLocation.getBlockX();

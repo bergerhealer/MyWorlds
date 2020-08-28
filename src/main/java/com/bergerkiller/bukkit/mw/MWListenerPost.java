@@ -14,6 +14,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.Plugin;
 
@@ -28,42 +30,45 @@ import com.bergerkiller.bukkit.common.utils.StringUtil;
  * or using portals is dealt with here.
  */
 public class MWListenerPost implements Listener {
+    private final MyWorlds plugin;
     private static EntityMap<Player, PortalInfo> lastEnteredPortal = new EntityMap<Player, PortalInfo>();
 
-    public static Portal getLastEntered(Player player, boolean remove) {
+    public MWListenerPost(MyWorlds plugin) {
+        this.plugin = plugin;
+    }
+
+    /**
+     * Gets the last-entered portal destination display name.
+     * Set elsewhere.
+     * 
+     * @param player
+     * @param remove
+     * @return last entered portal destination display name, null if none is applicable
+     */
+    public static String getLastEnteredPortalDestination(Player player, boolean remove) {
         PortalInfo info = remove ? lastEnteredPortal.remove(player) : lastEnteredPortal.get(player);
         if (info == null) {
             return null;
         }
         // Information must be from the same tick, otherwise it is invalid!
-        if (player.getTicksLived() != info.tickStamp) {
+        if (info.tickStamp != CommonUtil.getServerTicks()) {
             lastEnteredPortal.remove(player);
             return null;
         }
         // Done
-        return info.portal;
+        return info.portalDestinationDisplayName;
     }
 
-    public static void setLastEntered(Player player, Portal portal) {
+    public static void setLastEntered(Player player, String portalDestinationDisplayName) {
         PortalInfo info = new PortalInfo();
-        info.portal = portal;
-        info.tickStamp = player.getTicksLived();
+        info.portalDestinationDisplayName = portalDestinationDisplayName;
+        info.tickStamp = CommonUtil.getServerTicks();
         lastEnteredPortal.put(player, info);
     }
 
     public static boolean handleTeleportPermission(Player player, Location to) {
         // World can be entered?
-        if (Permission.canEnter(player, to.getWorld())) {
-            // If applicable, Portal can be entered?
-            Portal lastPortal = getLastEntered(player, false);
-            if (lastPortal != null) {
-                String name = lastPortal.getName();
-                if (name != null && !Permission.canEnterPortal(player, name)) {
-                    Localization.PORTAL_NOACCESS.message(player);
-                    return false;
-                }
-            }
-        } else {
+        if (!Permission.canEnter(player, to.getWorld())) {
             Localization.WORLD_NOACCESS.message(player);
             return false;
         }
@@ -72,13 +77,23 @@ public class MWListenerPost implements Listener {
 
     public static void handleTeleportMessage(Player player, Location to) {
         // We are handling this at the very end, so we can remove the portal as we get it
-        Portal lastPortal = getLastEntered(player, true);
+        String lastPortal = getLastEnteredPortalDestination(player, true);
         if (lastPortal != null) {
             // Show the portal name
-            Localization.PORTAL_ENTER.message(player, lastPortal.getDestinationDisplayName());
-        } else if (to.getWorld() != player.getWorld()) {
+            Localization.PORTAL_ENTER.message(player, lastPortal);
+        } else if (to != null && to.getWorld() != player.getWorld()) {
             // Show world enter message
             Localization.WORLD_ENTER.message(player, to.getWorld().getName());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerPortalMonitor(PlayerPortalEvent event) {
+        if (event.getTo() == null) {
+            return;
+        }
+        if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
+            WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
         }
     }
 
@@ -93,6 +108,20 @@ public class MWListenerPost implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleportMsg(PlayerTeleportEvent event) {
         handleTeleportMessage(event.getPlayer(), event.getTo());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerRespawnPerm(PlayerRespawnEvent event) {
+        if (event.getRespawnLocation() != null && !handleTeleportPermission(event.getPlayer(), event.getRespawnLocation())) {
+            event.setRespawnLocation(event.getPlayer().getLocation());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerRespawnMsg(PlayerRespawnEvent event) {
+        if (!plugin.getEndRespawnHandler().isDeathRespawn(event)) {
+            handleTeleportMessage(event.getPlayer(), event.getRespawnLocation());
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -161,7 +190,7 @@ public class MWListenerPost implements Listener {
     }
 
     private static class PortalInfo {
-        public Portal portal;
+        public String portalDestinationDisplayName;
         public int tickStamp;
     }
 }

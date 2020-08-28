@@ -3,39 +3,36 @@ package com.bergerkiller.bukkit.mw;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 import java.util.zip.ZipException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import com.bergerkiller.bukkit.common.Common;
-import com.bergerkiller.bukkit.common.bases.IntVector3;
 import com.bergerkiller.bukkit.common.controller.PlayerDataController;
 import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.common.protocol.PacketType;
-import com.bergerkiller.bukkit.common.resources.ResourceCategory;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.generated.net.minecraft.server.EntityLivingHandle;
 import com.bergerkiller.generated.net.minecraft.server.EntityPlayerHandle;
-import com.bergerkiller.generated.net.minecraft.server.MinecraftKeyHandle;
 import com.bergerkiller.generated.net.minecraft.server.MobEffectHandle;
 import com.bergerkiller.generated.net.minecraft.server.MobEffectListHandle;
 
 public class MWPlayerDataController extends PlayerDataController {
-    private static final boolean SPAWN_WORLD_IS_DIMENSION_KEY = Common.evaluateMCVersion(">=", "1.16");
+    public static final String DATA_TAG_LASTWORLD = "MyWorlds.playerWorld";
     public static final String DATA_TAG_LASTPOS = "MyWorlds.playerPos";
     public static final String DATA_TAG_LASTROT = "MyWorlds.playerRot";
 
@@ -66,20 +63,61 @@ public class MWPlayerDataController extends PlayerDataController {
         empty.putValue("AttackTime", (short) 0);
         empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
         setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
+        PlayerRespawnPoint.forPlayer(player).toNBT(empty);
+        return empty;
+    }
 
-        Block spawnPoint = playerEntity.getSpawnPoint();
-        if (spawnPoint != null) {
-            if (SPAWN_WORLD_IS_DIMENSION_KEY) {
-                empty.putMinecraftKey("SpawnDimension", WorldUtil.getDimensionKey(spawnPoint.getWorld()).getName());
-            } else {
-                empty.putValue("SpawnWorld", spawnPoint.getWorld().getName());
-            }
-            empty.putValue("SpawnX", spawnPoint.getX());
-            empty.putValue("SpawnY", spawnPoint.getY());
-            empty.putValue("SpawnZ", spawnPoint.getZ());
+    /**
+     * Attempts to read the bed spawn position on a specific World
+     * 
+     * @param player to get the bed spawn location for
+     * @param world to get the bed spawn location for
+     * @return Bed spawn location, or NONE if not set / stored
+     */
+    public static PlayerRespawnPoint readRespawnPoint(Player player, World world) {
+        PlayerFile posFile = new PlayerFile(player, world.getName());
+        if (!posFile.exists()) {
+            return PlayerRespawnPoint.NONE;
         }
 
-        return empty;
+        CommonTagCompound data = posFile.read();
+        return PlayerRespawnPoint.fromNBT(data);
+    }
+
+    /**
+     * Checks the main world where inventory data is saved for a player and
+     * reads what world in the world group of inventory state the player
+     * was last on. For this world, the last-known position is returned.
+     * 
+     * @param player
+     * @param world
+     * @return Last known Location, or null if not found/stored
+     */
+    public static Location readLastLocationOfWorldGroup(Player player, World world) {
+        String sharedWorldName = WorldConfig.get(world).inventory.getSharedWorldName();
+        WorldConfig sharedWorldConfig = WorldConfig.get(sharedWorldName);
+        PlayerFile sharedPlayerFile = new PlayerFile(player, sharedWorldConfig);
+        if (!sharedPlayerFile.exists()) {
+            return null;
+        }
+
+        CommonTagCompound data = sharedPlayerFile.read();
+        UUID lastWorldUUID = data.getValue(DATA_TAG_LASTWORLD, UUID.class);
+        if (lastWorldUUID == null) {
+            return null;
+        }
+        World lastWorld = Bukkit.getWorld(lastWorldUUID);
+        if (lastWorld == null) {
+            return null;
+        }
+
+        // For the world we found, read the location of the player
+        // If this is the same world we have already loaded before, sharedPlayerFile can be re-used
+        if (lastWorld == sharedWorldConfig.getWorld()) {
+            return readLastLocation(lastWorld, data);
+        } else {
+            return readLastLocation(player, lastWorld);
+        }
     }
 
     /**
@@ -91,11 +129,15 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     public static Location readLastLocation(Player player, World world) {
         PlayerFile posFile = new PlayerFile(player, world.getName());
-        if (!posFile.exists()) {
+        if (posFile.exists()) {
+            CommonTagCompound data = posFile.read();
+            return readLastLocation(world, data);
+        } else {
             return null;
         }
+    }
 
-        CommonTagCompound data = posFile.read();
+    private static Location readLastLocation(World world, CommonTagCompound data) {
         CommonTagList posInfo = data.getValue(DATA_TAG_LASTPOS, CommonTagList.class);
         if (posInfo != null && posInfo.size() == 3) {
             // Apply position
@@ -227,14 +269,7 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             // Initialize spawn point
-            World spawnWorld = readSpawnWorld(playerData);
-            IntVector3 spawnPosition = playerData.getValue("Spawn", IntVector3.class, null);
-            if (spawnWorld != null && spawnPosition != null) {
-                commonPlayer.setSpawnPoint(spawnPosition.toBlock(spawnWorld));
-            } else {
-                commonPlayer.setSpawnPoint(null);
-            }
-
+            PlayerRespawnPoint.fromNBT(playerData).applyToPlayer(player);
             playerHandle.setSpawnForced(playerData.getValue("SpawnForced", false));
 
             NBTUtil.loadFoodMetaData(playerHandle.getFoodDataRaw(), playerData);
@@ -267,18 +302,6 @@ public class MWPlayerDataController extends PlayerDataController {
         } catch (Exception exception) {
             Bukkit.getLogger().warning("Failed to load player data for " + player.getName());
             exception.printStackTrace();
-        }
-    }
-
-    private static void removeBedSpawnPointIfDisabled(CommonTagCompound playerData) {
-        World bedSpawnWorld = readSpawnWorld(playerData);
-        if (bedSpawnWorld != null && !WorldConfig.get(bedSpawnWorld).bedRespawnEnabled) {
-            playerData.removeValue("SpawnWorld");
-            playerData.removeValue("SpawnDimension");
-            playerData.removeValue("SpawnForced");
-            playerData.removeValue("SpawnX");
-            playerData.removeValue("SpawnY");
-            playerData.removeValue("SpawnZ");
         }
     }
 
@@ -505,6 +528,9 @@ public class MWPlayerDataController extends PlayerDataController {
                 });
             }
 
+            // Store last world player was on in the same file also storing inventory state
+            savedData.putValue(DATA_TAG_LASTWORLD, loc.getWorld().getUID());
+
             // Save data to the destination file
             files.currentFile.write(savedData);
 
@@ -526,21 +552,11 @@ public class MWPlayerDataController extends PlayerDataController {
         }
     }
 
-    private static World readSpawnWorld(CommonTagCompound playerData) {
-        if (SPAWN_WORLD_IS_DIMENSION_KEY) {
-            MinecraftKeyHandle spawnDimensionName = playerData.getMinecraftKey("SpawnDimension");
-            if (spawnDimensionName != null) {
-                return WorldUtil.getWorldByDimensionKey(ResourceCategory.dimension.createKey(spawnDimensionName));
-            }
+    private static void removeBedSpawnPointIfDisabled(CommonTagCompound playerData) {
+        PlayerRespawnPoint current = PlayerRespawnPoint.fromNBT(playerData);
+        if (!current.isNone() && !WorldConfig.get(current.getWorld()).bedRespawnEnabled) {
+            PlayerRespawnPoint.NONE.toNBT(playerData);
         }
-
-        // Migrate "SpawnWorld" to "SpawnDimension" if needed when dimension key is used
-        if (playerData.containsKey("SpawnWorld")) {
-            return Bukkit.getWorld(playerData.getValue("SpawnWorld", String.class));
-        }
-
-        // None
-        return null;
     }
 
     public interface DataUpdater {

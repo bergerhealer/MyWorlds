@@ -1,11 +1,12 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.util.Iterator;
+import java.util.UUID;
 
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -19,15 +20,13 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
-import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
-import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -36,17 +35,22 @@ import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.bergerkiller.bukkit.common.Common;
+import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
-import com.bergerkiller.bukkit.common.server.MCPCPlusServer;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
-import com.bergerkiller.bukkit.common.utils.MathUtil;
-import com.bergerkiller.bukkit.common.utils.PlayerUtil;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
+import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
+import com.bergerkiller.bukkit.mw.portal.PortalDestination;
+import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
 
 public class MWListener implements Listener {
-    // Keeps track of player teleports
-    private final TeleportationTracker teleportTracker = new TeleportationTracker();
+    private final MyWorlds plugin;
+
+    public MWListener(MyWorlds plugin) {
+        this.plugin = plugin;
+    }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onWorldUnload(WorldUnloadEvent event) {
@@ -57,9 +61,8 @@ public class MWListener implements Listener {
     public void onWorldInit(WorldInitEvent event) {
         if (MyWorlds.plugin.clearInitDisableSpawn(event.getWorld().getName())) {
             WorldUtil.setKeepSpawnInMemory(event.getWorld(), false);
-        } else {
-            WorldConfig.get(event.getWorld()).onWorldLoad(event.getWorld());
         }
+        WorldConfig.get(event.getWorld()).onWorldLoad(event.getWorld());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -67,46 +70,14 @@ public class MWListener implements Listener {
         WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer());
     }
 
-    private static boolean checkRespawnValid(PlayerRespawnEvent event) {
-        // Bukkit bug since MC 1.14: respawn event also occurs when players teleport back to the main world from the end
-        if (Common.evaluateMCVersion(">=", "1.14")) {
-            return event.getPlayer().getHealth() <= 0.0;
-        }
-
-        // Only occurred during an actual respawn on earlier versions
-        return true;
-    }
-
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawnMonitor(PlayerRespawnEvent event) {
-        if (!checkRespawnValid(event)) {
+        if (plugin.getEndRespawnHandler().isDeathRespawn(event)) {
+            WorldConfig.get(event.getPlayer()).onRespawn(event.getPlayer(), event.getRespawnLocation());
+        } else {
             // Save inventory before it is reloaded again
+            // This is important for 1.14 and later to guarantee consistent inventories
             MyWorlds.plugin.getPlayerDataController().onSave(event.getPlayer());
-            return;
-        }
-
-        WorldConfig.get(event.getPlayer()).onRespawn(event.getPlayer(), event.getRespawnLocation());
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerRespawn(PlayerRespawnEvent event) {
-        if (!checkRespawnValid(event)) {
-            return;
-        }
-
-        // Update spawn position based on world configuration
-        org.bukkit.World respawnWorld = event.getPlayer().getWorld();
-        if (MyWorlds.forceMainWorldSpawn) {
-            // Force a respawn on the main world
-            respawnWorld = MyWorlds.getMainWorld();
-        } else if (event.isBedSpawn() && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
-            respawnWorld = null; // Ignore bed spawns that are not overrided
-        }
-        if (respawnWorld != null) {
-            Location loc = WorldManager.getRespawnLocation(respawnWorld);
-            if (loc != null) {
-                event.setRespawnLocation(loc);
-            }
         }
     }
 
@@ -121,26 +92,17 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        // Handle player movement for portals
-        teleportTracker.updatePlayerPosition(event.getPlayer(), event.getTo());
-
         // Water teleportation handling
         if (MyWorlds.waterPortalEnabled) {
             Block b = event.getTo().getBlock();
-            if (Util.isWaterPortal(b)) {
-                boolean canTeleport = teleportTracker.canTeleport(event.getPlayer());
-                teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
-                if (canTeleport) {
-                    // Just like non-delay teleporting, schedule a task
-                    handlePortalEnterNextTick(event.getPlayer(), event.getTo());
-                }
+            if (PortalType.WATER.detect(b)) {
+                handlePortalEnter(PortalType.WATER, b, event.getPlayer());
             }
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent event) {
-        teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
         // This occurs right before we move to a new world.
         // If this is a world change, it is time to save the old information!
         if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
@@ -171,184 +133,147 @@ public class MWListener implements Listener {
         }
     }
 
-    public void handlePortalEnterNextTick(Player player, Location from) {
-        // Handle teleportation the next tick
-        final EntityPortalEvent portalEvent = Util.createEntityPortalEvent(player, from);
-        CommonUtil.nextTick(new Runnable() {
-            public void run() {
-                handlePortalEnter(portalEvent, false);
-                if (portalEvent.getTo() != null && !portalEvent.isCancelled()) {
-                    // Use a travel agent if needed
-                    Location to = portalEvent.getTo();
-                    if (Util.useTravelAgent(portalEvent)) {
-                        to = WorldUtil.findSpawnLocation(to);
-                    }
-                    // This tends to happen with Bukkit logic...haha
-                    if (to == null) {
-                        return;
-                    }
-
-                    // Note: We could use EntityUtil.teleport here...
-                    // But why even bother, we would only add strange differences between teleports
-                    portalEvent.getEntity().teleport(to);
-                }
-            }
-        });
-    }
-
-    public void handlePortalEnter(EntityPortalEvent event, boolean doTeleportCheck) {
-        final Entity entity = event.getEntity();
-
-        // By default, cancel the event until we know it works
-        event.setCancelled(true);
-
-        // Initial check for non-player entities
-        if (MyWorlds.onlyPlayerTeleportation && !(entity instanceof Player)) {
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityPortalEnter(EntityPortalEnterEvent event) {
+        // Decode what kind of portal block this is
+        // This might return null for a valid case, because we have restrictions
+        Block portalBlock = event.getLocation().getBlock();
+        PortalType portalType = PortalType.findPortalType(portalBlock);
+        if (portalType == null) {
             return;
         }
 
-        // Get from location
-        Location enterLoc = event.getFrom();
-
-        // Handle player teleportation - portal check
-        PortalType type = Util.findPortalType(enterLoc.getWorld(), enterLoc.getBlockX(), enterLoc.getBlockY(), enterLoc.getBlockZ());
-        if (type == null) {
-            event.setCancelled(false); // MyWorlds doesn't handle this event
-            return;
-        }
-
-        // Player looped teleportation check (since they allow looped teleports)
-        if (entity instanceof Player) {
-            Player player = (Player) entity;
-            boolean canTeleport = !doTeleportCheck || teleportTracker.canTeleport((Player) entity);
-            teleportTracker.setPortalPoint(player, enterLoc);
-            if (!canTeleport) {
+        // If entity is a player that isn't bound to a world, then he is being respawned currently
+        // For some reason the server spams portal enter events while players sit inside the
+        // end portal, viewing the credits. We want none of that!
+        if (event.getEntity() instanceof Player) {
+            World world = event.getEntity().getWorld();
+            UUID uuid = event.getEntity().getUniqueId();
+            if (world == null || EntityUtil.getEntity(world, uuid) != event.getEntity()) {
                 return;
             }
         }
 
-        // For further processing Portal-specific logic is needed
-        if (Portal.handlePortalEnter(event, type) && event.getTo() != null) {
-            // Send a preparation message if teleporting to non-generated areas
-            if (entity instanceof Player) {
-                Location to = event.getTo();
-                int chunkX = MathUtil.toChunk(to.getX());
-                int chunkZ = MathUtil.toChunk(to.getZ());
-                boolean available = true;
-                for (int dx = -4; dx <= 4 && available; dx++) {
-                    for (int dz = -4; dz <= 4 && available; dz++) {
-                        available &= WorldUtil.isChunkAvailable(to.getWorld(), chunkX + dx, chunkZ + dz);
+        // Check for the initial portal enter cooldown for survival players, if active
+        // This cooldown is set to non-zero once teleportation would normally commence
+        // Creative players are exempt
+        // All of this only matters for nether portals
+        if (event.getEntity() instanceof Player && !MyWorlds.alwaysInstantPortal && portalType == PortalType.NETHER) {
+            Player p = (Player) event.getEntity();
+            if (p.getGameMode() != GameMode.CREATIVE && EntityUtil.getPortalCooldown(p) == 0) {
+                return;
+            }
+        }
+
+        // Proceed
+        handlePortalEnter(portalType, portalBlock, event.getEntity());
+    }
+
+    private void handlePortalEnter(PortalType portalType, Block portalBlock, Entity entity) {
+        // Figure out what the destination is of this portal
+        PortalDestination.FindResults findResults = PortalDestination.findFromPortal(portalType, portalBlock);
+        PortalDestination destination = findResults.getDestination();
+        if (!findResults.isAvailable()) {
+            return;
+        }
+
+        // If entity is a passenger of a vehicle, teleport the vehicle instead
+        {
+            CommonEntity<?> ce = CommonEntity.get(entity);
+            while (ce.getVehicle() != null) {
+                ce = CommonEntity.get(ce.getVehicle());
+            }
+        }
+
+        // If player only and is not a player, disallow
+        if (findResults.getDestination().isPlayersOnly() && !(entity instanceof Player)) {
+            return;
+        }
+
+        // If entity has passenger, and we do not allow it, cancel
+        if (!findResults.getDestination().canTeleportMounts() && CommonEntity.get(entity).hasPassenger()) {
+            //TODO: Show a message or not?
+            return;
+        }
+
+        // If portal, check the player can actually enter this portal
+        if (findResults.isFromPortal() &&
+            entity instanceof Player &&
+            !Permission.canEnterPortal((Player) entity, findResults.getPortalName()))
+        {
+            // Debounce
+            if (plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
+                Localization.PORTAL_NOACCESS.message((Player) entity);
+            }
+            return;
+        }
+
+        // Setup handler, which performs the teleportations for us
+        PortalTeleportationHandler teleportationHandler = destination.getMode().createTeleportationHandler();
+        teleportationHandler.setup(plugin, portalType, portalBlock, destination, entity);
+
+        // If the destination leads to a portal sign, let the portal sign deal with it
+        {
+            Location portalLocation = Portal.getPortalLocation(destination.getName(), portalBlock.getWorld().getName());
+            if (portalLocation != null) {
+                // Debounce
+                if (!plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
+                    return;
+                }
+
+                // Refers to an actual portal sign on this world or another world
+                // For players, setup the display message of the portal destination
+                if (entity instanceof Player) {
+                    String display = destination.getDisplayName();
+                    if (display.isEmpty()) {
+                        display = destination.getName();
                     }
+                    MWListenerPost.setLastEntered((Player) entity, display);
                 }
-                if (!available) {
-                    Localization.PORTAL_PREPARING.message((Player) entity);
+
+                // Fix
+                portalLocation = portalLocation.clone().add(0.0, 1.0, 0.0);
+
+                // Handle perms up-front
+                if (!Portal.canTeleportEntityTo(entity, portalLocation)) {
+                    return;
+                }
+
+                // Teleport the player the next tick
+                // TODO: Correct entity velocity based on orientation change
+                teleportationHandler.scheduleTeleportation(portalLocation);
+                return;
+            }
+        }
+
+        // Destination must be a world name, find out what world
+        // If no world can be found, fail, and show a message to players
+        World world = WorldManager.getWorld(WorldManager.matchWorld(destination.getName()));
+        if (world == null) {
+            // Debounce
+            if (plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
+                if (entity instanceof Player && portalType != PortalType.WATER) {
+                    Localization.PORTAL_NODESTINATION.message((Player) entity);
                 }
             }
-            // Undo the cancellation done earlier
-            event.setCancelled(false);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerPortalMonitor(PlayerPortalEvent event) {
-        if (event.getTo() == null) {
-            return;
-        }
-        if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
-            WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
-            teleportTracker.setPortalPoint(event.getPlayer(), event.getTo());
-        }
-    }
-
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void onPlayerPortal(PlayerPortalEvent event) {
-        if (!MyWorlds.endPortalEnabled && !MyWorlds.netherPortalEnabled) {
-            return;
-        }
-        //Note! Event.getTo() can be null! Account for it!
-
-        // Wrap inside an Entity portal event
-        EntityPortalEvent entityEvent = Util.createEntityPortalEvent(event.getPlayer(), event.getFrom());
-        entityEvent.setTo(event.getTo());
-        Util.copyTravelAgent(event, entityEvent);
-        handlePortalEnter(entityEvent, true);
-        // Now, apply them again
-        if (entityEvent.getTo() != null) {
-            event.setTo(entityEvent.getTo());
-        }
-        Util.copyTravelAgent(entityEvent, event);
-        event.setCancelled(entityEvent.isCancelled());
-
-        // For ender portals we NEED to teleport away from the end world
-        // Not doing so results in the player getting glitched
-        // Yes, this is another thing Bukkit needs to fix...
-        World fromWorld = event.getFrom().getWorld();
-        if (fromWorld.getEnvironment() != Environment.THE_END) {
-            return;
-        }
-        if (!event.isCancelled() && event.getTo() != null && event.getTo().getWorld() != fromWorld) {
             return;
         }
 
-        // Identify the from world as being part of the main worlds
-        World mainWorld = WorldUtil.getWorlds().iterator().next();
-        final String defaultEnderWorldName;
-        if (Common.SERVER instanceof MCPCPlusServer) {
-            defaultEnderWorldName = "DIM-1";
-        } else {
-            defaultEnderWorldName = mainWorld.getName() + "_the_end";
-        }
-        if (!fromWorld.getName().equalsIgnoreCase(defaultEnderWorldName)) {
-            return;
-        }
-
-        // Entered a portal on the main the_end world, which would cause credits to show
-        final Player player = event.getPlayer();
-        final Location safeSpawn = WorldManager.getSafeSpawn(event.getFrom(), false);
-
-        // Set a dummy destination to snap the player out of the glitch
-        if (Util.hasTravelAgentField) {
-            event.useTravelAgent(false);
-        }
-        event.setCancelled(false);
-        event.setTo(mainWorld.getSpawnLocation());
-
-        // Teleport to the main world and back
-        CommonUtil.nextTick(new Runnable() {
-            @Override
-            public void run() {
-                player.teleport(safeSpawn);
+        // If the entity is a player that has a previously known position on the world,
+        // teleport to that position. Do this if configured.
+        Location lastPosition;
+        if (destination.isTeleportToLastPosition() &&
+            entity instanceof Player &&
+            (lastPosition = MWPlayerDataController.readLastLocation((Player) entity, world)) != null)
+        {
+            if (plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
+                teleportationHandler.scheduleTeleportation(lastPosition);
             }
-        });
-    }
-
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void onEntityPortal(EntityPortalEvent event) {
-        if (MyWorlds.endPortalEnabled || MyWorlds.netherPortalEnabled) {
-            handlePortalEnter(event, true);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onEntityPortalEnter(EntityPortalEnterEvent event) {
-        if (!(event.getEntity() instanceof Player) || (!MyWorlds.endPortalEnabled && !MyWorlds.netherPortalEnabled)) {
-            return;
-        }
-        Player player = (Player) event.getEntity();
-
-        // If player is creative, we can instantly handle the teleport in PLAYER_PORTAL_ENTER
-        // If not but the delayed teleportation is preferred, then also let PLAYER_PORTAL_ENTER handle it
-        // If not, then we will handle the teleportation in here
-        if (PlayerUtil.isInvulnerable(player) || !MyWorlds.alwaysInstantPortal) {
             return;
         }
 
-        // This event fires every tick...better try and avoid spammed tasks
-        boolean canTeleport = teleportTracker.canTeleport(player);
-        teleportTracker.setPortalPoint(player, event.getLocation());
-        if (canTeleport) {
-            this.handlePortalEnterNextTick(player, event.getLocation());
-        }
+        // Rest is handled by the portal mode
+        teleportationHandler.handleWorld(world);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -422,7 +347,7 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBlockPhysics(BlockPhysicsEvent event) {
         // Allows portals to be placed without physics killing it
-        if (MyWorlds.overridePortalPhysics && Util.IS_NETHER_PORTAL.get(event.getBlock())) {
+        if (MyWorlds.overridePortalPhysics && MaterialUtil.ISNETHERPORTAL.get(event.getBlock())) {
             event.setCancelled(true);
         }
     }
@@ -450,6 +375,9 @@ public class MWListener implements Listener {
                 @Override
                 public void run() {
                     WorldUtil.setBlockDataFast(b, d);
+                    if (MaterialUtil.ISNETHERPORTAL.get(b)) {
+                        WorldUtil.markNetherPortal(b);
+                    }
                     WorldUtil.queueBlockSend(b);
                 }
             });

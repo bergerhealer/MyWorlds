@@ -43,19 +43,15 @@ public class WorldInfo extends Command {
                     message(ChatColor.WHITE + "World size: " + ChatColor.YELLOW + "Unknown (calculation is disabled)");
                 }
                 //Default portals
-                if (wc.getNetherPortal() == null) {
+                if (wc.getDefaultNetherPortalDestination() == null) {
                     message(ChatColor.WHITE + "Nether portal: " + ChatColor.YELLOW + "None (will auto-detect when available)");
-                } else if (wc.getNetherPortal().isEmpty()) {
-                    message(ChatColor.WHITE + "Nether portal: " + ChatColor.YELLOW + "Disabled");
                 } else {
-                    message(ChatColor.WHITE + "Nether portal: " + ChatColor.YELLOW + wc.getNetherPortal());
+                    message(ChatColor.WHITE + "Nether portal: " + wc.getDefaultNetherPortalDestination().getInfoString());
                 }
-                if (wc.getEnderPortal() == null) {
-                    message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + "None (will auto-detect when available)");
-                } else if (wc.getEnderPortal().isEmpty()) {
-                    message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + "Disabled");
+                if (wc.getDefaultNetherPortalDestination() == null) {
+                    message(ChatColor.WHITE + "End portal: " + ChatColor.YELLOW + "None (will auto-detect when available)");
                 } else {
-                    message(ChatColor.WHITE + "Ender portal: " + ChatColor.YELLOW + wc.getEnderPortal());
+                    message(ChatColor.WHITE + "End portal: " + wc.getDefaultNetherPortalDestination().getInfoString());
                 }
                 //PvP
                 if (wc.pvp) { 

@@ -19,6 +19,7 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_UNLOAD = new Permission("world.unload", PermissionDefault.OP, "Sets if the player can unload loaded worlds (not create)");
     public static final Permission COMMAND_CREATE = new Permission("world.create", PermissionDefault.OP, "Sets if the player can create worlds (not replace)");
     public static final Permission COMMAND_SPAWN = new Permission("world.spawn", PermissionDefault.OP, "Sets if the player can teleport to world spawn points");
+    public static final Permission COMMAND_REJOIN = new Permission("world.rejoin", PermissionDefault.OP, "Sets if the player can teleport to rejoin the last world they were on, permission per world", 1);
     public static final Permission COMMAND_EVACUATE = new Permission("world.evacuate", PermissionDefault.OP, "Sets if the player can clear a world from its players");
     public static final Permission COMMAND_REPAIR = new Permission("world.repair", PermissionDefault.OP, "Sets if the player can repair damaged worlds (only if broken)");
     public static final Permission COMMAND_SAVE = new Permission("world.save", PermissionDefault.OP, "Sets if the player can save worlds");
@@ -43,7 +44,8 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_FORMING = new Permission("world.forming", PermissionDefault.OP, "Sets if the player can toggle snow and ice forming on or off");
     public static final Permission COMMAND_RELOADWE = new Permission("world.reloadwe", PermissionDefault.OP, "Sets if players can toggle if worlds reload when empty");
     public static final Permission COMMAND_HUNGER = new Permission("world.hunger", PermissionDefault.OP, "Sets if players can toggle hunger on or off for worlds");
-    public static final Permission COMMAND_TPP = new Permission("tpp", PermissionDefault.OP, "Sets if the player can teleport to worlds or portals");
+    public static final Permission COMMAND_ENABLECREDITS = new Permission("world.enablecredits", PermissionDefault.TRUE, "Enables a player to view the end-game credits a second time, after already completing the end before");
+    public static final Permission COMMAND_TPP = new Permission("tpp", PermissionDefault.OP, "Sets if the player can teleport to any worlds or portals, ignoring the per-portal/world permissions");
     public static final Permission GENERAL_TELEPORT = new Permission("world.teleport", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn", 1);
     public static final Permission GENERAL_ENTER = new Permission("world.enter", PermissionDefault.OP, "Sets if the player can enter a certain world through portals", 1);
     public static final Permission GENERAL_BUILD = new Permission("world.build", PermissionDefault.OP, "Sets if the player can build in a certain world", 1);
@@ -53,6 +55,7 @@ public class Permission extends PermissionEnum {
     public static final Permission GENERAL_USE = new Permission("world.use", PermissionDefault.OP, "Sets if the player can interact with blocks in a certain world", 1);
     public static final Permission GENERAL_KEEPINV = new Permission("world.keepinventory", PermissionDefault.FALSE, "Sets if the player keeps his inventory while switching worlds");
     public static final Permission GENERAL_KEEPLASTPOS = new Permission("world.keeplastpos", PermissionDefault.FALSE, "Sets if the player overrides the world rememberlastpos setting to always permit it");
+    public static final Permission GENERAL_LINKNETHER = new Permission("world.linknether", PermissionDefault.TRUE, "Sets if the player can spawn nether portals on other worlds when a nether link is enabled for a world");
     public static final Permission PORTAL_CREATE = new Permission("portal.create", PermissionDefault.OP, "Sets if the player can create teleport signs");
     public static final Permission PORTAL_OVERRIDE = new Permission("portal.override", PermissionDefault.OP, "Sets if the player can replace existing portals");
     public static final Permission PORTAL_USE = new Permission("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals", 1);

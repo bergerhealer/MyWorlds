@@ -12,6 +12,7 @@ import com.bergerkiller.bukkit.common.collections.StringMapCaseInsensitive;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 
 public class WorldConfigStore {
     private static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
@@ -183,13 +184,17 @@ public class WorldConfigStore {
         worldConfigs.remove(worldname);
         // Remove references to this World Configuration in other worlds
         for (WorldConfig otherConfig : all()) {
-            if (worldname.equalsIgnoreCase(otherConfig.getNetherPortal())) {
-                otherConfig.setNetherPortal(null);
+            if (usesWorldAsDestination(worldname, otherConfig.getDefaultNetherPortalDestination())) {
+                otherConfig.setDefaultNetherPortalDestination(null);
             }
-            if (worldname.equalsIgnoreCase(otherConfig.getEnderPortal())) {
-                otherConfig.setEnderPortal(null);
+            if (usesWorldAsDestination(worldname, otherConfig.getDefaultEndPortalDestination())) {
+                otherConfig.setDefaultEndPortalDestination(null);
             }
             otherConfig.inventory.remove(worldname, false);
         }
+    }
+
+    private static boolean usesWorldAsDestination(String worldname, PortalDestination destination) {
+        return destination != null && destination.getName() != null && destination.getName().equals(worldname);
     }
 }

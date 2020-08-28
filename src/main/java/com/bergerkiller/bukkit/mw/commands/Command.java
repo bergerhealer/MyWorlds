@@ -15,6 +15,7 @@ import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
+import com.bergerkiller.bukkit.mw.PortalType;
 import com.bergerkiller.bukkit.mw.WorldManager;
 import com.bergerkiller.bukkit.mw.WorldMode;
 
@@ -243,6 +244,8 @@ public class Command {
                     rval = new WorldCreate();
                 } else if (cmdLabel.equalsIgnoreCase("spawn")) {
                     rval = new WorldSpawn();
+                } else if (cmdLabel.equalsIgnoreCase("rejoin")) {
+                    rval = new WorldRejoin();
                 } else if (cmdLabel.equalsIgnoreCase("evacuate")) {
                     rval = new WorldEvacuate();
                 } else if (cmdLabel.equalsIgnoreCase("evac")) {
@@ -286,13 +289,13 @@ public class Command {
                 } else if (cmdLabel.equalsIgnoreCase("denyspawning")) {
                     rval = new WorldSpawning(false);
                 } else if (cmdLabel.equalsIgnoreCase("setnetherportal")) {
-                    rval = new WorldSetNetherPortal();
+                    rval = new WorldSetDefaultPortal(PortalType.NETHER);
                 } else if (cmdLabel.equalsIgnoreCase("setendportal")) {
-                    rval = new WorldSetEnderPortal();
+                    rval = new WorldSetDefaultPortal(PortalType.END);
                 } else if (cmdLabel.equalsIgnoreCase("setenderportal")) {
-                    rval = new WorldSetEnderPortal();
+                    rval = new WorldSetDefaultPortal(PortalType.END);
                 } else if (cmdLabel.equalsIgnoreCase("settheendportal")) {
-                    rval = new WorldSetEnderPortal();
+                    rval = new WorldSetDefaultPortal(PortalType.END);
                 } else if (cmdLabel.equalsIgnoreCase("setspawn")) {
                     rval = new WorldSetSpawn();
                 } else if (cmdLabel.equalsIgnoreCase("gamemode")) {
@@ -389,6 +392,8 @@ public class Command {
                     rval = new WorldSetHunger();
                 } else if (cmdLabel.equalsIgnoreCase("sethunger")) {
                     rval = new WorldSetHunger();
+                } else if (cmdLabel.equalsIgnoreCase("enablecredits") || cmdLabel.equalsIgnoreCase("showcredits")) {
+                    rval = new EnableCredits();
                 }
             }
         } else if (cmdLabel.equalsIgnoreCase("tpp")) {
