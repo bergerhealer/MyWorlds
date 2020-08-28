@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
@@ -27,5 +29,10 @@ public class WorldSetRememberPlayerPos extends Command {
                 message(ChatColor.GREEN + "Players will (upon teleporting) always go to the world spawn");
             }
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processBasicAutocompleteOrWorldName("yes", "no");
     }
 }

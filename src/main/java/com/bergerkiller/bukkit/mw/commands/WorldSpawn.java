@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
@@ -28,5 +30,10 @@ public class WorldSpawn extends Command {
                 Localization.WORLD_NOTLOADED.message(sender, worldname);
             }
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processWorldNameAutocomplete();
     }
 }

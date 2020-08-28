@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -123,5 +125,9 @@ public class WorldInfo extends Command {
             message(ChatColor.RED + "World not found!");
         }
     }
-    
+
+    @Override
+    public List<String> autocomplete() {
+        return processWorldNameAutocomplete();
+    }
 }

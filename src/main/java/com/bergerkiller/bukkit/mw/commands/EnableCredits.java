@@ -8,7 +8,7 @@ import net.md_5.bungee.api.ChatColor;
 public class EnableCredits extends Command {
 
     public EnableCredits() {
-        super(Permission.COMMAND_ENABLECREDITS, "world.enablecredits");
+        super(Permission.COMMAND_ENABLECREDITS, "world.showcredits");
     }
 
     @Override

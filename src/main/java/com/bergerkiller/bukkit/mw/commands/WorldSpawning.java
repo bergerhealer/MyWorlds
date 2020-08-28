@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
 import java.util.Locale;
 
 import org.bukkit.ChatColor;
@@ -134,5 +135,10 @@ public class WorldSpawning extends Command {
             }
             message.send(sender);
         }    
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processBasicAutocompleteOrWorldName("animals", "monsters", "mobs", "npc", "all");
     }
 }

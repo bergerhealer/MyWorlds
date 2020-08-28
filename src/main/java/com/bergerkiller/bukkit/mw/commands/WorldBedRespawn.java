@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -37,5 +39,10 @@ public class WorldBedRespawn extends Command {
                 message(ChatColor.GREEN + "Players will respawn at the world's spawn or home point when dying");
             }
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processBasicAutocompleteOrWorldName("enabled", "disabled");
     }
 }

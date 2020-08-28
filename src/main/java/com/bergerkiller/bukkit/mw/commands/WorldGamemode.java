@@ -1,5 +1,9 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Stream;
+
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 
@@ -46,5 +50,13 @@ public class WorldGamemode extends Command {
             }
         }
     }
-    
+
+    @Override
+    public List<String> autocomplete() {
+        String[] names = Stream.of(GameMode.values())
+                .map(Enum::name)
+                .map(n -> n.toLowerCase(Locale.ENGLISH))
+                .toArray(String[]::new);
+        return processBasicAutocompleteOrWorldName(names);
+    }
 }

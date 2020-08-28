@@ -2,9 +2,11 @@ package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -13,6 +15,7 @@ import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.mw.commands.registry.MyWorldsCommands;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
 import com.bergerkiller.bukkit.mw.portal.PlayerRespawnHandler;
 import com.bergerkiller.bukkit.mw.portal.EntityStasisHandler;
@@ -58,6 +61,7 @@ public class MyWorlds extends PluginBase {
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
     private MWListener listener;
     private MWPlayerDataController dataController;
+    private final MyWorldsCommands commands = new MyWorldsCommands(this);
     private final WorldInventoriesDupingPatch worldDupingPatch = new WorldInventoriesDupingPatch();
     private final NetherPortalSearcher netherPortalSearcher = new NetherPortalSearcher(this);
     private final PortalTeleportationCooldown portalTeleportationCooldown = new PortalTeleportationCooldown(this);
@@ -282,8 +286,13 @@ public class MyWorlds extends PluginBase {
 
     @Override
     public boolean command(CommandSender sender, String cmdLabel, String[] args) {
-        com.bergerkiller.bukkit.mw.commands.Command.execute(sender, cmdLabel, args);
+        commands.execute(sender, cmdLabel, args);
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        return commands.autocomplete(sender, alias, args);
     }
 
     @Override

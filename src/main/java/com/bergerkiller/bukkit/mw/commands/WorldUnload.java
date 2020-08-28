@@ -1,11 +1,15 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
+import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.WorldConfigStore;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldUnload extends Command {
@@ -33,5 +37,12 @@ public class WorldUnload extends Command {
         } else {
             showInv();
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processAutocomplete(WorldConfigStore.all().stream()
+                .filter(WorldConfig::isLoaded)
+                .map(cfg -> cfg.worldname));
     }
 }

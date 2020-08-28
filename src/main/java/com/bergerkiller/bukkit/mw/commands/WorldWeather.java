@@ -1,6 +1,9 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -137,5 +140,15 @@ public class WorldWeather extends Command {
         } else if (setHold) {
             message(ChatColor.GREEN + "Weather changes on world: '" + worldname + "' are now being prevented!");
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        String[] types = new String[] {
+                "always", "clear", "rain", "snow", "storm", "thunder"
+        };
+        final String match = (args.length == 0) ? "" : args[0].toLowerCase(Locale.ENGLISH);
+        List<String> result = Stream.of(types).filter(v -> v.startsWith(match)).collect(Collectors.toList());
+        return result.isEmpty() ? null : result;
     }
 }

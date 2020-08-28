@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
 import java.util.Locale;
 
 import org.bukkit.ChatColor;
@@ -40,5 +41,10 @@ public class WorldGivePortal extends Command {
         Player player = (Player) sender;
         player.sendMessage(ChatColor.GREEN + "You've been given infinite " + ChatColor.YELLOW + itemType.getVisualName() + ChatColor.GREEN + " blocks");
         player.getInventory().addItem(itemType.createItem());
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processBasicAutocomplete("end", "nether");
     }
 }

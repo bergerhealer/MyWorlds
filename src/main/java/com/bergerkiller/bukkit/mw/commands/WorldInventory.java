@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.bukkit.ChatColor;
@@ -104,4 +105,8 @@ public class WorldInventory extends Command {
         message(ChatColor.YELLOW + "/world inventory [split/merge/enable/disable] [worldnames]");
     }
 
+    @Override
+    public List<String> autocomplete() {
+        return processBasicAutocompleteOrWorldName("merge", "split", "enable", "disable");
+    }
 }

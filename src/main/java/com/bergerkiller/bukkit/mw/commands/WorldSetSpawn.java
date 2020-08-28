@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.mw.Permission;
@@ -27,5 +29,10 @@ public class WorldSetSpawn extends Command {
             }
             sender.sendMessage(ChatColor.GREEN + "Spawn location of world '" + worldname + "' set to your position!");
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processWorldNameAutocomplete();
     }
 }

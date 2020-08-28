@@ -1,5 +1,8 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.mw.AsyncHandler;
@@ -30,5 +33,13 @@ public class WorldCopy extends Command {
             showInv();
         }
     }
-    
+
+    @Override
+    public List<String> autocomplete() {
+        if (args.length <= 1) {
+            return processWorldNameAutocomplete();
+        } else {
+            return Collections.singletonList("[Copied world name]");
+        }
+    }
 }

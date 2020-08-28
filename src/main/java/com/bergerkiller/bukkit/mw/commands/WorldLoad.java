@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.mw.Permission;
@@ -59,5 +61,12 @@ public class WorldLoad extends Command {
         } else {
             showInv();
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processAutocomplete(WorldConfigStore.all().stream()
+                .filter(cfg -> !cfg.isLoaded())
+                .map(cfg -> cfg.worldname));
     }
 }

@@ -9,7 +9,6 @@ import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
-import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
@@ -65,7 +64,7 @@ public class WorldCreate extends Command {
                 }
                 message(ChatColor.WHITE + "World seed: " + ChatColor.YELLOW + seedval);
                 message(ChatColor.WHITE + "World environment: " + ChatColor.YELLOW + wc.worldmode.getName());
-                MyWorlds.plugin.initDisableSpawn(worldname);
+                plugin.initDisableSpawn(worldname);
                 final World world = WorldManager.createWorld(worldname, seedval, sender);
                 if (world != null) {
                     //load chunks
@@ -87,7 +86,7 @@ public class WorldCreate extends Command {
                                 t = new Runnable() {
                                     public void run() {
                                         message(ChatColor.YELLOW + "Preparing spawn area (" + percent + "%)...");
-                                        MyWorlds.plugin.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
+                                        plugin.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
                                     }
                                 };
                                 first = false;
@@ -108,7 +107,7 @@ public class WorldCreate extends Command {
 
                                         // Confirmation message
                                         message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
-                                        MyWorlds.plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
+                                        plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
                                     }
                                 };
                             }

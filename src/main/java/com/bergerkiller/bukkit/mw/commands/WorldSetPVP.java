@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
@@ -38,5 +40,10 @@ public class WorldSetPVP extends Command {
                 }
             }
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processBasicAutocompleteOrWorldName("enabled", "disabled");
     }
 }

@@ -218,10 +218,10 @@ commands:
         usage: |
             /world setendportal [portal/world]
             /world setendportal    - Reset to default
-    world enablecredits:
+    world showcredits:
         description: Enables showing the end-game credits a second time
         usage: |
-            /world enablecredits - Enable for self
+            /world showcredits - Enable for self
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World

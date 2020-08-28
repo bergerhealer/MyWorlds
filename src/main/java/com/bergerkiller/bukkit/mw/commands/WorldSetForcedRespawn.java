@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.List;
+
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
@@ -27,5 +29,10 @@ public class WorldSetForcedRespawn extends Command {
                 message(ChatColor.GREEN + "Players will respawn at their bed");
             }
         }
+    }
+
+    @Override
+    public List<String> autocomplete() {
+        return processBasicAutocompleteOrWorldName("yes", "no");
     }
 }

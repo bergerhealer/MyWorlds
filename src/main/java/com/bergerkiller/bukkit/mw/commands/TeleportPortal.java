@@ -1,6 +1,8 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -11,9 +13,12 @@ import org.bukkit.entity.Player;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
+import com.bergerkiller.bukkit.mw.PortalStore;
 import com.bergerkiller.bukkit.mw.WorldManager;
+import com.bergerkiller.bukkit.mw.commands.registry.RegisteredCommand;
 
 public class TeleportPortal extends Command {
+    public static RegisteredCommand REGISTERED = RegisteredCommand.create(TeleportPortal::new, "tpp");
 
     public TeleportPortal() {
         super(Permission.COMMAND_TPP, "tpp");
@@ -131,5 +136,16 @@ public class TeleportPortal extends Command {
             showInv();
         }    
     }
-    
+
+    @Override
+    public List<String> autocomplete() {
+        if (args.length <= 1) {
+            return processAutocomplete(Stream.concat(
+                        Stream.of(PortalStore.getPortals()),
+                        Bukkit.getWorlds().stream().map(World::getName)
+                    ));
+        } else {
+            return processPlayerNameAutocomplete();
+        }
+    }
 }
