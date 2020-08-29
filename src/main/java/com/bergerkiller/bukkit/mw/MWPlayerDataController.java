@@ -251,6 +251,8 @@ public class MWPlayerDataController extends PlayerDataController {
             resetState(player);
 
             // Refresh attributes
+            // Note: must be done before loading inventory, since this sets
+            //       the base attributes for armor.
             if (playerData.containsKey("Attributes")) {
                 NBTUtil.loadAttributes(player, playerData.get("Attributes", CommonTagList.class));
             }
@@ -317,31 +319,21 @@ public class MWPlayerDataController extends PlayerDataController {
     public void onRespawnSave(Player player, final Location respawnLocation) {
         try {
             final PlayerFileCollection files = new PlayerFileCollection(player);
-            final CommonTagCompound savedData = createEmptyData(player);
-            CommonTagCompound playerSavedData = NBTUtil.saveEntity(player, null);
+            CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
 
             files.log("saving data after respawn");
 
             // We store this entire Bukkit tag + experience information!
-            CommonTagCompound bukkitTag = playerSavedData.get("bukkit", CommonTagCompound.class);
-            if (bukkitTag != null) {
-                // But, we do need to wipe information as specified
-                if (bukkitTag.getValue("keepLevel", false)) {
-                    // Preserve experience
-                    bukkitTag.putValue("newTotalExp", playerSavedData.getValue("XpTotal", 0));
-                    bukkitTag.putValue("newLevel", playerSavedData.getValue("XpLevel", 0));
-                    savedData.putValue("XpP", playerSavedData.getValue("XpP", 0.0f));
+            CommonTagCompound bukkitTag = savedData.get("bukkit", CommonTagCompound.class);
+            boolean keepLevel = (bukkitTag != null && bukkitTag.getValue("keepLevel", false));
+            if (!keepLevel) {
+                if (bukkitTag != null) {
+                    bukkitTag.putValue("newTotalExp", 0);
+                    bukkitTag.putValue("newLevel", 0);
                 }
-                // Store experience (if not preserved, uses newTotal/newLevel) and the tag
-                savedData.putValue("XpTotal", bukkitTag.getValue("newTotalExp", 0));
-                savedData.putValue("XpLevel", bukkitTag.getValue("newLevel", 0));
-                savedData.put("bukkit", bukkitTag);
-            }
-
-            // Ender inventory should not end up wiped!
-            CommonTagList enderItems = playerSavedData.get("EnderItems", CommonTagList.class);
-            if (enderItems != null) {
-                savedData.put("EnderItems", enderItems);
+                savedData.putValue("XpP", 0.0f);
+                savedData.putValue("XpTotal", 0);
+                savedData.putValue("XpLevel", 0);
             }
 
             // Disable bed spawn if not enabled for that world
@@ -349,9 +341,37 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // If gamerule keep inventory is active for the world the player died in, also save the
             // original items in the inventory
-            if ("true".equals(player.getWorld().getGameRuleValue("keepInventory"))) {
-                NBTUtil.saveInventory(player.getInventory(), savedData.createList("Inventory"));
+            if (!"true".equals(player.getWorld().getGameRuleValue("keepInventory"))) {
+                clearInventoryNBTData(savedData);
             }
+
+            // Remove potion effects
+            savedData.remove("ActiveEffects");
+            savedData.remove("AbsorptionAmount");
+
+            // Replace health/damage info
+            CommonPlayer playerEntity = CommonEntity.get(player);
+            savedData.putValue("Health", (short) playerEntity.getMaxHealth());
+            savedData.putValue("HealF", (float) playerEntity.getMaxHealth());
+            savedData.putValue("Max Health", (float) playerEntity.getMaxHealth()); // since 1.6.1 health is a float
+            savedData.putValue("HurtTime", (short) 0);
+            savedData.putValue("DeathTime", (short) 0);
+            savedData.putValue("AttackTime", (short) 0);
+            savedData.putListValues("Motion", 0.0, 0.0, 0.0);
+
+            // Unimportant
+            savedData.remove("FallFlying");
+            savedData.remove("FallDistance");
+            savedData.remove("Fire");
+            savedData.remove("Air");
+            savedData.remove("OnGround");
+            savedData.remove("PortalCooldown");
+            savedData.remove("SleepingX");
+            savedData.remove("SleepingY");
+            savedData.remove("SleepingZ");
+            savedData.remove("ShoulderEntityLeft");
+            savedData.remove("ShoulderEntityRight");
+            savedData.remove("SleepTimer");
 
             // Now, go ahead and save this data
             files.currentFile.write(savedData);
@@ -424,16 +444,7 @@ public class MWPlayerDataController extends PlayerDataController {
             // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
             World playerCurrentWorld = Bukkit.getWorld(((mainWorldData != null) ? mainWorldData : playerData).getUUID("World"));
             if (playerCurrentWorld != null && WorldConfig.get(playerCurrentWorld).clearInventory) {
-                // Create an empty CommonTagList with the right type information, by adding a compound and removing it
-                // There is no good api in BKCommonLib to make an empty list of a given element type (TODO!)
-                {
-                    CommonTagList emptyInventory = new CommonTagList();
-                    emptyInventory.add(new CommonTagCompound());
-                    emptyInventory.remove(0);
-                    playerData.put("Inventory", emptyInventory);
-                }
-
-                playerData.remove("Attributes");
+                clearInventoryNBTData(playerData);
                 playerData.remove("ActiveEffects");
                 playerData.putValue("XpLevel", 0);
                 playerData.putValue("XpTotal", 0);
@@ -550,6 +561,20 @@ public class MWPlayerDataController extends PlayerDataController {
             Bukkit.getLogger().warning("Failed to save player data for " + player.getName());
             exception.printStackTrace();
         }
+    }
+
+    private static void clearInventoryNBTData(CommonTagCompound playerData) {
+        // Create an empty CommonTagList with the right type information, by adding a compound and removing it
+        // There is no good api in BKCommonLib to make an empty list of a given element type (TODO!)
+        {
+            CommonTagList emptyInventory = new CommonTagList();
+            emptyInventory.add(new CommonTagCompound());
+            emptyInventory.remove(0);
+            playerData.put("Inventory", emptyInventory);
+        }
+
+        playerData.remove("Attributes");
+        playerData.remove("SelectedItemSlot");
     }
 
     private static void removeBedSpawnPointIfDisabled(CommonTagCompound playerData) {
