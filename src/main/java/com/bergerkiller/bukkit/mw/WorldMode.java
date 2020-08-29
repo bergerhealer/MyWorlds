@@ -76,7 +76,7 @@ public class WorldMode {
     public String getTypeName() {
         if (this.wtype == WorldType.LARGE_BIOMES) {
             return "largeBiomes";
-        } else if (this.wtype == WorldType.VERSION_1_1) {
+        } else if (this.wtype.name().equals("VERSION_1_1")) {
             return "default_1_1";
         } else if (this.wtype == WorldType.NORMAL) {
             return "default";

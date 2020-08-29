@@ -12,9 +12,24 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.serverversion>1.8.8-R0.1</project.serverversion>
+    <project.serverversion>1.16.1-R0.1</project.serverversion>
     <project.bkcversion>1.16.2-v1-SNAPSHOT</project.bkcversion>
+    <project.cibuild/>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>ci</id>
+      <activation>
+        <property>
+          <name>env.BUILD_NUMBER</name>
+        </property>
+      </activation>
+      <properties>
+        <project.cibuild>${env.BUILD_NUMBER}</project.cibuild>
+      </properties>
+    </profile>
+  </profiles>
 
   <repositories>
     <!-- Repo for access to CraftBukkit -->

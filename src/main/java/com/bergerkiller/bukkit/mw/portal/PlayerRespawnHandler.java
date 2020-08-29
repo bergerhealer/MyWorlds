@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.portal;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -35,6 +36,16 @@ public class PlayerRespawnHandler {
     private static final boolean END_RESPAWN_USING_PORTAL_EVENT = CommonBootstrap.evaluateMCVersion("<=", "1.13.2");
     private final MyWorlds plugin;
     private final Map<UUID, RespawnDestination> _respawns = new HashMap<>();
+
+    // useTravelAgent(boolean) was removed at some point, but we must make sure to disable it on versions where it is active
+    private static final Method useTravelAgentMethod;
+    static {
+        Method m = null;
+        try {
+            m = PlayerRespawnEvent.class.getDeclaredMethod("useTravelAgent", boolean.class);
+        } catch (Throwable t) {}
+        useTravelAgentMethod = m;
+    }
 
     public PlayerRespawnHandler(MyWorlds plugin) {
         this.plugin = plugin;
@@ -90,7 +101,11 @@ public class PlayerRespawnHandler {
                     if (newRespawn != null) {
                         event.setTo(newRespawn.position);
                         event.getPlayer().setVelocity(newRespawn.velocity);
-                        event.useTravelAgent(false);
+                        if (useTravelAgentMethod != null) {
+                            try {
+                                useTravelAgentMethod.invoke(event, Boolean.FALSE);
+                            } catch (Throwable t) {}
+                        }
                         return;
                     }
                 }
