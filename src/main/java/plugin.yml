@@ -227,7 +227,7 @@ commands:
     world advancements:
         description: Enables or disables player getting advancements on the world
         usage: |
-            /world advancements [enable/disable] - Enable/disable
+            /world advancements [enable/disable/silent] - Enable/disable/no chat
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World

@@ -58,6 +58,7 @@ public class WorldConfig extends WorldConfigStore {
     public boolean rememberLastPlayerPosition = false;
     public boolean bedRespawnEnabled = true;
     public boolean advancementsEnabled = true;
+    public boolean advancementsSilent = false;
     public WorldInventory inventory;
 
     protected WorldConfig(String worldname) {
@@ -202,6 +203,7 @@ public class WorldConfig extends WorldConfigStore {
         this.forcedRespawn = config.forcedRespawn;
         this.bedRespawnEnabled = config.bedRespawnEnabled;
         this.advancementsEnabled = config.advancementsEnabled;
+        this.advancementsSilent = config.advancementsSilent;
         this.inventory = config.inventory.add(this.worldname);
     }
 
@@ -233,6 +235,7 @@ public class WorldConfig extends WorldConfigStore {
         this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
         this.bedRespawnEnabled = node.get("bedRespawnEnabled", this.bedRespawnEnabled);
         this.advancementsEnabled = node.get("advancementsEnabled", this.advancementsEnabled);
+        this.advancementsSilent = node.get("advancementsSilent", this.advancementsSilent);
         for (String type : node.getList("deniedCreatures", String.class)) {
             type = type.toUpperCase();
             if (type.equals("ANIMALS")) {
@@ -318,6 +321,7 @@ public class WorldConfig extends WorldConfigStore {
         node.set("reloadWhenEmpty", this.reloadWhenEmpty);
         node.set("bedRespawnEnabled", this.bedRespawnEnabled);
         node.set("advancementsEnabled", this.advancementsEnabled);
+        node.set("advancementsSilent", this.advancementsSilent);
         if (this.spawnPoint == null) {
             node.remove("spawn");
         } else {
@@ -611,7 +615,7 @@ public class WorldConfig extends WorldConfigStore {
         }
     }
     public void updateAdvancements(World world) {
-        MyWorlds.plugin.getAdvancementManager().applyGameRule(world, this.advancementsEnabled);
+        MyWorlds.plugin.getAdvancementManager().applyGameRule(world, this.advancementsEnabled && !this.advancementsSilent);
     }
 
     /**

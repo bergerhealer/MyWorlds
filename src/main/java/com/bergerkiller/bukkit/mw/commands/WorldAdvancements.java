@@ -19,8 +19,20 @@ public class WorldAdvancements extends Command {
         this.genWorldname(1);
         if (this.handleWorld()) {
             WorldConfig wc = WorldConfig.get(worldname);
-            if (ParseUtil.isBool((args.length>0)?args[0]:"")) {
+            if (args.length > 0 && args[0].equalsIgnoreCase("silent")) {
+                wc.advancementsEnabled = true;
+                wc.advancementsSilent = true;
+                {
+                    World w = wc.getWorld();
+                    if (w != null) {
+                        wc.updateAdvancements(w);
+                    }
+                }
+                message(ChatColor.YELLOW + "Players can now get awarded advancements on world '" + worldname + "'!");
+                message(ChatColor.YELLOW + "No messages are sent in chat when this happens.");
+            } else if (ParseUtil.isBool((args.length>0)?args[0]:"")) {
                 wc.advancementsEnabled = ParseUtil.parseBool(args[0]);
+                wc.advancementsSilent = false;
                 {
                     World w = wc.getWorld();
                     if (w != null) {
@@ -36,6 +48,9 @@ public class WorldAdvancements extends Command {
             } else {
                 if (wc.advancementsEnabled) {
                     message(ChatColor.YELLOW + "Players can get awarded advancements on world '" + worldname + "'!");
+                    if (wc.advancementsSilent) {
+                        message(ChatColor.YELLOW + "No messages are sent in chat when this happens.");
+                    }
                 } else {
                     message(ChatColor.YELLOW + "Players do " + ChatColor.RED + "not " + ChatColor.YELLOW +
                             "get advancements awarded on world '" + worldname + "'!");
@@ -46,6 +61,6 @@ public class WorldAdvancements extends Command {
 
     @Override
     public List<String> autocomplete() {
-        return processBasicAutocompleteOrWorldName("enabled", "disabled");
+        return processBasicAutocompleteOrWorldName("enabled", "disabled", "silent");
     }
 }
