@@ -104,12 +104,13 @@ public class NetherPortalSearcher {
      * found before, then that result becomes instantly available,
      * after verifying the portal is still there.
      * 
-     * @param start
+     * @param start Block around which to look for portals
+     * @param radius Search radius around the block
      * @param createOptions Options for creating a portal if none exists.
      *        Use null to disallow creating new portals.
      * @return result
      */
-    public SearchResult search(Block start, CreateOptions createOptions) {
+    public SearchResult search(Block start, int radius, CreateOptions createOptions) {
         BlockLocation location = new BlockLocation(start);
 
         // Try to locate in the by-start block cache
@@ -137,7 +138,7 @@ public class NetherPortalSearcher {
         }
 
         // Start a new search
-        final SearchResult result = new SearchResult(location);
+        final SearchResult result = new SearchResult(location, radius);
         _cachedByBlock.put(location, result);
         cachedOnWorld.add(result);
 
@@ -163,13 +164,15 @@ public class NetherPortalSearcher {
         private final Set<BlockLocation> _startLocations;
         private SearchStatus _status = SearchStatus.SEARCHING;
         private List<ForcedChunk> _loadingChunks = Collections.emptyList();
+        private final int _searchRadius;
         private int _lastUsedTick = -1;
         private BlockLocation _result;
         private CreateOptions _createOptions;
 
-        public SearchResult(BlockLocation start) {
+        public SearchResult(BlockLocation start, int radius) {
             this._start = start;
             this._startLocations = new HashSet<BlockLocation>(Collections.singleton(start));
+            this._searchRadius = radius;
             this._createOptions = null;
         }
 
@@ -303,7 +306,7 @@ public class NetherPortalSearcher {
 
             // Try to find an existing portal
             Block startBlock = _start.getBlock();
-            Block resultBlock = (startBlock == null) ? null : WorldUtil.findNetherPortal(startBlock);
+            Block resultBlock = (startBlock == null) ? null : WorldUtil.findNetherPortal(startBlock, this._searchRadius);
             if (resultBlock == null && _createOptions != null) {
                 resultBlock = WorldUtil.createNetherPortal(startBlock, _createOptions._orientation, _createOptions._initiator);
             }

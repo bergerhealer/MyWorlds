@@ -29,6 +29,8 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
         double factor = (portalBlock.getWorld().getEnvironment() == Environment.NETHER ? 8.0 : 1.0) /
                         (world.getEnvironment() == Environment.NETHER ? 8.0 : 1.0);
 
+        // Turn factor into a search radius
+        int searchRadius = (int) (Math.max(1.0, factor) * 16.0);
         Block searchStartBlock = world.getBlockAt(MathUtil.floor(portalBlock.getX() * factor),
                                                   portalBlock.getY(),
                                                   MathUtil.floor(portalBlock.getZ() * factor));
@@ -42,7 +44,7 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
         }
 
         // Start searching
-        NetherPortalSearcher.SearchResult result = plugin.getNetherPortalSearcher().search(searchStartBlock, createOptions);
+        NetherPortalSearcher.SearchResult result = plugin.getNetherPortalSearcher().search(searchStartBlock, searchRadius, createOptions);
 
         // For entities that can be kept in stasis while processing happens in the background,
         // put the entity in there. Or release, when no longer busy.
