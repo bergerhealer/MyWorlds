@@ -15,6 +15,7 @@ import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.mw.advancement.AdvancementManager;
 import com.bergerkiller.bukkit.mw.commands.registry.MyWorldsCommands;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
 import com.bergerkiller.bukkit.mw.portal.PlayerRespawnHandler;
@@ -67,7 +68,12 @@ public class MyWorlds extends PluginBase {
     private final PortalTeleportationCooldown portalTeleportationCooldown = new PortalTeleportationCooldown(this);
     private final EntityStasisHandler entityStasisHandler = new EntityStasisHandler(this);
     private final PlayerRespawnHandler endRespawnHandler = new PlayerRespawnHandler(this);
+    private final AdvancementManager advancementManager = AdvancementManager.create(this);
     public static MyWorlds plugin;
+
+    public AdvancementManager getAdvancementManager() {
+        return this.advancementManager;
+    }
 
     public PlayerRespawnHandler getEndRespawnHandler() {
         return this.endRespawnHandler;
@@ -123,6 +129,7 @@ public class MyWorlds extends PluginBase {
         portalTeleportationCooldown.enable();
         entityStasisHandler.enable();
         endRespawnHandler.enable();
+        advancementManager.enable();
 
         // Continue loading the configuration(s)
         FileConfiguration config = new FileConfiguration(this);

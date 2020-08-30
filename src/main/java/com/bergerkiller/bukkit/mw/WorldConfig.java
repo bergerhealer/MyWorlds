@@ -57,6 +57,7 @@ public class WorldConfig extends WorldConfigStore {
     public boolean forcedRespawn = false;
     public boolean rememberLastPlayerPosition = false;
     public boolean bedRespawnEnabled = true;
+    public boolean advancementsEnabled = true;
     public WorldInventory inventory;
 
     protected WorldConfig(String worldname) {
@@ -200,6 +201,7 @@ public class WorldConfig extends WorldConfigStore {
         this.clearInventory = config.clearInventory;
         this.forcedRespawn = config.forcedRespawn;
         this.bedRespawnEnabled = config.bedRespawnEnabled;
+        this.advancementsEnabled = config.advancementsEnabled;
         this.inventory = config.inventory.add(this.worldname);
     }
 
@@ -230,6 +232,7 @@ public class WorldConfig extends WorldConfigStore {
         this.rememberLastPlayerPosition = node.get("rememberlastplayerpos", this.rememberLastPlayerPosition);
         this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
         this.bedRespawnEnabled = node.get("bedRespawnEnabled", this.bedRespawnEnabled);
+        this.advancementsEnabled = node.get("advancementsEnabled", this.advancementsEnabled);
         for (String type : node.getList("deniedCreatures", String.class)) {
             type = type.toUpperCase();
             if (type.equals("ANIMALS")) {
@@ -314,6 +317,7 @@ public class WorldConfig extends WorldConfigStore {
         node.set("difficulty", this.difficulty == null ? "NONE" : this.difficulty.toString());
         node.set("reloadWhenEmpty", this.reloadWhenEmpty);
         node.set("bedRespawnEnabled", this.bedRespawnEnabled);
+        node.set("advancementsEnabled", this.advancementsEnabled);
         if (this.spawnPoint == null) {
             node.remove("spawn");
         } else {
@@ -461,6 +465,8 @@ public class WorldConfig extends WorldConfigStore {
         updateGamemode(player);
         updateHunger(player);
         updateBedSpawnPoint(player);
+        // Store advancements
+        MyWorlds.plugin.getAdvancementManager().cacheAdvancements(player);
     }
 
     public void onWorldLoad(World world) {
@@ -528,6 +534,7 @@ public class WorldConfig extends WorldConfigStore {
         updateKeepSpawnInMemory(world);
         updateDifficulty(world);
         updateAutoSave(world);
+        updateAdvancements(world);
         timeControl.updateWorld(world);
     }
     public void updateReload() {
@@ -602,6 +609,9 @@ public class WorldConfig extends WorldConfigStore {
         if (world != null && world.getDifficulty() != this.difficulty) {
             world.setDifficulty(this.difficulty);
         }
+    }
+    public void updateAdvancements(World world) {
+        MyWorlds.plugin.getAdvancementManager().applyGameRule(world, this.advancementsEnabled);
     }
 
     /**

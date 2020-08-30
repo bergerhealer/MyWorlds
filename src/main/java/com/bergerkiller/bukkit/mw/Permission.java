@@ -45,6 +45,7 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_RELOADWE = new Permission("world.reloadwe", PermissionDefault.OP, "Sets if players can toggle if worlds reload when empty");
     public static final Permission COMMAND_HUNGER = new Permission("world.hunger", PermissionDefault.OP, "Sets if players can toggle hunger on or off for worlds");
     public static final Permission COMMAND_ENABLECREDITS = new Permission("world.enablecredits", PermissionDefault.TRUE, "Enables a player to view the end-game credits a second time, after already completing the end before");
+    public static final Permission COMMAND_ADVANCEMENTS = new Permission("world.advancements", PermissionDefault.OP, "Sets if players can toggle advancements on/off for a world");
     public static final Permission COMMAND_TPP = new Permission("tpp", PermissionDefault.OP, "Sets if the player can teleport to any worlds or portals, ignoring the per-portal/world permissions");
     public static final Permission GENERAL_TELEPORT = new Permission("world.teleport", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn", 1);
     public static final Permission GENERAL_ENTER = new Permission("world.enter", PermissionDefault.OP, "Sets if the player can enter a certain world through portals", 1);

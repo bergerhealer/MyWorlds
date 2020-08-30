@@ -43,6 +43,7 @@ commands:
             /world delete - Delete a world permanently
             /world copy - Copy a world to a new name
             /world repair - Repair a world
+            /world advancements - Enable/disable awarding advancements on a world
     world info:
         description: Shows detailed information of a world
         aliases: [world i]
@@ -223,6 +224,10 @@ commands:
         description: Enables showing the end-game credits a second time
         usage: |
             /world showcredits - Enable for self
+    world advancements:
+        description: Enables or disables player getting advancements on the world
+        usage: |
+            /world advancements [enable/disable] - Enable/disable
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World
