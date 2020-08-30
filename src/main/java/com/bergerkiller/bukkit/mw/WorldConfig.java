@@ -727,7 +727,7 @@ public class WorldConfig extends WorldConfigStore {
             // World 2 is the end world, and it shows the end credits when teleported
             if (world1.defaultEndPortal == null) {
                 world1.defaultEndPortal = new PortalDestination();
-                world1.defaultEndPortal.setMode(PortalMode.END_LINK);
+                world1.defaultEndPortal.setMode(PortalMode.END_PLATFORM);
                 world1.defaultEndPortal.setName(world2.worldname);
                 world1.defaultEndPortal.setPlayersOnly(false);
                 world1.defaultEndPortal.setShowCredits(false);

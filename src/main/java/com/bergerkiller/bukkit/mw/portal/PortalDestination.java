@@ -118,6 +118,11 @@ public class PortalDestination {
         clone.setMode(this.getMode());
         clone.setName(this.getName());
         clone.setDisplayName(this.getDisplayName());
+        clone.setCanNonPlayersCreatePortals(this.canNonPlayersCreatePortals());
+        clone.setCanTeleportMounts(this.canTeleportMounts());
+        clone.setShowCredits(this.isShowCredits());
+        clone.setPlayersOnly(this.isPlayersOnly());
+        clone.setTeleportToLastPosition(this.isTeleportToLastPosition());
         return clone;
     }
 
@@ -151,7 +156,7 @@ public class PortalDestination {
             // From yaml configuration, specifying various things
             ConfigurationNode node = (ConfigurationNode) atKey;
             PortalDestination result = new PortalDestination();
-            result.setMode(node.get("mode", PortalMode.DEFAULT));
+            result.setMode(PortalMode.fromString(node.get("mode", "default")));
             result.setName(node.get("name", String.class, null));
             result.setDisplayName(node.get("display", String.class, null));
             result.setPlayersOnly(node.get("playersOnly", false));

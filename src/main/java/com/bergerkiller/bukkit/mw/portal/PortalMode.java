@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw.portal;
 
 import java.util.function.Supplier;
 
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
@@ -41,7 +42,7 @@ public enum PortalMode {
      * Prepares an obsidian platform at fixed coordinates of the destination
      * world and teleports players to it
      */
-    END_LINK("End platform on", PortalTeleportationHandlerEndLink::new);
+    END_PLATFORM("End platform on", PortalTeleportationHandlerEndLink::new);
 
     private final String _infoPrefix;
     private final Supplier<PortalTeleportationHandler> _handlerSupplier;
@@ -81,5 +82,15 @@ public enum PortalMode {
         }
 
         return _infoPrefix + ChatColor.RED + " [Invalid] " + destination + aliasStr;
+    }
+
+    public static PortalMode fromString(String name) {
+        if (name == null) {
+            return DEFAULT;
+        } else if (name.equalsIgnoreCase("end_link")) {
+            return END_PLATFORM;
+        } else {
+            return ParseUtil.parseEnum(name, DEFAULT);
+        }
     }
 }
