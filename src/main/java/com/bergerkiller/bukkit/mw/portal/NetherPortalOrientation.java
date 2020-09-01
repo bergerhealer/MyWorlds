@@ -68,8 +68,13 @@ public class NetherPortalOrientation {
      * @param location
      */
     public void adjustPosition(Location location) {
-        if (this.portalBlocks.isEmpty() || this.portalBlocks.contains(new IntVector3(location))) {
-            return; // fallback or contained inside, do nothing
+        if (this.portalBlocks.isEmpty()) {
+            return; // fallback
+        }
+
+        IntVector3 location_pos = new IntVector3(location);
+        if (this.portalBlocks.contains(location_pos) && this.portalBlocks.contains(location_pos.add(BlockFace.UP))) {
+            return; // Fully contained within
         }
 
         // Find a portal block that is closest to this location
