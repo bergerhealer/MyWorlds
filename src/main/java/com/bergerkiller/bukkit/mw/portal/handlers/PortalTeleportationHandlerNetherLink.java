@@ -74,8 +74,9 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
             }
         } else if (result.getStatus() == SearchStatus.FOUND) {
             // Retrieve portal transformations for the current (old) and destination (new) portal
+            NetherPortalOrientation destPortalOrientation = NetherPortalOrientation.compute(result.getResult().getBlock());
             Matrix4x4 oldTransform = portalType.getTransform(portalBlock, entity);
-            Matrix4x4 newTransform = NetherPortalOrientation.compute(result.getResult().getBlock());
+            Matrix4x4 newTransform = destPortalOrientation.getTransform();
 
             // Retrieve location by combining the entity feet position with the (possible) player eye location
             Matrix4x4 transform;
@@ -104,11 +105,14 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
             transform.storeMultiply(newTransform, transform);
 
             // Compute the final Location information from the transform
-            final Location locToTeleportTo = transform.toLocation(result.getResult().getWorld());
+            Location locToTeleportTo = transform.toLocation(result.getResult().getWorld());
+
+            // Check that this location sits inside an existing portal frame on the destination
+            destPortalOrientation.adjustPosition(locToTeleportTo);
 
             // Retrieve the velocity of the entity upon entering the portal
             // Transform this velocity the same way we transformed the position
-            final Vector velocityAfterTeleport = entity.getVelocity();
+            Vector velocityAfterTeleport = entity.getVelocity();
             Matrix4x4.diffRotation(oldTransform, newTransform).transformPoint(velocityAfterTeleport);
 
             // Perform the teleportation woo

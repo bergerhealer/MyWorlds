@@ -134,7 +134,7 @@ public enum PortalType {
     public Matrix4x4 getTransform(Block portalBlock, Entity entity) {
         switch (this) {
         case NETHER:
-            return NetherPortalOrientation.compute(portalBlock);
+            return NetherPortalOrientation.compute(portalBlock).getTransform();
         default:
             return Matrix4x4.fromLocation(entity.getLocation());
         }
