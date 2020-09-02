@@ -6,23 +6,19 @@ import java.util.logging.Level;
 
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 
-import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
-import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 
 public class Portal extends PortalStore {
     private String name;
@@ -266,8 +262,9 @@ public class Portal extends PortalStore {
             }
             // Set portal locatiol using sign location and orientation
             p.location = signblock.getLocation();
-            MaterialData data = signblock.getState().getData();
+
             float yaw = 0;
+            MaterialData data = BlockUtil.getData(signblock);
             if (data instanceof Directional) {
                 yaw = FaceUtil.faceToYaw(((Directional) data).getFacing()) + 90;
             }
