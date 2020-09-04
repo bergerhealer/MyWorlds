@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -105,9 +106,9 @@ public class WorldTime extends Command {
 
     @Override
     public List<String> autocomplete() {
-        return processBasicAutocompleteOrWorldName(
+        return this.processAutocomplete(Stream.of(
                 "always", "dawn", "sunrise", "morning", "day", "midday",
                 "noon", "afternoon", "evening", "sunset", "dusk", "night",
-                "midnight");
+                "midnight"));
     }
 }
