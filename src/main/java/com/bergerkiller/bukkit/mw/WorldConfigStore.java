@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.util.Collection;
 import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -84,6 +85,16 @@ public class WorldConfigStore {
      */
     public static WorldConfig getMain() {
         return get(MyWorlds.getMainWorld());
+    }
+
+    /**
+     * Gets the World Configuration of the Vanilla main world, which
+     * is normally called 'world'.
+     * 
+     * @return Vanilla main world configuration
+     */
+    public static WorldConfig getVanillaMain() {
+        return get(Bukkit.getWorlds().get(0));
     }
 
     public static Collection<WorldConfig> all() {

@@ -644,7 +644,9 @@ public class MWPlayerDataController extends PlayerDataController {
 
         public PlayerFileCollection(Player player) {
             this.player = player;
-            this.mainWorldFile = new PlayerFile(player, WorldConfig.getMain());
+            this.mainWorldFile = new PlayerFile(player, MyWorlds.storeInventoryInMainWorld ?
+                    WorldConfig.getMain() : WorldConfig.getVanillaMain());
+
             setCurrentWorld(player.getWorld());
         }
 

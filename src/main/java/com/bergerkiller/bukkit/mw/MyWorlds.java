@@ -42,6 +42,7 @@ public class MyWorlds extends PluginBase {
     public static boolean importFromMultiVerse = true;
     public static boolean onlyPlayerTeleportation = true;
     public static boolean useWorldInventories;
+    public static boolean storeInventoryInMainWorld;
     public static boolean calculateWorldSize;
     public static double maxPortalSignDistance;
     private static String mainWorld;
@@ -148,6 +149,20 @@ public class MyWorlds extends PluginBase {
 
         config.setHeader("useWorldInventories", "\nWhether or not world inventories are being separated using the settings");
         useWorldInventories = config.get("useWorldInventories", false);
+
+        boolean hasStoreInvInMainWorldConfig = config.contains("storeInventoryInMainWorld");
+        config.setHeader("storeInventoryInMainWorld", "\nWhether the player inventories are stored on the MyWorlds-configured main world");
+        config.addHeader("storeInventoryInMainWorld", "When false, the Vanilla main world ('world') is used instead");
+        config.addHeader("storeInventoryInMainWorld", "This option is also active when useWorldInventories is false");
+        if (!hasStoreInvInMainWorldConfig) {
+            if (!config.contains("mainWorld") && config.get("mainWorld", "").isEmpty()) {
+                config.set("storeInventoryInMainWorld", false);
+            } else {
+                // Must maintain this option, otherwise inventories will break for everyone
+                config.set("storeInventoryInMainWorld", true);
+            }
+        }
+        storeInventoryInMainWorld = config.get("storeInventoryInMainWorld", false);
 
         useWorldEnterPermissions = config.get("useWorldEnterPermissions", false);
         usePortalEnterPermissions = config.get("usePortalEnterPermissions", false);
