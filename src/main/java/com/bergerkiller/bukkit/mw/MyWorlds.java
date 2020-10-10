@@ -19,6 +19,7 @@ import com.bergerkiller.bukkit.mw.advancement.AdvancementManager;
 import com.bergerkiller.bukkit.mw.commands.registry.MyWorldsCommands;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
 import com.bergerkiller.bukkit.mw.portal.PlayerRespawnHandler;
+import com.bergerkiller.bukkit.mw.portal.PortalSignList;
 import com.bergerkiller.bukkit.mw.portal.EntityStasisHandler;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationCooldown;
@@ -70,7 +71,12 @@ public class MyWorlds extends PluginBase {
     private final EntityStasisHandler entityStasisHandler = new EntityStasisHandler(this);
     private final PlayerRespawnHandler endRespawnHandler = new PlayerRespawnHandler(this);
     private final AdvancementManager advancementManager = AdvancementManager.create(this);
+    private final PortalSignList portalSignList = new PortalSignList(this);
     public static MyWorlds plugin;
+
+    public PortalSignList getPortalSignList() {
+        return this.portalSignList;
+    }
 
     public AdvancementManager getAdvancementManager() {
         return this.advancementManager;
@@ -260,7 +266,7 @@ public class MyWorlds extends PluginBase {
         WorldConfig.init();
 
         // Portals
-        Portal.init(this.getDataFile("portals.txt"));
+        this.portalSignList.enable();
 
         // World inventories
         WorldInventory.load();
@@ -273,7 +279,7 @@ public class MyWorlds extends PluginBase {
     @Override
     public void disable() {
         // Portals
-        Portal.deinit(this.getDataFile("portals.txt"));
+        this.portalSignList.disable();
 
         // Stop this
         netherPortalSearcher.disable();

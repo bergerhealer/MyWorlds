@@ -231,8 +231,11 @@ public class MWListener implements Listener {
                     MWListenerPost.setLastEntered((Player) entity, display);
                 }
 
-                // Fix
-                portalLocation = portalLocation.clone().add(0.0, 1.0, 0.0);
+                // Fix position to be the middle of the block, 1 above
+                portalLocation = portalLocation.clone();
+                portalLocation.setX((double) portalLocation.getBlockX() + 0.5);
+                portalLocation.setY(portalLocation.getY() + 1.0);
+                portalLocation.setZ((double) portalLocation.getBlockZ() + 0.5);
 
                 // Handle perms up-front
                 if (!Portal.canTeleportEntityTo(entity, portalLocation)) {

@@ -1,6 +1,5 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -142,7 +141,7 @@ public class Portal extends PortalStore {
      * Adds this Portal to the internal mapping
      */
     public void add() {
-        getPortalLocations(location.getWorld().getName()).put(name, new Position(location));
+        MyWorlds.plugin.getPortalSignList().storePortal(name, new Position(location));
     }
 
     /**
@@ -160,7 +159,7 @@ public class Portal extends PortalStore {
      * @return True if it is added, False if not
      */
     public boolean isAdded() {
-        return getPortalLocations(this.location.getWorld().getName()).containsKey(this.getName());
+        return exists(this.location.getWorld().getName(), this.getName());
     }
 
     @Override
@@ -169,11 +168,11 @@ public class Portal extends PortalStore {
     }
 
     public static boolean exists(String world, String portalname) {
-        return getPortalLocations(world).containsKey(portalname);
+        return MyWorlds.plugin.getPortalSignList().findPortalOnWorld(portalname, world) != null;
     }
 
     public static boolean remove(String name, String world) {
-        return getPortalLocations(world).remove(name) != null;
+        return MyWorlds.plugin.getPortalSignList().removePortal(name, world);
     }
 
     /**
@@ -195,8 +194,8 @@ public class Portal extends PortalStore {
      */
     public static Portal getNear(Location middle, double radius) {
         Portal p = null;
-        HashMap<String, Position> positions = getPortalLocations(middle.getWorld().getName());
-        for (Map.Entry<String, Position> pos : positions.entrySet()) {
+        String worldname = middle.getWorld().getName();
+        for (Map.Entry<String, Position> pos : MyWorlds.plugin.getPortalSignList().listPortalsOnWorld(worldname)) {
             Location ploc = Util.getLocation(pos.getValue());
             String portalname = pos.getKey();
             if (ploc != null && ploc.getWorld() == middle.getWorld()) {
@@ -209,7 +208,7 @@ public class Portal extends PortalStore {
                     } else if (ploc.getWorld().isChunkLoaded(ploc.getBlockX() >> 4, ploc.getBlockZ() >> 4)) {
                         //In loaded chunk and NOT found!
                         //Remove it
-                        positions.remove(portalname);
+                        MyWorlds.plugin.getPortalSignList().removePortal(portalname, worldname);
                         MyWorlds.plugin.log(Level.WARNING, "Removed portal '" + portalname + "' because it is no longer there!");
                         //End the loop and call the function again
                         return getNear(middle, radius);
