@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,7 +9,9 @@ import java.util.Set;
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
+import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
+import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldInventory extends Command {
@@ -77,8 +80,24 @@ public class WorldInventory extends Command {
             } else if (args[0].equalsIgnoreCase("enable") || args[0].equalsIgnoreCase("disable")) {
                 boolean enable = args[0].equalsIgnoreCase("enable");
                 if (this.prepareWorlds()) {
+                    // Expand the worlds set based on the inventories they share
+                    if (MyWorlds.useWorldInventories) {
+                        Set<String> tmp = new HashSet<String>(worlds);
+                        for (String world : tmp) {
+                            WorldConfig config = WorldConfig.getIfExists(world);
+                            if (config != null && config.inventory != null) {
+                                worlds.addAll(config.inventory.getWorlds());
+                            }
+                        }
+                    }
+
                     for (String world : worlds) {
-                        com.bergerkiller.bukkit.mw.WorldConfig.get(world).clearInventory = !enable;
+                        WorldConfig config = WorldConfig.getIfExists(world);
+                        if (config != null) {
+                            config.clearInventory = !enable;
+                        } else {
+                            sender.sendMessage(ChatColor.RED + "Failed to update for " + world + ": not a world");
+                        }
                     }
                     if (this.worlds.size() > 1) {
                         if (enable) {
