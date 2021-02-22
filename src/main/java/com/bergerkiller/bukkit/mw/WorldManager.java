@@ -162,8 +162,11 @@ public class WorldManager {
         for (Plugin plugin : Bukkit.getServer().getPluginManager().getPlugins()) {
             try {
                 String mainclass = plugin.getDescription().getMain();
-                Class<?> cmain = Class.forName(mainclass);
-                if (cmain == null) continue;
+                Class<?> cmain = plugin.getClass();
+                if (!cmain.getName().equals(mainclass)) {
+                    // Hmm...
+                    cmain = Class.forName(mainclass);
+                }
                 if (cmain.getMethod("getDefaultWorldGenerator", String.class, String.class).getDeclaringClass() != JavaPlugin.class) {
                     gens.add(plugin.getDescription().getName());
                 }
