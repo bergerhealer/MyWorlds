@@ -14,8 +14,10 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.controller.PlayerDataController;
 import com.bergerkiller.bukkit.common.entity.CommonEntity;
+import com.bergerkiller.bukkit.common.entity.type.CommonLivingEntity;
 import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
@@ -35,6 +37,8 @@ public class MWPlayerDataController extends PlayerDataController {
     public static final String DATA_TAG_LASTWORLD = "MyWorlds.playerWorld";
     public static final String DATA_TAG_LASTPOS = "MyWorlds.playerPos";
     public static final String DATA_TAG_LASTROT = "MyWorlds.playerRot";
+
+    private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
 
     private static void setLocation(CommonTagCompound tagCompound, Location location) {
         tagCompound.putListValues("Pos", location.getX(), location.getY(), location.getZ());
@@ -56,8 +60,10 @@ public class MWPlayerDataController extends PlayerDataController {
         CommonTagCompound empty = new CommonTagCompound();
         CommonPlayer playerEntity = CommonEntity.get(player);
         empty.putUUID("", player.getUniqueId());
-        empty.putValue("Health", (short) playerEntity.getMaxHealth());
-        empty.putValue("Max Health", (float) playerEntity.getMaxHealth()); // since 1.6.1 health is a float
+        if (SAVE_HEAL_F) {
+            empty.putValue("HealF", (float) playerEntity.getMaxHealth());
+        }
+        empty.putValue("Health", (float) playerEntity.getMaxHealth());
         empty.putValue("HurtTime", (short) 0);
         empty.putValue("DeathTime", (short) 0);
         empty.putValue("AttackTime", (short) 0);
@@ -195,8 +201,13 @@ public class MWPlayerDataController extends PlayerDataController {
         // Clear inventory
         human.getInventory().clear();
 
-        // Reset health and experience
-        human.setHealth(human.getMaxHealth());
+        // Reset health to maximum
+        {
+            CommonLivingEntity<?> cLivingEntity = new CommonLivingEntity<HumanEntity>(human);
+            cLivingEntity.setHealth(cLivingEntity.getMaxHealth());
+        }
+
+        // Reset experience and other stuff
         if (human instanceof Player) {
             final Player player = (Player) human;
             player.setExp(0.0f);
@@ -205,6 +216,7 @@ public class MWPlayerDataController extends PlayerDataController {
             player.setFoodLevel(20);
             player.setSaturation(5.0f);
             player.setExhaustion(0.0f);
+            player.setFireTicks(0);
 
             // Resend items (PATCH)
             CommonUtil.nextTick(new Runnable() {
@@ -263,11 +275,18 @@ public class MWPlayerDataController extends PlayerDataController {
             playerHandle.setExpLevel(playerData.getValue("XpLevel", 0));
             playerHandle.setExpTotal(playerData.getValue("XpTotal", 0));
 
-            if (playerData.containsKey("HealF")) {
-                // Legacy stuff
-                commonPlayer.setHealth(playerData.getValue("HealF", float.class));
-            } else {
-                commonPlayer.setHealth(playerData.getValue("Health", commonPlayer.getMaxHealth()));
+            {
+                final double maxHealth = commonPlayer.getMaxHealth();
+                final double health;
+                if (playerData.containsKey("HealF")) {
+                    // Legacy stuff
+                    Float f = playerData.getValue("HealF", float.class);
+                    health = (f == null) ? maxHealth : f.doubleValue();
+                } else {
+                    // Supports short, float and possibly double -> double
+                    health = playerData.getValue("Health", maxHealth);
+                }
+                commonPlayer.setHealth(Math.min(maxHealth, health));
             }
 
             // Initialize spawn point
@@ -351,9 +370,12 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // Replace health/damage info
             CommonPlayer playerEntity = CommonEntity.get(player);
-            savedData.putValue("Health", (short) playerEntity.getMaxHealth());
-            savedData.putValue("HealF", (float) playerEntity.getMaxHealth());
-            savedData.putValue("Max Health", (float) playerEntity.getMaxHealth()); // since 1.6.1 health is a float
+            if (SAVE_HEAL_F) {
+                savedData.putValue("HealF", (float) playerEntity.getMaxHealth());
+            } else if (savedData.containsKey("HealF")) {
+                savedData.remove("HealF");
+            }
+            savedData.putValue("Health", (float) playerEntity.getMaxHealth());
             savedData.putValue("HurtTime", (short) 0);
             savedData.putValue("DeathTime", (short) 0);
             savedData.putValue("AttackTime", (short) 0);
