@@ -89,7 +89,7 @@ public class Portal extends PortalStore {
             World w = WorldManager.getWorld(portalname);
             if (w != null) {
                 if (MyWorlds.portalToLastPosition && player != null) {
-                    loc = WorldManager.getPlayerWorldSpawn(player, w, true);
+                    loc = WorldManager.getPlayerWorldSpawn(player, w, true).location;
                 } else {
                     loc = WorldManager.getSpawnLocation(w);
                 }

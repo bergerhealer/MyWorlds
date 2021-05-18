@@ -540,23 +540,23 @@ public class WorldManager {
      * If last position remembering is turned on and a last position is known, 
      * this Location is returned. If lacking, and the player has a bed spawn there,
      * that one is used. Otherwise, the world spawn point is returned.
-     * 
+     *
      * @param player Player to find the world spawn for
      * @param world World to find the world spawn in
      * @param playerRespawnPoint Whether to use the player respawn point (bed) if available
      * @return Spawn location
      */
-    public static Location getPlayerWorldSpawn(Player player, World world, boolean playerRespawnPoint) {
+    public static WorldSpawnLocation getPlayerWorldSpawn(Player player, World world, boolean playerRespawnPoint) {
         if (WorldConfig.get(world).rememberLastPlayerPosition || Permission.GENERAL_KEEPLASTPOS.has(player)) {
             // Player is already in the world to go to...so we just return that instead
             if (player.getWorld() == world) {
-                return player.getLocation();
+                return new WorldSpawnLocation(player.getLocation(), WorldSpawnLocation.Type.LAST_POSITION);
             }
 
             // Figure out the last position of the player on the world
             Location location = MWPlayerDataController.readLastLocation(player, world);
             if (location != null) {
-                return location;
+                return new WorldSpawnLocation(location, WorldSpawnLocation.Type.LAST_POSITION);
             }
         }
 
@@ -564,12 +564,37 @@ public class WorldManager {
         if (playerRespawnPoint) {
             Location bedSpawnLocation = getPlayerRespawnPosition(player, world);
             if (bedSpawnLocation != null) {
-                return bedSpawnLocation;
+                return new WorldSpawnLocation(bedSpawnLocation, WorldSpawnLocation.Type.BED_SPAWN);
             }
         }
 
         // World spawn point
-        return getSpawnLocation(world);
+        return new WorldSpawnLocation(getSpawnLocation(world), WorldSpawnLocation.Type.WORLD_SPAWN);
+    }
+
+    /**
+     * Stores the spawn location information of a player
+     */
+    public static class WorldSpawnLocation {
+        public final Location location;
+        public final Type type;
+
+        public WorldSpawnLocation(Location location, Type type) {
+            this.location = location;
+            this.type = type;
+        }
+
+        /**
+         * Type of world spawn location
+         */
+        public static enum Type {
+            /** Last known position of the player on the world */
+            LAST_POSITION,
+            /** Bed spawn or world anchor spawn */
+            BED_SPAWN,
+            /** World spawn point */
+            WORLD_SPAWN
+        }
     }
 
     /**
@@ -589,6 +614,34 @@ public class WorldManager {
     }
 
     /**
+     * Teleports a player to a destination location. If the location is solid,
+     * and the teleportation is cross-world, normally the player is teleported
+     * away to a safe place. If this happens, a second teleport is done to
+     * put the player back at the 'unsafe' location.
+     *
+     * This extra logic is important when players rejoin a world at their
+     * last-known location, otherwise certain block glitches allow them to
+     * teleport upwards.
+     *
+     * @param player The player to teleport
+     * @param destination Destination location to teleport to
+     * @return True if the teleport succeeded, False if not
+     */
+    public static boolean teleportToExact(Player player, Location destination) {
+        boolean crossWorlds = (destination.getWorld() != player.getWorld());
+        if (!EntityUtil.teleport(player, destination)) {
+            return false;
+        }
+        if (crossWorlds &&
+                player.getWorld() == destination.getWorld() &&
+                !player.getLocation().equals(destination)
+        ) {
+            player.teleport(destination);
+        }
+        return true;
+    }
+
+    /**
      * Teleports a player to a world. If the world allows the last player position
      * on the world to be used, this is used instead. If no last position is known,
      * or last position remembering is disabled, the player is teleported to the
@@ -599,7 +652,12 @@ public class WorldManager {
      * @return True if successful, False if not
      */
     public static boolean teleportToWorld(Player player, World world) {
-        return EntityUtil.teleport(player, getPlayerWorldSpawn(player, world, false));
+        WorldSpawnLocation spawn = getPlayerWorldSpawn(player, world, false);
+        if (spawn.type == WorldSpawnLocation.Type.LAST_POSITION) {
+            return teleportToExact(player, spawn.location);
+        } else {
+            return EntityUtil.teleport(player, spawn.location);
+        }
     }
 
     /**
