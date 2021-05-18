@@ -441,7 +441,7 @@ public class WorldConfig extends WorldConfigStore {
     public void onPlayerLeave(Player player, boolean quit) {
         // If not quiting (it saves then anyhow!) save the old information
         if (!quit) {
-            CommonUtil.savePlayer(player);
+            MWPlayerDataController.savePlayer(player, this.getWorld());
         }
     }
 

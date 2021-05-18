@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.ZipException;
@@ -39,6 +40,30 @@ public class MWPlayerDataController extends PlayerDataController {
     public static final String DATA_TAG_LASTROT = "MyWorlds.playerRot";
 
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
+
+    private static final Map<Player, World> worldToSaveTo = new IdentityHashMap<>();
+
+    /**
+     * Saves a player to disk. Makes sure to remember the world the player was on
+     * to prevent data being saved for the wrong world.
+     *
+     * @param player Player
+     * @param world The world the player is/was on
+     */
+    public static void savePlayer(Player player, World world) {
+        if (world == null) {
+            CommonUtil.savePlayer(player);
+            return;
+        }
+
+        synchronized (worldToSaveTo) {
+            worldToSaveTo.put(player, world);
+        }
+        CommonUtil.savePlayer(player);
+        synchronized (worldToSaveTo) {
+            worldToSaveTo.remove(player);
+        }
+    }
 
     private static void setLocation(CommonTagCompound tagCompound, Location location) {
         tagCompound.putListValues("Pos", location.getX(), location.getY(), location.getZ());
@@ -251,7 +276,7 @@ public class MWPlayerDataController extends PlayerDataController {
             return;
         }
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(player);
+            final PlayerFileCollection files = new PlayerFileCollection(player, player.getWorld());
             final CommonTagCompound playerData = files.currentFile.read();
 
             files.log("refreshing state");
@@ -337,7 +362,7 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     public void onRespawnSave(Player player, final Location respawnLocation) {
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(player);
+            final PlayerFileCollection files = new PlayerFileCollection(player, player.getWorld());
             CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
 
             files.log("saving data after respawn");
@@ -420,7 +445,7 @@ public class MWPlayerDataController extends PlayerDataController {
     @Override
     public CommonTagCompound onLoad(final Player player) {
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(player);
+            final PlayerFileCollection files = new PlayerFileCollection(player, player.getWorld());
 
             CommonTagCompound mainWorldData = null;
             boolean hasPlayedBefore = false;
@@ -526,7 +551,11 @@ public class MWPlayerDataController extends PlayerDataController {
     @Override
     public void onSave(final Player player) {
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(player);
+            final PlayerFileCollection files;
+            synchronized (worldToSaveTo) {
+                files = new PlayerFileCollection(player, worldToSaveTo.getOrDefault(player, player.getWorld()));
+            }
+
             final CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
 
             // Disable bed spawn if not enabled for that world
@@ -664,12 +693,12 @@ public class MWPlayerDataController extends PlayerDataController {
         public PlayerFile positionFile;  /* Stores the position of the player on a particular world */
         public PlayerFile currentFile;   /* Stores the inventory and data of the player on a particular world. Merge/split rules apply. */
 
-        public PlayerFileCollection(Player player) {
+        public PlayerFileCollection(Player player, World world) {
             this.player = player;
             this.mainWorldFile = new PlayerFile(player, MyWorlds.storeInventoryInMainWorld ?
                     WorldConfig.getMain() : WorldConfig.getVanillaMain());
 
-            setCurrentWorld(player.getWorld());
+            setCurrentWorld(world);
         }
 
         /**
