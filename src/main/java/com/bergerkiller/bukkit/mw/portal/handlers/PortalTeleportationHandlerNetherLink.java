@@ -1,5 +1,8 @@
 package com.bergerkiller.bukkit.mw.portal.handlers;
 
+import java.lang.reflect.Method;
+import java.util.logging.Level;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
@@ -8,13 +11,17 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.math.Matrix4x4;
 import com.bergerkiller.bukkit.common.utils.MathUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Localization;
+import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalOrientation;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher.SearchStatus;
+import com.bergerkiller.generated.net.minecraft.server.DimensionManagerHandle;
 
 /**
  * Handler for teleporting between worlds through nether portals,
@@ -22,12 +29,26 @@ import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher.SearchStatus;
  * new ones if needed.
  */
 public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHandler {
+    private static final Method getCoordinateScaleMethod;
+
+    static {
+        Method m = null;
+        if (Common.evaluateMCVersion(">=", "1.16") && DimensionManagerHandle.T.isAvailable()) {
+            try {
+                m = DimensionManagerHandle.T.getType().getMethod("getCoordinateScale");
+                if (m.getReturnType() != double.class) {
+                    m = null;
+                }
+            } catch (NoSuchMethodException ex) {}
+        }
+        getCoordinateScaleMethod = m;
+    }
+
     @Override
     public void handleWorld(World world) {
         // Figure out the desired Block location on the other world
         // This uses *8 rules for nether world vs other worlds
-        double factor = (portalBlock.getWorld().getEnvironment() == Environment.NETHER ? 8.0 : 1.0) /
-                        (world.getEnvironment() == Environment.NETHER ? 8.0 : 1.0);
+        double factor = getCoordinateScale(portalBlock.getWorld()) / getCoordinateScale(world);
 
         // Turn factor into a search radius
         int searchRadius = (int) (Math.max(1.0, factor) * 16.0);
@@ -118,5 +139,27 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
             // Perform the teleportation woo
             scheduleTeleportation(locToTeleportTo, velocityAfterTeleport);
         }
+    }
+
+    /**
+     * Gets the coordinate scale used for a World. Datapacks can alter this for a world.
+     * On versions before datapacks, the nether environment is assumed to have a scale
+     * of 8.
+     *
+     * @param world
+     * @return coordinate scale on the world
+     */
+    public static double getCoordinateScale(World world) {
+        //WorldUtil.getDimensionType(world).getDimensionManagerHandle()
+        if (getCoordinateScaleMethod != null) {
+            Object dim = WorldUtil.getDimensionType(world).getDimensionManagerHandle();
+            try {
+                return (double) getCoordinateScaleMethod.invoke(dim);
+            } catch (Throwable t) {
+                MyWorlds.plugin.getLogger().log(Level.SEVERE,
+                        "Failed to read coordinate scale, switching to fallback", t);
+            }
+        }
+        return world.getEnvironment() == Environment.NETHER ? 8.0 : 1.0;
     }
 }
