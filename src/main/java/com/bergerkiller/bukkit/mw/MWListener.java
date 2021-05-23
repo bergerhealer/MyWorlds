@@ -351,6 +351,9 @@ public class MWListener implements Listener {
     public void onBlockPhysics(BlockPhysicsEvent event) {
         // Allows portals to be placed without physics killing it
         if (MyWorlds.overridePortalPhysics && MaterialUtil.ISNETHERPORTAL.get(event.getBlock())) {
+            // Since we cancelled the event, the portal block is no longer registered
+            // Explicitly register the block as a nether portal to fix POI errors.
+            WorldUtil.markNetherPortal(event.getBlock());
             event.setCancelled(true);
         }
     }
