@@ -47,6 +47,16 @@ public class PlayerRespawnHandler {
         useTravelAgentMethod = m;
     }
 
+    // isAnchorSpawn() doesn't exist on all versions of Bukkit/minecraft
+    private static final Method isAnchorSpawnMethod;
+    static {
+        Method m = null;
+        try {
+            m = PlayerRespawnEvent.class.getDeclaredMethod("isAnchorSpawn");
+        } catch (Throwable t) {}
+        isAnchorSpawnMethod = m;
+    }
+
     public PlayerRespawnHandler(MyWorlds plugin) {
         this.plugin = plugin;
     }
@@ -63,6 +73,30 @@ public class PlayerRespawnHandler {
         return END_RESPAWN_USING_PORTAL_EVENT || event.getPlayer().getHealth() <= 0.0;
     }
 
+    /**
+     * Gets whether a respawn event involves respawning at a player
+     * bed or world anchor.
+     *
+     * @param event
+     * @return True if respawning at a bed or world anchor
+     */
+    public boolean isBedOrAnchorRespawn(PlayerRespawnEvent event) {
+        if (event.isBedSpawn()) {
+            return true;
+        }
+        if (isAnchorSpawnMethod != null) {
+            try {
+                Boolean isAnchorSpawn = (Boolean) isAnchorSpawnMethod.invoke(event);
+                if (isAnchorSpawn.booleanValue()) {
+                    return true;
+                }
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+        return false;
+    }
+
     public void enable() {
 
         this.plugin.register(new Listener() {
@@ -74,7 +108,7 @@ public class PlayerRespawnHandler {
                     if (MyWorlds.forceMainWorldSpawn) {
                         // Force a respawn on the main world
                         respawnWorld = MyWorlds.getMainWorld();
-                    } else if (event.isBedSpawn() && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
+                    } else if (isBedOrAnchorRespawn(event) && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
                         respawnWorld = null; // Ignore bed spawns that are not overrided
                     }
                     if (respawnWorld != null) {
