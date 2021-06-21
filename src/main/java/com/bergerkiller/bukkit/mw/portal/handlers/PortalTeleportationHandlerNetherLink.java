@@ -21,7 +21,7 @@ import com.bergerkiller.bukkit.mw.portal.NetherPortalOrientation;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher.SearchStatus;
-import com.bergerkiller.generated.net.minecraft.server.DimensionManagerHandle;
+import com.bergerkiller.generated.net.minecraft.world.level.dimension.DimensionManagerHandle;
 
 /**
  * Handler for teleporting between worlds through nether portals,

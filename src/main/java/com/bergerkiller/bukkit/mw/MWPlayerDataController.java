@@ -29,10 +29,10 @@ import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
-import com.bergerkiller.generated.net.minecraft.server.EntityLivingHandle;
-import com.bergerkiller.generated.net.minecraft.server.EntityPlayerHandle;
-import com.bergerkiller.generated.net.minecraft.server.MobEffectHandle;
-import com.bergerkiller.generated.net.minecraft.server.MobEffectListHandle;
+import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
+import com.bergerkiller.generated.net.minecraft.world.effect.MobEffectHandle;
+import com.bergerkiller.generated.net.minecraft.world.effect.MobEffectListHandle;
+import com.bergerkiller.generated.net.minecraft.world.entity.EntityLivingHandle;
 
 public class MWPlayerDataController extends PlayerDataController {
     public static final String DATA_TAG_LASTWORLD = "MyWorlds.playerWorld";
