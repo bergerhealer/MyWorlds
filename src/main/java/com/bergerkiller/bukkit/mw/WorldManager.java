@@ -363,8 +363,7 @@ public class WorldManager {
             }
         }
         MyWorlds.plugin.log(Level.INFO, msg.toString());
-        
-        final int retrycount = 3;
+
         World w = null;
         int i = 0;
         ChunkGenerator cgen = null;
@@ -387,32 +386,29 @@ public class WorldManager {
             }
         }
         Exception failReason = null;
-        for (i = 0; i < retrycount + 1; i++) {
-            try {
-                WorldCreator c = new WorldCreator(worldname);
-                wc.worldmode.apply(c);
-                if (seed != 0) {
-                    c.seed(seed);
-                }
-
-                // Parse args from chunkgenerator name
-                String options = "";
-                if (chunkGeneratorName != null) {
-                    int chunkGenArgsStart = chunkGeneratorName.indexOf(':');
-                    if (chunkGenArgsStart != -1) {
-                        options = chunkGeneratorName.substring(chunkGenArgsStart + 1);
-                    }
-                }
-                if (!options.isEmpty()) {
-                    c.generatorSettings(options);
-                }
-
-                c.generator(cgen);
-                w = c.createWorld();
-            } catch (Exception ex) {
-                failReason = ex;
+        try {
+            WorldCreator c = new WorldCreator(worldname);
+            wc.worldmode.apply(c);
+            if (seed != 0) {
+                c.seed(seed);
             }
-            if (w != null) break;
+
+            // Parse args from chunkgenerator name
+            String options = "";
+            if (chunkGeneratorName != null) {
+                int chunkGenArgsStart = chunkGeneratorName.indexOf(':');
+                if (chunkGenArgsStart != -1) {
+                    options = chunkGeneratorName.substring(chunkGenArgsStart + 1);
+                }
+            }
+            if (!options.isEmpty()) {
+                c.generatorSettings(options);
+            }
+
+            c.generator(cgen);
+            w = c.createWorld();
+        } catch (Exception ex) {
+            failReason = ex;
         }
         if (w == null) {
             MyWorlds.plugin.log(Level.WARNING, "World creation failed after " + i + " retries!");
