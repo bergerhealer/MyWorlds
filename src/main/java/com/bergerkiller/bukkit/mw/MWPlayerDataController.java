@@ -339,7 +339,7 @@ public class MWPlayerDataController extends PlayerDataController {
             playerHandle.setUpdateEffects(true);
 
             // Send add messages for all (new) effects
-            for (Object effect : effects.values()) {
+            for (MobEffectHandle effect : effects.values()) {
                 PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_ADD.newInstance(player.getEntityId(), effect));
             }
 
