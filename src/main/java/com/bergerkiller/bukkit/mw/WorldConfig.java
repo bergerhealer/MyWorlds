@@ -760,7 +760,7 @@ public class WorldConfig extends WorldConfigStore {
             return lower.substring(0, lower.length() - 8);
         }
         if (lower.equals("dim1") || lower.equals("dim-1")) {
-            return "";
+            return "world";
         }
         return lower;
     }
