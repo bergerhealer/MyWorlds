@@ -1,14 +1,22 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntConsumer;
 import java.util.logging.Level;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
+import com.bergerkiller.bukkit.common.chunk.ForcedChunk;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.LoadChunksTask;
+import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
@@ -68,52 +76,72 @@ public class WorldCreate extends Command {
                 final World world = WorldManager.createWorld(worldname, seedval, sender);
                 if (world != null) {
                     //load chunks
-                    final int keepdimension = 15;
+                    final int keepdimension = 11;
                     final int keepedgedim = 2 * keepdimension + 1;
                     final int total = keepedgedim * keepedgedim;
-                    int current = 0;
+
+                    // Callback called every time a new chunk is loaded (or fails to load-)
+                    // Show a progress message every so often
+                    final AtomicInteger lastPercentage = new AtomicInteger(-10);
+                    final IntConsumer onChunkLoaded = loadedCount -> {
+                        int percent = (loadedCount==total) ? 100 : (100 * loadedCount / total);
+                        if ((percent - lastPercentage.get()) == 10) {
+                            lastPercentage.set(percent);
+                            message(ChatColor.YELLOW + "Preparing spawn area (" + percent + "%)...");
+                            plugin.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
+                        }
+                    };
+                    onChunkLoaded.accept(0); // Initial
+
+                    // Start loading all the spawn chunks asynchronously
+                    // Every time a new chunk is loaded, increment a counter
                     int spawnx = world.getSpawnLocation().getBlockX() >> 4;
                     int spawnz = world.getSpawnLocation().getBlockZ() >> 4;
+                    final List<ForcedChunk> forcedChunks = new ArrayList<ForcedChunk>();
+                    final AtomicInteger chunkCtr = new AtomicInteger();
                     for (int x = -keepdimension; x <= keepdimension; x++) {
                         for (int z = -keepdimension; z <= keepdimension; z++) {
-                            // Spam messages every 64 chunks
-                            boolean first = (current & 63) == 0x0;
                             int cx = spawnx + x;
                             int cz = spawnz + z;
-                            Runnable t = null;
-                            if (first || (current + 2) == total) {
-                                final int percent = first ? (100 * current / total) : 100;
-                                t = new Runnable() {
-                                    public void run() {
-                                        message(ChatColor.YELLOW + "Preparing spawn area (" + percent + "%)...");
-                                        plugin.log(Level.INFO, "Preparing spawn area (" + percent + "%)...");
-                                    }
-                                };
-                                first = false;
-                            }
-                            if (++current == total) {
-                                t = new Runnable() {
-                                    public void run() {
-                                        WorldConfig wc = WorldConfig.get(world);
-
-                                        // Set to True, any mistakes in loading chunks will be corrected here
-                                        world.setKeepSpawnInMemory(true);
-
-                                        // Fix up the spawn location
-                                        wc.fixSpawnLocation();
-
-                                        // Call onLoad (it was ignored while initing to avoid chunk loads when finding spawn)
-                                        wc.onWorldLoad(world);
-
-                                        // Confirmation message
-                                        message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
-                                        plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
-                                    }
-                                };
-                            }
-                            LoadChunksTask.add(world, cx, cz, t);
+                            ForcedChunk chunk = WorldUtil.forceChunkLoaded(world, cx, cz);
+                            chunk.getChunkAsync().whenComplete((a, t) -> {
+                                onChunkLoaded.accept(chunkCtr.incrementAndGet());
+                            });
+                            forcedChunks.add(chunk);
                         }
                     }
+
+                    // Run this once loading of spawn completes
+                    CompletableFuture.allOf(forcedChunks.stream()
+                        .map(ForcedChunk::getChunkAsync)
+                        .toArray(CompletableFuture[]::new))
+                        .whenComplete((v, error) -> {
+                            // If something went wrong, log it and show a message
+                            // Still do the post-load logic, because that stuff must run anyway
+                            if (error != null) {
+                                MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to load some spawn chunks of " + world.getName(), error);
+                                message(ChatColor.RED + "Failed to fully load spawn area of '" + world.getName() + "': " + error.getMessage());
+                            }
+
+                            WorldConfig loaded_wc = WorldConfig.get(world);
+
+                            // Set to True, any mistakes in loading chunks will be corrected here
+                            world.setKeepSpawnInMemory(true);
+
+                            // Fix up the spawn location
+                            loaded_wc.fixSpawnLocation();
+
+                            // Call onLoad (it was ignored while initing to avoid chunk loads when finding spawn)
+                            loaded_wc.onWorldLoad(world);
+
+                            // It's now safe to release the chunks
+                            forcedChunks.forEach(ForcedChunk::close);
+                            forcedChunks.clear();
+
+                            // Confirmation message
+                            message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
+                            plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
+                        });
                 }
             } else {
                 message(ChatColor.RED + "World already exists!");
