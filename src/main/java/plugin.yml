@@ -1,13 +1,18 @@
 name: My_Worlds
-main: com.bergerkiller.bukkit.mw.MyWorlds
 version: ${project.version}
 build: ${project.build.number}
 api-version: 1.13
 authors: [KamikazePlatypus, mg_1999, Friwi, bergerkiller, lenis0012, timstans, bubba1234119]
-softdepend: [Spout, Multiverse-Core, SuperiorSkyblock2]
-depend: [BKCommonLib]
+softdepend: [BKCommonLib, Multiverse-Core, SuperiorSkyblock2]
 loadbefore: [MobArena, RegionForSale, CreativeGates, HeroStronghold]
 metrics: true
+
+main: com.bergerkiller.bukkit.mw.Preloader
+preloader:
+    main: com.bergerkiller.bukkit.mw.MyWorlds
+    depend:
+        BKCommonLib: https://www.spigotmc.org/resources/bkcommonlib.39590/
+
 commands:
     world:
         description: Commands to manage your worlds
