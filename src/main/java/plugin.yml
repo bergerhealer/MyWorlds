@@ -10,6 +10,7 @@ metrics: true
 main: com.bergerkiller.bukkit.mw.Preloader
 preloader:
     main: com.bergerkiller.bukkit.mw.MyWorlds
+    hastebinServer: https://paste.traincarts.net
     depend:
         BKCommonLib: https://www.spigotmc.org/resources/bkcommonlib.39590/
 
