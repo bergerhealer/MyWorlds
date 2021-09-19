@@ -371,7 +371,14 @@ public class WorldManager {
             if (chunkGeneratorName != null) {
                 cgen = getGenerator(worldname, chunkGeneratorName);
             }
-        } catch (Exception ex) {}
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to initialize generator " + chunkGeneratorName, t);
+            if (sender != null) {
+                sender.sendMessage(ChatColor.RED + "Failed to initialize generator " + chunkGeneratorName + ": " +
+                        t.getMessage());
+            }
+            return null;
+        }
         if (cgen == null) {
             if (chunkGeneratorName != null && chunkGeneratorName.indexOf(':') != 0) {
                 msg.setLength(0);
