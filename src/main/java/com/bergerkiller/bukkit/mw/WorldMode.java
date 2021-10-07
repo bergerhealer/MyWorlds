@@ -30,7 +30,9 @@ public class WorldMode {
         for (Environment env : Environment.values()) {
             // Add constants for all worldtypes
             for (WorldType type : WorldType.values()) {
-                modes.add(new WorldMode(env, type));
+                if (type != null) {
+                    modes.add(new WorldMode(env, type));
+                }
             }
             if (LogicUtil.contains(env, Environment.NORMAL, Environment.NETHER, Environment.THE_END)) {
                 continue;
