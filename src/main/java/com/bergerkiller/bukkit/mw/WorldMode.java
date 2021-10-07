@@ -31,7 +31,7 @@ public class WorldMode {
             // Add constants for all worldtypes
             for (WorldType type : WorldType.values()) {
                 if (type != null) {
-                    modes.add(new WorldMode(env, type));
+                    modes.add(new WorldMode(env, type, calcName(env, type)));
                 }
             }
             if (LogicUtil.contains(env, Environment.NORMAL, Environment.NETHER, Environment.THE_END)) {
@@ -47,18 +47,20 @@ public class WorldMode {
         values = modes.toArray(new WorldMode[0]);
     }
 
-    private WorldMode(Environment env, WorldType wtype) {
-        this.env = env;
-        this.wtype = wtype;
+    private static String calcName(Environment env, WorldType type) {
         StringBuilder nameBuilder = new StringBuilder(20);
         nameBuilder.append(env.toString());
         nameBuilder.append("_");
-        if (wtype == WorldType.LARGE_BIOMES) {
+        if (type == WorldType.LARGE_BIOMES) {
             nameBuilder.append("largebiomes");
+        } else if (type.toString() != null) {
+            nameBuilder.append(type.toString());
+        } else if (type.name() != null) {
+            nameBuilder.append(type.name());
         } else {
-            nameBuilder.append(wtype.toString());
+            nameBuilder.append("unknown$" + System.identityHashCode(type)); // Weird!
         }
-        this.name = nameBuilder.toString().toLowerCase(Locale.ENGLISH);
+        return nameBuilder.toString().toLowerCase(Locale.ENGLISH);
     }
 
     private WorldMode(Environment env, WorldType wtype, String name) {
@@ -138,7 +140,8 @@ public class WorldMode {
                 return mode;
             }
         }
-        return new WorldMode(environment, worldType);
+        String name = calcName(environment, worldType);
+        return new WorldMode(environment, worldType, name);
     }
 
     public static WorldMode get(World world) {
