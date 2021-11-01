@@ -1,3 +1,28 @@
+/*
+ * Feel free to use in this in your own plugin, I do not care.
+ * For those that do care:
+ *
+ * MIT License
+ * Copyright (c) 2021 Irmo van den Berge
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.bergerkiller.bukkit.mw;
 
 import java.io.IOException;
@@ -36,18 +61,21 @@ import com.google.common.collect.ImmutableList;
 /**
  * A simple class that uses the 'preloader' section in the plugin.yml
  * to load the actual plugin. If dependencies declared in this section
- * are not available or other errors occur, the plugin isn't loaded.
- *
+ * are not available or other errors occur, the plugin isn't loaded.<br>
+ * <br>
  * If the plugin couldn't be loaded, a message is sent to operators when
- * they join the server, as well as when executing the plugin's command.
- *
+ * they join the server, as well as when executing the plugin's command.<br>
+ * <br>
  * In case commands are registered inside onEnable() rather than as part
  * of plugin.yml, commands can be declared inside the preloader section.
- * These will be registered if the plugin could not be loaded.
+ * These will be registered if the plugin could not be loaded.<br>
+ * <br>
+ * Unlike the normal Bukkit PluginLoader, if the
+ * {@link JavaPlugin#onLoad() plugin's onLoad()} throws, the plugin is not
+ * enabled and the load error is made available to operators.
  *
- * @author Irmo van den Berge (bergerkiller) - Feel free to use in this
- *         in your own plugin, I do not care.
- * @version 1.3
+ * @author Irmo van den Berge (bergerkiller)
+ * @version 1.4
  */
 public class Preloader extends JavaPlugin {
     private final String mainClassName;
@@ -98,7 +126,7 @@ public class Preloader extends JavaPlugin {
     }
 
     @Override
-    @SuppressWarnings({ "deprecation", "unchecked" })
+    @SuppressWarnings({"deprecation"})
     public void onLoad() {
         // Verify all the hard depend plugins are available
         missingDepends.clear();
@@ -162,48 +190,19 @@ public class Preloader extends JavaPlugin {
             return;
         }
 
-        // Normally done inside PluginClassLoader constructor, so do it now
-        setLoaderPluginField(mainPlugin, pluginName);
-
-        // Initialization successful! Now replace the plugin instance in all other places
-        // It's absolutely important we replace it EVERYWHERE or things will probably break!
-        PluginManager manager = this.getServer().getPluginManager();
-        try {
-            // private final List<Plugin> plugins
-            {
-                Field pluginsField = manager.getClass().getDeclaredField("plugins");
-                pluginsField.setAccessible(true);
-                List<Object> plugins = (List<Object>) pluginsField.get(manager);
-                int index = plugins.indexOf(this);
-                if (index == -1) {
-                    throw new IllegalStateException("Preloader does not exist in plugins list");
-                }
-                plugins.set(index, mainPlugin);
-            }
-
-            // private final Map<String, Plugin> lookupNames
-            {
-                Field lookupNamesField = manager.getClass().getDeclaredField("lookupNames");
-                lookupNamesField.setAccessible(true);
-                Map<Object, Object> lookupNames = (Map<Object, Object>) lookupNamesField.get(manager);
-                boolean found = false;
-                for (Map.Entry<Object, Object> e : lookupNames.entrySet()) {
-                    if (e.getValue() == this) {
-                        e.setValue(mainPlugin);
-                        found = true;
-                    }
-                }
-                if (!found) {
-                    throw new IllegalStateException("Preloader does not exist in lookupNames mapping");
-                }
-            }
-        } catch (Throwable t) {
-            throw new IllegalStateException("Failed to load plugin into the server", t);
-        }
+        // Normally done inside PluginClassLoader constructor, so fix up everything now
+        swapPluginFieldEverywhere(this, mainPlugin, pluginName);
 
         // Re-initialize the PluginClassLoader with the new main plugin
         // Call onLoad - if this fails, it's as if onLoad failed of the plugin itself
-        mainPlugin.onLoad();
+        try {
+            mainPlugin.onLoad();
+        } catch (Throwable t) {
+            this.getLogger().log(Level.SEVERE, "An error occurred during onLoad()", t);
+            this.loadError = "Failed to load the plugin - check server log!";
+            this.swapPluginFieldEverywhere(mainPlugin, this, pluginName); // Undo registration, otherwise state is corrupted
+            return;
+        }
     }
 
     @Override
@@ -275,6 +274,48 @@ public class Preloader extends JavaPlugin {
                 sender.sendMessage(ChatColor.RED + "  ======== " + depend.name + " ========");
                 sender.sendMessage(ChatColor.RED + "  > " + ChatColor.WHITE + ChatColor.UNDERLINE + depend.url);
             }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void swapPluginFieldEverywhere(JavaPlugin old_plugin, JavaPlugin plugin, String pluginName) {
+        // Plugin ClassLoader itself
+        setLoaderPluginField(plugin, pluginName);
+
+        // Now replace the plugin instance in all other places
+        // It's absolutely important we replace it EVERYWHERE or things will probably break!
+        PluginManager manager = this.getServer().getPluginManager();
+        try {
+            // private final List<Plugin> plugins
+            {
+                Field pluginsField = manager.getClass().getDeclaredField("plugins");
+                pluginsField.setAccessible(true);
+                List<Object> plugins = (List<Object>) pluginsField.get(manager);
+                int index = plugins.indexOf(old_plugin);
+                if (index == -1) {
+                    throw new IllegalStateException("Preloader does not exist in plugins list");
+                }
+                plugins.set(index, plugin);
+            }
+
+            // private final Map<String, Plugin> lookupNames
+            {
+                Field lookupNamesField = manager.getClass().getDeclaredField("lookupNames");
+                lookupNamesField.setAccessible(true);
+                Map<Object, Object> lookupNames = (Map<Object, Object>) lookupNamesField.get(manager);
+                boolean found = false;
+                for (Map.Entry<Object, Object> e : lookupNames.entrySet()) {
+                    if (e.getValue() == old_plugin) {
+                        e.setValue(plugin);
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    throw new IllegalStateException("Preloader does not exist in lookupNames mapping");
+                }
+            }
+        } catch (Throwable t) {
+            this.getLogger().log(Level.SEVERE, "[Preloader] Failed to fully register the plugin into the server", t);
         }
     }
 
