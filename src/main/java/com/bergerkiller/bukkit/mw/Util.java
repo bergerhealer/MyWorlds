@@ -1,11 +1,18 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
+import java.util.Iterator;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.command.BlockCommandSender;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MaterialTypeProperty;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
@@ -150,5 +157,58 @@ public class Util {
         } else {
             return file.length();
         }
+    }
+
+    /**
+     * Parses a player name command argument. If @p is used, resolves to the player closest
+     * to the executing sender, or if the sender is a Player, returns the sender.
+     *
+     * @param sender
+     * @param playerName
+     * @return Player, or null if not found
+     */
+    public static Player parsePlayerName(CommandSender sender, String playerName) {
+        if (playerName.equals("@p")) {
+            if (sender instanceof Player) {
+                return (Player) sender;
+            }
+
+            Location location;
+            if (sender instanceof BlockCommandSender) {
+                location = ((BlockCommandSender) sender).getBlock().getLocation();
+                location.setX(location.getBlockX() + 0.5);
+                location.setY(location.getBlockY() + 0.5);
+                location.setZ(location.getBlockZ() + 0.5);
+            } else if (sender instanceof Entity) {
+                location = ((Entity) sender).getLocation();
+            } else {
+                sender.sendMessage(ChatColor.RED + "Command with @p must be done as Player or CommandBlock");
+                return null;
+            }
+
+            Iterator<Player> iter = location.getWorld().getPlayers().iterator();
+            if (!iter.hasNext()) {
+                sender.sendMessage(ChatColor.RED + "No players on this world");
+                return null;
+            }
+
+            Player bestPlayer = iter.next();
+            double bestDistSq = bestPlayer.getLocation().distanceSquared(location);
+            while (iter.hasNext()) {
+                Player p = iter.next();
+                double distSq = p.getLocation().distanceSquared(location);
+                if (distSq < bestDistSq) {
+                    bestDistSq = distSq;
+                    bestPlayer = p;
+                }
+            }
+            return bestPlayer;
+        }
+
+        Player p = Bukkit.getPlayer(playerName);
+        if (p == null) {
+            sender.sendMessage(ChatColor.RED + "Player '" + playerName + "' is not online!");
+        }
+        return p;
     }
 }

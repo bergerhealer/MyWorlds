@@ -14,6 +14,7 @@ import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.PortalStore;
+import com.bergerkiller.bukkit.mw.Util;
 import com.bergerkiller.bukkit.mw.WorldManager;
 import com.bergerkiller.bukkit.mw.commands.registry.RegisteredCommand;
 
@@ -63,10 +64,8 @@ public class TeleportPortal extends Command {
             if (args.length > 1) {
                 HashSet<Player> found = new HashSet<Player>();
                 for (int i = 0; i < args.length - 1; i++) {
-                    Player player = Bukkit.getServer().getPlayer(args[i]);
-                    if (player == null) {
-                        message(ChatColor.RED + "Player '" + args[i] + "' has not been found!");
-                    } else {
+                    Player player = Util.parsePlayerName(this.sender, args[i]);
+                    if (player != null) {
                         found.add(player);
                     }
                 }
