@@ -4,7 +4,7 @@
 
   <groupId>com.bergerkiller.bukkit</groupId>
   <artifactId>MyWorlds</artifactId>
-  <version>1.17.1-v2</version>
+  <version>1.18.1-v1</version>
   <packaging>jar</packaging>
 
   <name>MyWorlds</name>
@@ -14,7 +14,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.number>NO-CI</project.build.number>
     <project.serverversion>1.16.1-R0.1</project.serverversion>
-    <project.bkcversion>1.17.1-v1</project.bkcversion>
+    <project.bkcversion>1.18-v1-SNAPSHOT</project.bkcversion>
+    <project.preloaderversion>1.5</project.preloaderversion>
     <project.cibuild/>
   </properties>
 
@@ -71,6 +72,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.bergerkiller.bukkit.preloader</groupId>
+      <artifactId>PluginPreloader</artifactId>
+      <version>${project.preloaderversion}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>com.onarandombox</groupId>
       <artifactId>MultiverseCore</artifactId>
       <version>2.5</version>
@@ -105,6 +112,35 @@
 
     <!-- Plugins -->
     <plugins>
+      <!-- Relocates references to the Cloud command framework to where they are in BKCommonLib -->
+      <!-- Shades dependencies into a final jar -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.3</version>
+        <configuration>
+          <createDependencyReducedPom>false</createDependencyReducedPom>
+          <relocations>
+            <relocation>
+              <pattern>com.bergerkiller.bukkit.preloader</pattern>
+              <shadedPattern>com.bergerkiller.bukkit.mw</shadedPattern>
+            </relocation>
+          </relocations>
+          <artifactSet>
+            <includes>
+              <include>com.bergerkiller.bukkit.preloader</include>
+            </includes>
+          </artifactSet>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 
       <!-- Copy the produced target to the static directory with just a base name -->
       <plugin>
