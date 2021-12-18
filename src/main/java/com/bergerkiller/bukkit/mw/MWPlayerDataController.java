@@ -270,11 +270,17 @@ public class MWPlayerDataController extends PlayerDataController {
      * @param player to set the states for
      */
     public static void refreshState(Player player) {
+        // If player has the 'keep inventory' perm, don't change anything about the inventory
+        if (Permission.GENERAL_KEEPINV.has(player)) {
+            return;
+        }
+
+        // If inventory logic not enabled, only do the post-load logic (clear inventory rule)
         if (!MyWorlds.useWorldInventories) {
-            // If not enabled, only do the post-load logic
             postLoad(player);
             return;
         }
+
         try {
             final PlayerFileCollection files = new PlayerFileCollection(player, player.getWorld());
             final CommonTagCompound playerData = files.currentFile.read();
