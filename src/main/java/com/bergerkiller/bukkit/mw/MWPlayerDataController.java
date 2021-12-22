@@ -271,7 +271,7 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     public static void refreshState(Player player) {
         // If player has the 'keep inventory' perm, don't change anything about the inventory
-        if (Permission.GENERAL_KEEPINV.has(player)) {
+        if (MyWorlds.keepInventoryPermissionEnabled && Permission.GENERAL_KEEPINV.has(player)) {
             return;
         }
 

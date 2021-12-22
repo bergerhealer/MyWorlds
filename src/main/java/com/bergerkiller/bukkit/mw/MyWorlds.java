@@ -54,6 +54,7 @@ public class MyWorlds extends PluginBase {
     public static boolean ignoreEggSpawns;
     public static boolean debugLogGMChanges;
     public static boolean portalToLastPosition;
+    public static boolean keepInventoryPermissionEnabled;
 
     // Portals
     public static boolean waterPortalEnabled;
@@ -175,6 +176,10 @@ public class MyWorlds extends PluginBase {
         useWorldBuildPermissions = config.get("useWorldBuildPermissions", false);
         useWorldUsePermissions = config.get("useWorldUsePermissions", false);
         useWorldChatPermissions = config.get("useWorldChatPermissions", false);
+
+        config.setHeader("keepInventoryPermissionEnabled", "\nWhether players with the myworlds.world.keepinventory permission keep their inventory");
+        config.addHeader("keepInventoryPermissionEnabled", "unchanged when they teleport between worlds. This disables world inventory splitting logic for them.");
+        keepInventoryPermissionEnabled = config.get("keepInventoryPermissionEnabled", false);
 
         config.setHeader("onlyPlayerTeleportation", "\nWhether only players are allowed to teleport through portals");
         onlyPlayerTeleportation = config.get("onlyPlayerTeleportation", true);
