@@ -50,8 +50,15 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
         // This uses *8 rules for nether world vs other worlds
         double factor = getCoordinateScale(portalBlock.getWorld()) / getCoordinateScale(world);
 
+        // Default radius to look for portals, server configuration
+        double baseSearch = 128.0;
+        if (Common.hasCapability("Common:WorldUtil:getDefaultNetherPortalSearchRadius")) {
+            baseSearch = getNetherPortalSearchRadius(world);
+        }
+        baseSearch /= 8.0; // We included a *8 in the coordinate scaling factor up above, MC doesn't
+
         // Turn factor into a search radius
-        int searchRadius = (int) (Math.max(1.0, factor) * 16.0);
+        int searchRadius = (int) (Math.max(1.0, factor) * baseSearch);
         Block searchStartBlock = world.getBlockAt(MathUtil.floor(portalBlock.getX() * factor),
                                                   portalBlock.getY(),
                                                   MathUtil.floor(portalBlock.getZ() * factor));
@@ -139,6 +146,12 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
             // Perform the teleportation woo
             scheduleTeleportation(locToTeleportTo, velocityAfterTeleport);
         }
+    }
+
+    // Just to avoid nonsense, it is in its own method, as it does not always exist
+    // Can be removed when BKCommonLib 1.18.1-v2 or newer is a hard dep
+    private static int getNetherPortalSearchRadius(World world) {
+        return WorldUtil.getNetherPortalSearchRadius(world);
     }
 
     /**
