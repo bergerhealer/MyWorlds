@@ -112,26 +112,29 @@ public class Util {
         location = location.clone();
 
         Block block = location.getBlock();
-        boolean suitable = !WorldUtil.getBlockData(block).isSuffocating(block);
+        AxisAlignedBBHandle blockBB = WorldUtil.getBlockData(block).getBoundingBox(block);
         for (int n = 0; n < 20; n++) {
             Block above = block.getRelative(BlockFace.UP);
-            boolean aboveSuitable = !WorldUtil.getBlockData(above).isSuffocating(above);
-            if (suitable && aboveSuitable) {
-                AxisAlignedBBHandle bb = WorldUtil.getBlockData(block).getBoundingBox(block);
-                location = location.clone();
-                location.setY((double) block.getY());
-                if (bb != null) {
-                    location.setY(location.getY() + bb.getMaxY());
-                }
+            AxisAlignedBBHandle aboveBB = WorldUtil.getBlockData(above).getBoundingBox(above);
+            double floorY = block.getY();
+            double ceilY = floorY + 2.0;
 
+            // Adjust with bounding boxes, if they exist
+            if (blockBB != null) {
+                floorY += blockBB.getMaxY();
+            }
+            if (aboveBB != null) {
+                ceilY = above.getY() + aboveBB.getMinY();
+            }
+            if ((ceilY - floorY) >= 1.7) {
                 // Add a very small amount of offset so the player stands on top, for sure
-                location.setY(location.getY() + 0.001);
+                location.setY(floorY + 0.001);
                 return location;
             }
 
             // Shift
             block = above;
-            suitable = aboveSuitable;
+            blockBB = aboveBB;
         }
 
         // Failure. Just teleport to sign blindly, with small offset.
