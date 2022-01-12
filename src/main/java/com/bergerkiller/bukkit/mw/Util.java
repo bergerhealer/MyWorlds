@@ -18,6 +18,7 @@ import com.bergerkiller.bukkit.common.MaterialTypeProperty;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
+import com.bergerkiller.generated.net.minecraft.world.phys.AxisAlignedBBHandle;
 
 public class Util {
     public static final MaterialTypeProperty IS_END_PORTAL = new MaterialTypeProperty("END_PORTAL", "LEGACY_ENDER_PORTAL");
@@ -96,7 +97,8 @@ public class Util {
     }
 
     /**
-     * Adds the spawn offset to a given Location
+     * Adjusts a Location position upwards until it is a safe spot for a Player to
+     * be teleported/spawned at.
      * 
      * @param location to add to, can be null
      * @return Location with the spawn offset
@@ -105,7 +107,36 @@ public class Util {
         if (location == null) {
             return null;
         }
-        return location.clone().add(0.5, 2, 0.5);
+
+        // Safe copy
+        location = location.clone();
+
+        Block block = location.getBlock();
+        boolean suitable = !WorldUtil.getBlockData(block).isSuffocating(block);
+        for (int n = 0; n < 20; n++) {
+            Block above = block.getRelative(BlockFace.UP);
+            boolean aboveSuitable = !WorldUtil.getBlockData(above).isSuffocating(above);
+            if (suitable && aboveSuitable) {
+                AxisAlignedBBHandle bb = WorldUtil.getBlockData(block).getBoundingBox(block);
+                location = location.clone();
+                location.setY((double) block.getY());
+                if (bb != null) {
+                    location.setY(location.getY() + bb.getMaxY());
+                }
+
+                // Add a very small amount of offset so the player stands on top, for sure
+                location.setY(location.getY() + 0.001);
+                return location;
+            }
+
+            // Shift
+            block = above;
+            suitable = aboveSuitable;
+        }
+
+        // Failure. Just teleport to sign blindly, with small offset.
+        location.setY(location.getY() + 0.01);
+        return location;
     }
 
     /**

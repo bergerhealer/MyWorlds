@@ -261,6 +261,8 @@ public class Portal extends PortalStore {
             }
             // Set portal locatiol using sign location and orientation
             p.location = signblock.getLocation();
+            p.location.setX(p.location.getBlockX() + 0.5);
+            p.location.setZ(p.location.getBlockZ() + 0.5);
 
             float yaw = 0;
             MaterialData data = BlockUtil.getData(signblock);

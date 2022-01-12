@@ -181,6 +181,8 @@ public class PortalSignList {
                         String name = args[0];
                         try {
                             Position pos = new Position(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
+                            pos.setX(pos.getBlockX() + 0.5);
+                            pos.setZ(pos.getBlockZ() + 0.5);
                             this.storePortal(name, pos);
                         } catch (Exception ex) {
                             MyWorlds.plugin.log(Level.SEVERE, "Failed to load portal: " + name);

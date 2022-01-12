@@ -214,7 +214,7 @@ public class MWListener implements Listener {
 
         // If the destination leads to a portal sign, let the portal sign deal with it
         {
-            Location portalLocation = Portal.getPortalLocation(destination.getName(), portalBlock.getWorld().getName());
+            Location portalLocation = PortalStore.getPortalLocation(destination.getName(), portalBlock.getWorld().getName(), true);
             if (portalLocation != null) {
                 // Debounce
                 if (!plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
@@ -230,12 +230,6 @@ public class MWListener implements Listener {
                     }
                     MWListenerPost.setLastEntered((Player) entity, display);
                 }
-
-                // Fix position to be the middle of the block, 1 above
-                portalLocation = portalLocation.clone();
-                portalLocation.setX((double) portalLocation.getBlockX() + 0.5);
-                portalLocation.setY(portalLocation.getY() + 1.0);
-                portalLocation.setZ((double) portalLocation.getBlockZ() + 0.5);
 
                 // Handle perms up-front
                 if (!Portal.canTeleportEntityTo(entity, portalLocation)) {

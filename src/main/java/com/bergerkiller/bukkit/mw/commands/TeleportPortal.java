@@ -42,10 +42,10 @@ public class TeleportPortal extends Command {
             return false;
         }
 
-        // is this a portal that is specified
-        Location tele = Portal.getPortalLocation(args[0], player.getWorld().getName(), true);
-        if (tele != null) {
-            Portal portal = Portal.getNear(tele, 3);
+        // Find the Location of the portal sign
+        Location signLocation = Portal.getPortalLocation(args[0], player.getWorld().getName());
+        if (signLocation != null) {
+            Portal portal = Portal.getNear(signLocation, 3);
             if (portal == null) {
                 return false;
             }
@@ -83,9 +83,9 @@ public class TeleportPortal extends Command {
                 World world = targets[0].getWorld();
                 if (player != null) world = player.getWorld();
                 //Get portal
-                Location tele = Portal.getPortalLocation(dest, world.getName(), true);
-                if (tele != null) {
-                    Portal portal = Portal.getNear(tele, 3);
+                Location signLocation = Portal.getPortalLocation(dest, world.getName());
+                if (signLocation != null) {
+                    Portal portal = Portal.getNear(signLocation, 3);
                     if (portal != null) {
                         //Perform portal teleports
                         int succcount = 0;
