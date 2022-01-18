@@ -19,7 +19,13 @@ public class MyWorldsCommands {
         this.plugin = plugin;
     }
 
+    private String trimPluginPrefix(String cmdLabel) {
+        return cmdLabel.startsWith("my_worlds:") ? cmdLabel.substring(10) : cmdLabel;
+    }
+
     public void execute(CommandSender sender, String cmdLabel, String[] args) {
+        cmdLabel = trimPluginPrefix(cmdLabel);
+
         //generate a node from this command
         RegisteredCommand registeredCommand = null;
         if (CMD_WORLD_REGISTRY.isWorldCommand(cmdLabel) && args.length >= 1) {
@@ -46,6 +52,8 @@ public class MyWorldsCommands {
     }
 
     public List<String> autocomplete(CommandSender sender, String cmdLabel, String[] args) {
+        cmdLabel = trimPluginPrefix(cmdLabel);
+
         RegisteredCommand registeredCommand = null;
         if (CMD_WORLD_REGISTRY.isWorldCommand(cmdLabel)) {
             if (args.length <= 1) {
