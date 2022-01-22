@@ -84,7 +84,7 @@ public class WorldSetDefaultPortal extends Command {
                     String new_destination = args[0];
 
                     // Verify the destination name is valid
-                    if (Portal.getPortalLocation(new_destination, null) == null && WorldManager.matchWorld(new_destination) == null) {
+                    if (!new_destination.isEmpty() && Portal.getPortalLocation(new_destination, null) == null && WorldManager.matchWorld(new_destination) == null) {
                         message(ChatColor.RED + "Destination '"  + new_destination + "' is not a valid world or portal!");
                         return;
                     }
@@ -92,7 +92,7 @@ public class WorldSetDefaultPortal extends Command {
                     // Update destination. Detect other properties based on destination if previously none was configured.
                     if (dest == null) {
                         dest = new PortalDestination();
-                        if (Portal.getPortalLocation(new_destination, null) != null) {
+                        if (new_destination.isEmpty() || Portal.getPortalLocation(new_destination, null) != null) {
                             dest.setMode(PortalMode.DEFAULT);
                         } else {
                             World world = WorldManager.getWorld(WorldManager.matchWorld(new_destination));
@@ -135,8 +135,12 @@ public class WorldSetDefaultPortal extends Command {
                     // Update destination
                     dest.setName(new_destination);
 
-                    message(ChatColor.GREEN + "Destination set to: '" + ChatColor.WHITE + "'" +
-                            new_destination + "'");
+                    if (new_destination.isEmpty()) {
+                        message(ChatColor.GREEN + "Destination " + ChatColor.RED + "cleared");
+                    } else {
+                        message(ChatColor.GREEN + "Destination set to: '" + ChatColor.WHITE + "'" +
+                                new_destination + "'");
+                    }
                 } else {
                     message(ChatColor.YELLOW + "Destination is currently set to: " + ChatColor.WHITE + "'" +
                             ((dest==null?"None":dest.getName()) + "'"));
