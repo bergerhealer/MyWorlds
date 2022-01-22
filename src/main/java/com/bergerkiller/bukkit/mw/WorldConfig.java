@@ -21,6 +21,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
@@ -813,7 +814,16 @@ public class WorldConfig extends WorldConfigStore {
      * @return Data File
      */
     public File getDataFile() {
-        return new File(getWorldFolder(), "level.dat");
+        if (Common.hasCapability("Common:WorldUtil:getWorldLevelFile")) {
+            return getDataFileUsingBKCLAPI();
+        } else {
+            // Note: not correct for forge servers
+            return new File(getWorldFolder(), "level.dat");
+        }
+    }
+
+    private File getDataFileUsingBKCLAPI() {
+        return WorldUtil.getWorldLevelFile(this.worldname);
     }
 
     /**
