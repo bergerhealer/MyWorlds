@@ -10,6 +10,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
@@ -25,6 +26,7 @@ import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationCooldown;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
+import com.bergerkiller.bukkit.common.Task;
 
 public class MyWorlds extends PluginBase {
     private static final String MULTIVERSE_NAME = "Multiverse-Core";
@@ -73,6 +75,7 @@ public class MyWorlds extends PluginBase {
     private final PlayerRespawnHandler endRespawnHandler = new PlayerRespawnHandler(this);
     private final AdvancementManager advancementManager = AdvancementManager.create(this);
     private final PortalSignList portalSignList = new PortalSignList(this);
+    private final AutoSaveTask autoSaveTask = new AutoSaveTask(this);
     public static MyWorlds plugin;
 
     public PortalSignList getPortalSignList() {
@@ -279,6 +282,9 @@ public class MyWorlds extends PluginBase {
         // Player data controller
         dataController = new MWPlayerDataController();
         dataController.assign();
+
+        // Auto-save every 15 minutes
+        autoSaveTask.start(15*60*20, 15*60*20);
     }
 
     @Override
@@ -291,6 +297,9 @@ public class MyWorlds extends PluginBase {
         portalTeleportationCooldown.disable();
         entityStasisHandler.disable();
         endRespawnHandler.disable();
+
+        // Stop auto-saving
+        autoSaveTask.stop();
 
         // World inventories
         WorldInventory.save();
@@ -379,5 +388,17 @@ public class MyWorlds extends PluginBase {
             }
         }
         return WorldUtil.getWorlds().iterator().next();
+    }
+
+    private static class AutoSaveTask extends Task {
+
+        public AutoSaveTask(JavaPlugin plugin) {
+            super(plugin);
+        }
+
+        @Override
+        public void run() {
+            WorldConfigStore.saveAll();
+        }
     }
 }

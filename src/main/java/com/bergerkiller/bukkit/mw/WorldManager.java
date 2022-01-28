@@ -430,6 +430,10 @@ public class WorldManager {
         } else if (i > 0) {
             MyWorlds.plugin.log(Level.INFO, "World creation succeeded after " + i + " retries!");
         }
+
+        // Force a save of world configurations so this persists
+        WorldConfigStore.saveAll();
+
         return w;
     }
 
