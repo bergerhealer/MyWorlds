@@ -5,8 +5,8 @@ import java.util.List;
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.mw.Permission;
-import com.bergerkiller.bukkit.mw.Position;
-import com.bergerkiller.bukkit.mw.WorldManager;
+import com.bergerkiller.bukkit.mw.RespawnPoint;
+import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class WorldSetSpawn extends Command {
 
@@ -20,14 +20,19 @@ public class WorldSetSpawn extends Command {
     }
 
     public void execute() {
-        Position pos = new Position(player.getLocation());
         this.genWorldname(0);
         if (this.handleWorld()) {
-            WorldManager.setSpawn(worldname, pos);
-            if (worldname.equalsIgnoreCase(player.getWorld().getName())) {
-                player.getWorld().setSpawnLocation(pos.getBlockX(), pos.getBlockY(), pos.getBlockZ());
+            WorldConfig config = WorldConfig.get(worldname);
+            if (config.getWorld() == player.getWorld()) {
+                // Set spawn point of this World
+                config.setSpawnLocation(player.getLocation());
+                sender.sendMessage(ChatColor.GREEN + "Spawn location of world '" + worldname + "' set to your position!");
+            } else {
+                // Set a respawn point from that world to the player's Location
+                config.respawnPoint = new RespawnPoint.RespawnPointLocation(player.getLocation());
+                sender.sendMessage(ChatColor.GREEN + "Respawn location for world '" + worldname + "' set to your position!");
+                sender.sendMessage(ChatColor.YELLOW + "Note: You can also use /world respawn [options...]");
             }
-            sender.sendMessage(ChatColor.GREEN + "Spawn location of world '" + worldname + "' set to your position!");
         }
     }
 

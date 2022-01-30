@@ -41,7 +41,8 @@ public class WorldConfig extends WorldConfigStore {
     public WorldMode worldmode = WorldMode.NORMAL;
     private String chunkGeneratorName;
     public Difficulty difficulty = Difficulty.NORMAL;
-    public Position spawnPoint;
+    private Position spawnPoint; // If null, uses the World spawn
+    public RespawnPoint respawnPoint;
     public GameMode gameMode = null;
     public boolean pvp = true;
     public final SpawnControl spawnControl = new SpawnControl();
@@ -55,7 +56,6 @@ public class WorldConfig extends WorldConfigStore {
     public boolean formSnow = true;
     public boolean formIce = true;
     public boolean clearInventory = false;
-    public boolean forcedRespawn = false;
     public boolean rememberLastPlayerPosition = false;
     public boolean bedRespawnEnabled = true;
     public boolean advancementsEnabled = true;
@@ -102,22 +102,16 @@ public class WorldConfig extends WorldConfigStore {
             this.keepSpawnInMemory = world.getKeepSpawnInMemory();
             this.worldmode = WorldMode.get(world);
             this.difficulty = world.getDifficulty();
-            this.spawnPoint = new Position(world.getSpawnLocation());
+            this.spawnPoint = null; // Use the world spawn once it becomes available
+            this.respawnPoint = RespawnPoint.DEFAULT;
             this.pvp = world.getPVP();
             this.autosave = world.isAutoSave();
             this.getChunkGeneratorName();
         } else {
             this.worldmode = WorldMode.get(worldname);
-            this.spawnPoint = new Position(worldname, 0, 128, 0);
+            this.spawnPoint = null; // Use the world spawn once it becomes available
+            this.respawnPoint = RespawnPoint.DEFAULT;
             if (WorldManager.worldExists(this.worldname)) {
-                // Open up the level.dat of the World and read the settings from it
-                CommonTagCompound data = this.getData();
-                if (data != null) {
-                    // Read the settings from it
-                    this.spawnPoint.setX((double) data.getValue("SpawnX", this.spawnPoint.getBlockX()));
-                    this.spawnPoint.setY((double) data.getValue("SpawnY", this.spawnPoint.getBlockY()));
-                    this.spawnPoint.setZ((double) data.getValue("SpawnZ", this.spawnPoint.getBlockZ()));
-                }
                 // Figure out the world mode by inspecting the region files in the world
                 // On failure, it will resort to using the world name to figure it out
                 File regions = this.getRegionFolder();
@@ -189,6 +183,7 @@ public class WorldConfig extends WorldConfigStore {
         this.chunkGeneratorName = config.chunkGeneratorName;
         this.difficulty = config.difficulty;
         this.spawnPoint = config.spawnPoint.clone();
+        this.respawnPoint = config.respawnPoint; // Is immutable
         this.gameMode = config.gameMode;
         this.allowHunger = config.allowHunger;
         this.pvp = config.pvp;
@@ -201,7 +196,6 @@ public class WorldConfig extends WorldConfigStore {
         this.formSnow = config.formSnow;
         this.formIce = config.formIce;
         this.clearInventory = config.clearInventory;
-        this.forcedRespawn = config.forcedRespawn;
         this.bedRespawnEnabled = config.bedRespawnEnabled;
         this.advancementsEnabled = config.advancementsEnabled;
         this.advancementsSilent = config.advancementsSilent;
@@ -218,19 +212,36 @@ public class WorldConfig extends WorldConfigStore {
         this.difficulty = node.get("difficulty", Difficulty.class, this.difficulty);
         this.gameMode = node.get("gamemode", GameMode.class, this.gameMode);
         this.clearInventory = node.get("clearInventory", this.clearInventory);
+
+        // Respawn point
+        if (node.isNode("respawn")) {
+            this.respawnPoint = RespawnPoint.fromConfig(node.getNode("respawn"));
+        } else {
+            this.respawnPoint = RespawnPoint.DEFAULT;
+        }
+
+        // Spawn point of the World. If set to another world, ignore,
+        // and use the Bukkit world spawn info for this instead if available.
         String worldspawn = node.get("spawn.world", String.class);
         if (worldspawn != null) {
             double x = node.get("spawn.x", 0.0);
-            double y = node.get("spawn.y", 64.0);
+            double y = node.get("spawn.y", 128.0);
             double z = node.get("spawn.z", 0.0);
-            double yaw = node.get("spawn.yaw", 0.0);
-            double pitch = node.get("spawn.pitch", 0.0);
-            this.spawnPoint = new Position(worldspawn, x, y, z, (float) yaw, (float) pitch);
+            float yaw = node.get("spawn.yaw", 0.0f);
+            float pitch = node.get("spawn.pitch", 0.0f);
+            if (worldspawn.equals(this.worldname)) {
+                this.spawnPoint = new Position(worldspawn, x, y, z, yaw, pitch);
+            } else {
+                // Mutate respawn point, instead
+                this.respawnPoint = new RespawnPoint.RespawnPointLocation(worldspawn, x, yaw, z, yaw, pitch);
+                // Set spawn point to whatever the World one is set to
+                this.spawnPoint = null;
+            }
         }
+
         this.formIce = node.get("formIce", this.formIce);
         this.formSnow = node.get("formSnow", this.formSnow);
         this.pvp = node.get("pvp", this.pvp);
-        this.forcedRespawn = node.get("forcedRespawn", this.forcedRespawn);
         this.allowHunger = node.get("hunger", this.allowHunger);
         this.rememberLastPlayerPosition = node.get("rememberlastplayerpos", this.rememberLastPlayerPosition);
         this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
@@ -308,7 +319,6 @@ public class WorldConfig extends WorldConfigStore {
         for (EntityType type : this.spawnControl.deniedCreatures) {
             creatures.add(type.name());
         }
-        node.set("forcedRespawn", this.forcedRespawn);
         node.set("rememberlastplayerpos", this.rememberLastPlayerPosition);
         node.set("pvp", this.pvp);
         PortalDestination.toConfig(this.defaultNetherPortal, node, "defaultNetherPortal");
@@ -323,6 +333,7 @@ public class WorldConfig extends WorldConfigStore {
         node.set("bedRespawnEnabled", this.bedRespawnEnabled);
         node.set("advancementsEnabled", this.advancementsEnabled);
         node.set("advancementsSilent", this.advancementsSilent);
+
         if (this.spawnPoint == null) {
             node.remove("spawn");
         } else {
@@ -333,6 +344,94 @@ public class WorldConfig extends WorldConfigStore {
             node.set("spawn.yaw", (double) this.spawnPoint.getYaw());
             node.set("spawn.pitch", (double) this.spawnPoint.getPitch());
         }
+
+        if (this.respawnPoint == RespawnPoint.DEFAULT) {
+            node.remove("respawn");
+        } else {
+            node.set("respawn", this.respawnPoint.toConfig());
+        }
+    }
+
+    /**
+     * Tries to find the spawn point of this World. If the world isn't loaded,
+     * it tries to read the level.dat to find it.
+     *
+     * @return World spawn position
+     */
+    public Position tryFindSpawnPositionOffline() {
+        // If set, return it verbatim
+        if (this.spawnPoint != null) {
+            return this.spawnPoint.clone();
+        }
+
+        // If loaded, try the World spawn
+        World world = this.getWorld();
+        if (world != null) {
+            return new Position(world.getSpawnLocation());
+        }
+
+        // Try to read the level.dat file to find it
+        CommonTagCompound data = getData();
+        if (data != null) {
+            double[] pos = data.getValue("Pos", double[].class);
+            float[] rot = data.getValue("Rotation", float[].class);
+            return new Position(this.worldname, pos[0], pos[1], pos[2], rot[0], rot[1]);
+        }
+
+        // Absolutely NO idea, return a generic position
+        return new Position(this.worldname, 0, 128, 0);
+    }
+
+    /**
+     * Gets the Spawn location set for this world currently. If none is configured yet,
+     * returns what is set by Bukkit.
+     *
+     * @return Spawn location, null if this World isn't loaded
+     */
+    public Location getSpawnLocation() {
+        // If set, turn it into a Location
+        if (this.spawnPoint != null) {
+            return this.spawnPoint.toLocation();
+        }
+
+        World world = this.getWorld();
+        return (world == null) ? null : world.getSpawnLocation();
+    }
+
+    /**
+     * Sets a new spawn point for this World. This is where players are teleported to
+     * when teleporting to this World.
+     *
+     * @param location
+     */
+    public void setSpawnLocation(Location location) {
+        if (location != null && location.getWorld() != this.getWorld()) {
+            throw new IllegalArgumentException("Can not set the spawn point to another world");
+        }
+
+        this.spawnPoint = (location == null) ? null : new Position(location);
+        if (location != null) {
+            location.getWorld().setSpawnLocation(location);
+        }
+    }
+
+    /**
+     * Sets a new spawn point for this World. This is where players are teleported to
+     * when teleporting to this World.
+     *
+     * @param location
+     */
+    public void setSpawnLocation(Position location) {
+        if (location != null && location.getWorldName().equalsIgnoreCase(this.worldname)) {
+            throw new IllegalArgumentException("Can not set the spawn point to another world");
+        }
+        this.spawnPoint = location.clone();
+        if (location != null) {
+            World world = this.getWorld();
+            if (world != null) {
+                world.setSpawnLocation(location.toLocation(world));
+            }
+        }
     }
 
     /**
@@ -340,7 +439,7 @@ public class WorldConfig extends WorldConfigStore {
      * Also updates the spawn position in the world configuration
      */
     public void fixSpawnLocation() {
-        fixSpawnLocation(spawnPoint.getWorld());
+        fixSpawnLocation(this.getWorld());
     }
 
     /**
@@ -350,20 +449,28 @@ public class WorldConfig extends WorldConfigStore {
      * @param world of the spawn point (in case world isn't accessible by name yet)
      */
     public void fixSpawnLocation(World world) {
-        // Obtain the configuration and the set spawn position from it
-        if (world != null) {
-            // Obtain a new safe position to spawn at
-            spawnPoint = new Position(WorldManager.getSafeSpawn(spawnPoint.toLocation(world)));
+        if (world == null) {
+            return; // Can't do anything yet
+        }
 
-            // Apply position to the world if same world
-            if (!isOtherWorldSpawn()) {
-                world.setSpawnLocation(spawnPoint.getBlockX(), spawnPoint.getBlockY(), spawnPoint.getBlockZ());
+        // Get current spawn point location.
+        Location spawnLocation;
+        if (this.spawnPoint != null) {
+            spawnLocation = this.spawnPoint.toLocation(world);
+        } else {
+            spawnLocation = world.getSpawnLocation();
+        }
+
+        // Compute new spawn location
+        Location fixedSpawnLocation = WorldManager.getSafeSpawn(spawnLocation);
+
+        // Apply to the World and our configuration (if it was set)
+        if (fixedSpawnLocation != null) { // Just in case
+            world.setSpawnLocation(fixedSpawnLocation);
+            if (this.spawnPoint != null) {
+                this.spawnPoint = new Position(fixedSpawnLocation);
             }
         }
-    }
-
-    public boolean isOtherWorldSpawn() {
-        return !spawnPoint.getWorldName().equalsIgnoreCase(worldname);
     }
 
     /**
@@ -483,7 +590,8 @@ public class WorldConfig extends WorldConfigStore {
 
     public void onWorldUnload(World world) {
         // If the actual World spawnpoint changed, be sure to update accordingly
-        if (!isOtherWorldSpawn()) {
+        // This is so that if another plugin changes the spawn point, MyWorlds updates too
+        if (this.spawnPoint != null) {
             Location spawn = world.getSpawnLocation();
             if (spawnPoint.getBlockX() != spawn.getBlockX() || spawnPoint.getBlockY() != spawn.getBlockY() 
                     || spawnPoint.getBlockZ() != spawn.getBlockZ()) {
@@ -520,17 +628,17 @@ public class WorldConfig extends WorldConfigStore {
     public void updateAll(World world) {
         // Fix spawn point if needed
         Block spawnPointBlock;
-        if (this.isOtherWorldSpawn()) {
-            spawnPointBlock = this.spawnPoint.getBlock();
+        if (this.spawnPoint != null) {
+            spawnPointBlock = this.spawnPoint.toLocation(world).getBlock();
         } else {
-            spawnPointBlock = this.spawnPoint.getBlock(world);
+            spawnPointBlock = world.getSpawnLocation().getBlock();
         }
-        if (spawnPointBlock != null && BlockUtil.isSuffocating(spawnPointBlock)) {
+        if (BlockUtil.isSuffocating(spawnPointBlock)) {
             this.fixSpawnLocation(spawnPointBlock.getWorld());
         }
 
         // Apply configured spawn point to world
-        if (!isOtherWorldSpawn()) {
+        if (this.spawnPoint != null) {
             world.setSpawnLocation(this.spawnPoint.getBlockX(), this.spawnPoint.getBlockY(), this.spawnPoint.getBlockZ());
         }
 
@@ -742,6 +850,12 @@ public class WorldConfig extends WorldConfigStore {
                 world2.defaultEndPortal.setShowCredits(true);
                 MyWorlds.plugin.log(Level.INFO, "Created end portal (show credits) link from world '" + world2.worldname + "' to '" + world1.worldname + "'!");
             }
+        }
+
+        // By default respawn on the overworld
+        if (world2.respawnPoint == RespawnPoint.DEFAULT) {
+            world2.respawnPoint = new RespawnPoint.RespawnPointWorldSpawn(world1.worldname);
+            MyWorlds.plugin.log(Level.INFO, "Players that die in world '" + world2.worldname + "' will respawn in world '" + world1.worldname + "'!");
         }
     }
 

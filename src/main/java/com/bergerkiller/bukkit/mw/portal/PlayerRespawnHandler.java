@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -20,7 +21,6 @@ import com.bergerkiller.bukkit.common.internal.CommonBootstrap;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.PortalType;
 import com.bergerkiller.bukkit.mw.WorldConfig;
-import com.bergerkiller.bukkit.mw.WorldManager;
 
 /**
  * When players jump into an end portal in the end, the player
@@ -104,18 +104,14 @@ public class PlayerRespawnHandler {
             public void onPlayerRespawn(PlayerRespawnEvent event) {
                 if (isDeathRespawn(event)) {
                     // Update spawn position based on world configuration
-                    org.bukkit.World respawnWorld = event.getPlayer().getWorld();
                     if (MyWorlds.forceMainWorldSpawn) {
                         // Force a respawn on the main world
-                        respawnWorld = MyWorlds.getMainWorld();
-                    } else if (isBedOrAnchorRespawn(event) && !WorldConfig.get(event.getPlayer()).forcedRespawn) {
-                        respawnWorld = null; // Ignore bed spawns that are not overrided
-                    }
-                    if (respawnWorld != null) {
-                        Location loc = WorldManager.getRespawnLocation(respawnWorld);
-                        if (loc != null) {
-                            event.setRespawnLocation(loc);
-                        }
+                        event.setRespawnLocation(WorldConfig.get(MyWorlds.getMainWorld()).getSpawnLocation());
+                    } else if (!isBedOrAnchorRespawn(event) || !WorldConfig.get(event.getPlayer()).bedRespawnEnabled) {
+                        // Respawn at what is set in the world configuration of this World
+                        World fromWorld = event.getPlayer().getWorld();
+                        event.setRespawnLocation(WorldConfig.get(fromWorld).respawnPoint
+                                .get(event.getPlayer(), fromWorld));
                     }
                 } else {
                     // If we have a pending respawn, then the respawn event already has a pre-picked respawn location

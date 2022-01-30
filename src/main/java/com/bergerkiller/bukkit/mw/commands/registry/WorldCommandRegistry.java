@@ -52,7 +52,7 @@ public class WorldCommandRegistry extends CommandRegistry {
         register(WorldFormIce::new, "formice");
         register(TeleportPortal::new, "teleport", "tp");
         register(WorldInventory::new, "inventory", "inv");
-        register(WorldSetForcedRespawn::new, "forcedrespawn", "togglerespawn");
+        register(WorldRespawn::new, "respawn", "setrespawn");
         register(WorldBedRespawn::new, "bedrespawn", "respawnbed", "bedspawn");
         register(WorldSetRememberPlayerPos::new, "rememberlastposition", "rememberlastpos", "setrememberlastpos",
                 "rememberlastplayerpos", "setrememberlastplayerpos", "setrememberlastposition",

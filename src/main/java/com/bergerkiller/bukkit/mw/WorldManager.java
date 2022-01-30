@@ -69,32 +69,14 @@ public class WorldManager {
         setSpawn(forWorld, new Position(destination));
     }
     public static void setSpawn(String forWorld, Position destination) {
-        WorldConfig.get(forWorld).spawnPoint = destination;
-    }
-    public static Position getRespawn(String ofWorld) {
-        return WorldConfig.get(ofWorld).spawnPoint;
-    }
-    public static Location getRespawnLocation(String ofWorld) {
-        Position pos = getRespawn(ofWorld);
-        if (pos != null) {
-            Location loc = pos.toLocation();
-            if (loc.getWorld() != null) {
-                return loc;
-            }
-        }
-        return null;
-    }
-    public static Location getRespawnLocation(World ofWorld) {
-        return getRespawnLocation(ofWorld.getName());
+        WorldConfig.get(forWorld).setSpawnLocation(destination);
     }
 
     /*
      * Gets a possible teleport position on a certain world
      */
     public static Location getSpawnLocation(World onWorld) {
-        Position[] pos = getSpawnPoints(onWorld);
-        if (pos.length > 0) return pos[0].toLocation();
-        return onWorld.getSpawnLocation();
+        return WorldConfig.get(onWorld).getSpawnLocation();
     }
 
     /**
@@ -104,54 +86,7 @@ public class WorldManager {
      * @return Spawn position
      */
     public static Position getSpawnPosition(String onWorldName) {
-        WorldConfig worldC = WorldConfig.get(onWorldName);
-        // Same world spawn
-        if (worldC.spawnPoint.getWorldName().equalsIgnoreCase(onWorldName)) {
-            return worldC.spawnPoint;
-        }
-        // Loop other worlds with a possible spawn point there
-        for (WorldConfig wc : WorldConfig.all()) {
-            if (wc.spawnPoint.getWorldName().equalsIgnoreCase(onWorldName)) {
-                return wc.spawnPoint;
-            }
-        }
-        // No spawn available, request it from the World (if loaded)
-        World world = worldC.getWorld();
-        if (world != null) {
-            return new Position(world.getSpawnLocation());
-        }
-        // Read from level.dat (if available)
-        CommonTagCompound data = worldC.getData();
-        if (data != null) {
-            double[] pos = data.getValue("Pos", double[].class);
-            float[] rot = data.getValue("Rotation", float[].class);
-            return new Position(onWorldName, pos[0], pos[1], pos[2], rot[0], rot[1]);
-        }
-        // Absolutely NO idea, return a generic position
-        return new Position(onWorldName, 0, 64, 0);
-    }
-
-    public static Position[] getSpawnPoints() {
-        Collection<WorldConfig> all = WorldConfig.all();
-        Position[] pos = new Position[all.size()];
-        int i = 0;
-        for (WorldConfig wc : all) {
-            pos[i] = wc.spawnPoint;
-            i++;
-        }
-        return pos;
-    }
-    public static Position[] getSpawnPoints(World onWorld) {
-        return getSpawnPoints(onWorld.getName());
-    }
-    public static Position[] getSpawnPoints(String onWorld) {
-        ArrayList<Position> pos = new ArrayList<Position>();
-        for (Position p : getSpawnPoints()) {
-            if (p.getWorldName().equalsIgnoreCase(onWorld)) {
-                pos.add(p);
-            }
-        }
-        return pos.toArray(new Position[0]);
+        return WorldConfig.get(onWorldName).tryFindSpawnPositionOffline();
     }
 
     /*
@@ -450,13 +385,9 @@ public class WorldManager {
         World world = player.getWorld();
         String[] portalnames;
         if (Permission.COMMAND_SPAWN.has(player) || Permission.COMMAND_TPP.has(player)) {
-            for (Position pos : getSpawnPoints()) {
-                Location loc = pos.toLocation();
-                if (loc.getWorld() == null || loc.getWorld() == world) {
-                    continue;
-                }
-                if (Permission.canEnter(player, loc.getWorld())) {
-                    return loc;
+            for (World loadedWorld : Bukkit.getWorlds()) {
+                if (Permission.canEnter(player, loadedWorld)) {
+                    return WorldConfig.get(loadedWorld).getSpawnLocation();
                 }
             }
             portalnames = Portal.getPortals();
@@ -684,7 +615,6 @@ public class WorldManager {
      * Looks for a suitable place to spawn near the Start Location specified.
      * 
      * @param startLocation
-     * @param allowPortals - whether portals can be designated as a safe spawn
      * @return A safe location to spawn at
      */
     public static Location getSafeSpawn(Location startLocation) {

@@ -13,7 +13,7 @@ import com.bergerkiller.bukkit.mw.WorldConfig;
 public class WorldBedRespawn extends Command {
 
     public WorldBedRespawn() {
-        super(Permission.COMMAND_CHANGE_BEDRESPAWN, "world.bedrespawn");
+        super(Permission.COMMAND_SETSPAWN, "world.bedrespawn");
     }
 
     public void execute() {
@@ -31,12 +31,15 @@ public class WorldBedRespawn extends Command {
                     }
                 }
             }
+
             if (wc.bedRespawnEnabled) {
-                message(ChatColor.GREEN + "Respawning at last slept beds on World: '" + worldname + "' is enabled");
+                message(ChatColor.YELLOW + "Respawning at last slept beds on World: '" + ChatColor.WHITE + worldname +
+                        ChatColor.YELLOW + "' is " + ChatColor.GREEN + "ENABLED");
                 message(ChatColor.GREEN + "Players will respawn at the bed they last slept in, if set");
             } else {
-                message(ChatColor.GREEN + "Respawning at last slept beds on World: '" + worldname + "' is disabled");
-                message(ChatColor.GREEN + "Players will respawn at the world's spawn or home point when dying");
+                message(ChatColor.YELLOW + "Respawning at last slept beds on World: '" + ChatColor.WHITE + worldname +
+                        ChatColor.YELLOW + "' is " + ChatColor.RED + "DISABLED");
+                message(ChatColor.YELLOW + "Players will respawn at the world's spawn or home point when dying");
             }
         }
     }

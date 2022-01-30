@@ -61,11 +61,11 @@ public class WorldInfo extends Command {
                 } else {
                     message(ChatColor.WHITE + "PvP: " + ChatColor.YELLOW + "Disabled");
                 }
-                //Forced respawn
-                if (wc.forcedRespawn) {
-                    message(ChatColor.WHITE + "Forced Respawn: " + ChatColor.GREEN + "Yes, to main spawn point, no bed spawns");
+                //Bed respawn
+                if (wc.bedRespawnEnabled) {
+                    message(ChatColor.WHITE + "Bed Respawn: " + ChatColor.GREEN + "Yes, players respawn at a bed or world anchor they set");
                 } else {
-                    message(ChatColor.WHITE + "Forced Respawn: " + ChatColor.GREEN + "No, allow bed spawns");
+                    message(ChatColor.WHITE + "Bed Respawn: " + ChatColor.RED + "No, players respawn at the world respawn point");
                 }
                 //Remember last position
                 if (wc.rememberLastPlayerPosition) {

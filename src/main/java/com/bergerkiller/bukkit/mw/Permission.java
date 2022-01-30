@@ -30,13 +30,11 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_TOGGLEPVP = new Permission("world.togglepvp", PermissionDefault.OP, "Sets if the player can change the PvP setting of worlds");
     public static final Permission COMMAND_OPPING = new Permission("world.opping", PermissionDefault.OP, "Sets if the player can add or remove operators to/from a world");
     public static final Permission COMMAND_TOGGLESPAWNLOADED = new Permission("world.togglespawnloaded", PermissionDefault.OP, "Sets if the player can toggle spawn chunk loading on or off");
-    public static final Permission COMMAND_CHANGE_BEDRESPAWN = new Permission("world.changebedrespawn", PermissionDefault.OP, "Sets if the player can turn on or off bed respawn functionality");
     public static final Permission COMMAND_SPAWNING = new Permission("world.spawning", PermissionDefault.OP, "Sets if the player can allow and deny mobs spawning");
     public static final Permission COMMAND_WEATHER = new Permission("world.weather", PermissionDefault.OP, "Sets if the player can change the weather on worlds");
     public static final Permission COMMAND_TIME = new Permission("world.time", PermissionDefault.OP, "Sets if the player can change the time on worlds");
     public static final Permission COMMAND_GAMEMODE = new Permission("world.gamemode", PermissionDefault.OP, "Sets if the player can change the gamemode of a world");
-    public static final Permission COMMAND_SETSPAWN = new Permission("world.setspawn", PermissionDefault.OP, "Sets if the player can change the spawn point of a world");
-    public static final Permission COMMAND_SETFORCEDSPAWN = new Permission("world.setforcedspawn", PermissionDefault.OP, "Sets if the player can change whether all players force-respawn at the world spawn");
+    public static final Permission COMMAND_SETSPAWN = new Permission("world.setspawn", PermissionDefault.OP, "Sets if the player can change the (re)spawn point of a world, and whether bed respawning is enabled");
     public static final Permission COMMAND_SETREMEMBERLASTPOS = new Permission("world.setrememberlastpos", PermissionDefault.OP, "Sets if the player can change whether worlds remember the last player positions");
     public static final Permission COMMAND_INVENTORY = new Permission("world.inventory", PermissionDefault.OP, "Sets if the player can alter the inventory states of a world");
     public static final Permission COMMAND_TOGGLERESPAWN = new Permission("world.togglerespawn", PermissionDefault.OP, "Sets if the player can toggle the forced respawn to the world spawn");
