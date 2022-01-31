@@ -210,6 +210,29 @@ public abstract class RespawnPoint {
         }
     }
 
+    /**
+     * Respawns the Player where the player died
+     */
+    public static class RespawnPointPreviousLocation extends RespawnPoint {
+
+        public RespawnPointPreviousLocation() {
+            super(RespawnPoint.Type.PREVIOUS);
+        }
+
+        public RespawnPointPreviousLocation(ConfigurationNode config) {
+            super(RespawnPoint.Type.PREVIOUS);
+        }
+
+        @Override
+        public Location get(Player player, World world) {
+            return player.getLocation();
+        }
+
+        @Override
+        protected void writeToConfig(ConfigurationNode config) {
+        }
+    }
+
     private static <T> T readAndCheckMissing(ConfigurationNode config, String name, Class<T> type) {
         T value = config.get(name, type);
         if (value == null) {
@@ -221,7 +244,8 @@ public abstract class RespawnPoint {
     public static enum Type {
         LOCATION(RespawnPointLocation::new),
         WORLD_SPAWN(RespawnPointWorldSpawn::new),
-        PORTAL(RespawnPointPortal::new);
+        PORTAL(RespawnPointPortal::new),
+        PREVIOUS(RespawnPointPreviousLocation::new);
 
         private final Function<ConfigurationNode, RespawnPoint> factory;
 

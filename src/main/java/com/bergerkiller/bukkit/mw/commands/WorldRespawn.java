@@ -68,6 +68,17 @@ public class WorldRespawn extends Command {
             WorldConfig.get(worldname).respawnPoint = new RespawnPoint.RespawnPointLocation(player.getLocation());
             sender.sendMessage(ChatColor.GREEN + "Respawn location for world '" + worldname + "' set to your position!");
 
+        } else if (args.length >= 1 && args[0].equals("previous")) {
+            this.genWorldname(1);
+            if (!this.checkValidWorld()) {
+                return;
+            }
+
+            // Set respawn point to player's location
+            WorldConfig.get(worldname).respawnPoint = new RespawnPoint.RespawnPointPreviousLocation();
+            sender.sendMessage(ChatColor.GREEN + "Respawn location for world '" + worldname + "' set to the previous player position");
+            sender.sendMessage(ChatColor.GREEN + "This respawns the players where they died");
+
         } else if (args.length >= 2 && args[0].equals("world")) {
             String destinationWorld = args[1];
             this.genWorldname(2);
@@ -142,7 +153,7 @@ public class WorldRespawn extends Command {
     public List<String> autocomplete() {
         if (args.length <= 1) {
             return processAutocomplete(Stream.of(
-                    "bed", "here", "world", "portal"));
+                    "bed", "here", "world", "portal", "previous"));
         }
 
         if (args[0].equals("bed")) {
@@ -162,6 +173,8 @@ public class WorldRespawn extends Command {
             } else {
                 return processAutocomplete(Stream.of(PortalStore.getPortals()));
             }
+        } else if (args[0].equals("previous")) {
+            return processWorldNameAutocomplete();
         } else {
             return null;
         }
