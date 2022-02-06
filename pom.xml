@@ -15,7 +15,7 @@
     <project.build.number>NO-CI</project.build.number>
     <project.serverversion>1.16.1-R0.1</project.serverversion>
     <project.bkcversion>1.18.1-v3-SNAPSHOT</project.bkcversion>
-    <project.preloaderversion>1.5</project.preloaderversion>
+    <project.preloaderversion>1.6</project.preloaderversion>
     <project.cibuild/>
   </properties>
 
