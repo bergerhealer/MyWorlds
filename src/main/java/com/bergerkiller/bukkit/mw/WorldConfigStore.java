@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -17,6 +18,7 @@ import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 
 public class WorldConfigStore {
     private static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
+    private static IdentityHashMap<World, WorldConfig> worldConfigsByWorld = new IdentityHashMap<>();
     private static FileConfiguration defaultProperties;
 
     private static WorldConfig create(String worldname) {
@@ -63,7 +65,7 @@ public class WorldConfigStore {
     }
 
     public static WorldConfig get(World world) {
-        return get(world.getName());
+        return worldConfigsByWorld.computeIfAbsent(world, w -> get(w.getName()));
     }
 
     public static WorldConfig get(Entity entity) {
@@ -161,6 +163,9 @@ public class WorldConfigStore {
             }
         }
         cfg.save();
+
+        // Clean up the cache by bukkit world - is repopulated automatically
+        worldConfigsByWorld.clear();
     }
 
     public static void deinit() {
