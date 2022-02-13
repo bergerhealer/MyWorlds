@@ -28,6 +28,10 @@ public class WorldConfigStore {
         return wc;
     }
 
+    protected static void purgeWorldFromByWorldLookup(World world) {
+        worldConfigsByWorld.remove(world);
+    }
+
     /**
      * Gets the World Configuration of a world, if it exists presently.
      * Returns null if it does not exist.

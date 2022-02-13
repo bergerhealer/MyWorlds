@@ -601,6 +601,9 @@ public class WorldConfig extends WorldConfigStore {
 
         // Disable time control
         timeControl.updateWorld(null);
+
+        // Purge from cache
+        purgeWorldFromByWorldLookup(world);
     }
 
     public World loadWorld() {
