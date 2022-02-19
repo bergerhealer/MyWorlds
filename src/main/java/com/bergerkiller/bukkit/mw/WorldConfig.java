@@ -42,7 +42,7 @@ public class WorldConfig extends WorldConfigStore {
     private String chunkGeneratorName;
     public Difficulty difficulty = Difficulty.NORMAL;
     private Position spawnPoint; // If null, uses the World spawn
-    public RespawnPoint respawnPoint;
+    public RespawnPoint respawnPoint = RespawnPoint.DEFAULT;
     public GameMode gameMode = null;
     public boolean pvp = true;
     public final SpawnControl spawnControl = new SpawnControl();
