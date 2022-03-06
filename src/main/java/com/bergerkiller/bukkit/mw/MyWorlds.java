@@ -50,6 +50,7 @@ public class MyWorlds extends PluginBase {
     public static double maxPortalSignDistance;
     private static String mainWorld;
     public static boolean forceMainWorldSpawn;
+    public static boolean forceJoinOnMainWorld;
     public static boolean forceGamemodeChanges;
     public static boolean overridePortalPhysics;
     public static boolean alwaysInstantPortal;
@@ -205,7 +206,12 @@ public class MyWorlds extends PluginBase {
         mainWorld = config.get("mainWorld", "");
 
         config.setHeader("forceMainWorldSpawn", "\nWhether all players respawn on the main world at all times");
+        config.setHeader("forceMainWorldSpawn", "If this should only happen when players join the server, change forceJoinOnMainWorld instead");
         forceMainWorldSpawn = config.get("forceMainWorldSpawn", false);
+
+        config.setHeader("forceJoinOnMainWorld", "\nWhether all players that join the server spawn on the main world");
+        config.addHeader("forceJoinOnMainWorld", "This includes players that joined before. Respawns are not affected.");
+        forceJoinOnMainWorld = config.get("forceJoinOnMainWorld", false) || forceMainWorldSpawn;
 
         config.setHeader("forceGamemodeChanges", "\nWhether the world game mode is applied to all players, even those with the");
         config.addHeader("forceGamemodeChanges", "myworlds.world.ignoregamemode permission");

@@ -461,7 +461,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // Find out where to find the save file
             // No need to check for this if not using world inventories - it is always the main file then
-            if (MyWorlds.useWorldInventories && hasPlayedBefore && !MyWorlds.forceMainWorldSpawn) {
+            if (MyWorlds.useWorldInventories && hasPlayedBefore && !MyWorlds.forceJoinOnMainWorld) {
                 try {
                     // Allow switching worlds and positions
                     mainWorldData = files.mainWorldFile.read();
@@ -490,7 +490,7 @@ public class MWPlayerDataController extends PlayerDataController {
             removeBedSpawnPointIfDisabled(playerData);
 
             // When main world spawning is forced, reset location to there
-            if (!hasPlayedBefore || MyWorlds.forceMainWorldSpawn) {
+            if (!hasPlayedBefore || MyWorlds.forceJoinOnMainWorld) {
                 setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
             }
 
