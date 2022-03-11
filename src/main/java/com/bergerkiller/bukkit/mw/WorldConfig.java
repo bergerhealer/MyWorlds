@@ -23,6 +23,7 @@ import org.bukkit.plugin.Plugin;
 
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
+import com.bergerkiller.bukkit.common.internal.CommonBootstrap;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
@@ -411,7 +412,7 @@ public class WorldConfig extends WorldConfigStore {
 
         this.spawnPoint = (location == null) ? null : new Position(location);
         if (location != null) {
-            location.getWorld().setSpawnLocation(location);
+            setBukkitSpawn(location.getWorld(), location);
         }
     }
 
@@ -429,7 +430,7 @@ public class WorldConfig extends WorldConfigStore {
         if (location != null) {
             World world = this.getWorld();
             if (world != null) {
-                world.setSpawnLocation(location.toLocation(world));
+                setBukkitSpawn(world, location.toLocation(world));
             }
         }
     }
@@ -466,7 +467,7 @@ public class WorldConfig extends WorldConfigStore {
 
         // Apply to the World and our configuration (if it was set)
         if (fixedSpawnLocation != null) { // Just in case
-            world.setSpawnLocation(fixedSpawnLocation);
+            setBukkitSpawn(world, fixedSpawnLocation);
             if (this.spawnPoint != null) {
                 this.spawnPoint = new Position(fixedSpawnLocation);
             }
@@ -642,7 +643,7 @@ public class WorldConfig extends WorldConfigStore {
 
         // Apply configured spawn point to world
         if (this.spawnPoint != null) {
-            world.setSpawnLocation(this.spawnPoint.getBlockX(), this.spawnPoint.getBlockY(), this.spawnPoint.getBlockZ());
+            setBukkitSpawn(world, this.spawnPoint.toLocation(world));
         }
 
         // Update world settings
@@ -1175,5 +1176,24 @@ public class WorldConfig extends WorldConfigStore {
         File worldFolder = this.getWorldFolder();
         WorldConfig.remove(this.worldname);
         return StreamUtil.deleteFile(worldFolder).isEmpty();
+    }
+
+    /*
+     * Bukkit ugh.
+     */
+    private static void setBukkitSpawn(World world, Location location) {
+        if (CommonBootstrap.evaluateMCVersion(">=", "1.13")) {
+            setBukkitSpawnWithLocationMethod(world, location);
+        } else {
+            setBukkitSpawnWithBlockXYZMethod(world, location);
+        }
+    }
+
+    private static void setBukkitSpawnWithLocationMethod(World world, Location location) {
+        world.setSpawnLocation(location);
+    }
+
+    private static void setBukkitSpawnWithBlockXYZMethod(World world, Location location) {
+        world.setSpawnLocation(location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }
 }
