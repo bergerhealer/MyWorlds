@@ -2,13 +2,13 @@ package com.bergerkiller.bukkit.mw.portal;
 
 import java.util.function.Supplier;
 
+import org.bukkit.ChatColor;
+
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 import com.bergerkiller.bukkit.mw.portal.handlers.*;
-
-import net.md_5.bungee.api.ChatColor;
 
 /**
  * Behavior of portals on a world. Applies extra rules to the configured

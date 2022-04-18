@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.portal;
 
+import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
@@ -7,8 +8,6 @@ import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.PortalType;
 import com.bergerkiller.bukkit.mw.WorldConfig;
-
-import net.md_5.bungee.api.ChatColor;
 
 /**
  * Stores the rules for a single portal destination.

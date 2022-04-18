@@ -1,9 +1,9 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import org.bukkit.ChatColor;
+
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
-
-import net.md_5.bungee.api.ChatColor;
 
 public class EnableCredits extends Command {
 
