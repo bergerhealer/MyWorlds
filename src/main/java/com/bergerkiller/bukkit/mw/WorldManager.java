@@ -343,6 +343,37 @@ public class WorldManager {
                     options = chunkGeneratorName.substring(chunkGenArgsStart + 1);
                 }
             }
+
+            // Parse custom structures/nostructures option from options
+            if (!options.isEmpty()) {
+                int idx;
+                if (options.startsWith("nostructures;")) {
+                    options = options.substring(13);
+                    c.generateStructures(false);
+                } else if (options.startsWith("structures;")) {
+                    options = options.substring(11);
+                    c.generateStructures(true);
+                } else if ((idx = options.indexOf(";nostructures;")) != -1) {
+                    options = options.substring(0, idx) + options.substring(idx + 13);
+                    c.generateStructures(false);
+                } else if ((idx = options.indexOf(";structures;")) != -1) {
+                    options = options.substring(0, idx) + options.substring(idx + 11);
+                    c.generateStructures(true);
+                } else if (options.endsWith(";nostructures")) {
+                    options = options.substring(0, options.length() - 13);
+                    c.generateStructures(false);
+                } else if (options.endsWith(";structures")) {
+                    options = options.substring(0, options.length() - 11);
+                    c.generateStructures(true);
+                } else if (options.equals("nostructures")) {
+                    options = "";
+                    c.generateStructures(false);
+                } else if (options.equals("structures")) {
+                    options = "";
+                    c.generateStructures(true);
+                }
+            }
+
             if (!options.isEmpty()) {
                 c.generatorSettings(options);
             }
