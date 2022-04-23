@@ -15,7 +15,6 @@ import com.bergerkiller.bukkit.common.chunk.ForcedChunk;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
-import com.bergerkiller.bukkit.mw.LoadChunksTask;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
@@ -38,6 +37,7 @@ public class WorldCreate extends Command {
                 logAction("Issued a world creation command for world: " + worldname);
                 WorldConfig.remove(worldname);
                 WorldConfig wc = WorldConfig.get(worldname, this.forcedWorldMode);
+
                 if (gen == null) {
                     message(ChatColor.YELLOW + "Creating world '" + worldname + "' (this can take a while) ...");
                     message(ChatColor.WHITE + "World generator: " + ChatColor.YELLOW + "Default (Vanilla)");

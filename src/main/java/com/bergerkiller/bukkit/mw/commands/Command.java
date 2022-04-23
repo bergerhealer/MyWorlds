@@ -291,7 +291,7 @@ public abstract class Command {
         } else {
             // Use defaults from server.properties when creating a world and no args are set
             gen = WorldManager.readDefaultGeneratorSettings();
-            if (!gen.isEmpty()) {
+            if (!gen.isEmpty() && !gen.equals("{}")) {
                 plugin.log(Level.INFO, "Using world generator settings from server.properties: " + gen);
                 gen = ":" + gen;
             } else {
