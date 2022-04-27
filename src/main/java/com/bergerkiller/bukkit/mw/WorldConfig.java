@@ -16,7 +16,6 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -37,7 +36,8 @@ import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
 
 public class WorldConfig extends WorldConfigStore {
-    public String worldname;
+    public final String worldname;
+    public String alias;
     public boolean keepSpawnInMemory = true;
     public WorldMode worldmode = WorldMode.NORMAL;
     private String chunkGeneratorName;
@@ -65,6 +65,7 @@ public class WorldConfig extends WorldConfigStore {
 
     protected WorldConfig(String worldname) {
         this.worldname = worldname;
+        this.alias = worldname;
     }
 
     /**
@@ -100,6 +101,7 @@ public class WorldConfig extends WorldConfigStore {
         World world = this.getWorld();
         if (world != null) {
             // Read from the loaded world directly
+            this.alias = worldname;
             this.keepSpawnInMemory = world.getKeepSpawnInMemory();
             this.worldmode = WorldMode.get(world);
             this.difficulty = world.getDifficulty();
@@ -109,6 +111,7 @@ public class WorldConfig extends WorldConfigStore {
             this.autosave = world.isAutoSave();
             this.getChunkGeneratorName();
         } else {
+            this.alias = worldname;
             this.worldmode = WorldMode.get(worldname);
             this.spawnPoint = null; // Use the world spawn once it becomes available
             this.respawnPoint = RespawnPoint.DEFAULT;
@@ -179,6 +182,7 @@ public class WorldConfig extends WorldConfigStore {
      * @param config to load from
      */
     public void load(WorldConfig config) {
+        this.alias = config.alias;
         this.keepSpawnInMemory = config.keepSpawnInMemory;
         this.worldmode = config.worldmode;
         this.chunkGeneratorName = config.chunkGeneratorName;
@@ -204,6 +208,7 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     public void load(ConfigurationNode node) {
+        this.alias = node.get("alias", this.worldname);
         this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
         this.worldmode = WorldMode.get(node.get("environment", this.worldmode.getName()));
         this.chunkGeneratorName = node.get("chunkGenerator", String.class, this.chunkGeneratorName);
@@ -285,6 +290,7 @@ public class WorldConfig extends WorldConfigStore {
         // Remove nodes we rather not see
         node.remove("environment");
         node.remove("name");
+        node.remove("alias");
         node.remove("chunkGenerator");
         node.remove("spawn");
         node.remove("loaded");
@@ -302,6 +308,11 @@ public class WorldConfig extends WorldConfigStore {
             node.remove("name");
         } else {
             node.set("name", this.worldname);
+        }
+        if (this.alias == null || this.alias.equals(this.worldname)) {
+            node.remove("alias");
+        } else {
+            node.set("alias", this.alias);
         }
         node.set("loaded", w != null);
         node.set("keepSpawnLoaded", this.keepSpawnInMemory);
@@ -913,7 +924,7 @@ public class WorldConfig extends WorldConfigStore {
      * @param player to get this world's save file for
      * @return Player Data File
      */
-    public File getPlayerData(HumanEntity player) {
+    public File getPlayerData(OfflinePlayer player) {
         return new File(getPlayerFolder(), player.getUniqueId().toString() + ".dat");
     }
 

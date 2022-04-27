@@ -77,6 +77,28 @@ public class WorldMode {
         return this.env;
     }
 
+    public String getPAPIEnvName() {
+        switch (this.env) {
+        case NORMAL: return Localization.PAPI_WORLDTYPE_NORMAL.get();
+        case THE_END: return Localization.PAPI_WORLDTYPE_THE_END.get();
+        case NETHER: return Localization.PAPI_WORLDTYPE_THE_NETHER.get();
+        default: return this.env.name().toLowerCase(Locale.ENGLISH).replace('_', ' ');
+        }
+    }
+
+    public String getPAPITypeName() {
+        if (this.wtype == WorldType.FLAT) {
+            switch (this.env) {
+            case NORMAL: return Localization.PAPI_WORLDTYPE_FLAT_NORMAL.get();
+            case THE_END: return Localization.PAPI_WORLDTYPE_FLAT_END.get();
+            case NETHER: return Localization.PAPI_WORLDTYPE_FLAT_NETHER.get();
+            default: return "Flat " + this.env.name().toLowerCase(Locale.ENGLISH).replace('_', ' ');
+            }
+        } else {
+            return getPAPIEnvName();
+        }
+    }
+
     public String getTypeName() {
         if (this.wtype == WorldType.LARGE_BIOMES) {
             return "largeBiomes";

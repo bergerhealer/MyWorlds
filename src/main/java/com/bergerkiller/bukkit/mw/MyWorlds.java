@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.io.File;
 import java.util.HashSet;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -18,6 +19,7 @@ import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.advancement.AdvancementManager;
 import com.bergerkiller.bukkit.mw.commands.registry.MyWorldsCommands;
+import com.bergerkiller.bukkit.mw.papi.PlaceholderAPIHandlerWithExpansions;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
 import com.bergerkiller.bukkit.mw.portal.PlayerRespawnHandler;
 import com.bergerkiller.bukkit.mw.portal.PortalSignList;
@@ -27,9 +29,11 @@ import com.bergerkiller.bukkit.mw.portal.PortalTeleportationCooldown;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
 import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.common.component.LibraryComponent;
 
 public class MyWorlds extends PluginBase {
     private static final String MULTIVERSE_NAME = "Multiverse-Core";
+    private static final String PLACEHOLDERAPI_NAME = "PlaceholderAPI";
     public static int teleportInterval;
     public static int timeLockInterval;
     public static boolean useWorldEnterPermissions;
@@ -77,6 +81,7 @@ public class MyWorlds extends PluginBase {
     private final AdvancementManager advancementManager = AdvancementManager.create(this);
     private final PortalSignList portalSignList = new PortalSignList(this);
     private final AutoSaveTask autoSaveTask = new AutoSaveTask(this);
+    private LibraryComponent placeholderApi = null;
     public static MyWorlds plugin;
 
     public PortalSignList getPortalSignList() {
@@ -119,6 +124,9 @@ public class MyWorlds extends PluginBase {
         }
         if (pluginName.equals(MULTIVERSE_NAME)) {
             isMultiverseEnabled = enabled;
+        }
+        if (pluginName.equals(PLACEHOLDERAPI_NAME)) {
+            setPAPIIntegrationEnabled(enabled, false);
         }
     }
 
@@ -303,6 +311,7 @@ public class MyWorlds extends PluginBase {
         portalTeleportationCooldown.disable();
         entityStasisHandler.disable();
         endRespawnHandler.disable();
+        setPAPIIntegrationEnabled(false, true);
 
         // Stop auto-saving
         autoSaveTask.stop();
@@ -394,6 +403,28 @@ public class MyWorlds extends PluginBase {
             }
         }
         return WorldUtil.getWorlds().iterator().next();
+    }
+
+    private void setPAPIIntegrationEnabled(boolean enabled, boolean isShutdown) {
+        if (enabled && placeholderApi == null) {
+            try {
+                placeholderApi = new PlaceholderAPIHandlerWithExpansions(this);
+                placeholderApi.enable();
+                getLogger().log(Level.INFO, "PlaceholderAPI integration enabled");
+            } catch (Throwable t) {
+                getLogger().log(Level.SEVERE, "Failed to disable PlaceholderAPI integration", t);
+            }
+        } else if (!enabled && placeholderApi != null) {
+            try {
+                placeholderApi.disable();
+                if (!isShutdown) {
+                    getLogger().log(Level.INFO, "PlaceholderAPI integration disabled");
+                }
+            } catch (Throwable t) {
+                getLogger().log(Level.SEVERE, "Failed to disable PlaceholderAPI integration", t);
+            }
+            placeholderApi = null;
+        }
     }
 
     private static class AutoSaveTask extends Task {

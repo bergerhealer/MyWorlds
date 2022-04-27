@@ -60,6 +60,7 @@ public class WorldCommandRegistry extends CommandRegistry {
         register(WorldSetHunger::new, "hunger", "sethunger");
         register(EnableCredits::new, "showcredits", "enablecredits");
         register(WorldAdvancements::new, "advancements", "setadvancements");
+        register(WorldAlias::new, "alias", "setalias");
     }
 
 }

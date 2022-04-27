@@ -14,6 +14,7 @@ import java.util.zip.ZipException;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
@@ -539,6 +540,25 @@ public class WorldManager {
 
         // World spawn point
         return new WorldSpawnLocation(getSpawnLocation(world), WorldSpawnLocation.Type.WORLD_SPAWN);
+    }
+
+    /**
+     * Tries to deduce the current world an OfflinePlayer is or was on. If the player
+     * is currently online, returns the live current world. If not, the world is checked
+     * using the player's saved data. If none is available, the main spawn world is
+     * returned here.
+     *
+     * @param player Player profile to read the world of
+     * @return World this player was on
+     */
+    public static World getPlayerCurrentWorld(OfflinePlayer player) {
+        // Easy
+        if (player instanceof Player) {
+            return ((Player) player).getWorld();
+        }
+
+        // Try and find using the player data controller
+        return MWPlayerDataController.findPlayerWorld(player);
     }
 
     /**

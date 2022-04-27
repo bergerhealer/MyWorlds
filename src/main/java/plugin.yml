@@ -3,7 +3,7 @@ version: ${project.version}
 build: ${project.build.number}
 api-version: 1.13
 authors: [KamikazePlatypus, mg_1999, Friwi, bergerkiller, lenis0012, timstans, bubba1234119]
-softdepend: [BKCommonLib, Multiverse-Core, SuperiorSkyblock2]
+softdepend: [BKCommonLib, Multiverse-Core, SuperiorSkyblock2, PlaceholderAPI]
 loadbefore: [Citizens, MobArena, RegionForSale, CreativeGates, HeroStronghold]
 metrics: true
 

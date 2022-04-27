@@ -248,18 +248,32 @@ public abstract class Command {
      * Finds out the world to operate in, checking the command arguments if possible.
      * 
      * @param preceedingArgCount expected before the world argument
+     * @return True if a world was taken from the last arg, False if not
      */
-    public void genWorldname(int preceedingArgCount) {
+    public boolean genWorldname(int preceedingArgCount) {
         if (args.length > 0 && args.length > preceedingArgCount) {
             this.worldname = WorldManager.matchWorld(args[args.length - 1]);
             if (this.worldname != null) {
-                return;
+                return true;
             }
         }
         if (player != null) {
             this.worldname = player.getWorld().getName();
         } else {
             this.worldname = WorldUtil.getWorlds().iterator().next().getName();
+        }
+        return false;
+    }
+
+    /**
+     * Same as {@link #genWorldname(int)} but removes the last argument
+     * if parsed.
+     *
+     * @param preceedingArgCount expected before the world argument
+     */
+    public void genConsumeWorldName(int preceedingArgCount) {
+        if (genWorldname(preceedingArgCount)) {
+            args = StringUtil.remove(args, args.length - 1);
         }
     }
 
