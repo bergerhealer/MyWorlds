@@ -37,6 +37,7 @@ import org.bukkit.inventory.ItemStack;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
+import com.bergerkiller.bukkit.common.internal.logic.BlockPhysicsEventDataAccessor;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
@@ -344,7 +345,7 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBlockPhysics(BlockPhysicsEvent event) {
         // Allows portals to be placed without physics killing it
-        if (MyWorlds.overridePortalPhysics && MaterialUtil.ISNETHERPORTAL.get(event.getBlock())) {
+        if (MyWorlds.overridePortalPhysics && MaterialUtil.ISNETHERPORTAL.get(BlockPhysicsEventDataAccessor.INSTANCE.get(event))) {
             // Since we cancelled the event, the portal block is no longer registered
             // Explicitly register the block as a nether portal to fix POI errors.
             WorldUtil.markNetherPortal(event.getBlock());
