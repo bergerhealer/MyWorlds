@@ -1039,7 +1039,7 @@ public class WorldConfig extends WorldConfigStore {
             }
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Unhandled error trying to save world level.dat of " + this.worldname, e);
             return false;
         }
     }

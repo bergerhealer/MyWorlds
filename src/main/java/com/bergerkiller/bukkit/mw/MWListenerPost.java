@@ -173,19 +173,19 @@ public class MWListenerPost implements Listener {
             elements.remove(0);
         }
 
-        System.out.println("Game Mode of " + event.getPlayer().getName() + " changed from " +
+        this.plugin.getLogger().info("Game Mode of " + event.getPlayer().getName() + " changed from " +
                 event.getPlayer().getGameMode() + " to " + event.getNewGameMode());
         ArrayList<String> pluginNames = new ArrayList<String>();
         for (Plugin plugin : CommonUtil.findPlugins(elements)) {
             pluginNames.add(plugin.getName());
         }
         if (pluginNames.isEmpty()) {
-            System.out.println("This was likely initiated by the server. Stack trace:");
+            this.plugin.getLogger().info("This was likely initiated by the server. Stack trace:");
         } else {
-            System.out.println("This was likely initiated by " + StringUtil.join(" OR ", pluginNames) + ". Stack trace:");
+            this.plugin.getLogger().info("This was likely initiated by " + StringUtil.join(" OR ", pluginNames) + ". Stack trace:");
         }
         for (StackTraceElement element : elements) {
-            System.out.println("  at " + element);
+            this.plugin.getLogger().info("  at " + element);
         }
     }
 

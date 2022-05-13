@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -91,7 +92,7 @@ public class PlayerRespawnHandler {
                     return true;
                 }
             } catch (Throwable t) {
-                t.printStackTrace();
+                this.plugin.getLogger().log(Level.SEVERE, "Unhandled error handling respawn event", t);
             }
         }
         return false;

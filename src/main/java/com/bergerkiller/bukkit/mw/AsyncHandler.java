@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.logging.Level;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -111,9 +112,10 @@ public class AsyncHandler {
                     } else {
                         CommonUtil.sendMessage(sender, ChatColor.RED + "Region folder not found, no regions edited.");
                     }
-                } catch (Exception e) {
+                } catch (Throwable t) {
                     //We did nothing...
-                    e.printStackTrace();
+                    MyWorlds.plugin.getLogger().log(Level.SEVERE, "Unhandled error trying to repair world", t);
+                    CommonUtil.sendMessage(sender, ChatColor.RED + "Error while repairing: " + t.getMessage());
                 }
                 if (hasMadeFixes) {
                     CommonUtil.sendMessage(sender, ChatColor.GREEN + "World: '" + worldname + "' has been repaired!");

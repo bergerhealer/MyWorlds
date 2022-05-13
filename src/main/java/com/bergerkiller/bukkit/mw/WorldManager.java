@@ -328,7 +328,7 @@ public class WorldManager {
                 return null;
             }
         }
-        Exception failReason = null;
+        Throwable failReason = null;
         try {
             WorldCreator c = new WorldCreator(worldname);
             wc.worldmode.apply(c);
@@ -381,16 +381,17 @@ public class WorldManager {
 
             c.generator(cgen);
             w = c.createWorld();
-        } catch (Exception ex) {
-            failReason = ex;
+        } catch (Throwable t) {
+            failReason = t;
         }
         if (w == null) {
-            MyWorlds.plugin.log(Level.WARNING, "World creation failed after " + i + " retries!");
             if (failReason != null) {
+                MyWorlds.plugin.getLogger().log(Level.SEVERE, "World creation failed after " + i + " retries!", failReason);
                 if (sender != null) {
                     sender.sendMessage(ChatColor.RED + "Failed to create world: " + failReason.getMessage());
                 }
-                failReason.printStackTrace();
+            } else {
+                MyWorlds.plugin.log(Level.SEVERE, "World creation failed after " + i + " retries!");
             }
         } else if (i == 1) {
             MyWorlds.plugin.log(Level.INFO, "World creation succeeded after 1 retry!");
@@ -849,16 +850,15 @@ public class WorldManager {
                                 //Invalid.
                                 editcount++;
                                 locations[i] = 0;
-                                MyWorlds.plugin.log(Level.WARNING, "Failed to properly read chunk at position " + chunkX + "/" + chunkZ + ":");
-                                ex.printStackTrace();
+                                MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to properly read chunk at position " + chunkX + "/" + chunkZ, ex);
                             }
                             stream.close();
                         }
                     }
-                } catch (Exception ex) {
+                } catch (Throwable t) {
                     editcount++;
                     locations[i] = 0;
-                    ex.printStackTrace();
+                    MyWorlds.plugin.getLogger().log(Level.SEVERE, "Unhandled chunk error while handling world repair", t);
                 }
             }
             if (editcount > 0) {
@@ -877,18 +877,14 @@ public class WorldManager {
             //Done.
             raf.close();
             return editcount;
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Unhandled IO error while handling world region repair", e);
         }
-        
+
         try {
             if (raf != null) raf.close();
         } catch (Exception ex) {}
-        
+
         try {
             chunkfile.delete();
             return -1;

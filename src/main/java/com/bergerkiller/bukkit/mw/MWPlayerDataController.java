@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.zip.ZipException;
 
 import org.bukkit.Bukkit;
@@ -376,9 +377,8 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // Perform post loading
             postLoad(player);
-        } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to load player data for " + player.getName());
-            exception.printStackTrace();
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
         }
     }
 
@@ -467,9 +467,8 @@ public class MWPlayerDataController extends PlayerDataController {
                     }
                 });
             }
-        } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to save player respawned data for " + player.getName());
-            exception.printStackTrace();
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to save player respawned data for " + player.getName(), t);
         }
     }
 
@@ -572,9 +571,8 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             return playerData;
-        } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to load player data for " + player.getName());
-            exception.printStackTrace();
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
             return super.onLoad(player);
         }
     }
@@ -639,9 +637,8 @@ public class MWPlayerDataController extends PlayerDataController {
                     }
                 });
             }
-        } catch (Exception exception) {
-            Bukkit.getLogger().warning("Failed to save player data for " + player.getName());
-            exception.printStackTrace();
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to save player data for " + player.getName(), t);
         }
     }
 
@@ -698,11 +695,10 @@ public class MWPlayerDataController extends PlayerDataController {
                     return CommonTagCompound.readFromFile(file, true);
                 }
             } catch (ZipException ex) {
-                Bukkit.getLogger().warning("Failed to read player data for " + player.getName() + " (ZIP-exception: file corrupted)");
+                MyWorlds.plugin.getLogger().warning("Failed to read player data for " + player.getName() + " (ZIP-exception: file corrupted)");
             } catch (Throwable t) {
                 // Return an empty data constant for now
-                Bukkit.getLogger().warning("Failed to read player data for " + player.getName());
-                t.printStackTrace();
+                MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to read player data for " + player.getName(), t);
             }
             return null;
         }

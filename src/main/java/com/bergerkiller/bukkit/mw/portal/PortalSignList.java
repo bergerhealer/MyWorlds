@@ -172,8 +172,7 @@ public class PortalSignList {
 
         this.autosaveScheduled = true; // suppress starting of the autosave
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(this.saveFile));
-            try {
+            try (BufferedReader reader = new BufferedReader(new FileReader(this.saveFile))) {
                 String textline;
                 while ((textline = reader.readLine()) != null) {
                     String[] args = StringUtil.convertArgs(textline.split(" "));
@@ -189,13 +188,11 @@ public class PortalSignList {
                         }
                     }
                 }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            } finally {
-                reader.close();
             }
         } catch (IOException ex) {
-            ex.printStackTrace();
+            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Unhandled IO error loading portals", ex);
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Unhandled error loading portals", t);
         }
         this.autosaveScheduled = false; // further changes cause autosave
     }
