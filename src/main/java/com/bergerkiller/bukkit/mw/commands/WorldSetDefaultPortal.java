@@ -216,6 +216,10 @@ public class WorldSetDefaultPortal extends Command {
         message(ChatColor.GREEN + "Default " + this.type.name().toLowerCase(Locale.ENGLISH) +
                 " portal behavior of world " + ChatColor.WHITE + "'"  + this.worldname + "'" +
                 ChatColor.GREEN + " is set to: " + dest.getInfoString());
+        if (!this.type.isEnabled()) {
+            message(ChatColor.RED + "Note: this type of portal is disabled in MyWorld's config.yml");
+            message(ChatColor.RED + "Enable it to use the configured configuration for this world");
+        }
     }
 
     private PortalDestination handleBooleanProperty(PortalDestination dest,

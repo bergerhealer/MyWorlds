@@ -20,6 +20,11 @@ import com.bergerkiller.bukkit.mw.portal.NetherPortalOrientation;
 public enum PortalType {
     NETHER("world.setnetherportal", TeleportCause.NETHER_PORTAL) {
         @Override
+        public boolean isEnabled() {
+            return MyWorlds.netherPortalEnabled;
+        }
+
+        @Override
         public boolean detect(Block main) {
             if (!MyWorlds.netherPortalEnabled || !MaterialUtil.ISNETHERPORTAL.get(main)) {
                 return false;
@@ -43,11 +48,21 @@ public enum PortalType {
     },
     END("world.setendportal", TeleportCause.END_PORTAL) {
         @Override
+        public boolean isEnabled() {
+            return MyWorlds.endPortalEnabled;
+        }
+
+        @Override
         public boolean detect(Block block) {
             return MyWorlds.endPortalEnabled && MaterialUtil.ISENDPORTAL.get(block);
         }
     },
     WATER("world.setwaterportal", TeleportCause.PLUGIN) {
+        @Override
+        public boolean isEnabled() {
+            return MyWorlds.waterPortalEnabled;
+        }
+
         @Override
         public boolean detect(Block main) {
             if (!MyWorlds.waterPortalEnabled || !MaterialUtil.ISWATER.get(main)) {
@@ -83,6 +98,13 @@ public enum PortalType {
      * @return True if the portal type is detected
      */
     public abstract boolean detect(Block block);
+
+    /**
+     * Gets whether this type of portal is enabled in MyWorlds configuration
+     *
+     * @return True if enabled
+     */
+    public abstract boolean isEnabled();
 
     /**
      * Gets the teleport cause when this portal type is used to teleport
