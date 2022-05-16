@@ -317,7 +317,8 @@ public class MyWorlds extends PluginBase {
         autoSaveTask.stop();
 
         // World inventories
-        WorldInventory.save();
+        // Now done for every change / command
+        //WorldInventory.save();
 
         // World configurations have to be cleared last
         WorldConfig.deinit();

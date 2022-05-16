@@ -41,7 +41,7 @@ public class WorldInventory {
             WorldInventory inv = new WorldInventory(WorldConfig.get(sharedWorld).worldname);
             inv.name = node.getName();
             for (String world : worlds) {
-                inv.add(world);
+                inv.addWithoutSaving(world);
             }
         }
     }
@@ -64,15 +64,21 @@ public class WorldInventory {
     }
 
     public static void detach(Collection<String> worldnames) {
-        for (String world : worldnames) {
-            WorldConfig.get(world).inventory.remove(world, true);
+        if (!worldnames.isEmpty()) {
+            for (String world : worldnames) {
+                WorldConfig.get(world).inventory.removeWithoutSaving(world, true);
+            }
+            save();
         }
     }
 
     public static void merge(Collection<String> worldnames) {
-        WorldInventory inv = new WorldInventory(null);
-        for (String world : worldnames) {
-            inv.add(world);
+        if (!worldnames.isEmpty()) {
+            WorldInventory inv = new WorldInventory(null);
+            for (String world : worldnames) {
+                inv.addWithoutSaving(world);
+            }
+            save();
         }
     }
 
@@ -114,28 +120,47 @@ public class WorldInventory {
         return this.worlds.contains(worldname.toLowerCase());
     }
 
-    public WorldInventory remove(String worldname, boolean createNew) {
+    public boolean remove(String worldname) {
+        boolean result = removeWithoutSaving(worldname, false);
+        if (result) {
+            save();
+        }
+        return result;
+    }
+
+    private boolean removeWithoutSaving(String worldname, boolean createNew) {
+        boolean removed = false;
         if (this.worlds.remove(worldname.toLowerCase())) {
+            removed = true;
+
             //constructor handles world config update
             if (createNew) {
-                new WorldInventory(worldname).add(worldname);
+                new WorldInventory(worldname).addWithoutSaving(worldname);
             }
         }
         if (this.worlds.isEmpty()) {
+            removed = true;
             inventories.remove(this);
         } else if (worldname.equalsIgnoreCase(this.worldname)) {
+            removed = true;
             this.worldname = getSharedWorldName(this.worlds);
             if (this.worldname == null) {
                 inventories.remove(this);
             }
         }
-        return this;
+        return removed;
     }
 
     public WorldInventory add(String worldname) {
+        WorldInventory inv = this.addWithoutSaving(worldname);
+        save();
+        return inv;
+    }
+
+    private WorldInventory addWithoutSaving(String worldname) {
         WorldConfig config = WorldConfig.get(worldname);
         if (config.inventory != null) {
-            config.inventory.remove(config.worldname, false);
+            config.inventory.removeWithoutSaving(config.worldname, false);
         }
         config.inventory = this;
         this.worlds.add(worldname.toLowerCase());

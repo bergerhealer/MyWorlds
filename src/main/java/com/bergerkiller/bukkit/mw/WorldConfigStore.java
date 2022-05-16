@@ -210,7 +210,7 @@ public class WorldConfigStore {
             if (usesWorldAsDestination(worldname, otherConfig.getDefaultEndPortalDestination())) {
                 otherConfig.setDefaultEndPortalDestination(null);
             }
-            otherConfig.inventory.remove(worldname, false);
+            otherConfig.inventory.remove(worldname);
         }
     }
 
