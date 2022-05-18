@@ -37,7 +37,6 @@ import org.bukkit.inventory.ItemStack;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
-import com.bergerkiller.bukkit.common.internal.logic.BlockPhysicsEventDataAccessor;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
@@ -45,6 +44,7 @@ import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
 import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
+import com.bergerkiller.bukkit.mw.utils.BlockPhysicsEventDataAccessor;
 
 public class MWListener implements Listener {
     private final MyWorlds plugin;
