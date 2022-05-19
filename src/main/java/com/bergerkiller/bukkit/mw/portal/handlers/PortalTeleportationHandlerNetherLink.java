@@ -136,7 +136,10 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
             Location locToTeleportTo = transform.toLocation(result.getResult().getWorld());
 
             // Check that this location sits inside an existing portal frame on the destination
-            destPortalOrientation.adjustPosition(locToTeleportTo);
+            // Ignore for non-humanoid entities smaller than 1 block tall (use head position for this)
+            if (entity instanceof LivingEntity && ((LivingEntity) entity).getEyeHeight(true) > 1.0) {
+                destPortalOrientation.adjustPosition(locToTeleportTo);
+            }
 
             // Retrieve the velocity of the entity upon entering the portal
             // Transform this velocity the same way we transformed the position
