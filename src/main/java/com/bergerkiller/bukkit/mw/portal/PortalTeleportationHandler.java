@@ -16,6 +16,7 @@ import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.PortalType;
 import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
+import com.bergerkiller.generated.net.minecraft.world.entity.EntityHandle;
 
 /**
  * Interface for main teleportation handling functions
@@ -115,6 +116,23 @@ public abstract class PortalTeleportationHandler {
         plugin.getPortalTeleportationCooldown().setPortal(entity, position);
         //if (CommonEntity.get(entity).teleport(position, portalType.getTeleportCause())) {
         if (entity.teleport(position, portalType.getTeleportCause())) {
+            // Verify that the Entity position matches the same BLOCK coordinates
+            // The server sometimes teleports entities at floor(coords) rather than the actual ones
+            // We must correct for this
+            // NOT needed for players, whose entity doesn't despawn and respawn.
+            Location trueLoc;
+            if (!(entity instanceof Player) &&
+                !(trueLoc = entity.getLocation()).equals(position) &&
+                position.getWorld() == trueLoc.getWorld() &&
+                position.getBlockX() == trueLoc.getBlockX() &&
+                position.getBlockY() == trueLoc.getBlockY() &&
+                position.getBlockZ() == trueLoc.getBlockZ())
+            {
+                EntityHandle handle = EntityHandle.fromBukkit(entity);
+                handle.setPosition(position.getX(), position.getY(), position.getZ());
+            }
+
+            // Give momentum
             entity.setVelocity(velocity);
             return true;
         } else {
