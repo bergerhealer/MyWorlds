@@ -22,6 +22,7 @@ import com.bergerkiller.bukkit.mw.commands.registry.MyWorldsCommands;
 import com.bergerkiller.bukkit.mw.papi.PlaceholderAPIHandlerWithExpansions;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
 import com.bergerkiller.bukkit.mw.portal.PlayerRespawnHandler;
+import com.bergerkiller.bukkit.mw.portal.PortalEnterEventDebouncer;
 import com.bergerkiller.bukkit.mw.portal.PortalSignList;
 import com.bergerkiller.bukkit.mw.portal.EntityStasisHandler;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
@@ -70,7 +71,7 @@ public class MyWorlds extends PluginBase {
 
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
-    private MWListener listener;
+    private final MWListener listener = new MWListener(this);
     private MWPlayerDataController dataController;
     private final MyWorldsCommands commands = new MyWorldsCommands(this);
     private final WorldInventoriesDupingPatch worldDupingPatch = new WorldInventoriesDupingPatch();
@@ -81,6 +82,7 @@ public class MyWorlds extends PluginBase {
     private final AdvancementManager advancementManager = AdvancementManager.create(this);
     private final PortalSignList portalSignList = new PortalSignList(this);
     private final AutoSaveTask autoSaveTask = new AutoSaveTask(this);
+    private final PortalEnterEventDebouncer portalEnterEventDebouncer = new PortalEnterEventDebouncer(this, listener::onPortalEnter);
     private LibraryComponent placeholderApi = null;
     public static MyWorlds plugin;
 
@@ -106,6 +108,10 @@ public class MyWorlds extends PluginBase {
 
     public NetherPortalSearcher getNetherPortalSearcher() {
         return this.netherPortalSearcher;
+    }
+
+    public PortalEnterEventDebouncer getPortalEnterEventDebouncer() {
+        return this.portalEnterEventDebouncer;
     }
 
     @Override
@@ -136,7 +142,6 @@ public class MyWorlds extends PluginBase {
 
         // Event registering
         this.worldDupingPatch.enable(this);
-        this.listener = new MWListener(this);
         this.register(listener);
         this.register(new MWListenerPost(this));
         this.register("tpp", "world");
@@ -293,6 +298,9 @@ public class MyWorlds extends PluginBase {
         // World inventories
         WorldInventory.load();
 
+        // Fire portal enter events (debounced)
+        portalEnterEventDebouncer.enable();
+
         // Player data controller
         dataController = new MWPlayerDataController();
         dataController.assign();
@@ -307,6 +315,7 @@ public class MyWorlds extends PluginBase {
         this.portalSignList.disable();
 
         // Stop this
+        portalEnterEventDebouncer.disable();
         netherPortalSearcher.disable();
         portalTeleportationCooldown.disable();
         entityStasisHandler.disable();

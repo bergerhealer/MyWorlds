@@ -7,6 +7,7 @@ import java.util.Map;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Projectile;
 import org.bukkit.util.Vector;
 
@@ -63,7 +64,7 @@ public class EntityStasisHandler {
      * @return True if this entity can be kept in stasis
      */
     public boolean canBeKeptInStasis(Entity entity) {
-        return entity instanceof Item || entity instanceof Projectile;
+        return entity instanceof Item || entity instanceof Projectile || entity instanceof Minecart;
     }
 
     /**

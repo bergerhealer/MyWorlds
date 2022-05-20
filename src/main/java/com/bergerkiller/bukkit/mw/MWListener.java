@@ -136,9 +136,13 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
+        Block portalBlock = event.getLocation().getBlock();
+        plugin.getPortalEnterEventDebouncer().trigger(portalBlock, event.getEntity());
+    }
+
+    public void onPortalEnter(Block portalBlock, Entity entity) {
         // Decode what kind of portal block this is
         // This might return null for a valid case, because we have restrictions
-        Block portalBlock = event.getLocation().getBlock();
         PortalType portalType = PortalType.findPortalType(portalBlock);
         if (portalType == null) {
             return;
@@ -147,10 +151,10 @@ public class MWListener implements Listener {
         // If entity is a player that isn't bound to a world, then he is being respawned currently
         // For some reason the server spams portal enter events while players sit inside the
         // end portal, viewing the credits. We want none of that!
-        if (event.getEntity() instanceof Player) {
-            World world = event.getEntity().getWorld();
-            UUID uuid = event.getEntity().getUniqueId();
-            if (world == null || EntityUtil.getEntity(world, uuid) != event.getEntity()) {
+        if (entity instanceof Player) {
+            World world = entity.getWorld();
+            UUID uuid = entity.getUniqueId();
+            if (world == null || EntityUtil.getEntity(world, uuid) != entity) {
                 return;
             }
         }
@@ -159,15 +163,15 @@ public class MWListener implements Listener {
         // This cooldown is set to non-zero once teleportation would normally commence
         // Creative players are exempt
         // All of this only matters for nether portals
-        if (event.getEntity() instanceof Player && !MyWorlds.alwaysInstantPortal && portalType == PortalType.NETHER) {
-            Player p = (Player) event.getEntity();
+        if (entity instanceof Player && !MyWorlds.alwaysInstantPortal && portalType == PortalType.NETHER) {
+            Player p = (Player) entity;
             if (p.getGameMode() != GameMode.CREATIVE && EntityUtil.getPortalCooldown(p) == 0) {
                 return;
             }
         }
 
         // Proceed
-        handlePortalEnter(portalType, portalBlock, event.getEntity());
+        handlePortalEnter(portalType, portalBlock, entity);
     }
 
     private void handlePortalEnter(PortalType portalType, Block portalBlock, Entity entity) {

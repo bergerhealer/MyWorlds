@@ -1,0 +1,82 @@
+package com.bergerkiller.bukkit.mw.portal;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
+
+import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.common.component.LibraryComponent;
+import com.bergerkiller.bukkit.common.utils.BlockUtil;
+import com.bergerkiller.bukkit.mw.MyWorlds;
+
+/**
+ * For some entities, a Portal Enter Event fires multiple times in a single
+ * tick. This class debounces those events so only one event is fired. This
+ * also makes sure that entities aren't in the middle of physics calculations
+ * where Entity Location could be invalid.
+ */
+public final class PortalEnterEventDebouncer implements LibraryComponent {
+    private final Set<Pending> pending = new LinkedHashSet<>();
+    private final Callback callback;
+    private final Task task;
+
+    public PortalEnterEventDebouncer(MyWorlds plugin, Callback callback) {
+        this.callback = callback;
+        this.task = new Task(plugin) {
+            @Override
+            public void run() {
+                if (!pending.isEmpty()) {
+                    ArrayList<Pending> copy = new ArrayList<>(pending);
+                    pending.clear();
+                    for (Pending pending : copy) {
+                        callback.onPortalEnter(pending.portalBlock, pending.entity);
+                    }
+                }
+            }
+        };
+    }
+
+    @Override
+    public void enable() {
+        task.start(1, 1);
+    }
+
+    @Override
+    public void disable() {
+        pending.clear();
+        task.stop();
+    }
+
+    public void trigger(Block portalBlock, Entity entity) {
+        pending.add(new Pending(portalBlock, entity));
+    }
+
+    private static final class Pending {
+        public final Block portalBlock;
+        public final Entity entity;
+
+        public Pending(Block portalBlock, Entity entity) {
+            this.portalBlock = portalBlock;
+            this.entity = entity;
+        }
+
+        @Override
+        public int hashCode() {
+            return this.portalBlock.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            Pending p = (Pending) o;
+            return BlockUtil.equals(this.portalBlock, p.portalBlock) &&
+                   this.entity == p.entity;
+        }
+    }
+
+    public static interface Callback {
+        void onPortalEnter(Block portalBlock, Entity entity);
+    }
+}
