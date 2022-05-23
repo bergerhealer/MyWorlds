@@ -137,7 +137,13 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
         Block portalBlock = event.getLocation().getBlock();
-        plugin.getPortalEnterEventDebouncer().trigger(portalBlock, event.getEntity());
+
+        // Don't do it for players, causes horrible problems!
+        if (event.getEntity() instanceof Player) {
+            onPortalEnter(portalBlock, event.getEntity());
+        } else {
+            plugin.getPortalEnterEventDebouncer().trigger(portalBlock, event.getEntity());
+        }
     }
 
     public void onPortalEnter(Block portalBlock, Entity entity) {
