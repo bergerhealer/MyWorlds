@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,7 +22,6 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
@@ -45,6 +45,9 @@ import com.bergerkiller.bukkit.common.wrappers.BlockData;
 import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
 import com.bergerkiller.bukkit.mw.utils.BlockPhysicsEventDataAccessor;
+import com.bergerkiller.mountiplex.reflection.declarations.ClassResolver;
+import com.bergerkiller.mountiplex.reflection.declarations.MethodDeclaration;
+import com.bergerkiller.mountiplex.reflection.util.FastMethod;
 
 public class MWListener implements Listener {
     private final MyWorlds plugin;
@@ -309,30 +312,72 @@ public class MWListener implements Listener {
     // Spawn reason is incorrect on these versions of Minecraft
     private static final boolean TRADER_SPAWNS_BORKED = Common.evaluateMCVersion(">=", "1.14") && Common.evaluateMCVersion("<=", "1.14.4");
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onCreatureSpawn(CreatureSpawnEvent event) {
-        // Any creature spawns we couldn't cancel in PreSpawn we will cancel here
-        boolean isCustomSpawn = (event.getSpawnReason() == SpawnReason.CUSTOM);
-
-        // Spawn reason is incorrect on Minecraft 1.14 - 1.14.4 and use Spawn Reason CUSTOM anyway
-        if (TRADER_SPAWNS_BORKED && isCustomSpawn) {
-            String name = event.getEntityType().name();
-            if ("WANDERING_TRADER".equals(name) || "TRADER_LLAMA".equals(name)) {
-                isCustomSpawn = false;
-            }
+    // Since BKCommonLib 1.18.2-v2: reason attribute
+    private static final FastMethod<CreatureSpawnEvent.SpawnReason> getPreSpawnReason = new FastMethod<>();
+    static {
+        try {
+            getPreSpawnReason.init(CreaturePreSpawnEvent.class.getDeclaredMethod("getSpawnReason"));
+        } catch (NoSuchMethodException | SecurityException e) {
+            ClassResolver tmp = new ClassResolver();
+            tmp.setDeclaredClass(CreaturePreSpawnEvent.class);
+            getPreSpawnReason.init(new MethodDeclaration(tmp,
+                    "public " + CreatureSpawnEvent.SpawnReason.class.getName() + " getSpawnReason() {\n" +
+                    "    return " + CreatureSpawnEvent.SpawnReason.class.getName() + ".NATURAL;\n" +
+                    "}"));
         }
+    }
 
-        if (!isCustomSpawn && (!MyWorlds.ignoreEggSpawns || event.getSpawnReason() != SpawnReason.SPAWNER_EGG)) {
-            if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
-                event.setCancelled(true);
+    private boolean isSpawnFiltered(CreatureSpawnEvent.SpawnReason reason, EntityType entityType) {
+        // Check reason is something we check for or not
+        switch (reason) {
+        case NATURAL:
+        case SPAWNER:
+            return true;
+        case SPAWNER_EGG:
+            return !MyWorlds.ignoreEggSpawns;
+        case DEFAULT:
+            return false;
+        case CUSTOM:
+            if (TRADER_SPAWNS_BORKED) {
+                String name = entityType.name();
+                if ("WANDERING_TRADER".equals(name) || "TRADER_LLAMA".equals(name)) {
+                    return true;
+                }
             }
+            return false;
+        default:
+            // Ignore command-spawned mobs (COMMAND is not a valid enum on all mc versions)
+            if (reason.name().equals("COMMAND")) {
+                return false;
+            }
+
+            // For all cases we don't know about, better safe than sorry. Block it.
+            return true;
         }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onCreaturePreSpawn(CreaturePreSpawnEvent event) {
+        // Only handle certain types of spawns
+        if (!isSpawnFiltered(getPreSpawnReason.invoke(event), event.getEntityType())) {
+            return;
+        }
+
         // Cancel creature spawns before entities are spawned
         if (WorldConfig.get(event.getSpawnLocation()).spawnControl.isDenied(event.getEntityType())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        // Only handle certain types of spawns
+        if (!isSpawnFiltered(event.getSpawnReason(), event.getEntityType())) {
+            return;
+        }
+
+        // Cancel creature spawns after entities are created, before they spawn
+        if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
             event.setCancelled(true);
         }
     }

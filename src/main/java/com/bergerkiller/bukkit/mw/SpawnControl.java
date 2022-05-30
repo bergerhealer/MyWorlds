@@ -12,6 +12,11 @@ public class SpawnControl {
     public HashSet<EntityType> deniedCreatures = new HashSet<EntityType>();
 
     public boolean isDenied(Entity entity) {
+        // Preserve entities that have a nametag!
+        if (entity.getCustomName() != null) {
+            return false;
+        }
+
         return isDenied(entity.getType());
     }
 
