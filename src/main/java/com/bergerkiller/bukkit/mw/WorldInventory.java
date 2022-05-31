@@ -12,11 +12,12 @@ import com.bergerkiller.bukkit.common.utils.WorldUtil;
 
 public class WorldInventory {
     private static final Set<WorldInventory> inventories = new HashSet<WorldInventory>();
+    private static boolean inventoriesLoaded = false;
     private static int counter = 0;
     private final Set<String> worlds = new HashSet<String>();
     private String worldname;
     private String name;
-    
+
     public static Collection<WorldInventory> getAll() {
         return inventories;
     }
@@ -26,7 +27,18 @@ public class WorldInventory {
     }
 
     public static void load() {
-        inventories.clear();
+        inventoriesLoaded = true;
+
+        // Check whether there are any configured entries that would result in saving
+        boolean hadExistingInventoriesThatRequiredSaving = false;
+        for (WorldInventory inv : inventories) {
+            if (inv.isRequiredSaving()) {
+                hadExistingInventoriesThatRequiredSaving = true;
+                break;
+            }
+        }
+
+        // Load the new configuration. Replace found settings with already-generated ones.
         FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "inventories.yml");
         config.load();
         for (ConfigurationNode node : config.getNodes()) {
@@ -38,19 +50,32 @@ public class WorldInventory {
             if (worlds.isEmpty()) {
                 continue;
             }
+
             WorldInventory inv = new WorldInventory(WorldConfig.get(sharedWorld).worldname);
             inv.name = node.getName();
             for (String world : worlds) {
+                // This assigns inv to WorldConfig. If a previous WorldConfig was set for a world,
+                // that one is de-registered.
                 inv.addWithoutSaving(world);
             }
+        }
+
+        // Re-save after loading in case merging of previous default inventories caused changes
+        if (hadExistingInventoriesThatRequiredSaving) {
+            save();
         }
     }
 
     public static void save() {
+        // Avoid overwriting inventories.yml with incomplete data before it is all loaded in
+        if (!inventoriesLoaded) {
+            return;
+        }
+
         FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "inventories.yml");
         Set<String> savedNames = new HashSet<String>();
         for (WorldInventory inventory : inventories) {
-            if (inventory.worlds.size() > 1) {
+            if (inventory.isRequiredSaving()) {
                 String name = inventory.name;
                 for (int i = 0; i < Integer.MAX_VALUE && !savedNames.add(name.toLowerCase()); i++) {
                     name = inventory.name + i;
@@ -90,6 +115,16 @@ public class WorldInventory {
 
     public Collection<String> getWorlds() {
         return this.worlds;
+    }
+
+    /**
+     * Gets whether this inventory configuration must be written to inventories.yml.
+     * Default single-world isolated confogurations don't need to be written out
+     *
+     * @return True if this entry must be saved for proper persistence
+     */
+    private boolean isRequiredSaving() {
+        return this.worlds.size() > 1;
     }
 
     /**
