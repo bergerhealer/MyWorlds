@@ -231,7 +231,7 @@ public class MyWorlds extends PluginBase {
         forceGamemodeChanges = config.get("forceGamemodeChanges", false);
 
         config.setHeader("alwaysInstantPortal", "\nWhether survival players instantly teleport when entering a nether portal");
-        alwaysInstantPortal = config.get("alwaysInstantPortal", true);
+        alwaysInstantPortal = config.get("alwaysInstantPortal", false);
 
         config.setHeader("maxPortalSignDistance", "\nThe maximum distance to look for a portal sign when entering a portal");
         maxPortalSignDistance = config.get("maxPortalSignDistance", 5.0);
