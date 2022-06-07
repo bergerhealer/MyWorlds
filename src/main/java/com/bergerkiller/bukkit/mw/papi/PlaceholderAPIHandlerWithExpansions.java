@@ -37,7 +37,7 @@ public class PlaceholderAPIHandlerWithExpansions implements LibraryComponent {
         }
 
         Hook aliasHook = new Hook(this.plugin, this.handler, "mw");
-        if (manager.getExpansion("sl") == null && manager.register(aliasHook)) {
+        if (manager.getExpansion("mw") == null && manager.register(aliasHook)) {
             hooks.add(aliasHook);
         }
     }
