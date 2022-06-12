@@ -378,6 +378,8 @@ public class WorldManager {
             // Vanilla flat world settings
             if (!options.isEmpty() && cgen == null) {
                 c.generatorSettings(options);
+            } else {
+                c.generatorSettings("{}");
             }
 
             c.generator(cgen);
