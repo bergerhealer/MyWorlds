@@ -114,7 +114,26 @@ public class MWPlayerDataController extends PlayerDataController {
         }
 
         CommonTagCompound data = posFile.read(player);
-        return PlayerRespawnPoint.fromNBT(data);
+        PlayerRespawnPoint respawn = PlayerRespawnPoint.fromNBT(data);
+        return isValidRespawnPoint(world, respawn) ? respawn : PlayerRespawnPoint.NONE;
+    }
+
+    /**
+     * Verifies that a respawn point is a valid respawn point according to inventory-sharing
+     * configurations. Avoids a respawn at another world of which transferring the respawn
+     * point from is impossible.
+     *
+     * @param world
+     * @param respawn
+     * @return True if valid, False if invalid
+     */
+    public static boolean isValidRespawnPoint(World world, PlayerRespawnPoint respawn) {
+        if (MyWorlds.useWorldInventories && !respawn.isNone()) {
+            if (!WorldConfig.get(world).inventory.contains(respawn.getWorld())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -268,6 +287,7 @@ public class MWPlayerDataController extends PlayerDataController {
             player.setSaturation(5.0f);
             player.setExhaustion(0.0f);
             player.setFireTicks(0);
+            PlayerRespawnPoint.NONE.applyToPlayer(player);
 
             // Resend items (PATCH)
             CommonUtil.nextTick(new Runnable() {
@@ -412,7 +432,8 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             // Disable bed spawn if not enabled for that world
-            removeBedSpawnPointIfDisabled(savedData);
+            // Also removes a stale bed spawn point which can't be used there
+            removeInvalidBedSpawn(player.getWorld(), savedData);
 
             // If gamerule keep inventory is active for the world the player died in, also save the
             // original items in the inventory
@@ -511,7 +532,7 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             // Disable bed spawn if not enabled for that world
-            removeBedSpawnPointIfDisabled(playerData);
+            removeInvalidBedSpawn(player.getWorld(), playerData);
 
             // When main world spawning is forced, reset location to there
             if (!hasPlayedBefore || MyWorlds.forceJoinOnMainWorld) {
@@ -588,7 +609,7 @@ public class MWPlayerDataController extends PlayerDataController {
             final CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
 
             // Disable bed spawn if not enabled for that world
-            removeBedSpawnPointIfDisabled(savedData);
+            removeInvalidBedSpawn(player.getWorld(), savedData);
 
             files.log("saving data");
 
@@ -656,9 +677,11 @@ public class MWPlayerDataController extends PlayerDataController {
         playerData.remove("SelectedItemSlot");
     }
 
-    private static void removeBedSpawnPointIfDisabled(CommonTagCompound playerData) {
+    private static void removeInvalidBedSpawn(World world, CommonTagCompound playerData) {
         PlayerRespawnPoint current = PlayerRespawnPoint.fromNBT(playerData);
         if (!current.isNone() && !WorldConfig.get(current.getWorld()).bedRespawnEnabled) {
+            PlayerRespawnPoint.NONE.toNBT(playerData);
+        } else if (!isValidRespawnPoint(world, current)) {
             PlayerRespawnPoint.NONE.toNBT(playerData);
         }
     }

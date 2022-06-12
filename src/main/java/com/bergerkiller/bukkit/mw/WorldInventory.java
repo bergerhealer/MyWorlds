@@ -6,9 +6,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 
 public class WorldInventory {
     private static final Set<WorldInventory> inventories = new HashSet<WorldInventory>();
@@ -89,11 +93,37 @@ public class WorldInventory {
     }
 
     public static void detach(Collection<String> worldnames) {
+        // Collect all the loaded Bukkit worlds impacted by this
+        Set<World> loadedWorlds = new HashSet<>();
+        for (String world : worldnames) {
+            for (String invworld : WorldConfig.get(world).inventory.getWorlds()) {
+                World w = WorldConfig.get(invworld).getWorld();
+                if (w != null) {
+                    loadedWorlds.add(w);
+                }
+            }
+        }
+
+        // Modify
         if (!worldnames.isEmpty()) {
             for (String world : worldnames) {
-                WorldConfig.get(world).inventory.removeWithoutSaving(world, true);
+                WorldConfig wc = WorldConfig.get(world);
+                wc.inventory.removeWithoutSaving(world, true);
             }
             save();
+
+            // Validate the bed spawn points of all worlds impacted, to make sure none of them
+            // refer to a now-inaccessible world.
+            for (World loadedWorld : loadedWorlds) {
+                for (Player player : loadedWorld.getPlayers()) {
+                    if (!MWPlayerDataController.isValidRespawnPoint(
+                            loadedWorld,
+                            PlayerRespawnPoint.forPlayer(player))
+                    ) {
+                        PlayerRespawnPoint.NONE.applyToPlayer(player);
+                    }
+                }
+            }
         }
     }
 
@@ -153,6 +183,10 @@ public class WorldInventory {
 
     public boolean contains(String worldname) {
         return this.worlds.contains(worldname.toLowerCase());
+    }
+
+    public boolean contains(World world) {
+        return world != null && contains(world.getName());
     }
 
     public boolean remove(String worldname) {
