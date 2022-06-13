@@ -367,7 +367,10 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             // Initialize spawn point
-            PlayerRespawnPoint.fromNBT(playerData).applyToPlayer(player);
+            PlayerRespawnPoint respawnPoint = PlayerRespawnPoint.fromNBT(playerData);
+            if (MWPlayerDataController.isValidRespawnPoint(player.getWorld(), respawnPoint)) {
+                respawnPoint.applyToPlayer(player);
+            }
             playerHandle.setSpawnForced(playerData.getValue("SpawnForced", false));
 
             NBTUtil.loadFoodMetaData(playerHandle.getFoodDataRaw(), playerData);
