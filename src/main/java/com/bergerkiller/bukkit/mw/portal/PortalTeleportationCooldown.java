@@ -192,7 +192,7 @@ public class PortalTeleportationCooldown {
         }
 
         public void set(Location position) {
-            this.position = position;
+            this.position = (position == null) ? null : position.clone();
             this.cooldown = CommonUtil.getServerTicks();
         }
 
