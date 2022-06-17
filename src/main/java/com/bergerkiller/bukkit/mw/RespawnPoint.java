@@ -31,6 +31,8 @@ public abstract class RespawnPoint {
 
     protected abstract void writeToConfig(ConfigurationNode config);
 
+    public abstract String getDescription();
+
     /**
      * Generates configuration that uniquely de-serializes as this respawn point
      *
@@ -81,6 +83,11 @@ public abstract class RespawnPoint {
         @Override
         public Location get(Player player, World world) {
             return WorldConfig.get(world).getSpawnLocation();
+        }
+
+        @Override
+        public String getDescription() {
+            return "current World spawn point";
         }
     }
 
@@ -134,6 +141,12 @@ public abstract class RespawnPoint {
             Localization.WORLD_NOTLOADED.message(player, this.position.getWorldName());
             return DEFAULT.get(player, world);
         }
+
+        @Override
+        public String getDescription() {
+            return "position x=" + this.position.getX() + " y=" + this.position.getY() + " z=" + this.position.getZ() +
+                    " in world '" + this.position.getWorldName() + "'";
+        }
     }
 
     /**
@@ -174,6 +187,11 @@ public abstract class RespawnPoint {
             Localization.WORLD_NOTLOADED.message(player, this.worldName);
             return DEFAULT.get(player, world);
         }
+
+        @Override
+        public String getDescription() {
+            return "spawn point of World '" + this.worldName + "'";
+        }
     }
 
     /**
@@ -208,6 +226,11 @@ public abstract class RespawnPoint {
             Localization.PORTAL_NOTFOUND.message(player, this.portalName);
             return DEFAULT.get(player, world);
         }
+
+        @Override
+        public String getDescription() {
+            return "portal '" + this.portalName + "'";
+        }
     }
 
     /**
@@ -230,6 +253,11 @@ public abstract class RespawnPoint {
 
         @Override
         protected void writeToConfig(ConfigurationNode config) {
+        }
+
+        @Override
+        public String getDescription() {
+            return "position where the player died";
         }
     }
 

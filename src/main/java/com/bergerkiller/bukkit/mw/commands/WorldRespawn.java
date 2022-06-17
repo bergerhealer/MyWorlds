@@ -28,7 +28,16 @@ public class WorldRespawn extends Command {
     }
 
     public void execute() {
-        if (args[0].equals("bed")) {
+        if (args.length == 0 || args[0].equals("info")) {
+            this.genWorldname(1);
+            if (!this.checkValidWorld()) {
+                return;
+            }
+
+            WorldConfig wc = WorldConfig.get(worldname);
+            message(ChatColor.GREEN + "Respawn location for world '" + worldname + "' set to the " +
+                    wc.respawnPoint.getDescription());
+        } else if (args[0].equals("bed")) {
             this.genWorldname(2);
             if (!this.checkValidWorld()) {
                 return;
@@ -153,7 +162,7 @@ public class WorldRespawn extends Command {
     public List<String> autocomplete() {
         if (args.length <= 1) {
             return processAutocomplete(Stream.of(
-                    "bed", "here", "world", "portal", "previous"));
+                    "bed", "here", "world", "portal", "previous", "info"));
         }
 
         if (args[0].equals("bed")) {
@@ -174,6 +183,8 @@ public class WorldRespawn extends Command {
                 return processAutocomplete(Stream.of(PortalStore.getPortals()));
             }
         } else if (args[0].equals("previous")) {
+            return processWorldNameAutocomplete();
+        } else if (args[0].equals("info")) {
             return processWorldNameAutocomplete();
         } else {
             return null;
