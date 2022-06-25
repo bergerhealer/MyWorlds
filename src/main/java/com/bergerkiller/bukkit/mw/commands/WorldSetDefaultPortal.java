@@ -69,6 +69,15 @@ public class WorldSetDefaultPortal extends Command {
                 message(ChatColor.GREEN + "Detected a " + dest.getMode().name() + " to " + dest.getName());
             }
 
+        } else if (command.equalsIgnoreCase("disable")) {
+            // Has no arguments
+            this.genWorldname(0);
+            if (!this.handleWorld()) {
+                return;
+            }
+
+            dest = new PortalDestination(); // Clear it
+
         } else {
             // All these commands have 1 argument
             this.genWorldname(1);
@@ -251,13 +260,15 @@ public class WorldSetDefaultPortal extends Command {
     @Override
     public List<String> autocomplete() {
         if (args.length <= 1) {
-            return this.processBasicAutocomplete("info", "autodetect", "destination", "mode",
+            return this.processBasicAutocomplete("info", "autodetect", "disable", "destination", "mode",
                     "displayname", "playeronly", "lastposition", "teleportmounts",
                     "showcredits", "nonplayerscreateportals");
         }
 
         // For info/autodetect, first arg is the world name. For other commands, its the arg following.
-        if (args[0].equalsIgnoreCase("info") || args[0].equalsIgnoreCase("autodetect") || args.length > 2) {
+        if (args[0].equalsIgnoreCase("info") || args[0].equalsIgnoreCase("disable") ||
+            args[0].equalsIgnoreCase("autodetect") || args.length > 2
+        ) {
             return this.processWorldNameAutocomplete();
         }
 
