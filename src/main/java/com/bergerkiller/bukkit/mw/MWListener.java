@@ -31,6 +31,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.WorldInitEvent;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -66,6 +67,10 @@ public class MWListener implements Listener {
         if (MyWorlds.plugin.clearInitDisableSpawn(event.getWorld().getName())) {
             WorldUtil.setKeepSpawnInMemory(event.getWorld(), false);
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldLoad(WorldLoadEvent event) {
         WorldConfig.get(event.getWorld()).onWorldLoad(event.getWorld());
     }
 
