@@ -63,6 +63,7 @@ public class MyWorlds extends PluginBase {
     public static boolean debugLogGMChanges;
     public static boolean portalToLastPosition;
     public static boolean keepInventoryPermissionEnabled;
+    public static boolean portalSignsTeleportMobs;
 
     // Portals
     public static boolean waterPortalEnabled;
@@ -283,6 +284,10 @@ public class MyWorlds extends PluginBase {
         config.addHeader("portalToLastPosition", "This is only active when 'remember last position' is enabled for the world");
         config.addHeader("portalToLastPosition", "It makes that option work not just for /tpp, but also when taking portals to a world");
         portalToLastPosition = config.get("portalToLastPosition", true);
+
+        config.setHeader("portalSignsTeleportMobs", "\nWhether [portal] signs can teleport non-player entities (mobs)");
+        config.addHeader("portalSignsTeleportMobs", "If true, items and mobs can teleport using portals near [portal] signs");
+        portalSignsTeleportMobs = config.get("portalSignsTeleportMobs", true);
 
         config.save();
 

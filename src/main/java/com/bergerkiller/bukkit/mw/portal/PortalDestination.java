@@ -217,7 +217,7 @@ public class PortalDestination {
             } else {
                 portalDestination.setDisplayName(portalNearby.getDestinationDisplayName());
             }
-            portalDestination.setPlayersOnly(true);
+            portalDestination.setPlayersOnly(!MyWorlds.portalSignsTeleportMobs);
             portalDestination.setCanTeleportMounts(true);
             portalDestination.setTeleportToLastPosition(MyWorlds.portalToLastPosition);
             return new FindResults(portalDestination, portalNearby.getName());
