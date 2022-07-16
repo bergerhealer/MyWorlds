@@ -255,8 +255,7 @@ public class MWListener implements Listener {
                     return;
                 }
 
-                // Teleport the player the next tick
-                // TODO: Correct entity velocity based on orientation change
+                // Teleport the entity the next tick
                 teleportationHandler.scheduleTeleportation(portalLocation);
                 return;
             }

@@ -118,7 +118,6 @@ public class Util {
         //TODO: Mobs?
         double minOffset = 0.001;
         if (entity instanceof Minecart) {
-            location.setYaw(location.getYaw() - 90.0f);
             minOffset = 0.0625;
         }
 

@@ -5,6 +5,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -46,22 +47,38 @@ public abstract class PortalTeleportationHandler {
      * If the teleportation fails, then the original (entered) portal position is restored.
      * The velocity for the entity on the other end is automatically computed,
      * based on the change in orientation of the player.
-     * 
+     *
      * @param position
      */
     public void scheduleTeleportation(Location position) {
-        Vector forwardDirection;
-        if (entity instanceof LivingEntity) {
-            forwardDirection = ((LivingEntity) entity).getEyeLocation().getDirection();
+        Vector velocity;
+        if (entity instanceof Minecart) {
+            // Minecarts dont really have a clear front and back, so they can drive into
+            // a portal in any orientation. Assume whatever velocity the minecart has
+            // is meant to be moving forwards, out of the portal's position.
+            velocity = position.getDirection().multiply(entity.getVelocity().length());
         } else {
-            forwardDirection = entity.getLocation().getDirection();
+            Vector forwardDirection;
+            if (entity instanceof LivingEntity) {
+                forwardDirection = ((LivingEntity) entity).getEyeLocation().getDirection();
+            } else {
+                forwardDirection = entity.getLocation().getDirection();
+            }
+
+            Quaternion old_orientation = Quaternion.fromLookDirection(forwardDirection, new Vector(0.0, 1.0, 0.0));
+            Quaternion new_orientation = Quaternion.fromLookDirection(position.getDirection(), new Vector(0.0, 1.0, 0.0));
+            Quaternion diff = Quaternion.diff(old_orientation, new_orientation);
+            velocity = entity.getVelocity();
+            diff.transformPoint(velocity);
         }
-        Quaternion old_orientation = Quaternion.fromLookDirection(forwardDirection, new Vector(0.0, 1.0, 0.0));
-        Quaternion new_orientation = Quaternion.fromLookDirection(position.getDirection(), new Vector(0.0, 1.0, 0.0));
-        Quaternion diff = Quaternion.diff(old_orientation, new_orientation);
-        Vector velocity = entity.getVelocity();
-        diff.transformPoint(velocity);
-        scheduleTeleportation(position, velocity);
+
+        // Position fix for minecarts
+        if (entity instanceof Minecart) {
+            position = position.clone();
+            position.setYaw(position.getYaw() - 90.0f);
+        }
+
+        scheduleTeleportationWithVelocity(position, velocity);
     }
 
     /**
@@ -71,7 +88,7 @@ public abstract class PortalTeleportationHandler {
      * @param position
      * @param velocity
      */
-    public void scheduleTeleportation(Location position, Vector velocity) {
+    public void scheduleTeleportationWithVelocity(Location position, Vector velocity) {
         if (entity instanceof Player) {
             Player player = (Player) entity;
 

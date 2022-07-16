@@ -147,7 +147,7 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
             Matrix4x4.diffRotation(oldTransform, newTransform).transformPoint(velocityAfterTeleport);
 
             // Perform the teleportation woo
-            scheduleTeleportation(locToTeleportTo, velocityAfterTeleport);
+            scheduleTeleportationWithVelocity(locToTeleportTo, velocityAfterTeleport);
         }
     }
 
