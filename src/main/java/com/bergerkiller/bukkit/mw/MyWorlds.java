@@ -48,7 +48,6 @@ public class MyWorlds extends PluginBase {
     public static boolean isSpoutPluginEnabled = false;
     public static boolean isMultiverseEnabled = false;
     public static boolean importFromMultiVerse = true;
-    public static boolean onlyPlayerTeleportation = true;
     public static boolean useWorldInventories;
     public static boolean storeInventoryInMainWorld;
     public static boolean calculateWorldSize;
@@ -198,9 +197,6 @@ public class MyWorlds extends PluginBase {
         config.setHeader("keepInventoryPermissionEnabled", "\nWhether players with the myworlds.world.keepinventory permission keep their inventory");
         config.addHeader("keepInventoryPermissionEnabled", "unchanged when they teleport between worlds. This disables world inventory splitting logic for them.");
         keepInventoryPermissionEnabled = config.get("keepInventoryPermissionEnabled", false);
-
-        config.setHeader("onlyPlayerTeleportation", "\nWhether only players are allowed to teleport through portals");
-        onlyPlayerTeleportation = config.get("onlyPlayerTeleportation", true);
 
         config.setHeader("allowPortalNameOverride", "\nWhether portals can be replaced by other portals with the same name on the same world");
         allowPortalNameOverride = config.get("allowPortalNameOverride", true);
