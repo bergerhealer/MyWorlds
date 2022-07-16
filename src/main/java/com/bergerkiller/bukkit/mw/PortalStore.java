@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 
 public class PortalStore {
 
@@ -30,9 +31,13 @@ public class PortalStore {
     }
 
     public static Location getPortalLocation(String portalname, String world, boolean spawnlocation) {
+        return getPortalLocation(portalname, world, spawnlocation, null);
+    }
+
+    public static Location getPortalLocation(String portalname, String world, boolean spawnlocation, Entity entityBeingTeleported) {
         Location loc = getPortalLocation(portalname, world);
         if (spawnlocation) {
-            return Util.spawnOffset(loc);
+            return Util.spawnOffset(loc, entityBeingTeleported);
         } else {
             return loc;
         }

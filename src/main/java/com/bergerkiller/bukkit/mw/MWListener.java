@@ -233,7 +233,7 @@ public class MWListener implements Listener {
 
         // If the destination leads to a portal sign, let the portal sign deal with it
         {
-            Location portalLocation = PortalStore.getPortalLocation(destination.getName(), portalBlock.getWorld().getName(), true);
+            Location portalLocation = PortalStore.getPortalLocation(destination.getName(), portalBlock.getWorld().getName(), true, entity);
             if (portalLocation != null) {
                 // Debounce
                 if (!plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {

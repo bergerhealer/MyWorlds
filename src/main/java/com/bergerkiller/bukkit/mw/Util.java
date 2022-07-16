@@ -12,6 +12,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MaterialTypeProperty;
@@ -101,15 +102,25 @@ public class Util {
      * be teleported/spawned at.
      * 
      * @param location to add to, can be null
+     * @param entity Entity to offset the location for. Has special logic for Minecarts
+     *               which are 90 degrees rotated for some reason. Can be null.
      * @return Location with the spawn offset
      */
-    public static Location spawnOffset(Location location) {
+    public static Location spawnOffset(Location location, Entity entity) {
         if (location == null) {
             return null;
         }
 
         // Safe copy
         location = location.clone();
+
+        // Minecarts are teleported 90 degrees rotated
+        //TODO: Mobs?
+        double minOffset = 0.001;
+        if (entity instanceof Minecart) {
+            location.setYaw(location.getYaw() - 90.0f);
+            minOffset = 0.0625;
+        }
 
         Block block = location.getBlock();
         AxisAlignedBBHandle blockBB = WorldUtil.getBlockData(block).getBoundingBox(block);
@@ -128,7 +139,7 @@ public class Util {
             }
             if ((ceilY - floorY) >= 1.7) {
                 // Add a very small amount of offset so the player stands on top, for sure
-                location.setY(floorY + 0.001);
+                location.setY(floorY + minOffset);
                 return location;
             }
 
@@ -138,7 +149,7 @@ public class Util {
         }
 
         // Failure. Just teleport to sign blindly, with small offset.
-        location.setY(location.getY() + 0.01);
+        location.setY(location.getY() + minOffset);
         return location;
     }
 

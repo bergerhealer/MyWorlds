@@ -83,7 +83,7 @@ public class Portal extends PortalStore {
      */
     public Location getDestination(Player player) {
         final String worldName = this.location == null ? null : this.location.getWorld().getName();
-        Location loc = getPortalLocation(this.destination, worldName, true);
+        Location loc = getPortalLocation(this.destination, worldName, true, player);
         if (loc == null) {
             String portalname = WorldManager.matchWorld(this.destination);
             World w = WorldManager.getWorld(portalname);
@@ -133,7 +133,7 @@ public class Portal extends PortalStore {
         if (entity instanceof Player) {
             MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
         }
-        boolean rval = EntityUtil.teleport(entity, Util.spawnOffset(this.getLocation()));
+        boolean rval = EntityUtil.teleport(entity, Util.spawnOffset(this.getLocation(), entity));
         return rval;
     }
 

@@ -217,7 +217,7 @@ public abstract class RespawnPoint {
 
         @Override
         public Location get(Player player, World world) {
-            Location loc = PortalStore.getPortalLocation(this.portalName, world.getName(), true);
+            Location loc = PortalStore.getPortalLocation(this.portalName, world.getName(), true, player);
             if (loc != null) {
                 return loc;
             }
