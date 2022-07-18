@@ -521,7 +521,9 @@ public class WorldManager {
      * @return Spawn location
      */
     public static WorldSpawnLocation getPlayerWorldSpawn(Player player, World world, boolean playerRespawnPoint) {
-        if (WorldConfig.get(world).rememberLastPlayerPosition || Permission.GENERAL_KEEPLASTPOS.has(player)) {
+        if (WorldConfig.get(world).rememberLastPlayerPosition ||
+                (MyWorlds.keepInventoryPermissionEnabled && Permission.GENERAL_KEEPLASTPOS.has(player))
+        ) {
             // Player is already in the world to go to...so we just return that instead
             if (player.getWorld() == world) {
                 return new WorldSpawnLocation(player.getLocation(), WorldSpawnLocation.Type.LAST_POSITION);
@@ -599,7 +601,9 @@ public class WorldManager {
      * @return spawn position is available
      */
     public static boolean hasLastKnownPosition(Player player, World world) {
-        if (WorldConfig.get(world).rememberLastPlayerPosition || Permission.GENERAL_KEEPLASTPOS.has(player)) {
+        if (WorldConfig.get(world).rememberLastPlayerPosition ||
+                (MyWorlds.keepInventoryPermissionEnabled && Permission.GENERAL_KEEPLASTPOS.has(player))
+        ) {
             return MWPlayerDataController.readLastLocation(player, world) != null;
         } else {
             return false;

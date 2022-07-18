@@ -42,6 +42,7 @@ public class MyWorlds extends PluginBase {
     public static boolean useWorldBuildPermissions;
     public static boolean useWorldUsePermissions;
     public static boolean useWorldChatPermissions;
+    public static boolean keepLastPositionPermissionEnabled;
     public static boolean allowPortalNameOverride;
     public static boolean useWorldOperators;
     public static boolean onlyObsidianPortals = false;
@@ -193,6 +194,10 @@ public class MyWorlds extends PluginBase {
         useWorldBuildPermissions = config.get("useWorldBuildPermissions", false);
         useWorldUsePermissions = config.get("useWorldUsePermissions", false);
         useWorldChatPermissions = config.get("useWorldChatPermissions", false);
+
+        config.setHeader("keepLastPositionPermissionEnabled", "\nWhether players with the myworlds.world.keeplastpos permission are teleported to");
+        config.addHeader("keepLastPositionPermissionEnabled", "the last position they had on a world when using /tpp or using portals");
+        keepLastPositionPermissionEnabled = config.get("keepLastPositionPermissionEnabled", false);
 
         config.setHeader("keepInventoryPermissionEnabled", "\nWhether players with the myworlds.world.keepinventory permission keep their inventory");
         config.addHeader("keepInventoryPermissionEnabled", "unchanged when they teleport between worlds. This disables world inventory splitting logic for them.");
