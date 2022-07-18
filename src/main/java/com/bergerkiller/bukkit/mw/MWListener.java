@@ -76,7 +76,7 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
-        WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer());
+        WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer(), true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -310,7 +310,7 @@ public class MWListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangedWorld(final PlayerChangedWorldEvent event) {
         WorldConfig.get(event.getFrom()).onPlayerLeft(event.getPlayer());
-        WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer());
+        WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer(), false);
     }
 
     // Spawn reason is incorrect on these versions of Minecraft

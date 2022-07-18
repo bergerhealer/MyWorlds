@@ -580,10 +580,14 @@ public class WorldConfig extends WorldConfigStore {
      * Fired when a player joined this world
      * 
      * @param player that just entered this world
+     * @param isJoin Whether this is a PlayerJoin event
      */
-    public void onPlayerEnter(Player player) {
+    public void onPlayerEnter(Player player, boolean isJoin) {
         // Refresh states based on the new world the player joined
-        MWPlayerDataController.refreshState(player);
+        if (!isJoin) {
+            MWPlayerDataController.refreshState(player);
+        }
+
         // Apply world-specific settings
         updateOP(player);
         updateGamemode(player);
