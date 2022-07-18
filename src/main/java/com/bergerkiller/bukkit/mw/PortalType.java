@@ -8,6 +8,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
 import com.bergerkiller.bukkit.common.math.Matrix4x4;
+import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -69,17 +70,21 @@ public enum PortalType {
                 return false;
             }
             if (MaterialUtil.ISWATER.get(main.getRelative(BlockFace.UP)) || MaterialUtil.ISWATER.get(main.getRelative(BlockFace.DOWN))) {
-                if (MaterialUtil.ISAIR.get(main.getRelative(BlockFace.NORTH)) || MaterialUtil.ISAIR.get(main.getRelative(BlockFace.SOUTH))) {
+                if (isOpen(main.getRelative(BlockFace.NORTH)) || isOpen(main.getRelative(BlockFace.SOUTH))) {
                     if (Util.isSolid(main, BlockFace.WEST) && Util.isSolid(main, BlockFace.EAST)) {
                         return true;
                     }
-                } else if (MaterialUtil.ISAIR.get(main.getRelative(BlockFace.EAST)) || MaterialUtil.ISAIR.get(main.getRelative(BlockFace.WEST))) {
+                } else if (isOpen(main.getRelative(BlockFace.EAST)) || isOpen(main.getRelative(BlockFace.WEST))) {
                     if (Util.isSolid(main, BlockFace.NORTH) && Util.isSolid(main, BlockFace.SOUTH)) {
                         return true;
                     }
                 }
             }
             return false;
+        }
+
+        private boolean isOpen(Block block) {
+            return !BlockUtil.isSuffocating(block);
         }
     };
 
