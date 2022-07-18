@@ -468,6 +468,7 @@ public class MWListener implements Listener {
                     Localization.PORTAL_CREATE_END.message(event.getPlayer());
                 }
             } else {
+                Localization.PORTAL_BUILD_NOPERM.message(event.getPlayer());
                 event.setCancelled(true);
             }
         }

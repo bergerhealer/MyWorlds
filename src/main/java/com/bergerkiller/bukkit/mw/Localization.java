@@ -21,6 +21,7 @@ public class Localization extends LocalizationEnum {
     public static final Localization PORTAL_NOTFOUND = new Localization("portal.notfound", ChatColor.RED + "Portal '%0%' was not found!");
     public static final Localization PORTAL_NODESTINATION = new Localization("portal.nodestination", ChatColor.YELLOW + "This portal has no destination!");
     public static final Localization PORTAL_NOACCESS = new Localization("portal.noaccess", ChatColor.YELLOW + "You are not allowed to enter this portal!");
+    public static final Localization PORTAL_BUILD_NOPERM = new Localization("portal.nobuildperm", ChatColor.DARK_RED + "You do not have permission to create new portals!");
     public static final Localization PORTAL_CREATE_TO = new Localization("portal.create.to", ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + "%0%" + ChatColor.GREEN + "!");
     public static final Localization PORTAL_CREATE_MISSING = new Localization("portal.create.missing", ChatColor.YELLOW + "The destination portal still has to be placed");
     public static final Localization PORTAL_CREATE_END = new Localization("portal.create.end", ChatColor.GREEN + "You created a new destination portal!");
