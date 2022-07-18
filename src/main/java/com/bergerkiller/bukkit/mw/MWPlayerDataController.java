@@ -9,12 +9,14 @@ import java.util.logging.Level;
 import java.util.zip.ZipException;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.Vector;
 
 import com.bergerkiller.bukkit.common.Common;
@@ -31,6 +33,7 @@ import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
+import com.bergerkiller.generated.net.minecraft.network.protocol.game.PacketPlayOutEntityEquipmentHandle;
 import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
 import com.bergerkiller.generated.net.minecraft.world.effect.MobEffectHandle;
 import com.bergerkiller.generated.net.minecraft.world.effect.MobEffectListHandle;
@@ -383,23 +386,38 @@ public class MWPlayerDataController extends PlayerDataController {
             // data.getValue("Bukkit.MaxHealth", (float) commonPlayer.getMaxHealth());
 
             // Load Mob Effects
-            Map<MobEffectListHandle, MobEffectHandle> effects = playerHandle.getMobEffects();
-            if (playerData.containsKey("ActiveEffects")) {
-                CommonTagList taglist = playerData.createList("ActiveEffects");
-                for (int i = 0; i < taglist.size(); ++i) {
-                    MobEffectHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) taglist.get(i));
-                    effects.put(mobEffect.getEffectList(), mobEffect);
+            {
+                Map<MobEffectListHandle, MobEffectHandle> effects = playerHandle.getMobEffects();
+                if (playerData.containsKey("ActiveEffects")) {
+                    CommonTagList taglist = playerData.createList("ActiveEffects");
+                    for (int i = 0; i < taglist.size(); ++i) {
+                        MobEffectHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) taglist.get(i));
+                        effects.put(mobEffect.getEffectList(), mobEffect);
+                    }
                 }
-            }
-            playerHandle.setUpdateEffects(true);
-
-            // Send add messages for all (new) effects
-            for (MobEffectHandle effect : effects.values()) {
-                PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_ADD.newInstance(player.getEntityId(), effect));
+                playerHandle.setUpdateEffects(true);
             }
 
             // Perform post loading
             postLoad(player);
+
+            // Send add messages for all (new) effects
+            for (MobEffectHandle effect : EntityPlayerHandle.fromBukkit(player).getMobEffects().values()) {
+                PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_ADD.newInstance(player.getEntityId(), effect));
+            }
+
+            // Resend equipment of the players that see this player.
+            // Otherwise equipment stays visible that was there before.
+            Chunk chunk = player.getLocation().getChunk();
+            for (Player viewer : player.getWorld().getPlayers()) {
+                if (viewer != player && PlayerUtil.isChunkVisible(viewer, chunk)) {
+                    for (EquipmentSlot slot : EquipmentSlot.values()) {
+                        PacketPlayOutEntityEquipmentHandle packet = PacketPlayOutEntityEquipmentHandle.createNew(
+                                player.getEntityId(), slot, Util.getEquipment(player, slot));
+                        PacketUtil.sendPacket(viewer, packet);
+                    }
+                }
+            }
         } catch (Throwable t) {
             MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
         }
