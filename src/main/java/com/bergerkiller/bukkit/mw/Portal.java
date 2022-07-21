@@ -289,6 +289,7 @@ public class Portal extends PortalStore {
             return MWListenerPost.handleTeleportPermission((Player) e, dest);
         }
         // Non-player entity was denied from teleporting there because of spawn control
-        return !WorldConfig.get(dest).spawnControl.isDenied(e);
+        // Only applies when teleporting between worlds!
+        return e.getWorld() == dest.getWorld() || !WorldConfig.get(dest).spawnControl.isDenied(e);
     }
 }
