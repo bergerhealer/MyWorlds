@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -74,21 +75,16 @@ public class PortalTeleportationCooldown {
         }.start(1, 1);
         plugin.register(new Listener() {
             @EventHandler(priority = EventPriority.MONITOR)
+            public void onPlayerJoin(PlayerJoinEvent event) {
+                // For the current tick, ignore the player teleport event
+                getTeleportedPosition(event.getPlayer()).justJoined = true;
+            }
+
+            @EventHandler(priority = EventPriority.MONITOR)
             public void onPlayerRespawn(PlayerRespawnEvent event) {
                 if (event.getRespawnLocation() != null) {
                     setPortal(event.getPlayer(), event.getRespawnLocation());
                 }
-            }
-
-            @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-            public void onEntityTeleport(EntityTeleportEvent event) {
-                setPortal(event.getEntity(), event.getTo());
-            }
-
-            @EventHandler(priority = EventPriority.MONITOR)
-            public void onPlayerJoin(PlayerJoinEvent event) {
-                // For the current tick, ignore the player teleport event
-                getTeleportedPosition(event.getPlayer()).justJoined = true;
             }
 
             @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -99,6 +95,16 @@ public class PortalTeleportationCooldown {
                 }
             }
 
+            @EventHandler(priority = EventPriority.MONITOR)
+            public void onPlayerQuit(PlayerQuitEvent event) {
+                _positions.remove(event.getPlayer().getUniqueId());
+            }
+
+            @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+            public void onCreatureSpawn(CreatureSpawnEvent event) {
+                setPortal(event.getEntity(), event.getLocation());
+            }
+
             @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
             public void onEntityPortal(EntityPortalEvent event) {
                 if (event.getTo() != null) {
@@ -106,9 +112,9 @@ public class PortalTeleportationCooldown {
                 }
             }
 
-            @EventHandler(priority = EventPriority.MONITOR)
-            public void onPlayerQuit(PlayerQuitEvent event) {
-                _positions.remove(event.getPlayer().getUniqueId());
+            @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+            public void onEntityTeleport(EntityTeleportEvent event) {
+                setPortal(event.getEntity(), event.getTo());
             }
         });
     }
