@@ -458,9 +458,13 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // If gamerule keep inventory is active for the world the player died in, also save the
             // original items in the inventory
+            // EDIT: Not needed. Player inventory is already wiped (according to server logic)
+            //       before this respawn saving logic gets executed
+            /*
             if (!"true".equals(player.getWorld().getGameRuleValue("keepInventory"))) {
                 clearInventoryNBTData(savedData);
             }
+            */
 
             // Remove potion effects
             savedData.remove("ActiveEffects");
