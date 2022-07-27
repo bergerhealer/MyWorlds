@@ -31,6 +31,7 @@ import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
+import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.generated.net.minecraft.network.protocol.game.PacketPlayOutEntityEquipmentHandle;
@@ -462,7 +463,7 @@ public class MWPlayerDataController extends PlayerDataController {
             //       before this respawn saving logic gets executed
             /*
             if (!"true".equals(player.getWorld().getGameRuleValue("keepInventory"))) {
-                clearInventoryNBTData(savedData);
+                resetPlayerData(savedData);
             }
             */
 
@@ -539,9 +540,36 @@ public class MWPlayerDataController extends PlayerDataController {
                     if (world != null) {
                         // Switch to the save file of the loaded world
                         files.setCurrentWorld(world);
+
+                        // It's possible the player joined the server before MyWorlds split inventories were active.
+                        // This is the case when the main world player data file does not have the
+                        // DATA_TAG_LASTWORLD (MyWorlds.playerWorld) in the file, OR, when that player world actually
+                        // equals the world the player was last on.
+                        //
+                        // Basically, in such a situation, we check whether the main world player data file doesn't
+                        // actually store the inventory of the player on this other world.
+                        //
+                        // If this is the case, we make a 1:1 copy of the main world data at the location of this world.
+                        // We do this so that if some other plugins force the player to spawn on the main world/lobby,
+                        // the player's inventory data doesn't get lost.
+                        // We also WIPE the inventory state on the main world, to prevent the player having the same
+                        // inventory on both worlds.
+                        //
+                        // Beware: because of the legacy 'positionFile' behavior, where it writes the player's last
+                        // position on a particular world to file, it might be a mostly-empty player data file already
+                        // exists on that world. We must ignore that and trust the data of the main world, instead.
+                        if (files.currentFile != files.mainWorldFile) {
+                            UUID mw_data_world = mainWorldData.getUUID(DATA_TAG_LASTWORLD);
+                            if ((mw_data_world == null || mw_data_world.equals(world.getUID()))) {
+                                StreamUtil.copyFile(files.mainWorldFile.file, files.currentFile.file);
+                                resetPlayerData(mainWorldData);
+                                files.mainWorldFile.write(mainWorldData);
+                            }
+                        }
                     }
                 } catch (Throwable t) {
                     // Stick with the current world for now.
+                    MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to load player data of " + player.getName(), t);
                 }
             }
 
@@ -567,13 +595,7 @@ public class MWPlayerDataController extends PlayerDataController {
             // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
             World playerCurrentWorld = Bukkit.getWorld(((mainWorldData != null) ? mainWorldData : playerData).getUUID("World"));
             if (playerCurrentWorld != null && WorldConfig.get(playerCurrentWorld).clearInventory) {
-                clearInventoryNBTData(playerData);
-                playerData.remove("ActiveEffects");
-                playerData.putValue("XpLevel", 0);
-                playerData.putValue("XpTotal", 0);
-                playerData.putValue("XpP", 0.0F);
-                playerData.remove("HealF");
-                playerData.remove("Health");
+                resetPlayerData(playerData);
 
                 // Save this player data back to file to make sure clear inventory is adhered
                 files.currentFile.write(playerData);
@@ -688,7 +710,7 @@ public class MWPlayerDataController extends PlayerDataController {
         }
     }
 
-    private static void clearInventoryNBTData(CommonTagCompound playerData) {
+    private static void resetPlayerData(CommonTagCompound playerData) {
         // Create an empty CommonTagList with the right type information, by adding a compound and removing it
         // There is no good api in BKCommonLib to make an empty list of a given element type (TODO!)
         {
@@ -700,6 +722,13 @@ public class MWPlayerDataController extends PlayerDataController {
 
         playerData.remove("Attributes");
         playerData.remove("SelectedItemSlot");
+
+        playerData.remove("ActiveEffects");
+        playerData.putValue("XpLevel", 0);
+        playerData.putValue("XpTotal", 0);
+        playerData.putValue("XpP", 0.0F);
+        playerData.remove("HealF");
+        playerData.remove("Health");
     }
 
     private static void removeInvalidBedSpawn(World world, CommonTagCompound playerData) {
