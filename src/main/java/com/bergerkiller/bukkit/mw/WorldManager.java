@@ -606,24 +606,6 @@ public class WorldManager {
     }
 
     /**
-     * Whether a previous spawn location is available for a player to teleport to.
-     * See {@link #getPlayerWorldSpawn(Player, World)}.
-     * 
-     * @param player
-     * @param world
-     * @return spawn position is available
-     */
-    public static boolean hasLastKnownPosition(Player player, World world) {
-        if (WorldConfig.get(world).rememberLastPlayerPosition ||
-                (MyWorlds.keepInventoryPermissionEnabled && Permission.GENERAL_KEEPLASTPOS.has(player))
-        ) {
-            return MWPlayerDataController.readLastLocation(player, world) != null;
-        } else {
-            return false;
-        }
-    }
-
-    /**
      * Teleports a player to a destination location. If the location is solid,
      * and the teleportation is cross-world, normally the player is teleported
      * away to a safe place. If this happens, a second teleport is done to

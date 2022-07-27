@@ -468,6 +468,9 @@ public class MWListener implements Listener {
                     if (!portal.hasDestination()) {
                         Localization.PORTAL_CREATE_MISSING.message(event.getPlayer());
                     }
+                    if (portal.isRejoin()) {
+                        Localization.PORTAL_CREATE_REJOIN.message(event.getPlayer());
+                    }
                 } else {
                     Localization.PORTAL_CREATE_END.message(event.getPlayer());
                 }

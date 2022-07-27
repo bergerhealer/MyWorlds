@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -10,19 +11,20 @@ import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.material.Directional;
-import org.bukkit.material.MaterialData;
 
-import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
+import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.wrappers.BlockData;
 
 public class Portal extends PortalStore {
     private String name;
     private String destination;
     private String destdisplayname;
+    private boolean rejoin = false;
     private Location location;
 
     /**
@@ -63,6 +65,17 @@ public class Portal extends PortalStore {
      */
     public String getDestinationDisplayName() {
         return this.destdisplayname;
+    }
+
+    /**
+     * Whether when teleporting using the portal, players should first rejoin
+     * the destination location World. Only if that fails should the actual
+     * underlying location be teleported to.
+     *
+     * @return True if this is a rejoin portal
+     */
+    public boolean isRejoin() {
+        return this.rejoin;
     }
 
     /**
@@ -241,38 +254,57 @@ public class Portal extends PortalStore {
     }
 
     public static Portal get(Block signblock, String[] lines) {
-        if (signblock.getState() instanceof Sign && lines[0].equalsIgnoreCase("[portal]")) {
-            Portal p = new Portal();
-            // Read name, if none set, use portal location as name
-            p.name = Util.filterPortalName(lines[1]);
-            if (LogicUtil.nullOrEmpty(p.name)) {
-                p.name = StringUtil.blockToString(signblock);
-            }
-            // Read destination, if none set, set to null so it's clear there is no destination set
-            p.destination = Util.filterPortalName(lines[2]);
-            if (p.destination.isEmpty()) {
-                p.destination = null;
-            }
-            // Read destination name, if none set, use destination instead
-            if (lines[3].isEmpty()) {
-                p.destdisplayname = p.getDestinationName();
-            } else {
-                p.destdisplayname = lines[3];
-            }
-            // Set portal locatiol using sign location and orientation
-            p.location = signblock.getLocation();
-            p.location.setX(p.location.getBlockX() + 0.5);
-            p.location.setZ(p.location.getBlockZ() + 0.5);
-
-            float yaw = 0;
-            MaterialData data = BlockUtil.getData(signblock);
-            if (data instanceof Directional) {
-                yaw = FaceUtil.faceToYaw(((Directional) data).getFacing()) + 90;
-            }
-            p.location.setYaw(yaw);
-            return p;
+        BlockData signblockData = WorldUtil.getBlockData(signblock);
+        if (!MaterialUtil.ISSIGN.get(signblockData)) {
+            return null;
         }
-        return null;
+
+        boolean isRejoin = false;
+        {
+            String header = lines[0].toLowerCase(Locale.ENGLISH);
+            if (!header.startsWith("[portal") || header.charAt(header.length()-1) != ']') {
+                return null;
+            }
+
+            String mid = header.substring(7, header.length() - 1).trim();
+            if (!mid.isEmpty()) {
+                if (mid.equals("rejoin")) {
+                    isRejoin = true;
+                } else {
+                    return null; // Invalid syntax
+                }
+            }
+        }
+
+        Portal p = new Portal();
+        // Read name, if none set, use portal location as name
+        p.rejoin = isRejoin;
+        p.name = Util.filterPortalName(lines[1]);
+        if (LogicUtil.nullOrEmpty(p.name)) {
+            p.name = StringUtil.blockToString(signblock);
+        }
+        // Read destination, if none set, set to null so it's clear there is no destination set
+        p.destination = Util.filterPortalName(lines[2]);
+        if (p.destination.isEmpty()) {
+            p.destination = null;
+        }
+        // Read destination name, if none set, use destination instead
+        if (lines[3].isEmpty()) {
+            p.destdisplayname = p.getDestinationName();
+        } else {
+            p.destdisplayname = lines[3];
+        }
+        // Set portal locatiol using sign location and orientation
+        p.location = signblock.getLocation();
+        p.location.setX(p.location.getBlockX() + 0.5);
+        p.location.setZ(p.location.getBlockZ() + 0.5);
+
+        float yaw = 0;
+        if (signblockData.getMaterialData() instanceof Directional) {
+            yaw = FaceUtil.faceToYaw(signblockData.getFacingDirection()) + 90;
+        }
+        p.location.setYaw(yaw);
+        return p;
     }
 
     /**

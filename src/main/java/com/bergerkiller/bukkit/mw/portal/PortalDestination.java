@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw.portal;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
@@ -210,7 +211,7 @@ public class PortalDestination {
         if (portalNearby != null) {
             //TODO: allow PortalMode to be used in the Portal itself
             PortalDestination portalDestination = new PortalDestination();
-            portalDestination.setMode(PortalMode.DEFAULT);
+            portalDestination.setMode(portalNearby.isRejoin() ? PortalMode.REJOIN : PortalMode.DEFAULT);
             portalDestination.setName(portalNearby.getDestinationName());
             if (portalNearby.getDestinationDisplayName().equals(portalDestination.getName())) {
                 portalDestination.setDisplayName("");
@@ -219,7 +220,13 @@ public class PortalDestination {
             }
             portalDestination.setPlayersOnly(!MyWorlds.portalSignsTeleportMobs);
             portalDestination.setCanTeleportMounts(true);
-            portalDestination.setTeleportToLastPosition(MyWorlds.portalToLastPosition);
+            if (!portalNearby.isRejoin() && MyWorlds.portalToLastPosition) {
+                // Find destination location. If that world has rememberLastPos to true, use it.
+                Location dest = portalNearby.getDestination();
+                if (dest != null && WorldConfig.get(dest.getWorld()).rememberLastPlayerPosition) {
+                    portalDestination.setTeleportToLastPosition(true);
+                }
+            }
             return new FindResults(portalDestination, portalNearby.getName());
         }
 

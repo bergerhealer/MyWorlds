@@ -25,6 +25,7 @@ public class Localization extends LocalizationEnum {
     public static final Localization PORTAL_CREATE_TO = new Localization("portal.create.to", ChatColor.GREEN + "You created a new portal to " + ChatColor.WHITE + "%0%" + ChatColor.GREEN + "!");
     public static final Localization PORTAL_CREATE_MISSING = new Localization("portal.create.missing", ChatColor.YELLOW + "The destination portal still has to be placed");
     public static final Localization PORTAL_CREATE_END = new Localization("portal.create.end", ChatColor.GREEN + "You created a new destination portal!");
+    public static final Localization PORTAL_CREATE_REJOIN = new Localization("portal.create.rejoin", ChatColor.GREEN + "This is a rejoin portal: players will be sent to the last position they were at, if known");
     public static final Localization PORTAL_PREPARING = new Localization("portal.preparing", ChatColor.YELLOW + "The other portal is being prepared (this can take a while...)");
     public static final Localization PORTAL_LINK_UNAVAILABLE = new Localization("portal.link.unavailable", ChatColor.YELLOW + "The other end of this portal is missing, and you cannot create it");
     public static final Localization PORTAL_LINK_FAILED = new Localization("portal.link.unavailable", ChatColor.YELLOW + "The other end of this portal could not be generated");
