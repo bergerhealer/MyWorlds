@@ -28,9 +28,9 @@ public abstract class Command {
     public MyWorlds plugin;
     public Permission permission;
     public String commandNode;
-    public String command;
     public Player player;
     public CommandSender sender;
+    public String commandRootLabel;
     public String commandLabel;
     public String[] args;
     public String worldname;
@@ -41,9 +41,10 @@ public abstract class Command {
         this.commandNode = commandNode;
     }
 
-    public void init(MyWorlds plugin, CommandSender sender, String commandLabel, String[] args) {
+    public void init(MyWorlds plugin, CommandSender sender, String commandRootLabel, String commandLabel, String[] args) {
         this.plugin = plugin;
         this.sender = sender;
+        this.commandRootLabel = commandRootLabel;
         this.commandLabel = commandLabel;
         this.args = args;
         if (sender instanceof Player) {
@@ -280,13 +281,26 @@ public abstract class Command {
     /**
      * Reads a World Mode set on the world name using the /-parameter
      * For example, /world create world1/nether will read the nether forced mode.
+     * IF // is used, then it is seen as part of the world name, and replaced with
+     * a single /
      */
     public void genForcedWorldMode() {
-        int idx = this.worldname.indexOf('/');
         this.forcedWorldMode = null;
-        if (idx != -1) {
-            this.forcedWorldMode = WorldMode.get(this.worldname.substring(idx + 1), WorldMode.NORMAL);
-            this.worldname = this.worldname.substring(0, idx);
+
+        for (int i = 0; i < this.worldname.length() - 1; i++) {
+            char c = this.worldname.charAt(i);
+            if (c == '/') {
+                if (this.worldname.charAt(i + 1) == '/') {
+                    // Unescape // -> /
+                    this.worldname = this.worldname.substring(0, i) + this.worldname.substring(i + 1);
+                    continue;
+                }
+
+                // Forced world mode identified
+                this.forcedWorldMode = WorldMode.get(this.worldname.substring(i + 1), WorldMode.NORMAL);
+                this.worldname = this.worldname.substring(0, i);
+                break;
+            }
         }
     }
 

@@ -24,6 +24,7 @@ public class MyWorldsCommands {
     }
 
     public void execute(CommandSender sender, String cmdLabel, String[] args) {
+        String rootCmdLabel = cmdLabel;
         cmdLabel = trimPluginPrefix(cmdLabel);
 
         //generate a node from this command
@@ -39,7 +40,7 @@ public class MyWorldsCommands {
         }
 
         // Instantiate
-        Command command = registeredCommand.createExecutor(plugin, sender, cmdLabel, args);
+        Command command = registeredCommand.createExecutor(plugin, sender, rootCmdLabel, cmdLabel, args);
         if (command.hasPermission()) {
             command.execute();
         } else {
@@ -52,6 +53,7 @@ public class MyWorldsCommands {
     }
 
     public List<String> autocomplete(CommandSender sender, String cmdLabel, String[] args) {
+        String rootCmdLabel = cmdLabel;
         cmdLabel = trimPluginPrefix(cmdLabel);
 
         RegisteredCommand registeredCommand = null;
@@ -75,7 +77,7 @@ public class MyWorldsCommands {
             return null; // dunno
         }
 
-        Command command = registeredCommand.createExecutor(plugin, sender, cmdLabel, args);
+        Command command = registeredCommand.createExecutor(plugin, sender, rootCmdLabel, cmdLabel, args);
         return command.autocomplete();
     }
 }

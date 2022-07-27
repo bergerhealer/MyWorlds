@@ -61,6 +61,7 @@ public class WorldCommandRegistry extends CommandRegistry {
         register(EnableCredits::new, "showcredits", "enablecredits");
         register(WorldAdvancements::new, "advancements", "setadvancements");
         register(WorldAlias::new, "alias", "setalias");
+        register(WorldLastPosition::new, "lastposition", "lastpos");
     }
 
 }

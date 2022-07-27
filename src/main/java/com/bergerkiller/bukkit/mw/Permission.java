@@ -45,6 +45,7 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_ENABLECREDITS = new Permission("world.enablecredits", PermissionDefault.TRUE, "Enables a player to view the end-game credits a second time, after already completing the end before");
     public static final Permission COMMAND_ADVANCEMENTS = new Permission("world.advancements", PermissionDefault.OP, "Sets if players can toggle advancements on/off for a world");
     public static final Permission COMMAND_ALIAS = new Permission("world.alias", PermissionDefault.OP, "Sets if the player can change the (PlaceholderAPI) world name alias");
+    public static final Permission COMMAND_LAST_POSITION = new Permission("world.lastposition", PermissionDefault.OP, "Shows the last player positions on other worlds and allows teleporting to them");
     public static final Permission COMMAND_TPP = new Permission("tpp", PermissionDefault.OP, "Sets if the player can teleport to any worlds or portals, ignoring the per-portal/world permissions");
     public static final Permission GENERAL_TELEPORT = new Permission("world.teleport", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn", 1);
     public static final Permission GENERAL_ENTER = new Permission("world.enter", PermissionDefault.OP, "Sets if the player can enter a certain world through portals", 1);

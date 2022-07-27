@@ -42,17 +42,17 @@ public class Position extends Location implements Cloneable {
     public void setWorldName(String worldname) {
         this.worldname = worldname;
     }
-    
+
     @Override
     public double distanceSquared(Location location) {
         return new Location(location.getWorld(), this.getX(), this.getY(), this.getZ()).distanceSquared(location);
     }
-    
+
     @Override
     public double distance(Location location) {
         return Math.abs(distanceSquared(location));
     }
-    
+
     public Location toLocation() {
         return new Location(this.getWorld(), this.getX(), this.getY(), this.getZ(), this.getYaw(), this.getPitch());
     }
@@ -64,6 +64,11 @@ public class Position extends Location implements Cloneable {
     @Override
     public Block getBlock() {
         return getBlock(getWorld());
+    }
+
+    @Override
+    public boolean isWorldLoaded() {
+        return getWorld() != null;
     }
 
     /**

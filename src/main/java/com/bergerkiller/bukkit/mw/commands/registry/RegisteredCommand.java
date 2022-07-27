@@ -29,13 +29,14 @@ public class RegisteredCommand {
      * 
      * @param plugin
      * @param sender
+     * @param commandRootLabel Root command label ('world', 'myworlds:mw', etc.)
      * @param commandLabel
      * @param args
      * @return command
      */
-    public Command createExecutor(MyWorlds plugin, CommandSender sender, String commandLabel, String[] args) {
+    public Command createExecutor(MyWorlds plugin, CommandSender sender, String commandRootLabel, String commandLabel, String[] args) {
         Command command = _constructor.get();
-        command.init(plugin, sender, commandLabel, args);
+        command.init(plugin, sender, commandRootLabel, commandLabel, args);
         return command;
     }
 
