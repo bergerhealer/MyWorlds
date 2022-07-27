@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +15,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.wrappers.ChatText;
 import com.bergerkiller.bukkit.mw.LastPlayerPositionList;
 import com.bergerkiller.bukkit.mw.Localization;
@@ -21,11 +23,15 @@ import com.bergerkiller.bukkit.mw.MWPlayerDataController;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Position;
 import com.bergerkiller.bukkit.mw.Util;
+import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.WorldConfigStore;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 /**
  * Lists the last position the sending player, or player specified, has on all worlds known
  * to MyWorlds. Includes a quick clickable link to teleport to that last position.
+ * Also sets up the rejoin world group configurations, which is used by /world rejoin
+ * and rejoin portals.
  */
 public class WorldLastPosition extends Command {
     private static final ZoneId UTC_ZONE = ZoneId.of("UTC");
@@ -39,18 +45,48 @@ public class WorldLastPosition extends Command {
     public void execute() {
         if (args.length > 0) {
             String lastPosCmd = this.removeArg(0);
+            boolean isMerge = false;
             if (lastPosCmd.equalsIgnoreCase("list")) {
                 executeList();
                 return;
             } else if (lastPosCmd.equalsIgnoreCase("tp") || lastPosCmd.equalsIgnoreCase("teleport")) {
                 executeTeleport();
                 return;
+            } else if (lastPosCmd.equalsIgnoreCase("split") || (isMerge = lastPosCmd.equalsIgnoreCase("merge"))) {
+                if (isMerge && args.length == 0) {
+                    sender.sendMessage(ChatColor.RED + "Specify at least two worlds to merge, or one world to show merge details about");
+                    return;
+                } else if (!isMerge && args.length == 0) {
+                    sender.sendMessage(ChatColor.RED + "Specify at least one world to split off");
+                    return;
+                }
+                List<WorldConfig> worlds = new ArrayList<>(args.length);
+                for (String worldName : args) {
+                    WorldConfig wc = WorldConfig.getIfExists(worldName);
+                    if (wc == null || !wc.isLoaded()) {
+                        Localization.WORLD_NOTLOADED.message(sender, worldName);
+                        return;
+                    }
+                    worlds.add(wc);
+                }
+                if (isMerge) {
+                    executeMerge(worlds.get(0), worlds.subList(1, worlds.size()));
+                } else {
+                    executeSplit(worlds);
+                }
+                return;
             }
         }
 
         executeList();
         sender.sendMessage("");
-        sender.sendMessage(ChatColor.RED + "Usage: " + commandRootLabel + " lastposition tp <worldname> [ofplayer]");
+        sender.sendMessage(ChatColor.RED + "Usage:");
+        sender.sendMessage(ChatColor.RED + "  /" + commandRootLabel + " lastposition list [player]");
+        sender.sendMessage(ChatColor.RED + "  /" + commandRootLabel + " lastposition tp <worldname> [ofplayer]");
+        sender.sendMessage(ChatColor.RED + "Merging and splitting last-position rejoin groups:");
+        sender.sendMessage(ChatColor.RED + "  /" + commandRootLabel + " lastposition split <world> [world2...]");
+        sender.sendMessage(ChatColor.RED + "  /" + commandRootLabel + " lastposition merge <world1> <w2> [w3...]");
+        sender.sendMessage(ChatColor.RED + "(This is used for /world rejoin and rejoin portals)");
     }
 
     @Override
@@ -64,11 +100,13 @@ public class WorldLastPosition extends Command {
                 } else {
                     return processPlayerNameAutocomplete();
                 }
+            } else if (args[0].equalsIgnoreCase("split") || args[0].equalsIgnoreCase("merge")) {
+                return processWorldNameAutocomplete();
             } else if (args.length > 1) {
                 return Collections.emptyList();
             }
         }
-        return processBasicAutocomplete("list", "tp");
+        return processBasicAutocomplete("list", "tp", "split", "merge");
     }
 
     private void executeList() {
@@ -90,7 +128,7 @@ public class WorldLastPosition extends Command {
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime yesterday = now.minusDays(1);
-        for (LastPlayerPositionList.LastPosition lastPos : MWPlayerDataController.readLastPlayerPositions(player).all()) {
+        for (LastPlayerPositionList.LastPosition lastPos : MWPlayerDataController.readLastPlayerPositions(player).all(false)) {
             Position pos = lastPos.getPosition();
             if (pos == null || pos.getWorld() == player.getWorld()) {
                 continue;
@@ -158,6 +196,75 @@ public class WorldLastPosition extends Command {
             message(ChatColor.YELLOW.toString() + "Teleporting to last position of player '" +
                     lastPosPlayer.getName() + "' on world '" + world.getName() + "'!");
         }
+    }
+
+    private void executeSplit(List<WorldConfig> worlds) {
+        for (WorldConfig world : worlds) {
+            WorldConfig rejoinWorld = WorldConfigStore.findRejoin(world);
+            if (rejoinWorld.rejoinGroup.isEmpty()) {
+                continue;
+            }
+
+            List<String> tmp = new ArrayList<>(rejoinWorld.rejoinGroup);
+            if (rejoinWorld == world) {
+                // Migrate rejoin group to the first world in the list we can use
+                for (WorldConfig alt : rejoinWorld.getRejoinGroupWorldConfigs()) {
+                    if (alt != rejoinWorld) {
+                        tmp.remove(alt.worldname);
+                        alt.rejoinGroup = Collections.unmodifiableList(tmp);
+                        break;
+                    }
+                }
+
+                // Clear rejoin group of target world
+                rejoinWorld.rejoinGroup = Collections.emptyList();
+            } else {
+                // Remove from list
+                tmp.remove(world.worldname);
+                rejoinWorld.rejoinGroup = Collections.unmodifiableList(tmp);
+            }
+        }
+
+        sender.sendMessage(ChatColor.YELLOW + "Worlds have been removed from any last-position rejoin groups");
+    }
+
+    private void executeMerge(WorldConfig first, List<WorldConfig> withWorlds) {
+        // Resolve the first element into an existing group, if any
+        first = WorldConfig.findRejoin(first);
+
+        // Merge the 'with' entries into first. Also resolve rejoin groups of these,
+        // and split them if different
+        for (WorldConfig withInp : withWorlds) {
+            WorldConfig with = WorldConfig.findRejoin(withInp);
+            if (with == first) {
+                continue; // Already merged
+            }
+
+            // Merge it in
+            {
+                List<String> newRejoinGroup = new ArrayList<>(first.rejoinGroup);
+                newRejoinGroup.add(with.worldname);
+                newRejoinGroup.addAll(with.rejoinGroup);
+                first.rejoinGroup = Collections.unmodifiableList(newRejoinGroup);
+            }
+
+            // Clear previous group, is now merged into the other one
+            with.rejoinGroup = Collections.emptyList();
+        }
+
+        MessageBuilder builder = new MessageBuilder();
+        builder.newLine().yellow("These worlds are now part of a last-position rejoin group:");
+        builder.newLine().yellow("Main world: ").green(first.worldname);
+        if (first.rejoinGroup.isEmpty()) {
+            builder.newLine().red("There are no secondary worlds");
+        } else {
+            builder.newLine().yellow("Secondary worlds: ");
+            builder.setSeparator(ChatColor.WHITE, " / ").setIndent(2).newLine();
+            for (String worldName : first.rejoinGroup) {
+                builder.green(worldName);
+            }
+        }
+        builder.send(sender);
     }
 
     private ChatText formatPosition(Position pos, Player player) {

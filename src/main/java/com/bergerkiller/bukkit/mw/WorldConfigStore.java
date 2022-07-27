@@ -107,6 +107,27 @@ public class WorldConfigStore {
         return worldConfigs.values();
     }
 
+    /**
+     * Looks up a main world config that has a rejoin group configuration that includes
+     * the world specified.
+     *
+     * @param world World part of a rejoin group
+     * @return WorldConfig that has a rejoinGroup that includes the world specified,
+     *         or the WorldConfig of the world itself if none exist.
+     */
+    public static WorldConfig findRejoin(WorldConfig world) {
+        // Most common case: main world is itself a group
+        if (world.rejoinGroup.isEmpty()) {
+            // See if there's another world that contains it
+            for (WorldConfig otherConfig : all() ) {
+                if (world != otherConfig && otherConfig.rejoinGroup.contains(world.worldname)) {
+                    return otherConfig;
+                }
+            }
+        }
+        return world;
+    }
+
     public static boolean exists(String worldname) {
         return worldConfigs.containsKey(worldname);
     }

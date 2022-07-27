@@ -4,13 +4,12 @@ import java.util.List;
 
 import org.bukkit.World;
 
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldRejoin extends Command {
-    
+
     public WorldRejoin() {
         super(Permission.COMMAND_REJOIN, "world.rejoin");
     }
@@ -38,7 +37,7 @@ public class WorldRejoin extends Command {
         if (this.handleWorld()) {
             World world = WorldManager.getWorld(worldname);
             if (world != null) {
-                EntityUtil.teleport(player, WorldManager.getPlayerRejoinPosition(player, world));
+                WorldManager.teleportToExact(player, WorldManager.getPlayerRejoinPosition(player, world));
             } else {
                 Localization.WORLD_NOTLOADED.message(sender, worldname);
             }

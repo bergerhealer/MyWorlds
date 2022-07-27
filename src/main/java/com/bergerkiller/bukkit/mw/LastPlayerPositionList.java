@@ -109,7 +109,7 @@ public class LastPlayerPositionList implements Cloneable {
         }
     }
 
-    public List<LastPosition> all() {
+    public List<LastPosition> all(boolean newestFirst) {
         int size = list.size();
         List<LastPosition> result = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
@@ -120,7 +120,11 @@ public class LastPlayerPositionList implements Cloneable {
         }
 
         // Sort list by time
-        Collections.sort(result);
+        if (newestFirst) {
+            Collections.sort(result, Collections.reverseOrder());
+        } else {
+            Collections.sort(result);
+        }
 
         return result;
     }
@@ -202,6 +206,18 @@ public class LastPlayerPositionList implements Cloneable {
 
         public String getWorldName() {
             return tag.getValue(DATA_TAG_WORLD_NAME, String.class);
+        }
+
+        public World getWorld() {
+            UUID uuid = this.getWorldUUID();
+            if (uuid != null) {
+                return Bukkit.getWorld(uuid);
+            }
+            String name = this.getWorldName();
+            if (name != null) {
+                return Bukkit.getWorld(name);
+            }
+            return null; // Weird!
         }
 
         public long getTime() {

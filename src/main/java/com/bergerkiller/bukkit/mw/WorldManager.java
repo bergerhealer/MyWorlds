@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.logging.Level;
@@ -477,24 +478,36 @@ public class WorldManager {
 
     /**
      * Attempts to let a player rejoin a world, or group of worlds, a player was on
-     * based on inventory sharing rules. If the player has no known previous
+     * based on the world configuration 'rejoin group'. If the player has no known previous
      * world/position information for the world, then the player rejoins the
      * world parameter instead.
-     * 
+     *
      * @param player Player to find a rejoin location for
      * @param world World to rejoin
      * @return Rejoined location
      */
     public static Location getPlayerRejoinPosition(Player player, World world) {
+        // Check rejoin group rules to find what group this world is a part of
+        // If found, and loaded, use that group's defined main world to find the spawn
+        WorldConfig worldConfig = WorldConfig.get(world);
+        WorldConfig mainConfig = WorldConfigStore.findRejoin(worldConfig);
+        {
+            World w = mainConfig.getWorld();
+            if (w != null) {
+                world = w;
+            }
+        }
+
         // If player is already currently on a world part of the world group,
         // just return the player's current position
-        if (WorldConfig.get(world).inventory.contains(player.getWorld().getName())) {
+        List<WorldConfig> groupWorlds = mainConfig.getRejoinGroupWorldConfigs();
+        if (groupWorlds.contains(WorldConfig.get(player.getWorld()))) {
             return player.getLocation();
         }
 
         // Check player data what the last world was the player was on
         // Return the position on that world
-        Location rejoinedLoc = MWPlayerDataController.readLastLocationOfWorldGroup(player, world);
+        Location rejoinedLoc = MWPlayerDataController.readLastLocationOfWorldGroup(player, groupWorlds);
         if (rejoinedLoc != null) {
             return rejoinedLoc;
         }

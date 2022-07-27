@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -183,33 +184,36 @@ public class MWPlayerDataController extends PlayerDataController {
     }
 
     /**
-     * Checks the main world where inventory data is saved for a player and
-     * reads what world in the world group of inventory state the player
-     * was last on. For this world, the last-known position is returned.
-     * 
+     * Gets the last-known position of a Player in a world, or any of the worlds set
+     * as the world rejoin group of that world. Based on time.
+     *
      * @param player
-     * @param world
+     * @param possibleWorldConfigs Worlds to check for a last position
      * @return Last known Location, or null if not found/stored
      */
-    public static Location readLastLocationOfWorldGroup(Player player, World world) {
-        String sharedWorldName = WorldConfig.get(world).inventory.getSharedWorldName();
-        WorldConfig sharedWorldConfig = WorldConfig.get(sharedWorldName);
-        PlayerFile sharedPlayerFile = new PlayerFile(player, sharedWorldConfig);
-        if (!sharedPlayerFile.exists()) {
-            return null;
+    public static Location readLastLocationOfWorldGroup(Player player, List<WorldConfig> possibleWorldConfigs) {
+        // Find all positions known for the player
+        // Import legacy positions of all worlds we need to check
+        for (LastPlayerPositionList.LastPosition pos : readLastPlayerPositions(player, possibleWorldConfigs).all(true)) {
+            World posWorld = pos.getWorld();
+            if (posWorld == null) {
+                continue; // Not loaded
+            }
+
+            for (WorldConfig wc : possibleWorldConfigs) {
+                if (wc.getWorld() == posWorld) {
+                    Location loc = pos.getLocation();
+                    if (loc != null) {
+                        return loc;
+                    } else {
+                        break; // Not loaded? Eh?
+                    }
+                }
+            }
         }
 
-        CommonTagCompound data = sharedPlayerFile.read(player);
-        UUID lastWorldUUID = data.getValue(DATA_TAG_LASTWORLD, UUID.class);
-        if (lastWorldUUID == null) {
-            return null;
-        }
-        World lastWorld = Bukkit.getWorld(lastWorldUUID);
-        if (lastWorld == null) {
-            return null;
-        }
-
-        return readLastLocation(player, lastWorld);
+        // Unknown
+        return null;
     }
 
     /**

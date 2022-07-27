@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -50,6 +51,7 @@ public class WorldConfig extends WorldConfigStore {
     public final TimeControl timeControl = new TimeControl(this);
     private PortalDestination defaultNetherPortal;
     private PortalDestination defaultEndPortal;
+    public List<String> rejoinGroup = Collections.emptyList();
     public List<String> OPlist = new ArrayList<String>();
     public boolean allowHunger = true;
     public boolean autosave = true;
@@ -189,6 +191,7 @@ public class WorldConfig extends WorldConfigStore {
         this.difficulty = config.difficulty;
         this.spawnPoint = config.spawnPoint.clone();
         this.respawnPoint = config.respawnPoint; // Is immutable
+        this.rejoinGroup = config.rejoinGroup; // Is immutable
         this.gameMode = config.gameMode;
         this.allowHunger = config.allowHunger;
         this.pvp = config.pvp;
@@ -245,6 +248,14 @@ public class WorldConfig extends WorldConfigStore {
             }
         }
 
+        // List of world names included when using the /world rejoin command
+        if (node.contains("rejoinGroup")) {
+            this.rejoinGroup = Collections.unmodifiableList(new ArrayList<>(
+                    node.getList("rejoinGroup", String.class)));
+        } else {
+            this.rejoinGroup = Collections.emptyList();
+        }
+
         this.formIce = node.get("formIce", this.formIce);
         this.formSnow = node.get("formSnow", this.formSnow);
         this.pvp = node.get("pvp", this.pvp);
@@ -294,6 +305,7 @@ public class WorldConfig extends WorldConfigStore {
         node.remove("chunkGenerator");
         node.remove("spawn");
         node.remove("loaded");
+        node.remove("rejoinGroup");
     }
 
     public void save(ConfigurationNode node) {
@@ -361,6 +373,12 @@ public class WorldConfig extends WorldConfigStore {
             node.remove("respawn");
         } else {
             node.set("respawn", this.respawnPoint.toConfig());
+        }
+
+        if (rejoinGroup.isEmpty()) {
+            node.remove("rejoinGroup");
+        } else {
+            node.set("rejoinGroup", rejoinGroup);
         }
     }
 
@@ -978,6 +996,28 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     /**
+     * Turns the {@link #rejoinGroup} config option into a list of (existing) WorldConfig instances,
+     * including this world config itself.
+     *
+     * @return rejoin world configs
+     */
+    public List<WorldConfig> getRejoinGroupWorldConfigs() {
+        if (rejoinGroup.isEmpty()) {
+            return Collections.singletonList(this);
+        } else {
+            List<WorldConfig> worldConfigs = new ArrayList<>();
+            worldConfigs.add(this);
+            for (String name : rejoinGroup) {
+                WorldConfig wc = WorldConfig.getIfExists(name);
+                if (wc != null && wc.isLoaded()) {
+                    worldConfigs.add(wc);
+                }
+            }
+            return worldConfigs;
+        }
+    }
+
+    /**
      * Creates a new Data compound for this World, storing the default values
      * 
      * @param seed to use
@@ -1191,6 +1231,11 @@ public class WorldConfig extends WorldConfigStore {
         File worldFolder = this.getWorldFolder();
         WorldConfig.remove(this.worldname);
         return StreamUtil.deleteFile(worldFolder).isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return "WorldConfig{world=" + worldname + "}";
     }
 
     /*
