@@ -194,7 +194,8 @@ public class MWPlayerDataController extends PlayerDataController {
     public static Location readLastLocationOfWorldGroup(Player player, List<WorldConfig> possibleWorldConfigs) {
         // Find all positions known for the player
         // Import legacy positions of all worlds we need to check
-        for (LastPlayerPositionList.LastPosition pos : readLastPlayerPositions(player, possibleWorldConfigs).all(true)) {
+        LastPlayerPositionList lastPositions = readLastPlayerPositions(player, possibleWorldConfigs);
+        for (LastPlayerPositionList.LastPosition pos : lastPositions.all(true)) {
             World posWorld = pos.getWorld();
             if (posWorld == null) {
                 continue; // Not loaded
@@ -203,11 +204,16 @@ public class MWPlayerDataController extends PlayerDataController {
             for (WorldConfig wc : possibleWorldConfigs) {
                 if (wc.getWorld() == posWorld) {
                     Location loc = pos.getLocation();
-                    if (loc != null) {
-                        return loc;
-                    } else {
+                    if (loc == null) {
                         break; // Not loaded? Eh?
                     }
+                    if (!verifyLastLocationValid(loc, player)) {
+                        lastPositions = lastPositions.clone();
+                        lastPositions.removeForWorld(wc);
+                        storeLastPlayerPositions(player, lastPositions);
+                        break;
+                    }
+                    return loc;
                 }
             }
         }
@@ -227,7 +233,33 @@ public class MWPlayerDataController extends PlayerDataController {
         WorldConfig config = WorldConfig.get(world);
         LastPlayerPositionList posList = readLastPlayerPositions(player, Collections.singletonList(config));
         LastPlayerPositionList.LastPosition pos = posList.getForWorld(config);
-        return (pos == null) ? null : pos.getLocation();
+        if (pos == null) {
+            return null;
+        }
+        Location loc = pos.getLocation();
+        if (loc == null) {
+            return null;
+        }
+        if (!verifyLastLocationValid(loc, player)) {
+            posList = posList.clone();
+            posList.removeForWorld(config);
+            storeLastPlayerPositions(player, posList);
+            return null;
+        }
+        return loc;
+    }
+
+    private static boolean verifyLastLocationValid(Location loc, Player player) {
+        // Verify a player profile file actually exists at the destination path
+        // If there is not, then the player profile was wiped out and this last position
+        // information got out of sync.
+        PlayerFile file = new PlayerFile(player, WorldConfig.get(loc.getWorld()));
+        if (!file.exists()) {
+            return false;
+        }
+
+        // TODO: Do we actually read this file to check the position as well?
+        return true;
     }
 
     /**

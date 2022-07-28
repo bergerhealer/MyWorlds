@@ -109,6 +109,15 @@ public class LastPlayerPositionList implements Cloneable {
         }
     }
 
+    public boolean removeForWorld(WorldConfig worldConfig) {
+        LastPosition pos = getForWorld(worldConfig);
+        if (pos == null) {
+            return false;
+        }
+        list.remove(pos.index);
+        return true;
+    }
+
     public List<LastPosition> all(boolean newestFirst) {
         int size = list.size();
         List<LastPosition> result = new ArrayList<>(size);
@@ -228,7 +237,7 @@ public class LastPlayerPositionList implements Cloneable {
          * Decodes the position information as a Location. If no information is stored,
          * or the world it is for is not loaded, returns null.
          *
-         * @return decoded position
+         * @return decoded location
          */
         public Location getLocation() {
             Position p = getPosition();
