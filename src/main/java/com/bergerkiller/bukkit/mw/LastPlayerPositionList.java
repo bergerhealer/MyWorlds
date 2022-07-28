@@ -241,7 +241,7 @@ public class LastPlayerPositionList implements Cloneable {
          */
         public Location getLocation() {
             Position p = getPosition();
-            return (p.getWorld() == null) ? null : p;
+            return (p == null || p.getWorld() == null) ? null : p;
         }
 
         /**
