@@ -273,7 +273,7 @@ public class MyWorlds extends PluginBase {
 
         config.setHeader("ignoreBreedingSpawns", "\nWhether mob breeding and slime splitting is allowed to occur, even if worlds");
         config.addHeader("have these entities blacklisted to be spawned");
-        ignoreBreedingSpawns = config.get("ignoreBreedingSpawns", true);
+        ignoreBreedingSpawns = config.get("ignoreBreedingSpawns", false);
 
         config.setHeader("overridePortalPhysics", "\nWhether Vanilla portal physics are overrided to allow them to be built/stacked");
         overridePortalPhysics = config.get("overridePortalPhysics", true);
