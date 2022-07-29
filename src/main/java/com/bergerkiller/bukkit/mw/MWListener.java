@@ -177,11 +177,13 @@ public class MWListener implements Listener {
         // This cooldown is set to non-zero once teleportation would normally commence
         // Creative players are exempt
         // All of this only matters for nether portals
-        if (!MyWorlds.alwaysInstantPortal && portalType == PortalType.NETHER) {
+        if (portalType == PortalType.NETHER) {
             if (entity instanceof Player) {
-                Player p = (Player) entity;
-                if (p.getGameMode() != GameMode.CREATIVE && EntityUtil.getPortalCooldown(p) == 0) {
-                    return;
+                if (!MyWorlds.alwaysInstantPortal) {
+                    Player p = (Player) entity;
+                    if (p.getGameMode() != GameMode.CREATIVE && EntityUtil.getPortalCooldown(p) == 0) {
+                        return;
+                    }
                 }
             } else if (EntityUtil.getPortalCooldown(entity) == 0) {
                 return;

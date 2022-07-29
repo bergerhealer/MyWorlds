@@ -11,7 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -100,10 +99,12 @@ public class PortalTeleportationCooldown {
                 _positions.remove(event.getPlayer().getUniqueId());
             }
 
+            /*
             @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
             public void onCreatureSpawn(CreatureSpawnEvent event) {
                 setPortal(event.getEntity(), event.getLocation());
             }
+            */
 
             @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
             public void onEntityPortal(EntityPortalEvent event) {
