@@ -69,15 +69,6 @@ public class WorldSetDefaultPortal extends Command {
                 message(ChatColor.GREEN + "Detected a " + dest.getMode().name() + " to " + dest.getName());
             }
 
-        } else if (command.equalsIgnoreCase("disable")) {
-            // Has no arguments
-            this.genWorldname(0);
-            if (!this.handleWorld()) {
-                return;
-            }
-
-            dest = new PortalDestination(); // Clear it
-
         } else {
             // All these commands have 1 argument
             this.genWorldname(1);
@@ -154,6 +145,10 @@ public class WorldSetDefaultPortal extends Command {
                     message(ChatColor.YELLOW + "Destination is currently set to: " + ChatColor.WHITE + "'" +
                             ((dest==null?"None":dest.getName()) + "'"));
                 }
+
+            } else if (command.equalsIgnoreCase("disable")) {
+                // Has no arguments
+                dest = new PortalDestination(); // Clear it
 
             } else if (command.equalsIgnoreCase("mode")) {
                 if (args.length > 0) {
