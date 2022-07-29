@@ -60,6 +60,7 @@ public class MyWorlds extends PluginBase {
     public static boolean overridePortalPhysics;
     public static boolean alwaysInstantPortal;
     public static boolean ignoreEggSpawns;
+    public static boolean ignoreBreedingSpawns;
     public static boolean debugLogGMChanges;
     public static boolean portalToLastPosition;
     public static boolean keepInventoryPermissionEnabled;
@@ -232,7 +233,7 @@ public class MyWorlds extends PluginBase {
         config.addHeader("forceGamemodeChanges", "myworlds.world.ignoregamemode permission");
         forceGamemodeChanges = config.get("forceGamemodeChanges", false);
 
-        config.setHeader("alwaysInstantPortal", "\nWhether survival players and mobs instantly teleport when entering a nether portal");
+        config.setHeader("alwaysInstantPortal", "\nWhether survival players instantly teleport when entering a nether portal");
         alwaysInstantPortal = config.get("alwaysInstantPortal", false);
 
         config.setHeader("maxPortalSignDistance", "\nThe maximum distance to look for a portal sign when entering a portal");
@@ -266,8 +267,13 @@ public class MyWorlds extends PluginBase {
         endPortalEnabled = enabledPortals.get("endPortal", true);
         waterPortalEnabled = enabledPortals.get("waterPortal", true);
 
-        config.setHeader("ignoreEggSpawns", "\nWhether egg-spawned entities are allowed to spawn, even if worlds have these entities blacklisted");
+        config.setHeader("ignoreEggSpawns", "\nWhether egg-spawned entities are allowed to spawn, even if worlds have these");
+        config.addHeader("entities blacklisted to be spawned");
         ignoreEggSpawns = config.get("ignoreEggSpawns", true);
+
+        config.setHeader("ignoreBreedingSpawns", "\nWhether mob breeding and slime splitting is allowed to occur, even if worlds");
+        config.addHeader("have these entities blacklisted to be spawned");
+        ignoreBreedingSpawns = config.get("ignoreBreedingSpawns", true);
 
         config.setHeader("overridePortalPhysics", "\nWhether Vanilla portal physics are overrided to allow them to be built/stacked");
         overridePortalPhysics = config.get("overridePortalPhysics", true);

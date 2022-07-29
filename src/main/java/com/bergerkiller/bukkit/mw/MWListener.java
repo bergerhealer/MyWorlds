@@ -343,6 +343,11 @@ public class MWListener implements Listener {
             return true;
         case SPAWNER_EGG:
             return !MyWorlds.ignoreEggSpawns;
+        case BREEDING:
+        case SLIME_SPLIT:
+        case OCELOT_BABY:
+        case INFECTION:
+            return !MyWorlds.ignoreBreedingSpawns;
         case DEFAULT:
             return false;
         case CUSTOM:
