@@ -233,7 +233,7 @@ public class WorldSetDefaultPortal extends Command {
                                                     String name)
     {
         if (args.length > 0) {
-            if (ParseUtil.isBool(args[0])) {
+            if (!ParseUtil.isBool(args[0])) {
                 message(ChatColor.RED + "Not a valid yes/no value: " + args[0]);
                 return dest;
             }
