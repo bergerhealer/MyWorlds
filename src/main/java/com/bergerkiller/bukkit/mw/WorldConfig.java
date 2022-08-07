@@ -35,6 +35,7 @@ import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.bukkit.mw.external.MultiverseHandler;
 import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
+import com.bergerkiller.bukkit.mw.utils.GeneratorStructuresParser;
 
 public class WorldConfig extends WorldConfigStore {
     public final String worldname;
@@ -1024,11 +1025,41 @@ public class WorldConfig extends WorldConfigStore {
      * @return Data compound
      */
     public CommonTagCompound createData(long seed) {
+        String args = this.getChunkGeneratorName();
+        if (args == null) {
+            args = ""; // Eh.
+        }
+
+        // Trim generator plugin name
+        {
+            int idx = args.indexOf(':');
+            if (idx != -1) {
+                args = args.substring(idx + 1);
+            }
+        }
+
+        GeneratorStructuresParser structuresOption = new GeneratorStructuresParser();
+        String options = structuresOption.process(args);
+
         CommonTagCompound data = new CommonTagCompound();
         data.putValue("thundering", (byte) 0);
         data.putValue("thundering", (byte) 0);
         data.putValue("LastPlayed", System.currentTimeMillis());
+
+        // We abuse data conversion so we can put old-style options, and theyll automatically be
+        // converted to what is appropriate for a modern MC version.
+        // This supports the legacy-style options string, instead of just JSON
+        // Most of this changes around MC 1.16!
         data.putValue("RandomSeed", seed);
+        data.putValue("generatorName", worldmode.getTypeName());
+        data.putValue("generatorVersion", 0);
+        data.putValue("generatorOptions", options);
+        if (structuresOption.hasNoStructures) {
+            data.putValue("MapFeatures", false);
+        } else if (structuresOption.hasStructures) {
+            data.putValue("MapFeatures", true);
+        }
+
         data.putValue("version", 19133);
         data.putValue("initialized", (byte) 0); // Spawn point needs to be re-initialized, etc.
         data.putValue("Time", 0L);

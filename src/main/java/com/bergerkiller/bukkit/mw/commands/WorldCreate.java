@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.chunk.ForcedChunk;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
@@ -20,6 +21,7 @@ import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
 import com.bergerkiller.bukkit.mw.WorldMode;
+import com.bergerkiller.bukkit.mw.utils.GeneratorStructuresParser;
 
 public class WorldCreate extends Command {
 
@@ -51,18 +53,25 @@ public class WorldCreate extends Command {
                     wc.setChunkGeneratorName(cgenName);
                     if (cgenName.indexOf(':') == 0) {
                         String args = cgenName.substring(1);
+
+                        // Check whether nostructures option is specified, and write it up-front if so
+                        GeneratorStructuresParser structuresOption = new GeneratorStructuresParser();
+                        args = structuresOption.process(args);
+
                         // Write a level.dat with the options changed
-                        CommonTagCompound data = wc.createData(seedval);
-                        data.putValue("generatorName", wc.worldmode.getTypeName());
-                        data.putValue("generatorVersion", 0);
-                        data.putValue("generatorOptions", args);
-                        wc.setData(data);
+                        // This is needed because the options passed to WorldCreator don't support special syntaxes.
+                        wc.resetData(seedval);
 
                         // Log options, limit it to 200 chars
                         if (args.length() > 200) {
                             message(ChatColor.WHITE + "World options: " + ChatColor.YELLOW + args.substring(0, 200) + "(...)");
                         } else {
                             message(ChatColor.WHITE + "World options: " + ChatColor.YELLOW + args);
+                        }
+                        if (structuresOption.hasNoStructures) {
+                            message(ChatColor.WHITE + "World structures: " + ChatColor.RED + "DISABLED");
+                        } else if (structuresOption.hasStructures) {
+                            message(ChatColor.WHITE + "World structures: " + ChatColor.GREEN + "ENABLED");
                         }
 
                         message(ChatColor.WHITE + "World generator: " + ChatColor.YELLOW + "Default (Vanilla)");

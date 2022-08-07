@@ -35,6 +35,7 @@ import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
+import com.bergerkiller.bukkit.mw.utils.GeneratorStructuresParser;
 
 public class WorldManager {
 
@@ -348,30 +349,11 @@ public class WorldManager {
 
             // Parse custom structures/nostructures option from options
             if (!options.isEmpty()) {
-                int idx;
-                if (options.startsWith("nostructures;")) {
-                    options = options.substring(13);
+                GeneratorStructuresParser parser = new GeneratorStructuresParser();
+                options = parser.process(options);
+                if (parser.hasNoStructures) {
                     c.generateStructures(false);
-                } else if (options.startsWith("structures;")) {
-                    options = options.substring(11);
-                    c.generateStructures(true);
-                } else if ((idx = options.indexOf(";nostructures;")) != -1) {
-                    options = options.substring(0, idx) + options.substring(idx + 13);
-                    c.generateStructures(false);
-                } else if ((idx = options.indexOf(";structures;")) != -1) {
-                    options = options.substring(0, idx) + options.substring(idx + 11);
-                    c.generateStructures(true);
-                } else if (options.endsWith(";nostructures")) {
-                    options = options.substring(0, options.length() - 13);
-                    c.generateStructures(false);
-                } else if (options.endsWith(";structures")) {
-                    options = options.substring(0, options.length() - 11);
-                    c.generateStructures(true);
-                } else if (options.equals("nostructures")) {
-                    options = "";
-                    c.generateStructures(false);
-                } else if (options.equals("structures")) {
-                    options = "";
+                } else if (parser.hasStructures) {
                     c.generateStructures(true);
                 }
             }
