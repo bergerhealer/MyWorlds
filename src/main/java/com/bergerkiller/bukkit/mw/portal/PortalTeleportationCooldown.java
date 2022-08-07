@@ -7,19 +7,19 @@ import java.util.UUID;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 import com.bergerkiller.bukkit.common.Task;
-import com.bergerkiller.bukkit.common.internal.CommonBootstrap;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
@@ -30,8 +30,16 @@ import com.bergerkiller.bukkit.mw.MyWorlds;
  * portals
  */
 public class PortalTeleportationCooldown {
-    private static final boolean PORTAL_COOLDOWN_RELIABLE = CommonBootstrap.evaluateMCVersion(">=", "1.9");
     private static final double WALK_DIST_SQ = 2.25;
+    /**
+     * After this number of ticks elapse without an attempted teleport, 'forget' about
+     * the cooldown we stored in the past. Must be high enough to prevent instantly
+     * taking the portal again during the changing-world delay. As entries get reset
+     * when players walk away from the portal, this timeout doesn't need to be very
+     * small.
+     */
+    private static final int PORTAL_COOLDOWN_TIMEOUT = 300;
+
     private final MyWorlds plugin;
     private final Map<UUID, TeleportedPosition> _positions = new HashMap<>();
     private Task refreshTask = null;
@@ -99,12 +107,12 @@ public class PortalTeleportationCooldown {
                 _positions.remove(event.getPlayer().getUniqueId());
             }
 
-            /*
             @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
             public void onCreatureSpawn(CreatureSpawnEvent event) {
-                setPortal(event.getEntity(), event.getLocation());
+                if (event.getSpawnReason() == SpawnReason.NETHER_PORTAL) {
+                    setPortal(event.getEntity(), event.getLocation());
+                }
             }
-            */
 
             @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
             public void onEntityPortal(EntityPortalEvent event) {
@@ -206,7 +214,7 @@ public class PortalTeleportationCooldown {
         public boolean tryExpire(Entity entity, int currentTicks) {
             if (this.position.distanceSquared(entity.getLocation()) > WALK_DIST_SQ) {
                 return true; // expired, entity walked away from the portal
-            } else if (currentTicks > (this.cooldown + getPortalCooldownMaximum(entity))) {
+            } else if (currentTicks > (this.cooldown + PORTAL_COOLDOWN_TIMEOUT)) {
                 return true; // expired, cooldown timer has expired
             } else {
                 return false; // still active
@@ -215,7 +223,7 @@ public class PortalTeleportationCooldown {
 
         public boolean canEnter(Entity entity, Location entityPosition) {
             // Check cooldown timer. If expired, permit entering the portal
-            if (CommonUtil.getServerTicks() > (this.cooldown + getPortalCooldownMaximum(entity))) {
+            if (CommonUtil.getServerTicks() > (this.cooldown + PORTAL_COOLDOWN_TIMEOUT)) {
                 return true;
             }
 
@@ -230,15 +238,6 @@ public class PortalTeleportationCooldown {
             }
 
             return false;
-        }
-
-
-        private static int getPortalCooldownMaximum(Entity entity) {
-            if (PORTAL_COOLDOWN_RELIABLE || !(entity instanceof Player)) {
-                return EntityUtil.getPortalCooldownMaximum(entity);
-            } else {
-                return 300; // Fix for Minecraft 1.8
-            }
         }
     }
 }
