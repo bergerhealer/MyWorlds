@@ -66,14 +66,15 @@ public class NetherPortalOrientation {
      * The input location object is modified.
      * 
      * @param location
+     * @param doubleHeight Whether two blocks must be free
      */
-    public void adjustPosition(Location location) {
+    public void adjustPosition(Location location, boolean doubleHeight) {
         if (this.portalBlocks.isEmpty()) {
             return; // fallback
         }
 
         IntVector3 location_pos = new IntVector3(location);
-        if (this.portalBlocks.contains(location_pos) && this.portalBlocks.contains(location_pos.add(BlockFace.UP))) {
+        if (this.portalBlocks.contains(location_pos) && (!doubleHeight || this.portalBlocks.contains(location_pos.add(BlockFace.UP)))) {
             return; // Fully contained within
         }
 
@@ -88,7 +89,7 @@ public class NetherPortalOrientation {
             double dz = pos.midZ()-location.getZ();
             double dsq = (dx*dx) + (dy*dy) + (dz*dz);
 
-            if (this.portalBlocks.contains(pos.add(BlockFace.UP))) {
+            if (doubleHeight && this.portalBlocks.contains(pos.add(BlockFace.UP))) {
                 if (!found_safe) {
                     found_safe = true;
                 } else if (dsq >= best_dest) {
