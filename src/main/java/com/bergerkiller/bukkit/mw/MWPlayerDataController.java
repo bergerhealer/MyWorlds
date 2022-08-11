@@ -786,6 +786,11 @@ public class MWPlayerDataController extends PlayerDataController {
                 }
             }
 
+            // Initialize empty data for first-time joining
+            if (playerData == null) {
+                playerData = createEmptyData(player);
+            }
+
             // Store a snapshot of this information for faster future retrieval
             storeLastPlayerPositions(player, lastPlayerPositions.clone());
 
