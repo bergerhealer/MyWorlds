@@ -729,9 +729,15 @@ public class MWPlayerDataController extends PlayerDataController {
                 lastPlayerPositions.addNoPositionSlot(files.mainWorldFile.world);
             }
 
+            // If force-joining the main world is enabled, and we got main world data, switch
+            // the stored world to the MyWorlds main world
+            if (MyWorlds.forceJoinOnMainWorld && hasPlayedBefore) {
+                mainWorldData.putUUID("World", MyWorlds.getMainWorld().getUID());
+            }
+
             // Find out where to find the save file
             // No need to check for this if not using world inventories - it is always the main file then
-            if (MyWorlds.useWorldInventories && hasPlayedBefore && !MyWorlds.forceJoinOnMainWorld) {
+            if (MyWorlds.useWorldInventories && hasPlayedBefore) {
                 try {
                     // Allow switching worlds and positions
                     World world = Bukkit.getWorld(mainWorldData.getUUID("World"));
