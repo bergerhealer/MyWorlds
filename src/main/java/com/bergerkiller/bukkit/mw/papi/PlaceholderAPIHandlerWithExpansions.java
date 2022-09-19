@@ -79,6 +79,11 @@ public class PlaceholderAPIHandlerWithExpansions implements LibraryComponent {
         public String getVersion() {
             return this.plugin.getDescription().getVersion();
         }
+        
+        @Override
+        public boolean persist() {
+            return true;
+        }
 
         @Override
         public List<String> getPlaceholders() {
