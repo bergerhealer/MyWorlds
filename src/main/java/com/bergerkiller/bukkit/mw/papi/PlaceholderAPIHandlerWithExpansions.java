@@ -82,7 +82,7 @@ public class PlaceholderAPIHandlerWithExpansions implements LibraryComponent {
         
         @Override
         public boolean persist() {
-        return true;
+            return true;
         }
 
         @Override
