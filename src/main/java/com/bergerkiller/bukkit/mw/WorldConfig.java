@@ -765,6 +765,16 @@ public class WorldConfig extends WorldConfigStore {
         MyWorlds.plugin.getAdvancementManager().applyGameRule(world, this.advancementsEnabled && !this.advancementsSilent);
     }
 
+    public boolean isTeleportingToLastPosition(Player player) {
+        if (this.rememberLastPlayerPosition) {
+            return true;
+        }
+        if (MyWorlds.keepLastPositionPermissionEnabled && Permission.GENERAL_KEEPLASTPOS.has(player)) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Gets a safe configuration name for this World Configuration<br>
      * Unsafe characters, such as dots, are replaced

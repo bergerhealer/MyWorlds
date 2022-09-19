@@ -516,9 +516,7 @@ public class WorldManager {
      * @return Spawn location
      */
     public static WorldSpawnLocation getPlayerWorldSpawn(Player player, World world, boolean playerRespawnPoint) {
-        if (WorldConfig.get(world).rememberLastPlayerPosition ||
-                (MyWorlds.keepInventoryPermissionEnabled && Permission.GENERAL_KEEPLASTPOS.has(player))
-        ) {
+        if (WorldConfig.get(world).isTeleportingToLastPosition(player)) {
             // Player is already in the world to go to...so we just return that instead
             if (player.getWorld() == world) {
                 return new WorldSpawnLocation(player.getLocation(), WorldSpawnLocation.Type.LAST_POSITION);
