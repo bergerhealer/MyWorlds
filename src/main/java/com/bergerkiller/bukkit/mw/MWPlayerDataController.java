@@ -6,6 +6,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -46,21 +47,30 @@ public class MWPlayerDataController extends PlayerDataController {
     public static final String DATA_TAG_ROOT = "MyWorlds";
     /**
      * At this position in the main world's player data file MyWorlds stores the last positions
-     * and world UUID's a player was at. This replaces legacy 'positionFile' logic.
+     * and world UUID's a player was at. This replaces legacy 'positionFile' logic.<br>
+     * <br>
+     * Stored within {@link #DATA_TAG_ROOT} compound.
      */
     public static final String DATA_TAG_LAST_POSITIONS = "lastPlayerPositions";
-
     /**
-     * Last world UUID the player was on, and where to send the player when joining.
-     * Is only stored in the player profile data of the main world.
-     *
-     * TODO: Actually migrate this under the 'MyWorlds' block.
+     * At this position in the main world's player data file MyWorlds stores whether the data
+     * was saved back when MyWorlds multiple-world-inventories feature was turned off. In that
+     * case the data in the main file should be migrated to the world it is actually for,
+     * if currently this feature is enabled.<br>
+     * <br>
+     * If this tag and the LEGACY_DATA_TAG_LASTWORLD tag are absent or refer to the main
+     * world itself it is assumed the data must be migrated first.<br>
+     * <br>
+     * Stored within {@link #DATA_TAG_ROOT} compound.
      */
-    public static final String DATA_TAG_LASTWORLD = "MyWorlds.playerWorld";
+    public static final String DATA_TAG_IS_SELF_CONTAINED = "isSelfContained";
 
     // Legacy stuff! Used purely to import older player data and migrate to the 'lastPlayerPositions' api.
+    // The playerWorld tag stores the world the position/rotation is for, matching the data file
+    // This is stored in the shared world group 'storage' world
     public static final String LEGACY_DATA_TAG_LASTPOS = "MyWorlds.playerPos";
     public static final String LEGACY_DATA_TAG_LASTROT = "MyWorlds.playerRot";
+    public static final String LEGACY_DATA_TAG_LASTWORLD = "MyWorlds.playerWorld";
 
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
 
@@ -735,13 +745,14 @@ public class MWPlayerDataController extends PlayerDataController {
                             // Beware: because of the legacy 'positionFile' behavior, where it writes the player's last
                             // position on a particular world to file, it might be a mostly-empty player data file already
                             // exists on that world. We must ignore that and trust the data of the main world, instead.
-                            {
-                                UUID mw_data_world = mainWorldData.getUUID(DATA_TAG_LASTWORLD);
-                                if ((mw_data_world == null || mw_data_world.equals(world.getUID()))) {
-                                    StreamUtil.copyFile(files.mainWorldFile.file, files.currentFile.file);
-                                    resetPlayerData(mainWorldData);
-                                    files.mainWorldFile.write(mainWorldData);
-                                }
+                            if (PlayerDataFile.isSelfContained(mainWorldData)) {
+                                // Copy main world profile -> world it is actually for
+                                StreamUtil.copyFile(files.mainWorldFile.file, files.currentFile.file);
+
+                                // Reset profile for main world. Track that it is now self-contained
+                                resetPlayerData(mainWorldData);
+                                mainWorldData.createCompound(DATA_TAG_ROOT).putValue(DATA_TAG_IS_SELF_CONTAINED, false);
+                                files.mainWorldFile.write(mainWorldData);
                             }
 
                             // Load this world's specific player data
@@ -871,11 +882,15 @@ public class MWPlayerDataController extends PlayerDataController {
                 files.positionFile.update(player, data -> {
                     data.putListValues(LEGACY_DATA_TAG_LASTPOS, loc.getX(), loc.getY(), loc.getZ());
                     data.putListValues(LEGACY_DATA_TAG_LASTROT, loc.getYaw(), loc.getPitch());
+
+                    // Position file cannot possibly store this information
+                    data.remove(LEGACY_DATA_TAG_LASTWORLD);
+
+                    // Make sure position file is aware of the configured world inventories feature as well
+                    // If we reach this, we know it's enabled
+                    data.createCompound(DATA_TAG_ROOT).putValue(DATA_TAG_IS_SELF_CONTAINED, false);
                 });
             }
-
-            // Store last world player was on in the same file also storing inventory state
-            savedData.putValue(DATA_TAG_LASTWORLD, loc.getWorld().getUID());
 
             // Track the last position on this world
             final LastPlayerPositionList lastPositions = readLastPlayerPositions(player, Collections.emptyList()).clone();
@@ -886,11 +901,25 @@ public class MWPlayerDataController extends PlayerDataController {
             }
             storeLastPlayerPositions(player, lastPositions);
 
+            // Updates information tracked in the main world player data file
+            final Consumer<CommonTagCompound> mainWorldUpdater = data -> {
+                // Update last positions
+                CommonTagCompound myWorlds = data.createCompound(DATA_TAG_ROOT);
+                myWorlds.put(DATA_TAG_LAST_POSITIONS, lastPositions.getDataTag());
+
+                // Track for saved inventories whether at the time of saving multi-world inventories were enabled
+                // This is important to detect pre-enabled inventory data and migrate those inventories appropriately.
+                myWorlds.putValue(DATA_TAG_IS_SELF_CONTAINED, !MyWorlds.useWorldInventories);
+            };
+
             // If main world, also write updated last position information to the file
             if (files.isMainWorld()) {
-                CommonTagCompound myWorlds = savedData.createCompound(DATA_TAG_ROOT);
-                myWorlds.put(DATA_TAG_LAST_POSITIONS, lastPositions.getDataTag());
+                mainWorldUpdater.accept(savedData);
             }
+
+            // Store last world player was on in the same file also storing inventory state
+            // TODO: THIS IS LEGACY. Remove in the future! Is now part of the last positions info.
+            savedData.putValue(LEGACY_DATA_TAG_LASTWORLD, loc.getWorld().getUID());
 
             // Save data to the destination file
             files.currentFile.write(savedData);
@@ -902,12 +931,7 @@ public class MWPlayerDataController extends PlayerDataController {
                     data.put("Pos", savedData.get("Pos"));
                     data.put("Rotation", savedData.get("Rotation"));
                     data.putUUID("World", player.getWorld().getUID());
-
-                    // Update last positions
-                    {
-                        CommonTagCompound myWorlds = savedData.createCompound(DATA_TAG_ROOT);
-                        myWorlds.put(DATA_TAG_LAST_POSITIONS, lastPositions.getDataTag());
-                    }
+                    mainWorldUpdater.accept(data);
                 });
             }
         } catch (Throwable t) {

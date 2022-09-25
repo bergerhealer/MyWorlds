@@ -429,6 +429,7 @@ public class MyWorlds extends PluginBase {
      */
     public void changeMainWorld(String newMainWorldName) {
         mainWorld = newMainWorldName;
+        storeInventoryInMainWorld = true;
 
         FileConfiguration config = new FileConfiguration(this);
         config.load();

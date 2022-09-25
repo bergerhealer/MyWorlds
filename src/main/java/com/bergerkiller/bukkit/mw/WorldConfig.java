@@ -33,6 +33,7 @@ import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.bukkit.mw.external.MultiverseHandler;
+import com.bergerkiller.bukkit.mw.playerdata.PlayerDataFile;
 import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
 import com.bergerkiller.bukkit.mw.utils.GeneratorStructuresParser;
@@ -958,7 +959,7 @@ public class WorldConfig extends WorldConfigStore {
      * @return Player Data File
      */
     public File getPlayerData(OfflinePlayer player) {
-        return new File(getPlayerFolder(), player.getUniqueId().toString() + ".dat");
+        return PlayerDataFile.getPlayerDataFile(getPlayerFolder(), player.getUniqueId());
     }
 
     /**

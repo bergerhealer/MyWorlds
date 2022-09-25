@@ -55,21 +55,17 @@ public class WorldInventory extends Command {
             this.removeArg(0);
             if (args.length == 0 || args[0].equalsIgnoreCase("status")) {
                 plugin.getPlayerDataMigrator().showStatus(sender);
-            } else {
+            } else if (checkNotMigrating()) {
                 String migrationName = this.removeArg(0);
                 this.executeMigration(migrationName);
             }
             return;
         }
 
+        if (!checkNotMigrating()) {
+            return;
+        }
         if (args.length > 1) {
-            // While migrating data, can't change any of the configs...
-            if (plugin.getPlayerDataMigrator().isRunning()) {
-                sender.sendMessage(ChatColor.RED + "Can't change inventory configuration: busy migrating");
-                plugin.getPlayerDataMigrator().showStatus(sender);
-                return;
-            }
-
             if (args[0].equalsIgnoreCase("merge")) {
                 if (this.prepareWorlds()) {
                     Set<String> invWorlds = new LinkedHashSet<String>();
@@ -168,6 +164,16 @@ public class WorldInventory extends Command {
         } else {
             message(ChatColor.RED + "Unknown command: /world inventory migrate " + migrationName);
         }
+    }
+
+    private boolean checkNotMigrating() {
+        // While migrating data, can't change any of the configs...
+        if (plugin.getPlayerDataMigrator().isRunning()) {
+            sender.sendMessage(ChatColor.RED + "Can't change inventory configuration: busy migrating");
+            plugin.getPlayerDataMigrator().showStatus(sender);
+            return false;
+        }
+        return true;
     }
 
     private WorldConfig prepareMigrateWorld() {

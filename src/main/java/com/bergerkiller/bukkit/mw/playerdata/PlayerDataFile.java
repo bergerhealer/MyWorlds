@@ -18,6 +18,7 @@ import com.bergerkiller.bukkit.common.entity.type.CommonPlayer;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
+import com.bergerkiller.bukkit.mw.MWPlayerDataController;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldManager;
@@ -36,6 +37,10 @@ public class PlayerDataFile {
         this.file.getParentFile().mkdirs();
     }
 
+    public static File getPlayerDataFile(File playerDataFolder, UUID playerUUID) {
+        return new File(playerDataFolder, playerUUID.toString() + ".dat");
+    }
+
     public boolean exists() {
         return file.exists();
     }
@@ -49,8 +54,7 @@ public class PlayerDataFile {
     }
 
     public static CommonTagCompound readIfExists(MyWorlds plugin, File playerDataFolder, UUID playerUUID) {
-        File file = new File(playerDataFolder, playerUUID.toString() + ".dat");
-        return tryReadIfExists(plugin, file, playerUUID);
+        return tryReadIfExists(plugin, getPlayerDataFile(playerDataFolder, playerUUID), playerUUID);
     }
 
     private static CommonTagCompound tryReadIfExists(MyWorlds plugin, File file, Object playerName) {
@@ -65,6 +69,10 @@ public class PlayerDataFile {
             plugin.getLogger().log(Level.WARNING, "Failed to read player data for " + playerName, t);
         }
         return null;
+    }
+
+    public static void write(CommonTagCompound data, File playerDataFolder, UUID playerUUID) throws IOException {
+        data.writeToFile(getPlayerDataFile(playerDataFolder, playerUUID), true);
     }
 
     public CommonTagCompound read(Player player) {
@@ -118,6 +126,43 @@ public class PlayerDataFile {
         tagCompound.putValue("World", world.getName());
         tagCompound.putUUID("World", world.getUID());
         tagCompound.putValue("Dimension", WorldUtil.getDimensionType(world).getId());
+    }
+
+    /**
+     * Checks whether the main world file data stores data for all worlds on the server. This is the case
+     * when a profile is saved before MyWorlds multi-world inventories is enabled. or before MyWorlds is even
+     * installed.
+     *
+     * @param mainWorldData
+     * @return True if the player profile data is self-contained
+     */
+    public static boolean isSelfContained(CommonTagCompound mainWorldData) {
+        // On modern versions it has a separate data tag to track whether all player data was shared.
+        // This prevents some annoying edge-cases from tripping this code up.
+        {
+            CommonTagCompound myworlds = mainWorldData.get(MWPlayerDataController.DATA_TAG_ROOT, CommonTagCompound.class);
+            if (myworlds != null) {
+                Boolean is_self_contained = myworlds.getValue(MWPlayerDataController.DATA_TAG_IS_SELF_CONTAINED, Boolean.class);
+                if (is_self_contained != null) {
+                    return is_self_contained.booleanValue();
+                }
+            }
+        }
+
+        // Legacy stuff...
+        {
+            // Check whether the inventory sharing rules for the data's world specify a different world
+            UUID worldUUID = mainWorldData.getUUID("World");
+            UUID mw_legacy_inventory_world = mainWorldData.getUUID(MWPlayerDataController.LEGACY_DATA_TAG_LASTWORLD);
+            if (worldUUID != null && mw_legacy_inventory_world != null) {
+                // If different that is a strong indication that inventory data was stored split per world.
+                // This is not perfect, however. And assumes the main world is also an inventory storing world.
+                return worldUUID.equals(mw_legacy_inventory_world);
+            }
+
+            // Assume true
+            return true;
+        }
     }
 
     @FunctionalInterface
