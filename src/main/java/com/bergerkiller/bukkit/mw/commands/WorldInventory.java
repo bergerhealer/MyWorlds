@@ -147,20 +147,38 @@ public class WorldInventory extends Command {
                 return;
             }
             if (!wc.isLoaded()) {
-                sender.sendMessage(ChatColor.RED + "World " + wc.worldname + " is not loaded!");
+                message(ChatColor.RED + "World " + wc.worldname + " is not loaded!");
+                return;
+            }
+            if (WorldConfig.get(MyWorlds.getMainWorld()) == wc) {
+                message(ChatColor.YELLOW + "World '" + wc.worldname + "' is already set as the main world!");
                 return;
             }
 
             message(ChatColor.GREEN + "Migrating to a new inventory main world...");
+            plugin.getPlayerDataMigrator().notifyWhenDone(sender);
             plugin.getPlayerDataMigrator().changeMainWorld(wc);
-            plugin.getPlayerDataMigrator().showStatus(sender);
+            if (plugin.getPlayerDataMigrator().isRunning()) {
+                plugin.getPlayerDataMigrator().showStatus(sender);
+            }
         } else if (migrationName.equalsIgnoreCase("storage")) {
             WorldConfig wc = prepareMigrateWorld();
             if (wc == null) {
                 return;
             }
+            if (wc.inventory.getSharedWorldName().equalsIgnoreCase(wc.worldname)) {
+                message(ChatColor.YELLOW + "World '" + wc.worldname +
+                        "' is already storing the inventories of its merged group!");
+                return;
+            }
 
-            message("B");
+            message(ChatColor.GREEN + "Migrating stored player data from world " + wc.inventory.getSharedWorldName() +
+                    " to world " + wc.worldname);
+            plugin.getPlayerDataMigrator().notifyWhenDone(sender);
+            plugin.getPlayerDataMigrator().changeInventoryStoredWorld(wc);
+            if (plugin.getPlayerDataMigrator().isRunning()) {
+                plugin.getPlayerDataMigrator().showStatus(sender);
+            }
         } else {
             message(ChatColor.RED + "Unknown command: /world inventory migrate " + migrationName);
         }

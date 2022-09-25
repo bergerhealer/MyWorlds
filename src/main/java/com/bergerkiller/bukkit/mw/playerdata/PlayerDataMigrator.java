@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -16,6 +18,7 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -39,11 +42,91 @@ public class PlayerDataMigrator implements Listener {
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private AsyncTask migrationTask = null;
     private final List<UUID> pendingPlayerUUIDs = new ArrayList<>();
+    private final Set<UUID> playerUUIDNotifyRecipients = new HashSet<>();
     private Migrator task = uuid -> {};
     private String taskName = "";
 
     public PlayerDataMigrator(MyWorlds plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Changes the world that stores the inventory data for its merged inventory group
+     *
+     * @param newStorageWorld
+     */
+    public void changeInventoryStoredWorld(WorldConfig newStorageWorld) {
+        WorldConfig curStorageWorld = WorldConfig.get(newStorageWorld.inventory.getSharedWorldName());
+
+        // Protect against this
+        if (newStorageWorld == curStorageWorld) {
+            return;
+        }
+
+        // Update inventories.yml
+        newStorageWorld.inventory.setSharedWorldName(newStorageWorld.worldname);
+
+        // Migrate the player data from the old storage location to the new
+        final File curStorageWorldPlayerData = curStorageWorld.getPlayerFolder();
+        final File newStorageWorldPlayerData = newStorageWorld.getPlayerFolder();
+        scheduleForWorlds("stored player inventory data from one world to another", Arrays.asList(curStorageWorld, newStorageWorld), playerUUID -> {
+            final CommonTagCompound curData = PlayerDataFile.readIfExists(plugin, curStorageWorldPlayerData, playerUUID);
+            final CommonTagCompound newData = PlayerDataFile.readIfExists(plugin, newStorageWorldPlayerData, playerUUID);
+            if (curData == null && newData == null) {
+                return; // Never happens...but just in case!
+            }
+
+            // Generate the new data to store for the original storing world
+            // We strip all player data from the file, and only keep what must be stored
+            CommonTagCompound curDataUpdated;
+            if (curData != null) {
+                curDataUpdated = new CommonTagCompound();
+                migrateNonInventoryStorageData(curData, curDataUpdated);
+
+                // Keep these in case the player must be teleported to this world
+                curDataUpdated.put("Pos", curData.get("Pos"));
+                curDataUpdated.put("Rotation", curData.get("Rotation"));
+            } else {
+                curDataUpdated = null; // Don't save, got no data
+            }
+
+            // Generate the new data to store for the new inventory storing world
+            CommonTagCompound newDataUpdated;
+            if (curData == null) {
+                // Start a new tag for this...
+                // This wipes any inventory data previously stored in the file.
+                newDataUpdated = new CommonTagCompound();
+            } else {
+                // Keep everything in the original file
+                newDataUpdated = curData.clone();
+            }
+
+            // Keep information from the new profile which must be kept (legacy position info, MyWorlds main world stuff)
+            if (newData != null) {
+                migrateNonInventoryStorageData(newData, newDataUpdated);
+            } else {
+                // Wipes all fields not meant to be migrated by using an empty compound
+                migrateNonInventoryStorageData(new CommonTagCompound(), newDataUpdated);
+            }
+
+            // Save stuff
+            PlayerDataFile.write(newDataUpdated, newStorageWorldPlayerData, playerUUID);
+            if (curDataUpdated != null) {
+                PlayerDataFile.write(curDataUpdated, curStorageWorldPlayerData, playerUUID);
+            }
+        });
+    }
+
+    private static void migrateNonInventoryStorageData(CommonTagCompound source, CommonTagCompound updated) {
+        updated.put(MWPlayerDataController.DATA_TAG_ROOT,
+                source.get(MWPlayerDataController.DATA_TAG_ROOT));
+        updated.put(MWPlayerDataController.LEGACY_DATA_TAG_LASTPOS,
+                source.get(MWPlayerDataController.LEGACY_DATA_TAG_LASTPOS));
+        updated.put(MWPlayerDataController.LEGACY_DATA_TAG_LASTROT,
+                source.get(MWPlayerDataController.LEGACY_DATA_TAG_LASTROT));
+
+        // Main world the player is on. Must be preserved.
+        updated.putUUID("World", source.getUUID("World"));
     }
 
     /**
@@ -123,8 +206,16 @@ public class PlayerDataMigrator implements Listener {
                 }
             }
 
+            // Make sure not null
+            if (newData == null) {
+                newData = new CommonTagCompound();
+            }
+
             // Store important main-world information in new world data
+            // This also stores Pos/Rotation, in case the player profile is read without MyWorlds
             newData.putUUID("World", curData.getUUID("World"));
+            newData.put("Pos", curData.get("Pos"));
+            newData.put("Rotation", curData.get("Rotation"));
             {
                 CommonTagCompound myworldsData = newData.createCompound(MWPlayerDataController.DATA_TAG_ROOT);
                 myworldsData.putValue(MWPlayerDataController.DATA_TAG_IS_SELF_CONTAINED, false);
@@ -196,6 +287,7 @@ public class PlayerDataMigrator implements Listener {
 
         this.taskName = name;
         this.task = task;
+        boolean done;
         synchronized (this.pendingPlayerUUIDs) {
             this.pendingPlayerUUIDs.clear();
 
@@ -210,16 +302,20 @@ public class PlayerDataMigrator implements Listener {
             }
 
             // If no tasks scheduled, don't even start the async task
-            if (this.pendingPlayerUUIDs.isEmpty()) {
-                return;
-            }
+            done = this.pendingPlayerUUIDs.isEmpty();
         }
-        this.busy.set(true);
+        if (done) {
+            notifyDone();
+            return;
+        }
 
+        // Start processing asynchronously
+        this.busy.set(true);
         this.migrationTask = new AsyncTask() {
             @Override
             public void run() {
                 UUID uuid;
+                boolean done;
                 synchronized (pendingPlayerUUIDs) {
                     int count = pendingPlayerUUIDs.size();
                     if (count == 0) {
@@ -227,14 +323,31 @@ public class PlayerDataMigrator implements Listener {
                         migrationTask.stop();
                         migrationTask = null;
                         busy.set(false);
-                        return;
+                        uuid = null;
+                        done = true;
+                    } else {
+                        uuid = pendingPlayerUUIDs.remove(count - 1);
+                        done = false;
                     }
-                    uuid = pendingPlayerUUIDs.remove(count - 1);
                 }
-                process(uuid);
+                if (done) {
+                    notifyDone();
+                } else {
+                    process(uuid);
+                }
             }
         };
         this.migrationTask.start(true);
+    }
+
+    public void notifyWhenDone(CommandSender sender) {
+        synchronized (playerUUIDNotifyRecipients) {
+            if (sender instanceof Player) {
+                playerUUIDNotifyRecipients.add(((Player) sender).getUniqueId());
+            } else {
+                playerUUIDNotifyRecipients.add(null); // null denotes console
+            }
+        }
     }
 
     private void process(UUID uuid) {
@@ -242,6 +355,22 @@ public class PlayerDataMigrator implements Listener {
             task.migrate(uuid);
         } catch (Throwable t) {
             plugin.getLogger().log(Level.SEVERE, "Failed to process player profile of player uuid=" + uuid, t);
+        }
+    }
+
+    private void notifyDone() {
+        synchronized (playerUUIDNotifyRecipients) {
+            for (UUID uuid : playerUUIDNotifyRecipients) {
+                if (uuid == null) {
+                    this.showStatus(Bukkit.getConsoleSender());
+                } else {
+                    Player player = Bukkit.getPlayer(uuid);
+                    if (player != null) {
+                        this.showStatus(player);
+                    }
+                }
+            }
+            playerUUIDNotifyRecipients.clear();
         }
     }
 

@@ -158,6 +158,20 @@ public class WorldInventory {
     }
 
     /**
+     * Changes the shared world name where inventory data is stored. Should only be called
+     * from inventory migration.
+     *
+     * @param worldName
+     */
+    public void setSharedWorldName(String worldName) {
+        if (!this.worlds.contains(worldName.toLowerCase())) {
+            throw new IllegalArgumentException("World name " + worldName + " is not part of this inventory group");
+        }
+        this.worldname = worldName;
+        save();
+    }
+
+    /**
      * Gets the World name in which all the inventories of this bundle are saved
      * 
      * @return shared world name
