@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.bukkit.ChatColor;
 
@@ -49,7 +50,26 @@ public class WorldInventory extends Command {
     }
 
     public void execute() {
+        // Handle migration commands
+        if (args.length >= 1 && args[0].equalsIgnoreCase("migrate")) {
+            this.removeArg(0);
+            if (args.length == 0 || args[0].equalsIgnoreCase("status")) {
+                plugin.getPlayerDataMigrator().showStatus(sender);
+            } else {
+                String migrationName = this.removeArg(0);
+                this.executeMigration(migrationName);
+            }
+            return;
+        }
+
         if (args.length > 1) {
+            // While migrating data, can't change any of the configs...
+            if (plugin.getPlayerDataMigrator().isRunning()) {
+                sender.sendMessage(ChatColor.RED + "Can't change inventory configuration: busy migrating");
+                plugin.getPlayerDataMigrator().showStatus(sender);
+                return;
+            }
+
             if (args[0].equalsIgnoreCase("merge")) {
                 if (this.prepareWorlds()) {
                     Set<String> invWorlds = new LinkedHashSet<String>();
@@ -121,11 +141,53 @@ public class WorldInventory extends Command {
             }
         }
         //usage
-        message(ChatColor.YELLOW + "/world inventory [split/merge/enable/disable] [worldnames]");
+        message(ChatColor.YELLOW + "/world inventory [split/merge/enable/disable/migrate <sub>] [worldnames]");
+    }
+
+    public void executeMigration(String migrationName) {
+        if (migrationName.equalsIgnoreCase("setmain")) {
+            WorldConfig wc = prepareMigrateWorld();
+            if (wc != null) {
+                message("A");
+            }
+        } else if (migrationName.equalsIgnoreCase("storage")) {
+            WorldConfig wc = prepareMigrateWorld();
+            if (wc != null) {
+                message("B");
+            }
+        } else {
+            message(ChatColor.RED + "Unknown command: /world inventory migrate " + migrationName);
+        }
+    }
+
+    private WorldConfig prepareMigrateWorld() {
+        if (args.length == 0) {
+            message(ChatColor.RED + "Please specify the world name to migrate!");
+            return null;
+        }
+
+        String worldName = this.removeArg(0);
+        String matched = WorldManager.matchWorld(worldName);
+        if (matched == null) {
+            message(ChatColor.RED + "Failed to find world '" + worldName + "'!");
+            return null;
+        }
+
+        return WorldConfig.get(matched);
     }
 
     @Override
     public List<String> autocomplete() {
-        return processBasicAutocompleteOrWorldName("merge", "split", "enable", "disable");
+        // Migration commands
+        if (args.length > 1 && args[0].equalsIgnoreCase("migrate")) {
+            if (args.length > 2) {
+                return processWorldNameAutocomplete();
+            } else {
+                return processAutocomplete(Stream.of("status", "storage", "setmain"));
+            }
+        }
+
+        // Default stuff
+        return processBasicAutocompleteOrWorldName("merge", "split", "enable", "disable", "migrate");
     }
 }

@@ -21,6 +21,7 @@ import com.bergerkiller.bukkit.mw.advancement.AdvancementManager;
 import com.bergerkiller.bukkit.mw.commands.registry.MyWorldsCommands;
 import com.bergerkiller.bukkit.mw.papi.PlaceholderAPIHandlerWithExpansions;
 import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
+import com.bergerkiller.bukkit.mw.playerdata.PlayerDataMigrator;
 import com.bergerkiller.bukkit.mw.portal.PlayerRespawnHandler;
 import com.bergerkiller.bukkit.mw.portal.PortalEnterEventDebouncer;
 import com.bergerkiller.bukkit.mw.portal.PortalSignList;
@@ -85,6 +86,7 @@ public class MyWorlds extends PluginBase {
     private final PortalSignList portalSignList = new PortalSignList(this);
     private final AutoSaveTask autoSaveTask = new AutoSaveTask(this);
     private final PortalEnterEventDebouncer portalEnterEventDebouncer = new PortalEnterEventDebouncer(this, listener::onPortalEnter);
+    private final PlayerDataMigrator migrator = new PlayerDataMigrator(this);
     private LibraryComponent placeholderApi = null;
     public static MyWorlds plugin;
 
@@ -114,6 +116,10 @@ public class MyWorlds extends PluginBase {
 
     public PortalEnterEventDebouncer getPortalEnterEventDebouncer() {
         return this.portalEnterEventDebouncer;
+    }
+
+    public PlayerDataMigrator getPlayerDataMigrator() {
+        return this.migrator;
     }
 
     @Override
@@ -147,6 +153,7 @@ public class MyWorlds extends PluginBase {
         this.register(listener);
         this.register(new MWListenerPost(this));
         this.register("tpp", "world");
+        this.register(this.migrator);
 
         // Soft Dependency evaluation beforehands
         isSpoutPluginEnabled = CommonUtil.isPluginEnabled("Spout");
@@ -358,6 +365,9 @@ public class MyWorlds extends PluginBase {
             dataController.detach();
             dataController = null;
         }
+
+        // Wait until inventory migration is done
+        migrator.waitUntilFinished();
 
         this.worldDupingPatch.disable();
         plugin = null;
