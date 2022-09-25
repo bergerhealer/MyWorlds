@@ -145,16 +145,26 @@ public class WorldInventory extends Command {
     }
 
     public void executeMigration(String migrationName) {
-        if (migrationName.equalsIgnoreCase("setmain")) {
+        if (migrationName.equalsIgnoreCase("main")) {
             WorldConfig wc = prepareMigrateWorld();
-            if (wc != null) {
-                message("A");
+            if (wc == null) {
+                return;
             }
+            if (!wc.isLoaded()) {
+                sender.sendMessage(ChatColor.RED + "World " + wc.worldname + " is not loaded!");
+                return;
+            }
+
+            message(ChatColor.GREEN + "Migrating to a new inventory main world...");
+            plugin.getPlayerDataMigrator().changeMainWorld(wc);
+            plugin.getPlayerDataMigrator().showStatus(sender);
         } else if (migrationName.equalsIgnoreCase("storage")) {
             WorldConfig wc = prepareMigrateWorld();
-            if (wc != null) {
-                message("B");
+            if (wc == null) {
+                return;
             }
+
+            message("B");
         } else {
             message(ChatColor.RED + "Unknown command: /world inventory migrate " + migrationName);
         }
@@ -183,7 +193,7 @@ public class WorldInventory extends Command {
             if (args.length > 2) {
                 return processWorldNameAutocomplete();
             } else {
-                return processAutocomplete(Stream.of("status", "storage", "setmain"));
+                return processAutocomplete(Stream.of("status", "storage", "main"));
             }
         }
 

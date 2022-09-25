@@ -423,6 +423,21 @@ public class MyWorlds extends PluginBase {
     }
 
     /**
+     * Changes the main world used. Writes new main world to config.
+     *
+     * @param newMainWorldName
+     */
+    public void changeMainWorld(String newMainWorldName) {
+        mainWorld = newMainWorldName;
+
+        FileConfiguration config = new FileConfiguration(this);
+        config.load();
+        config.set("storeInventoryInMainWorld", true);
+        config.set("mainWorld", newMainWorldName);
+        config.save();
+    }
+
+    /**
      * Gets the main world
      * 
      * @return Main world

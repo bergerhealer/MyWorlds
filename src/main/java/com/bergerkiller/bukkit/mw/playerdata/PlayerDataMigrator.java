@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw.playerdata;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +37,7 @@ public class PlayerDataMigrator implements Listener {
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private final AsyncTask migrationTask;
     private final List<UUID> pendingPlayerUUIDs = new ArrayList<>();
-    private Consumer<UUID> task = uuid -> {};
+    private Consumer<String> task = uuid -> {};
     private String taskName = "";
 
     public PlayerDataMigrator(MyWorlds plugin) {
@@ -60,7 +61,42 @@ public class PlayerDataMigrator implements Listener {
         };
     }
 
-    public void scheduleForWorlds(String name, Collection<WorldConfig> worlds, Consumer<UUID> task) {
+    /**
+     * Changes the main world. The main world stores what world a player was last
+     * on.
+     *
+     * @param newMainWorld New main world to change to
+     */
+    public void changeMainWorld(WorldConfig newMainWorld) {
+        // Protect against this
+        WorldConfig curMainWorld = WorldConfig.get(MyWorlds.getMainWorld());
+        if (curMainWorld == newMainWorld) {
+            return;
+        }
+
+        // Rewrite MyWorlds' config.yml to change the main world to the new one
+        //plugin.changeMainWorld(newMainWorld.worldname);
+
+        // Migrate all player data to move the main world information to the new world
+        final File curMainWorldPlayerData = curMainWorld.getPlayerFolder();
+        final File newMainWorldPlayerData = newMainWorld.getPlayerFolder();
+        scheduleForWorlds("to a new Main World configuration", Arrays.asList(curMainWorld, newMainWorld), profileName -> {
+            File curFile = new File(curMainWorldPlayerData, profileName);
+            File newFile = new File(newMainWorldPlayerData, profileName);
+            if (!curFile.exists()) {
+                return;
+            }
+
+            // Try to load the player data files
+            
+            // If new file does not exist, create a blank slate storing only the main world details
+            
+            
+            System.out.println("MIGRATE " + curFile + " / " + newFile);
+        });
+    }
+
+    public void scheduleForWorlds(String name, Collection<WorldConfig> worlds, Consumer<String> task) {
         Map<UUID, Long> uuids = new HashMap<>(100);
         for (WorldConfig config : worlds) {
             File playerDataFolder = config.getPlayerFolder();
@@ -108,7 +144,7 @@ public class PlayerDataMigrator implements Listener {
         schedule(name, uuidsList, task);
     }
 
-    public void schedule(String name, Collection<UUID> uuids, Consumer<UUID> task) {
+    public void schedule(String name, Collection<UUID> uuids, Consumer<String> task) {
         if (this.busy.get()) {
             return; // Safety!
         }
@@ -139,7 +175,7 @@ public class PlayerDataMigrator implements Listener {
 
     private void process(UUID uuid) {
         try {
-            task.accept(uuid);
+            task.accept(uuid.toString() + ".dat");
         } catch (Throwable t) {
             plugin.getLogger().log(Level.SEVERE, "Failed to process player profile of player uuid=" + uuid, t);
         }

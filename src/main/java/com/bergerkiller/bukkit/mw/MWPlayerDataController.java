@@ -1,7 +1,5 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -9,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
-import java.util.zip.ZipException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -20,7 +17,6 @@ import org.bukkit.World;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.util.Vector;
 
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.controller.PlayerDataController;
@@ -35,8 +31,9 @@ import com.bergerkiller.bukkit.common.utils.NBTUtil;
 import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
+import com.bergerkiller.bukkit.mw.playerdata.PlayerDataFile;
+import com.bergerkiller.bukkit.mw.playerdata.PlayerDataFileCollection;
 import com.bergerkiller.generated.net.minecraft.network.protocol.game.PacketPlayOutEntityEquipmentHandle;
 import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
 import com.bergerkiller.generated.net.minecraft.world.effect.MobEffectHandle;
@@ -91,15 +88,6 @@ public class MWPlayerDataController extends PlayerDataController {
         }
     }
 
-    private static void setLocation(CommonTagCompound tagCompound, Location location) {
-        tagCompound.putListValues("Pos", location.getX(), location.getY(), location.getZ());
-        tagCompound.putListValues("Rotation", location.getYaw(), location.getPitch());
-        final World world = location.getWorld();
-        tagCompound.putValue("World", world.getName());
-        tagCompound.putUUID("World", world.getUID());
-        tagCompound.putValue("Dimension", WorldUtil.getDimensionType(world).getId());
-    }
-
     /**
      * Creates new player data information as if the player just joined the server.
      * 
@@ -107,21 +95,7 @@ public class MWPlayerDataController extends PlayerDataController {
      * @return empty data
      */
     public static CommonTagCompound createEmptyData(Player player) {
-        final Vector velocity = player.getVelocity();
-        CommonTagCompound empty = new CommonTagCompound();
-        CommonPlayer playerEntity = CommonEntity.get(player);
-        empty.putUUID("", player.getUniqueId());
-        if (SAVE_HEAL_F) {
-            empty.putValue("HealF", (float) playerEntity.getMaxHealth());
-        }
-        empty.putValue("Health", (float) playerEntity.getMaxHealth());
-        empty.putValue("HurtTime", (short) 0);
-        empty.putValue("DeathTime", (short) 0);
-        empty.putValue("AttackTime", (short) 0);
-        empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
-        setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
-        PlayerRespawnPoint.forPlayer(player).toNBT(empty);
-        return empty;
+        return PlayerDataFile.createEmptyData(player);
     }
 
     /**
@@ -132,7 +106,7 @@ public class MWPlayerDataController extends PlayerDataController {
      * @return Bed spawn location, or NONE if not set / stored
      */
     public static PlayerRespawnPoint readRespawnPoint(Player player, World world) {
-        PlayerFile posFile = new PlayerFile(player, WorldConfig.get(world));
+        PlayerDataFile posFile = new PlayerDataFile(player, WorldConfig.get(world));
         if (!posFile.exists()) {
             return PlayerRespawnPoint.NONE;
         }
@@ -170,7 +144,7 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     public static World findPlayerWorld(OfflinePlayer player) {
         // Try to read this information
-        PlayerFile mainWorldFile = PlayerFile.mainFile(player);
+        PlayerDataFile mainWorldFile = PlayerDataFile.mainFile(player);
         CommonTagCompound mainWorldData = mainWorldFile.readIfExists();
         if (mainWorldData != null) {
             World world = Bukkit.getWorld(mainWorldData.getUUID("World"));
@@ -253,7 +227,7 @@ public class MWPlayerDataController extends PlayerDataController {
         // Verify a player profile file actually exists at the destination path
         // If there is not, then the player profile was wiped out and this last position
         // information got out of sync.
-        PlayerFile file = new PlayerFile(player, WorldConfig.get(loc.getWorld()));
+        PlayerDataFile file = new PlayerDataFile(player, WorldConfig.get(loc.getWorld()));
         if (!file.exists()) {
             return false;
         }
@@ -289,7 +263,7 @@ public class MWPlayerDataController extends PlayerDataController {
             LastPlayerPositionList positions = playerLastLocations.get(player);
             boolean changed = false;
             if (positions == null) {
-                PlayerFile mainWorldFile = PlayerFile.mainFile(player);
+                PlayerDataFile mainWorldFile = PlayerDataFile.mainFile(player);
                 CommonTagCompound data = mainWorldFile.readIfExists();
                 positions = parseLastPlayerPositions(mainWorldFile, data);
                 changed = true;
@@ -299,7 +273,7 @@ public class MWPlayerDataController extends PlayerDataController {
             for (WorldConfig config : worlds) {
                 if (!positions.containsWorld(config)) {
                     // Try to see if data exists in a player data file on that particular world
-                    PlayerFile file = new PlayerFile(player, config);
+                    PlayerDataFile file = new PlayerDataFile(player, config);
                     CommonTagCompound posData = parseLegacyLastPosition(file, file.readIfExists());
                     if (posData == null && !config.isLoaded()) {
                         continue; // Skip non-loaded worlds
@@ -333,7 +307,7 @@ public class MWPlayerDataController extends PlayerDataController {
         }
     }
 
-    private static LastPlayerPositionList parseLastPlayerPositions(PlayerFile mainWorldPlayerFile, CommonTagCompound mainWorldPlayerData) {
+    private static LastPlayerPositionList parseLastPlayerPositions(PlayerDataFile mainWorldPlayerFile, CommonTagCompound mainWorldPlayerData) {
         if (mainWorldPlayerData != null) {
             // New system of storing a list of positions in the main world data file
             CommonTagCompound myworldsData = mainWorldPlayerData.get(DATA_TAG_ROOT, CommonTagCompound.class);
@@ -358,7 +332,7 @@ public class MWPlayerDataController extends PlayerDataController {
         return new LastPlayerPositionList();
     }
 
-    private static CommonTagCompound parseLegacyLastPosition(PlayerFile playerFile, CommonTagCompound worldPlayerData) {
+    private static CommonTagCompound parseLegacyLastPosition(PlayerDataFile playerFile, CommonTagCompound worldPlayerData) {
         if (worldPlayerData != null) {
             CommonTagList posValues = worldPlayerData.get(LEGACY_DATA_TAG_LASTPOS, CommonTagList.class);
             if (posValues != null && posValues.size() == 3) {
@@ -510,7 +484,7 @@ public class MWPlayerDataController extends PlayerDataController {
         }
 
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(player, player.getWorld());
+            final PlayerDataFileCollection files = new PlayerDataFileCollection(player, player.getWorld());
             final CommonTagCompound playerData = files.currentFile.read(player);
 
             files.log("refreshing state");
@@ -613,7 +587,7 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     public void onRespawnSave(Player player, final Location respawnLocation) {
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(player, player.getWorld());
+            final PlayerDataFileCollection files = new PlayerDataFileCollection(player, player.getWorld());
             CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
 
             files.log("saving data after respawn");
@@ -685,11 +659,8 @@ public class MWPlayerDataController extends PlayerDataController {
             // This is only needed if a main player data file doesn't exist
             // (this should in theory never happen either...player is not joining)
             if (files.mainWorldFile.exists()) {
-                files.mainWorldFile.update(player, new DataUpdater() {
-                    @Override
-                    public void update(CommonTagCompound data) {
-                        data.putUUID("World", respawnLocation.getWorld().getUID());
-                    }
+                files.mainWorldFile.update(player, data -> {
+                    data.putUUID("World", respawnLocation.getWorld().getUID());
                 });
             }
         } catch (Throwable t) {
@@ -700,7 +671,7 @@ public class MWPlayerDataController extends PlayerDataController {
     @Override
     public CommonTagCompound onLoad(final Player player) {
         try {
-            final PlayerFileCollection files = new PlayerFileCollection(player, player.getWorld());
+            final PlayerDataFileCollection files = new PlayerDataFileCollection(player, player.getWorld());
 
             // If a main world player data file exists, then the player has been on the server before
             boolean hasPlayedBefore = files.mainWorldFile.exists();
@@ -807,7 +778,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // When main world spawning is forced, reset location to there
             if (!hasPlayedBefore || MyWorlds.forceJoinOnMainWorld) {
-                setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
+                PlayerDataFile.setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
             }
 
             // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
@@ -866,9 +837,9 @@ public class MWPlayerDataController extends PlayerDataController {
     @Override
     public void onSave(final Player player) {
         try {
-            final PlayerFileCollection files;
+            final PlayerDataFileCollection files;
             synchronized (worldToSaveTo) {
-                files = new PlayerFileCollection(player, worldToSaveTo.getOrDefault(player, player.getWorld()));
+                files = new PlayerDataFileCollection(player, worldToSaveTo.getOrDefault(player, player.getWorld()));
             }
 
             final CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
@@ -896,12 +867,9 @@ public class MWPlayerDataController extends PlayerDataController {
                 }
 
                 // Write the Last Pos/Rot to the official world file instead
-                files.positionFile.update(player, new DataUpdater() {
-                    @Override
-                    public void update(CommonTagCompound data) {
-                        data.putListValues(LEGACY_DATA_TAG_LASTPOS, loc.getX(), loc.getY(), loc.getZ());
-                        data.putListValues(LEGACY_DATA_TAG_LASTROT, loc.getYaw(), loc.getPitch());
-                    }
+                files.positionFile.update(player, data -> {
+                    data.putListValues(LEGACY_DATA_TAG_LASTPOS, loc.getX(), loc.getY(), loc.getZ());
+                    data.putListValues(LEGACY_DATA_TAG_LASTROT, loc.getYaw(), loc.getPitch());
                 });
             }
 
@@ -929,18 +897,15 @@ public class MWPlayerDataController extends PlayerDataController {
             // Write the current world name of the player to the save file of the main world
             if (!files.isMainWorld()) {
                 // Update the world in the main file
-                files.mainWorldFile.update(player, new DataUpdater() {
-                    @Override
-                    public void update(CommonTagCompound data) {
-                        data.put("Pos", savedData.get("Pos"));
-                        data.put("Rotation", savedData.get("Rotation"));
-                        data.putUUID("World", player.getWorld().getUID());
+                files.mainWorldFile.update(player, data -> {
+                    data.put("Pos", savedData.get("Pos"));
+                    data.put("Rotation", savedData.get("Rotation"));
+                    data.putUUID("World", player.getWorld().getUID());
 
-                        // Update last positions
-                        {
-                            CommonTagCompound myWorlds = savedData.createCompound(DATA_TAG_ROOT);
-                            myWorlds.put(DATA_TAG_LAST_POSITIONS, lastPositions.getDataTag());
-                        }
+                    // Update last positions
+                    {
+                        CommonTagCompound myWorlds = savedData.createCompound(DATA_TAG_ROOT);
+                        myWorlds.put(DATA_TAG_LAST_POSITIONS, lastPositions.getDataTag());
                     }
                 });
             }
@@ -976,124 +941,6 @@ public class MWPlayerDataController extends PlayerDataController {
             PlayerRespawnPoint.NONE.toNBT(playerData);
         } else if (!isValidRespawnPoint(world, current)) {
             PlayerRespawnPoint.NONE.toNBT(playerData);
-        }
-    }
-
-    public interface DataUpdater {
-        public void update(CommonTagCompound data);
-    }
-
-    public static class PlayerFile {
-        public final OfflinePlayer player;
-        public final WorldConfig world;
-        public final File file;
-
-        public PlayerFile(OfflinePlayer player, WorldConfig worldConfig) {
-            this.player = player;
-            this.world = worldConfig;
-            this.file = worldConfig.getPlayerData(player);
-            this.file.getParentFile().mkdirs();
-        }
-
-        public boolean exists() {
-            return file.exists();
-        }
-
-        public long lastModified() {
-            return file.lastModified();
-        }
-
-        public CommonTagCompound readIfExists() {
-            try {
-                if (file.exists()) {
-                    return CommonTagCompound.readFromFile(file, true);
-                }
-            } catch (ZipException ex) {
-                MyWorlds.plugin.getLogger().warning("Failed to read player data for " + player.getName() + " (ZIP-exception: file corrupted)");
-            } catch (Throwable t) {
-                // Return an empty data constant for now
-                MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to read player data for " + player.getName(), t);
-            }
-            return null;
-        }
-
-        public CommonTagCompound read(Player player) {
-            CommonTagCompound data = this.readIfExists();
-            return (data != null) ? data : createEmptyData(player);
-        }
-
-        public void write(CommonTagCompound data) throws IOException {
-            data.writeToFile(file, true);
-        }
-
-        public void update(Player player, DataUpdater updater) throws IOException {
-            CommonTagCompound data = read(player);
-            updater.update(data);
-            write(data);
-        }
-
-        public static PlayerFile mainFile(OfflinePlayer player) {
-            return new PlayerFile(player, MyWorlds.storeInventoryInMainWorld ?
-                    WorldConfig.getMain() : WorldConfig.getVanillaMain());
-        }
-    }
-
-    public static class PlayerFileCollection {
-        public final OfflinePlayer player;
-        public PlayerFile mainWorldFile; /* Stores the name of the main world the player is on */
-        public PlayerFile positionFile;  /* Stores the position of the player on a particular world */
-        public PlayerFile currentFile;   /* Stores the inventory and data of the player on a particular world. Merge/split rules apply. */
-
-        public PlayerFileCollection(OfflinePlayer player, World world) {
-            this.player = player;
-            this.mainWorldFile = PlayerFile.mainFile(player);
-
-            setCurrentWorld(world);
-        }
-
-        /**
-         * Sets the current world the player is in, switching the file locations
-         * 
-         * @param currentWorld the player is in
-         */
-        public void setCurrentWorld(World currentWorld) {
-            WorldConfig currentWorldConfig = WorldConfig.get(currentWorld);
-            this.positionFile = new PlayerFile(player, currentWorldConfig);
-            if (MyWorlds.useWorldInventories) {
-                WorldConfig inventoryWorld = WorldConfig.get(currentWorldConfig.inventory.getSharedWorldName());
-                this.currentFile = new PlayerFile(player, inventoryWorld);
-            } else {
-                this.currentFile = this.mainWorldFile;
-            }
-        }
-
-        /**
-         * Both position and inventory state information is saved in the same file
-         * 
-         * @return True if it is the same file, False if not
-         */
-        public boolean isSingleDataFile() {
-            return positionFile.file.equals(currentFile.file);
-        }
-
-        /**
-         * The inventory information is stored in the same file as the main world information.
-         * If this is the case, the world the player is on does not have to be updated separately.
-         * 
-         * @return True if the inventory and main world are saved in the same file
-         */
-        public boolean isMainWorld() {
-            return mainWorldFile.file.equals(currentFile.file);
-        }
-
-        /* Debug */
-        public void log(String title) {
-            /*
-            System.out.println("Files used " + title + " for player " + player.getName() + " world " + player.getWorld().getName() + ":");
-            System.out.println("  mainWorldFile: " + mainWorldFile.file);
-            System.out.println("  positionFile: " + positionFile.file);
-            System.out.println("  inventoryFile: " + currentFile.file);
-            */
         }
     }
 }
