@@ -32,6 +32,7 @@ import com.bergerkiller.bukkit.common.utils.PacketUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
+import com.bergerkiller.bukkit.mw.playerdata.LastPlayerPositionList;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataFile;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataFileCollection;
 import com.bergerkiller.generated.net.minecraft.network.protocol.game.PacketPlayOutEntityEquipmentHandle;

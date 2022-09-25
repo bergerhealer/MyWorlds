@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw.playerdata;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.zip.ZipException;
 
@@ -44,15 +45,24 @@ public class PlayerDataFile {
     }
 
     public CommonTagCompound readIfExists() {
+        return tryReadIfExists(MyWorlds.plugin, file, player.getName());
+    }
+
+    public static CommonTagCompound readIfExists(MyWorlds plugin, File playerDataFolder, UUID playerUUID) {
+        File file = new File(playerDataFolder, playerUUID.toString() + ".dat");
+        return tryReadIfExists(plugin, file, playerUUID);
+    }
+
+    private static CommonTagCompound tryReadIfExists(MyWorlds plugin, File file, Object playerName) {
         try {
             if (file.exists()) {
                 return CommonTagCompound.readFromFile(file, true);
             }
         } catch (ZipException ex) {
-            MyWorlds.plugin.getLogger().warning("Failed to read player data for " + player.getName() + " (ZIP-exception: file corrupted)");
+            plugin.getLogger().warning("Failed to read player data for " + playerName + " (ZIP-exception: file corrupted)");
         } catch (Throwable t) {
             // Return an empty data constant for now
-            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to read player data for " + player.getName(), t);
+            plugin.getLogger().log(Level.WARNING, "Failed to read player data for " + playerName, t);
         }
         return null;
     }

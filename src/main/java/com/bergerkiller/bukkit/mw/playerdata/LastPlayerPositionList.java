@@ -1,4 +1,4 @@
-package com.bergerkiller.bukkit.mw;
+package com.bergerkiller.bukkit.mw.playerdata;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +12,8 @@ import org.bukkit.World;
 import com.bergerkiller.bukkit.common.nbt.CommonTag;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.common.nbt.CommonTagList;
+import com.bergerkiller.bukkit.mw.Position;
+import com.bergerkiller.bukkit.mw.WorldConfig;
 
 /**
  * List of positions a player had on various different worlds. Used by the

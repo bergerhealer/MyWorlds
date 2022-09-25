@@ -17,7 +17,6 @@ import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
 import com.bergerkiller.bukkit.common.wrappers.ChatText;
-import com.bergerkiller.bukkit.mw.LastPlayerPositionList;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MWPlayerDataController;
 import com.bergerkiller.bukkit.mw.Permission;
@@ -26,6 +25,7 @@ import com.bergerkiller.bukkit.mw.Util;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.WorldConfigStore;
 import com.bergerkiller.bukkit.mw.WorldManager;
+import com.bergerkiller.bukkit.mw.playerdata.LastPlayerPositionList;
 
 /**
  * Lists the last position the sending player, or player specified, has on all worlds known

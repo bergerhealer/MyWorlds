@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw.playerdata;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -10,10 +11,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,10 +23,9 @@ import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerLoginEvent.Result;
 
 import com.bergerkiller.bukkit.common.AsyncTask;
+import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.WorldConfig;
-
-import net.md_5.bungee.api.ChatColor;
 
 /**
  * Performs (asynchronous) player data inventory migration.
@@ -37,7 +37,7 @@ public class PlayerDataMigrator implements Listener {
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private final AsyncTask migrationTask;
     private final List<UUID> pendingPlayerUUIDs = new ArrayList<>();
-    private Consumer<String> task = uuid -> {};
+    private Migrator task = uuid -> {};
     private String taskName = "";
 
     public PlayerDataMigrator(MyWorlds plugin) {
@@ -80,23 +80,26 @@ public class PlayerDataMigrator implements Listener {
         // Migrate all player data to move the main world information to the new world
         final File curMainWorldPlayerData = curMainWorld.getPlayerFolder();
         final File newMainWorldPlayerData = newMainWorld.getPlayerFolder();
-        scheduleForWorlds("to a new Main World configuration", Arrays.asList(curMainWorld, newMainWorld), profileName -> {
-            File curFile = new File(curMainWorldPlayerData, profileName);
-            File newFile = new File(newMainWorldPlayerData, profileName);
-            if (!curFile.exists()) {
+        scheduleForWorlds("to a new Main World configuration", Arrays.asList(curMainWorld, newMainWorld), playerUUID -> {
+            CommonTagCompound curData = PlayerDataFile.readIfExists(plugin, curMainWorldPlayerData, playerUUID);
+            CommonTagCompound newData = PlayerDataFile.readIfExists(plugin, newMainWorldPlayerData, playerUUID);
+
+            // If current data is not available, there is nothing to migrate...
+            if (curData == null) {
                 return;
             }
 
-            // Try to load the player data files
+            // Parse current world information and location history from the old file
             
+
             // If new file does not exist, create a blank slate storing only the main world details
-            
-            
-            System.out.println("MIGRATE " + curFile + " / " + newFile);
+            if (newData == null) {
+                newData = new CommonTagCompound();
+            }
         });
     }
 
-    public void scheduleForWorlds(String name, Collection<WorldConfig> worlds, Consumer<String> task) {
+    public void scheduleForWorlds(String name, Collection<WorldConfig> worlds, Migrator task) {
         Map<UUID, Long> uuids = new HashMap<>(100);
         for (WorldConfig config : worlds) {
             File playerDataFolder = config.getPlayerFolder();
@@ -144,7 +147,7 @@ public class PlayerDataMigrator implements Listener {
         schedule(name, uuidsList, task);
     }
 
-    public void schedule(String name, Collection<UUID> uuids, Consumer<String> task) {
+    public void schedule(String name, Collection<UUID> uuids, Migrator task) {
         if (this.busy.get()) {
             return; // Safety!
         }
@@ -175,7 +178,7 @@ public class PlayerDataMigrator implements Listener {
 
     private void process(UUID uuid) {
         try {
-            task.accept(uuid.toString() + ".dat");
+            task.migrate(uuid);
         } catch (Throwable t) {
             plugin.getLogger().log(Level.SEVERE, "Failed to process player profile of player uuid=" + uuid, t);
         }
@@ -217,5 +220,10 @@ public class PlayerDataMigrator implements Listener {
                 }
             }
         }
+    }
+
+    @FunctionalInterface
+    public static interface Migrator {
+        public void migrate(UUID playerUUID) throws IOException;
     }
 }
