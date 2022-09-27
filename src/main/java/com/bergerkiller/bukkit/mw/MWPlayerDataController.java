@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
@@ -76,6 +75,11 @@ public class MWPlayerDataController extends PlayerDataController {
 
     private static final Map<Player, World> worldToSaveTo = new IdentityHashMap<>();
     private static final Map<Player, LastPlayerPositionList> playerLastLocations = new IdentityHashMap<>();
+    private final MyWorlds plugin;
+
+    public MWPlayerDataController(MyWorlds plugin) {
+        this.plugin = plugin;
+    }
 
     /**
      * Saves a player to disk. Makes sure to remember the world the player was on
@@ -482,7 +486,7 @@ public class MWPlayerDataController extends PlayerDataController {
      * 
      * @param player to set the states for
      */
-    public static void refreshState(Player player) {
+    public void refreshState(Player player) {
         // If player has the 'keep inventory' perm, don't change anything about the inventory
         if (MyWorlds.keepInventoryPermissionEnabled && Permission.GENERAL_KEEPINV.has(player)) {
             return;
@@ -583,7 +587,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 }
             }
         } catch (Throwable t) {
-            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
+            plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
         }
     }
 
@@ -675,7 +679,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 });
             }
         } catch (Throwable t) {
-            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to save player respawned data for " + player.getName(), t);
+            plugin.getLogger().log(Level.WARNING, "Failed to save player respawned data for " + player.getName(), t);
         }
     }
 
@@ -771,7 +775,7 @@ public class MWPlayerDataController extends PlayerDataController {
                     }
                 } catch (Throwable t) {
                     // Stick with the current world for now.
-                    MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to load per-world-inventory player data of " + player.getName(), t);
+                    plugin.getLogger().log(Level.SEVERE, "Failed to load per-world-inventory player data of " + player.getName(), t);
                 }
             }
 
@@ -841,7 +845,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
             return playerData;
         } catch (Throwable t) {
-            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
+            plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
             return super.onLoad(player);
         }
     }
@@ -935,7 +939,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 });
             }
         } catch (Throwable t) {
-            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to save player data for " + player.getName(), t);
+            plugin.getLogger().log(Level.WARNING, "Failed to save player data for " + player.getName(), t);
         }
     }
 

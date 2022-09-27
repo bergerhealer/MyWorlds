@@ -605,7 +605,7 @@ public class WorldConfig extends WorldConfigStore {
     public void onPlayerEnter(Player player, boolean isJoin) {
         // Refresh states based on the new world the player joined
         if (!isJoin) {
-            MWPlayerDataController.refreshState(player);
+            MyWorlds.plugin.getPlayerDataController().refreshState(player);
         }
 
         // Apply world-specific settings

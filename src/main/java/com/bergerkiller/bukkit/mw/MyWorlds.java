@@ -321,7 +321,7 @@ public class MyWorlds extends PluginBase {
         portalEnterEventDebouncer.enable();
 
         // Player data controller
-        dataController = new MWPlayerDataController();
+        dataController = new MWPlayerDataController(this);
         dataController.assign();
 
         // Auto-save every 15 minutes
