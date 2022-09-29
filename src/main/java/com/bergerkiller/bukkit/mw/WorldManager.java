@@ -386,6 +386,7 @@ public class WorldManager {
         }
 
         // Force a save of world configurations so this persists
+        // The just-loaded world will have the configuration applied to it thanks to the WorldLoadEvent
         WorldConfigStore.saveAll();
 
         return w;

@@ -20,6 +20,7 @@ public class WorldConfigStore {
     private static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
     private static IdentityHashMap<World, WorldConfig> worldConfigsByWorld = new IdentityHashMap<>();
     private static FileConfiguration defaultProperties;
+    private static boolean initializing = false;
 
     private static WorldConfig create(String worldname) {
         WorldConfig wc = new WorldConfig(worldname);
@@ -133,54 +134,65 @@ public class WorldConfigStore {
     }
 
     public static void init() {
-        // Default configuration
-        defaultProperties = new FileConfiguration(MyWorlds.plugin, "defaultproperties.yml");
-        defaultProperties.setHeader("This file contains the default world properties applied when loading or creating completely new worlds");
-        defaultProperties.addHeader("All the nodes found in the worlds.yml can be set here");
-        defaultProperties.addHeader("To set environment/worldtype-specific settings, add a new node with this name");
-        if (defaultProperties.exists()) {
-            defaultProperties.load();
-        } else {
-            // Generate new properties
-            WorldConfig defConfig = new WorldConfig(null);
-            defConfig.gameMode = null;
-            defConfig.saveDefault(defaultProperties);
-            ConfigurationNode defEnv = defaultProperties.getNode("normal");
-            defEnv.set("gamemode", "NONE");
-            defEnv.setHeader("\nAll settings applied to worlds with the normal environment");
-            defEnv.addHeader("You can add all the same world settings here and they will override the main defaults");
-            defEnv.addHeader("You can use multiple environments, of which nether, the_end and even nether_flat");
-            defaultProperties.save();
-        }
-
-        // Worlds configuration
-        worldConfigs.clear();
-        FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "worlds.yml");
-        config.load();
-        for (ConfigurationNode node : config.getNodes()) {
-            String worldname = node.get("name", node.getName());
-            if (WorldManager.worldExists(worldname)) {
-                WorldConfig wc = create(worldname);
-                wc.load(node);
-                if (node.get("loaded", false)) {
-                    wc.loadWorld();
-                }
+        initializing = true;
+        try {
+            // Default configuration
+            defaultProperties = new FileConfiguration(MyWorlds.plugin, "defaultproperties.yml");
+            defaultProperties.setHeader("This file contains the default world properties applied when loading or creating completely new worlds");
+            defaultProperties.addHeader("All the nodes found in the worlds.yml can be set here");
+            defaultProperties.addHeader("To set environment/worldtype-specific settings, add a new node with this name");
+            if (defaultProperties.exists()) {
+                defaultProperties.load();
             } else {
-                MyWorlds.plugin.log(Level.WARNING, "World: " + node.getName() + " no longer exists, data will be wiped when disabling!");
+                // Generate new properties
+                WorldConfig defConfig = new WorldConfig(null);
+                defConfig.gameMode = null;
+                defConfig.saveDefault(defaultProperties);
+                ConfigurationNode defEnv = defaultProperties.getNode("normal");
+                defEnv.set("gamemode", "NONE");
+                defEnv.setHeader("\nAll settings applied to worlds with the normal environment");
+                defEnv.addHeader("You can add all the same world settings here and they will override the main defaults");
+                defEnv.addHeader("You can use multiple environments, of which nether, the_end and even nether_flat");
+                defaultProperties.save();
             }
-        }
-        // For any new worlds that are made available: generate a configuration here
-        for (String loadableWorld : WorldUtil.getLoadableWorlds()) {
-            get(loadableWorld);
-        }
 
-        // Update any remaining worlds
-        for (World world : WorldUtil.getWorlds()) {
-            get(world).onWorldLoad(world);
+            // Worlds configuration
+            worldConfigs.clear();
+            FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "worlds.yml");
+            config.load();
+            for (ConfigurationNode node : config.getNodes()) {
+                String worldname = node.get("name", node.getName());
+                if (WorldManager.worldExists(worldname)) {
+                    WorldConfig wc = create(worldname);
+                    wc.load(node);
+                    if (node.get("loaded", false)) {
+                        wc.loadWorld();
+                    }
+                } else {
+                    MyWorlds.plugin.log(Level.WARNING, "World: " + node.getName() + " no longer exists, data will be wiped when disabling!");
+                }
+            }
+            // For any new worlds that are made available: generate a configuration here
+            for (String loadableWorld : WorldUtil.getLoadableWorlds()) {
+                get(loadableWorld);
+            }
+
+            // Update any remaining worlds
+            for (World world : WorldUtil.getWorlds()) {
+                get(world).onWorldLoad(world);
+            }
+        } finally {
+            initializing = false;
         }
     }
 
     public static void saveAll() {
+        // Do NOT do any saving while initializing the configuration
+        // This causes a loss of state
+        if (initializing) {
+            return;
+        }
+
         FileConfiguration cfg = new FileConfiguration(MyWorlds.plugin, "worlds.yml");
         for (WorldConfig wc : all()) {
             if (wc.isExisting()) {

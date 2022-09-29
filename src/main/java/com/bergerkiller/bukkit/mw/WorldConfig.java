@@ -752,7 +752,7 @@ public class WorldConfig extends WorldConfigStore {
             world.setPVP(this.pvp);
         }
     }
-    public void updateKeepSpawnInMemory(World world) { 
+    public void updateKeepSpawnInMemory(World world) {
         if (world != null && world.getKeepSpawnInMemory() != this.keepSpawnInMemory) {
             world.setKeepSpawnInMemory(this.keepSpawnInMemory);
         }
