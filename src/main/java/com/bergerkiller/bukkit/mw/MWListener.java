@@ -162,6 +162,11 @@ public class MWListener implements Listener {
             return;
         }
 
+        // Check not filtered
+        if (plugin.isPortalFiltered(portalType, portalBlock)) {
+            return;
+        }
+
         // If entity is a player that isn't bound to a world, then he is being respawned currently
         // For some reason the server spams portal enter events while players sit inside the
         // end portal, viewing the credits. We want none of that!

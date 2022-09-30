@@ -1,12 +1,15 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -24,10 +27,12 @@ import com.bergerkiller.bukkit.mw.patch.WorldInventoriesDupingPatch;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataMigrator;
 import com.bergerkiller.bukkit.mw.portal.PlayerRespawnHandler;
 import com.bergerkiller.bukkit.mw.portal.PortalEnterEventDebouncer;
+import com.bergerkiller.bukkit.mw.portal.PortalFilter;
 import com.bergerkiller.bukkit.mw.portal.PortalSignList;
 import com.bergerkiller.bukkit.mw.portal.EntityStasisHandler;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationCooldown;
+import com.bergerkiller.bukkit.mw.portal.handlers.BetterPortalsHandler;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
 import com.bergerkiller.bukkit.common.Task;
@@ -36,6 +41,7 @@ import com.bergerkiller.bukkit.common.component.LibraryComponent;
 public class MyWorlds extends PluginBase {
     private static final String MULTIVERSE_NAME = "Multiverse-Core";
     private static final String PLACEHOLDERAPI_NAME = "PlaceholderAPI";
+    private static final String BETTERPORTALS_NAME = "BetterPortals";
     public static int teleportInterval;
     public static int timeLockInterval;
     public static boolean useWorldEnterPermissions;
@@ -87,6 +93,7 @@ public class MyWorlds extends PluginBase {
     private final AutoSaveTask autoSaveTask = new AutoSaveTask(this);
     private final PortalEnterEventDebouncer portalEnterEventDebouncer = new PortalEnterEventDebouncer(this, listener::onPortalEnter);
     private final PlayerDataMigrator migrator = new PlayerDataMigrator(this);
+    private final List<PortalFilter> portalFilters = new ArrayList<>();
     private LibraryComponent placeholderApi = null;
     public static MyWorlds plugin;
 
@@ -141,6 +148,22 @@ public class MyWorlds extends PluginBase {
         }
         if (pluginName.equals(PLACEHOLDERAPI_NAME)) {
             setPAPIIntegrationEnabled(enabled, false);
+        }
+        if (enabled && pluginName.equals(BETTERPORTALS_NAME)) {
+            try {
+                this.portalFilters.add(new BetterPortalsHandler(plugin));
+            } catch (Throwable t) {
+                getLogger().log(Level.WARNING, "Failed to add BetterPortals support", t);
+            }
+        }
+
+        // Disable filters if they use this plugin
+        if (!enabled) {
+            for (Iterator<PortalFilter> iter = this.portalFilters.iterator(); iter.hasNext();) {
+                if (iter.next().usesPlugin(plugin)) {
+                    iter.remove();
+                }
+            }
         }
     }
 
@@ -436,6 +459,22 @@ public class MyWorlds extends PluginBase {
         config.set("storeInventoryInMainWorld", true);
         config.set("mainWorld", newMainWorldName);
         config.save();
+    }
+
+    /**
+     * Checks whether teleportation handling of a given Portal block should be ignored
+     *
+     * @param portalType
+     * @param portalBlock
+     * @return True if portal is filtered/ignored
+     */
+    public boolean isPortalFiltered(PortalType portalType, Block portalBlock) {
+        for (PortalFilter filter : this.portalFilters) {
+            if (filter.isPortalFiltered(portalType, portalBlock)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

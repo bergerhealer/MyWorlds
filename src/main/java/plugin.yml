@@ -5,6 +5,7 @@ api-version: 1.13
 authors: [KamikazePlatypus, mg_1999, Friwi, bergerkiller, lenis0012, timstans, bubba1234119]
 softdepend: [BKCommonLib, Multiverse-Core, SuperiorSkyblock2, PlaceholderAPI]
 loadbefore: [dynmap, Citizens, MobArena, RegionForSale, CreativeGates, HeroStronghold]
+classdepend: [BetterPortals]
 metrics: true
 
 main: com.bergerkiller.bukkit.mw.Preloader
