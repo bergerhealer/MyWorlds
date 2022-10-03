@@ -104,6 +104,18 @@ public class WorldConfigStore {
         return get(Bukkit.getWorlds().get(0));
     }
 
+    /**
+     * Gets the World Configuration of the main world for inventory storage. This is
+     * the first world where player data is loaded when players join to figure out what
+     * world they are on. This world also stores special metadata, like the last positions
+     * players had.
+     *
+     * @return Inventory main world configuration
+     */
+    public static WorldConfig getInventoryMain() {
+        return MyWorlds.storeInventoryInMainWorld ? getMain() : getVanillaMain();
+    }
+
     public static Collection<WorldConfig> all() {
         return worldConfigs.values();
     }

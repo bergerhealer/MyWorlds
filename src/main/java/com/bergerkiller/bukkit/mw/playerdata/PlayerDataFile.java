@@ -91,8 +91,7 @@ public class PlayerDataFile {
     }
 
     public static PlayerDataFile mainFile(OfflinePlayer player) {
-        return new PlayerDataFile(player, MyWorlds.storeInventoryInMainWorld ?
-                WorldConfig.getMain() : WorldConfig.getVanillaMain());
+        return new PlayerDataFile(player, WorldConfig.getInventoryMain());
     }
 
     /**
