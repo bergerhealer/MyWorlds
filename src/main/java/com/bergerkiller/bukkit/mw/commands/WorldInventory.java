@@ -62,12 +62,49 @@ public class WorldInventory extends Command {
             return;
         }
 
+        // Handle first time inventory activation
+        if (args.length >= 1 && args[0].equalsIgnoreCase("first_time_activation")) {
+            if (MyWorlds.useWorldInventories) {
+                message(ChatColor.YELLOW + "Per-world inventories are already activated!");
+                return;
+            }
+
+            // Enable the feature
+            plugin.setUseWorldInventories(true);
+            sender.sendMessage("");
+            message(ChatColor.GREEN + "Per-world inventories are now activated!");
+
+            // Make all currently known worlds share the same inventories
+            {
+                Set<String> invWorlds = new LinkedHashSet<String>();
+
+                // Ensure main world is used as the first in the group to merge
+                invWorlds.add(WorldConfig.getInventoryMain().worldname.toLowerCase());
+
+                for (WorldConfig worldConfig : WorldConfig.all()) {
+                    invWorlds.add(worldConfig.worldname.toLowerCase());
+                    invWorlds.addAll(worldConfig.inventory.getWorlds());
+                }
+                com.bergerkiller.bukkit.mw.WorldInventory.merge(invWorlds);
+                sendWorldsMessage(invWorlds, "share the same player inventory!");
+            }
+
+            sender.sendMessage("");
+            message(ChatColor.GREEN + "Use " + ChatColor.WHITE + "/world inventory split" +
+                    ChatColor.GREEN + " and " + ChatColor.WHITE + "/world inventory merge" +
+                    ChatColor.GREEN + " to give worlds their own inventory or combine them again");
+            message(ChatColor.GREEN + "If you want to go back to a single vanilla inventory for all, use " +
+                    ChatColor.WHITE + "/world inventory migrate deactivate");
+            return;
+        }
+
         if (!checkNotMigrating()) {
             return;
         }
+
         if (args.length > 1) {
             if (args[0].equalsIgnoreCase("merge")) {
-                if (this.prepareWorlds()) {
+                if (this.checkInventoriesEnabled() && this.prepareWorlds()) {
                     Set<String> invWorlds = new LinkedHashSet<String>();
                     for (String world : worlds) {
                         invWorlds.add(world.toLowerCase());
@@ -82,7 +119,7 @@ public class WorldInventory extends Command {
                 }
                 return;
             } else if (args[0].equalsIgnoreCase("split") || args[0].equalsIgnoreCase("detach")) {
-                if (this.prepareWorlds()) {
+                if (this.checkInventoriesEnabled() && this.prepareWorlds()) {
                     com.bergerkiller.bukkit.mw.WorldInventory.detach(this.worlds);
                     if (this.worlds.size() > 1) {
                         sendWorldsMessage(worlds, "now have their own player inventories!");
@@ -179,6 +216,15 @@ public class WorldInventory extends Command {
             if (plugin.getPlayerDataMigrator().isRunning()) {
                 plugin.getPlayerDataMigrator().showStatus(sender);
             }
+        } else if (migrationName.equalsIgnoreCase("deactivate")) {
+            if (!MyWorlds.useWorldInventories) {
+                message(ChatColor.YELLOW + "Per-world inventories is already de-activated!");
+                return;
+            }
+
+            plugin.setUseWorldInventories(false);
+            message(ChatColor.YELLOW + "Per-world inventories is now de-activated");
+            message(ChatColor.YELLOW + "Players will only keep the inventory they had on the server main world");
         } else {
             message(ChatColor.RED + "Unknown command: /world inventory migrate " + migrationName);
         }
@@ -187,11 +233,22 @@ public class WorldInventory extends Command {
     private boolean checkNotMigrating() {
         // While migrating data, can't change any of the configs...
         if (plugin.getPlayerDataMigrator().isRunning()) {
-            sender.sendMessage(ChatColor.RED + "Can't change inventory configuration: busy migrating");
+            message(ChatColor.RED + "Can't change inventory configuration: busy migrating");
             plugin.getPlayerDataMigrator().showStatus(sender);
             return false;
         }
         return true;
+    }
+
+    private boolean checkInventoriesEnabled() {
+        if (!MyWorlds.useWorldInventories) {
+            message(ChatColor.RED + "Per-world player inventories are not enabled right now");
+            message(ChatColor.RED + "Use " + ChatColor.WHITE + "/world inventory first_time_activation" +
+                    ChatColor.RED + " to enable it");
+            return false;
+        } else {
+            return true;
+        }
     }
 
     private WorldConfig prepareMigrateWorld() {
@@ -217,11 +274,11 @@ public class WorldInventory extends Command {
             if (args.length > 2) {
                 return processWorldNameAutocomplete();
             } else {
-                return processAutocomplete(Stream.of("status", "storage", "main"));
+                return processAutocomplete(Stream.of("status", "storage", "main", "deactivate"));
             }
         }
 
         // Default stuff
-        return processBasicAutocompleteOrWorldName("merge", "split", "enable", "disable", "migrate");
+        return processBasicAutocompleteOrWorldName("merge", "split", "enable", "disable", "migrate", "first_time_activation");
     }
 }

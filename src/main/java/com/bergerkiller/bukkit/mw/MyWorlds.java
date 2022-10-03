@@ -462,6 +462,21 @@ public class MyWorlds extends PluginBase {
     }
 
     /**
+     * Turns on or off the per-world inventories
+     *
+     * @param enabled
+     */
+    public void setUseWorldInventories(boolean enabled) {
+        if (MyWorlds.useWorldInventories != enabled) {
+            MyWorlds.useWorldInventories = enabled;
+            FileConfiguration config = new FileConfiguration(this);
+            config.load();
+            config.set("useWorldInventories", enabled);
+            config.save();
+        }
+    }
+
+    /**
      * Checks whether teleportation handling of a given Portal block should be ignored
      *
      * @param portalType
