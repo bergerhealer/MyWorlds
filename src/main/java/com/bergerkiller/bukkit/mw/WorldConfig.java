@@ -191,7 +191,7 @@ public class WorldConfig extends WorldConfigStore {
         this.worldmode = config.worldmode;
         this.chunkGeneratorName = config.chunkGeneratorName;
         this.difficulty = config.difficulty;
-        this.spawnPoint = config.spawnPoint.clone();
+        this.spawnPoint = (config.spawnPoint == null) ? null : config.spawnPoint.clone();
         this.respawnPoint = config.respawnPoint; // Is immutable
         this.rejoinGroup = config.rejoinGroup; // Is immutable
         this.gameMode = config.gameMode;
