@@ -899,7 +899,7 @@ public class MWPlayerDataController extends PlayerDataController {
             // Track the last position on this world
             final LastPlayerPositionList lastPositions = readLastPlayerPositions(player, Collections.emptyList()).clone();
             {
-                LastPlayerPositionList.LastPosition pos = lastPositions.getForWorld(files.currentFile.world);
+                LastPlayerPositionList.LastPosition pos = lastPositions.getForWorld(WorldConfig.get(loc.getWorld()));
                 CommonTagCompound data = LastPlayerPositionList.createPositionData(loc, System.currentTimeMillis());
                 lastPositions.update(pos, data);
             }
