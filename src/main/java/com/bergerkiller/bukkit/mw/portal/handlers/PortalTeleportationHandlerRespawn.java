@@ -12,6 +12,12 @@ import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
  * his last-known bed spawn or world spawn on the destination world.
  */
 public class PortalTeleportationHandlerRespawn extends PortalTeleportationHandler {
+    private final boolean inWorldOnly;
+
+    public PortalTeleportationHandlerRespawn(boolean inWorldOnly) {
+        this.inWorldOnly = inWorldOnly;
+    }
+
     @Override
     public void handleWorld(World world) {
         if (plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
@@ -20,7 +26,7 @@ public class PortalTeleportationHandlerRespawn extends PortalTeleportationHandle
 
                 // Do the zzz
                 Location bedSpawn = WorldManager.getPlayerRespawnPosition(player, world);
-                if (bedSpawn != null) {
+                if (bedSpawn != null && (!inWorldOnly || bedSpawn.getWorld() == world)) {
                     scheduleTeleportation(bedSpawn);
                     return;
                 }

@@ -121,7 +121,24 @@ public class MWPlayerDataController extends PlayerDataController {
      * @return Bed spawn location, or NONE if not set / stored
      */
     public static PlayerRespawnPoint readRespawnPoint(Player player, World world) {
-        PlayerDataFile posFile = new PlayerDataFile(player, WorldConfig.get(world));
+        // If world inventories are disabled, then there is only ever one global bed spawn
+        // And this bed spawn will already have been set for the player. So use that.
+        if (!MyWorlds.useWorldInventories) {
+            return PlayerRespawnPoint.forPlayer(player);
+        }
+
+        // What world is the respawn point information actually stored on?
+        WorldConfig worldConfigStoringInventory = WorldConfig.getIfExists(WorldConfig.get(world).inventory.getSharedWorldName());
+        if (worldConfigStoringInventory == null) {
+            return PlayerRespawnPoint.NONE;
+        }
+
+        // If player is already using this inventory, then there is no use reading it from disk
+        if (worldConfigStoringInventory.inventory.contains(player.getWorld())) {
+            return PlayerRespawnPoint.forPlayer(player);
+        }
+
+        PlayerDataFile posFile = new PlayerDataFile(player, worldConfigStoringInventory);
         if (!posFile.exists()) {
             return PlayerRespawnPoint.NONE;
         }

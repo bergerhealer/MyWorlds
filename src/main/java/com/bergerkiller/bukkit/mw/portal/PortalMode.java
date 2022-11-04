@@ -21,11 +21,24 @@ public enum PortalMode {
      */
     DEFAULT("Teleport to", PortalTeleportationHandlerDefault::new),
     /**
-     * Teleports the player to a bed spawn, or world spawn, on the
-     * configured world. If a portal name is specified, the player
+     * Teleports the player to the bed in any world that shares inventory state
+     * with the destination world. If the player last 'slept' in the nether
+     * and is asked to respawn, the player is teleported to the nether even
+     * if the destination was overworld.<br>
+     * <br>
+     * If the player has no bed spawn, the player is teleported to the world spawn
+     * point on the destination world. If a portal name is specified, the player
      * is teleported to the portal.
      */
-    RESPAWN("Respawn at bed or world spawn of", PortalTeleportationHandlerRespawn::new),
+    RESPAWN("Respawn at the player bed, or world spawn of", () -> new PortalTeleportationHandlerRespawn(false)),
+    /**
+     * Teleports the player to a bed spawn, or world spawn, on the
+     * configured world. If the player bed is on a different world it is
+     * not used. If a portal name is specified, the player
+     * is teleported to the portal.
+     */
+    RESPAWN_ON("Respawn at the player bed (if on the destination world), or world spawn of",
+            () -> new PortalTeleportationHandlerRespawn(true)),
     /**
      * Checks the world data what the last world was in the world group
      * of the destination world, and teleports the player to that world
