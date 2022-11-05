@@ -148,13 +148,13 @@ public class MWListener implements Listener {
 
         // Don't do it for players, causes horrible problems!
         if (event.getEntity() instanceof Player) {
-            onPortalEnter(portalBlock, event.getEntity());
+            onPortalEnter(portalBlock, event.getEntity(), EntityUtil.getPortalCooldown(event.getEntity()));
         } else {
             plugin.getPortalEnterEventDebouncer().trigger(portalBlock, event.getEntity());
         }
     }
 
-    public void onPortalEnter(Block portalBlock, Entity entity) {
+    public void onPortalEnter(Block portalBlock, Entity entity, int portalCooldown) {
         // Decode what kind of portal block this is
         // This might return null for a valid case, because we have restrictions
         PortalType portalType = PortalType.findPortalType(portalBlock);
@@ -186,11 +186,11 @@ public class MWListener implements Listener {
             if (entity instanceof Player) {
                 if (!MyWorlds.alwaysInstantPortal) {
                     Player p = (Player) entity;
-                    if (p.getGameMode() != GameMode.CREATIVE && EntityUtil.getPortalCooldown(p) == 0) {
+                    if (p.getGameMode() != GameMode.CREATIVE && portalCooldown > 0) {
                         return;
                     }
                 }
-            } else if (EntityUtil.getPortalCooldown(entity) == 0) {
+            } else if (portalCooldown > 0) {
                 return;
             }
         }

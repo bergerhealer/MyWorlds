@@ -10,6 +10,7 @@ import org.bukkit.entity.Entity;
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.component.LibraryComponent;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 
 /**
@@ -32,7 +33,7 @@ public final class PortalEnterEventDebouncer implements LibraryComponent {
                     ArrayList<Pending> copy = new ArrayList<>(pending);
                     pending.clear();
                     for (Pending pending : copy) {
-                        callback.onPortalEnter(pending.portalBlock, pending.entity);
+                        callback.onPortalEnter(pending.portalBlock, pending.entity, pending.portalCooldown);
                     }
                 }
             }
@@ -57,10 +58,12 @@ public final class PortalEnterEventDebouncer implements LibraryComponent {
     private static final class Pending {
         public final Block portalBlock;
         public final Entity entity;
+        public final int portalCooldown;
 
         public Pending(Block portalBlock, Entity entity) {
             this.portalBlock = portalBlock;
             this.entity = entity;
+            this.portalCooldown = EntityUtil.getPortalCooldown(entity);
         }
 
         @Override
@@ -77,6 +80,6 @@ public final class PortalEnterEventDebouncer implements LibraryComponent {
     }
 
     public static interface Callback {
-        void onPortalEnter(Block portalBlock, Entity entity);
+        void onPortalEnter(Block portalBlock, Entity entity, int portalCooldown);
     }
 }

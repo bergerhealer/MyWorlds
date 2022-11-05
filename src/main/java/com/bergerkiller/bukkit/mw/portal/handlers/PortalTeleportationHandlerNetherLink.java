@@ -13,6 +13,7 @@ import org.bukkit.util.Vector;
 
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.math.Matrix4x4;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.MathUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Localization;
@@ -87,6 +88,7 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
 
         // Stop when busy / debounce
         if (result.getStatus().isBusy() || !plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
+            EntityUtil.setPortalCooldown(entity, 0); // Reset cooldown so the portal is entered again next tick
             return;
         }
 
