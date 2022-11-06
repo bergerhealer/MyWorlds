@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw.portal;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -53,6 +54,14 @@ public final class PortalEnterEventDebouncer implements LibraryComponent {
 
     public void trigger(Block portalBlock, Entity entity) {
         pending.add(new Pending(portalBlock, entity));
+    }
+
+    public void clear(Entity entity) {
+        for (Iterator<Pending> iter = pending.iterator(); iter.hasNext();) {
+            if (iter.next().entity == entity) {
+                iter.remove();
+            }
+        }
     }
 
     private static final class Pending {

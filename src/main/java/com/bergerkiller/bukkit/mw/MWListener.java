@@ -105,7 +105,8 @@ public class MWListener implements Listener {
         if (MyWorlds.waterPortalEnabled) {
             Block b = event.getTo().getBlock();
             if (PortalType.WATER.detect(b)) {
-                handlePortalEnter(PortalType.WATER, b, event.getPlayer());
+                handlePortalEnter(PortalType.WATER, b, event.getPlayer(),
+                        EntityUtil.getPortalCooldown(event.getPlayer()));
             }
         }
     }
@@ -196,10 +197,10 @@ public class MWListener implements Listener {
         }
 
         // Proceed
-        handlePortalEnter(portalType, portalBlock, entity);
+        handlePortalEnter(portalType, portalBlock, entity, portalCooldown);
     }
 
-    private void handlePortalEnter(PortalType portalType, Block portalBlock, Entity entity) {
+    private void handlePortalEnter(PortalType portalType, Block portalBlock, Entity entity, int portalCooldown) {
         // Figure out what the destination is of this portal
         PortalDestination.FindResults findResults = PortalDestination.findFromPortal(portalType, portalBlock);
         PortalDestination destination = findResults.getDestination();
@@ -240,7 +241,7 @@ public class MWListener implements Listener {
 
         // Setup handler, which performs the teleportations for us
         PortalTeleportationHandler teleportationHandler = destination.getMode().createTeleportationHandler();
-        teleportationHandler.setup(plugin, portalType, portalBlock, destination, entity);
+        teleportationHandler.setup(plugin, portalType, portalBlock, destination, entity, portalCooldown);
 
         // If the destination leads to a portal sign, let the portal sign deal with it
         {

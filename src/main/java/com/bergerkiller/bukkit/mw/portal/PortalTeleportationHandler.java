@@ -11,6 +11,7 @@ import org.bukkit.util.Vector;
 
 import com.bergerkiller.bukkit.common.math.Quaternion;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.PlayerUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
@@ -28,18 +29,21 @@ public abstract class PortalTeleportationHandler {
     protected Block portalBlock;
     protected PortalDestination destination;
     protected Entity entity;
+    protected int portalCooldown;
 
     public void setup(MyWorlds plugin,
                       PortalType portalType,
                       Block portalBlock,
                       PortalDestination destination,
-                      Entity entity)
+                      Entity entity,
+                      int portalCooldown)
     {
         this.plugin = plugin;
         this.portalType = portalType;
         this.portalBlock = portalBlock;
         this.destination = destination;
         this.entity = entity;
+        this.portalCooldown = portalCooldown;
     }
 
     /**
@@ -89,6 +93,8 @@ public abstract class PortalTeleportationHandler {
      * @param velocity
      */
     public void scheduleTeleportationWithVelocity(Location position, Vector velocity) {
+        disablePortalsForCooldown();
+
         if (entity instanceof Player) {
             Player player = (Player) entity;
 
@@ -129,6 +135,8 @@ public abstract class PortalTeleportationHandler {
      * @param velocity
      */
     public boolean performTeleportation(Location position, Vector velocity) {
+        disablePortalsForCooldown();
+
         Location original_position = plugin.getPortalTeleportationCooldown().getPortal(entity);
         plugin.getPortalTeleportationCooldown().setPortal(entity, position);
         //if (CommonEntity.get(entity).teleport(position, portalType.getTeleportCause())) {
@@ -149,6 +157,9 @@ public abstract class PortalTeleportationHandler {
                 handle.setPosition(position.getX(), position.getY(), position.getZ());
             }
 
+            // This as well
+            disablePortalsForCooldown();
+
             // Give momentum
             entity.setVelocity(velocity);
             return true;
@@ -158,6 +169,13 @@ public abstract class PortalTeleportationHandler {
             }
             return false;
         }
+    }
+
+    private void disablePortalsForCooldown() {
+        // Before teleporting, set a cooldown. Clear any queued up portal enter events
+        // to prevent cooldown being reset to 0 again.
+        EntityUtil.setPortalCooldown(entity, EntityUtil.getPortalCooldownMaximum(entity));
+        plugin.getPortalEnterEventDebouncer().clear(entity);
     }
 
     /**
