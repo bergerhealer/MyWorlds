@@ -185,10 +185,15 @@ public class MWListener implements Listener {
         // All of this only matters for nether portals
         if (portalType == PortalType.NETHER) {
             if (entity instanceof Player) {
-                if (!MyWorlds.alwaysInstantPortal) {
-                    Player p = (Player) entity;
-                    if (p.getGameMode() != GameMode.CREATIVE && portalCooldown > 0) {
-                        return;
+                if (!MyWorlds.alwaysInstantPortal && ((Player) entity).getGameMode() != GameMode.CREATIVE) {
+                    if (Common.hasCapability("Common:EntityUtil:PortalWaitDelay")) {
+                        if (!handlePortalEnterDelay(entity)) {
+                            return;
+                        }
+                    } else {
+                        if (!handlePortalEnterFallback(entity)) {
+                            return;
+                        }
                     }
                 }
             } else if (portalCooldown > 0) {
@@ -198,6 +203,18 @@ public class MWListener implements Listener {
 
         // Proceed
         handlePortalEnter(portalType, portalBlock, entity, portalCooldown);
+    }
+
+    private static boolean handlePortalEnterDelay(Entity entity) {
+        CommonEntity<?> commonEntity = CommonEntity.get(entity);
+        return (commonEntity.getPortalTime() >= commonEntity.getPortalWaitTime());
+    }
+
+    private static boolean handlePortalEnterFallback(Entity entity) {
+        // By pure coincidence we can sort of use the cooldown to check when the delay has expired
+        // This is because the server sets the cool down ticks after the delay expires
+        // It's less good though...
+        return EntityUtil.getPortalCooldown(entity) != 0;
     }
 
     private void handlePortalEnter(PortalType portalType, Block portalBlock, Entity entity, int portalCooldown) {
