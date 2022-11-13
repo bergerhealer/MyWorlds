@@ -7,6 +7,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -18,6 +19,7 @@ import com.bergerkiller.bukkit.common.utils.MathUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MyWorlds;
+import com.bergerkiller.bukkit.mw.PortalType;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalOrientation;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
@@ -89,6 +91,9 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
         // Stop when busy / debounce
         if (result.getStatus().isBusy() || !plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
             EntityUtil.setPortalCooldown(entity, portalCooldown); // Reset cooldown so the portal is entered again next tick
+            if (this.portalType == PortalType.NETHER && Common.hasCapability("Common:EntityUtil:PortalWaitDelay")) {
+                extendPortalWaitTime(entity);
+            }
             return;
         }
 
@@ -138,12 +143,8 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
             Location locToTeleportTo = transform.toLocation(result.getResult().getWorld());
 
             // Check that this location sits inside an existing portal frame on the destination
-            // Ignore for non-humanoid entities smaller than 1 block tall (use head position for this)
-            if (entity instanceof LivingEntity && ((LivingEntity) entity).getEyeHeight(true) > 1.0) {
-                destPortalOrientation.adjustPosition(locToTeleportTo, true);
-            } else {
-                destPortalOrientation.adjustPosition(locToTeleportTo, false);
-            }
+            // If not, teleport the entity to a place where it's safe in the middle of a portal
+            destPortalOrientation.adjustPosition(entity, locToTeleportTo);
 
             // Retrieve the velocity of the entity upon entering the portal
             // Transform this velocity the same way we transformed the position
@@ -153,6 +154,10 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
             // Perform the teleportation woo
             scheduleTeleportationWithVelocity(locToTeleportTo, velocityAfterTeleport);
         }
+    }
+
+    private static void extendPortalWaitTime(Entity entity) {
+        EntityUtil.setPortalTime(entity, EntityUtil.getPortalWaitTime(entity) - 1);
     }
 
     // Just to avoid nonsense, it is in its own method, as it does not always exist

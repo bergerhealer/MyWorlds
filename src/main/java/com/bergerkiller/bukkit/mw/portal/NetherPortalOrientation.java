@@ -10,9 +10,14 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.util.Vector;
 
 import com.bergerkiller.bukkit.common.bases.IntVector3;
+import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.common.math.Matrix4x4;
+import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
@@ -26,11 +31,13 @@ public class NetherPortalOrientation {
     private final World world;
     private final Set<IntVector3> portalBlocks;
     private final Matrix4x4 transform;
+    private final BlockFace facing;
 
-    private NetherPortalOrientation(World world, Set<IntVector3> portalBlocks, Matrix4x4 transform) {
+    private NetherPortalOrientation(World world, Set<IntVector3> portalBlocks, Matrix4x4 transform, BlockFace facing) {
         this.world = world;
         this.portalBlocks = portalBlocks;
         this.transform = transform;
+        this.facing = facing;
     }
 
     /**
@@ -61,21 +68,34 @@ public class NetherPortalOrientation {
         return this.transform;
     }
 
-    /**
-     * Adjusts a position to be within a portal block making up this nether portal frame.
-     * The input location object is modified.
-     * 
-     * @param location
-     * @param doubleHeight Whether two blocks must be free
-     */
-    public void adjustPosition(Location location, boolean doubleHeight) {
+    public void adjustPosition(Entity entity, Location location) {
         if (this.portalBlocks.isEmpty()) {
             return; // fallback
         }
 
-        IntVector3 location_pos = new IntVector3(location);
-        if (this.portalBlocks.contains(location_pos) && (!doubleHeight || this.portalBlocks.contains(location_pos.add(BlockFace.UP)))) {
-            return; // Fully contained within
+        // Whether two blocks must be free above the entity's feet
+        boolean doubleHeight = (entity instanceof LivingEntity && ((LivingEntity) entity).getEyeHeight(true) > 1.0);
+
+        // Check the position of the entity and the portal-relative left/right according to the bounding box of the entity
+        float width = CommonEntity.get(entity).getWidth();
+        {
+            Vector side = FaceUtil.faceToVector(FaceUtil.rotate(this.facing, 2))
+                    .multiply(width).multiply(0.5);
+
+            Set<IntVector3> portal_locs = new HashSet<>();
+            portal_locs.add(new IntVector3(location));
+            portal_locs.add(new IntVector3(location.clone().add(side)));
+            portal_locs.add(new IntVector3(location.clone().add(side.clone().multiply(-1.0))));
+            boolean fullAccess = true;
+            for (IntVector3 portal_loc : portal_locs) {
+                if (!this.portalBlocks.contains(portal_loc) || (doubleHeight && !this.portalBlocks.contains(portal_loc.add(BlockFace.UP)))) {
+                    fullAccess = false;
+                    break;
+                }
+            }
+            if (fullAccess) {
+                return; // Entity has room to spawn here
+            }
         }
 
         // Find a portal block that is closest to this location
@@ -144,7 +164,7 @@ public class NetherPortalOrientation {
             fallback.translate(netherPortalBlock.getX() + 0.5,
                                netherPortalBlock.getY() + 1.0,
                                netherPortalBlock.getZ() + 0.5);
-            return new NetherPortalOrientation(netherPortalBlock.getWorld(), Collections.emptySet(), fallback);
+            return new NetherPortalOrientation(netherPortalBlock.getWorld(), Collections.emptySet(), fallback, BlockFace.SELF);
         }
 
         Queue<Block> remaining = new LinkedList<Block>(Collections.singletonList(netherPortalBlock));
@@ -179,7 +199,7 @@ public class NetherPortalOrientation {
         result.translate(0.5 * ((double) minX + (double) maxX + 1.0),
                          (double) minY,
                          (double) z + 0.5);
-        return new NetherPortalOrientation(world, portalBlocks, result);
+        return new NetherPortalOrientation(world, portalBlocks, result, BlockFace.NORTH);
     }
 
     private static NetherPortalOrientation findAlongZ(Queue<Block> remaining, BlockData blockData) {
@@ -207,6 +227,6 @@ public class NetherPortalOrientation {
                          (double) minY,
                          0.5 * ((double) minZ + (double) maxZ + 1.0));
         result.rotateY(0.0, 1.0);
-        return new NetherPortalOrientation(world, portalBlocks, result);
+        return new NetherPortalOrientation(world, portalBlocks, result, BlockFace.EAST);
     }
 }
