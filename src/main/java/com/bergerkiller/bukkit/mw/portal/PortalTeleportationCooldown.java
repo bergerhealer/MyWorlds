@@ -12,7 +12,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
-import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -121,10 +120,13 @@ public class PortalTeleportationCooldown {
                 }
             }
 
+            // Disabled to fix teleporting mobs not taking portals (shulkers / endermen)
+            /*
             @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
             public void onEntityTeleport(EntityTeleportEvent event) {
                 setPortal(event.getEntity(), event.getTo());
             }
+            */
         });
     }
 
