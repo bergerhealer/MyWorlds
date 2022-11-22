@@ -163,6 +163,10 @@ public class WorldManager {
         }
         Plugin plug = Bukkit.getServer().getPluginManager().getPlugin(name);
         if (plug != null) {
+            // Eliminate ;nostructures from the options passed to the generator
+            GeneratorStructuresParser parser = new GeneratorStructuresParser();
+            id = parser.process(id);
+            //TODO: Do we do anything with structures/nostructures, here?
             return plug.getDefaultWorldGenerator(worldname, id);
         } else {
             return null;
