@@ -539,6 +539,10 @@ public class MWPlayerDataController extends PlayerDataController {
             playerHandle.setExp(playerData.getValue("XpP", 0.0f));
             playerHandle.setExpLevel(playerData.getValue("XpLevel", 0));
             playerHandle.setExpTotal(playerData.getValue("XpTotal", 0));
+            playerHandle.setOnGround(playerData.getValue("OnGround", false));
+            player.setRemainingAir(playerData.getValue("Air", (short) player.getMaximumAir()));
+            player.setFireTicks(playerData.getValue("Fire", (short) 0));
+            player.setFallDistance(playerData.getValue("FallDistance", 0.0f));
 
             {
                 final double maxHealth = commonPlayer.getMaxHealth();
