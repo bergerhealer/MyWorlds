@@ -536,6 +536,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // Load the data
             NBTUtil.loadInventory(player.getInventory(), playerData.createList("Inventory"));
+            player.getInventory().setHeldItemSlot(playerData.getValue("SelectedItemSlot", 0));
             playerHandle.setExp(playerData.getValue("XpP", 0.0f));
             playerHandle.setExpLevel(playerData.getValue("XpLevel", 0));
             playerHandle.setExpTotal(playerData.getValue("XpTotal", 0));
