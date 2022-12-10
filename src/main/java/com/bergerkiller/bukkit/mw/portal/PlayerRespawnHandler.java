@@ -8,6 +8,7 @@ import java.util.logging.Level;
 
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -141,28 +142,39 @@ public class PlayerRespawnHandler {
                     }
                 }
 
-                // If portals aren't handled, ignore all of this
-                if (event.getFrom() == null || (!MyWorlds.endPortalEnabled && !MyWorlds.netherPortalEnabled)) {
-                    return;
-                }
-
                 // Cancel all portal events we handle ourselves, not handled up here
-                if (PortalType.findPortalType(event.getFrom().getBlock()) != null) {
+                if (checkPortalHandled(event.getPlayer(), event.getFrom())) {
                     event.setCancelled(true);
                 }
             }
 
             @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
             public void onEntityPortal(EntityPortalEvent event) {
-                // If portals aren't handled, ignore all of this
-                if (event.getFrom() == null || (!MyWorlds.endPortalEnabled && !MyWorlds.netherPortalEnabled)) {
-                    return;
-                }
-
                 // Cancel events that we handle ourselves, for all non-player entities
-                if (PortalType.findPortalType(event.getFrom().getBlock()) != null) {
+                if (checkPortalHandled(event.getEntity(), event.getFrom())) {
                     event.setCancelled(true);
                 }
+            }
+
+            private boolean checkPortalHandled(Entity entity, Location from) {
+                // If portals aren't handled, ignore all of this
+                if (from == null || (!MyWorlds.endPortalEnabled && !MyWorlds.netherPortalEnabled)) {
+                    return false;
+                }
+
+                // If portal is nearby that we handle, we handle it for sure
+                if (PortalType.findPortalType(from.getBlock()) != null) {
+                    return true;
+                }
+
+                // There is a bukkit bug that it sends another portal enter event one tick
+                // delayed after teleporting. Detect that and reject that event as well.
+                Location loc = plugin.getPortalTeleportationCooldown().getPortal(entity);
+                if (loc != null && loc.equals(from)) {
+                    return true;
+                }
+
+                return false;
             }
 
             @EventHandler(priority = EventPriority.MONITOR)
