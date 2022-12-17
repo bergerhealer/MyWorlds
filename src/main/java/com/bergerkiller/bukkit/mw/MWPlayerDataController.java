@@ -783,6 +783,9 @@ public class MWPlayerDataController extends PlayerDataController {
 
                             // Load this world's specific player data
                             playerData = files.currentFile.read(player);
+                            if (playerData == null) {
+                                playerData = createEmptyData(player);
+                            }
 
                             // Import legacy 'last player positions' of this world if we don't already have them
                             if (!lastPlayerPositions.containsWorld(files.currentFile.world)) {
@@ -793,6 +796,9 @@ public class MWPlayerDataController extends PlayerDataController {
                                     lastPlayerPositions.addNoPositionSlot(files.currentFile.world);
                                 }
                             }
+
+                            // Preserve some of the global player state (stored in main world)
+                            copyGlobalPlayerData(mainWorldData, playerData);
                         }
                     }
                 } catch (Throwable t) {
@@ -838,8 +844,9 @@ public class MWPlayerDataController extends PlayerDataController {
             // Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
             // Make sure the player is marked as being new
             PlayerUtil.setHasPlayedBefore(player, hasPlayedBefore);
-            if (hasPlayedBefore) {
-                // As specified in the WorldNBTStorage implementation, set this
+
+            // As specified in the WorldNBTStorage implementation, use modified data if earlier than nbt data
+            if (hasPlayedBefore && files.mainWorldFile.lastModified() < player.getFirstPlayed()) {
                 PlayerUtil.setFirstPlayed(player, files.mainWorldFile.lastModified());
             }
 
@@ -957,11 +964,25 @@ public class MWPlayerDataController extends PlayerDataController {
                     data.put("Pos", savedData.get("Pos"));
                     data.put("Rotation", savedData.get("Rotation"));
                     data.putUUID("World", player.getWorld().getUID());
+                    copyGlobalPlayerData(savedData, data);
                     mainWorldUpdater.accept(data);
                 });
             }
         } catch (Throwable t) {
             plugin.getLogger().log(Level.WARNING, "Failed to save player data for " + player.getName(), t);
+        }
+    }
+
+    private static void copyGlobalPlayerData(CommonTagCompound srcPlayerData, CommonTagCompound dstPlayerData) {
+        // bukkit player stats
+        {
+            CommonTagCompound srcBukkit = srcPlayerData.get("bukkit", CommonTagCompound.class);
+            if (srcBukkit != null) {
+                CommonTagCompound dstBukkit = dstPlayerData.createCompound("bukkit");
+                dstBukkit.put("lastPlayed", srcBukkit.get("lastPlayed"));
+                dstBukkit.put("firstPlayed", srcBukkit.get("firstPlayed"));
+                dstBukkit.put("lastKnownName", srcBukkit.get("lastKnownName"));
+            }
         }
     }
 
