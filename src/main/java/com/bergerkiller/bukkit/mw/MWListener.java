@@ -261,7 +261,9 @@ public class MWListener implements Listener {
         teleportationHandler.setup(plugin, portalType, portalBlock, destination, entity, portalCooldown);
 
         // If the destination leads to a portal sign, let the portal sign deal with it
-        {
+        // Do not run this logic if the portal mode is non-default and already matches a world name
+        // This way if people name a portal "world", the mode nether-link default portal remains functional
+        if (!destination.isPortalLookupIgnored()) {
             Location portalLocation = PortalStore.getPortalLocation(destination.getName(), portalBlock.getWorld().getName(), true, entity);
             if (portalLocation != null) {
                 // Debounce

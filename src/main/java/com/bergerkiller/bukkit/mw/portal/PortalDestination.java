@@ -41,6 +41,27 @@ public class PortalDestination {
         return this._name;
     }
 
+    /**
+     * Gets whether looking up portals by {@link #getName()} is ignored. This is the
+     * case when {@link #getMode()} is set to non-default, and a world exists matching
+     * the name.
+     *
+     * @return True if portal lookup should be ignored
+     */
+    public boolean isPortalLookupIgnored() {
+        if (getMode() == PortalMode.DEFAULT) {
+            return false;
+        }
+
+        WorldConfig wc = WorldConfig.getIfExists(getName());
+        if (wc == null || !wc.isLoaded()) {
+            return false;
+        }
+
+        // World exists and is loaded.
+        return true;
+    }
+
     public void setDisplayName(String displayName) {
         this._display = (displayName == null) ? "" : displayName;
     }
