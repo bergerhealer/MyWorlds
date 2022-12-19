@@ -181,7 +181,7 @@ public class WorldConfigStore {
                         wc.loadWorld();
                     }
                 } else {
-                    MyWorlds.plugin.log(Level.WARNING, "World: " + node.getName() + " no longer exists, data will be wiped when disabling!");
+                    MyWorlds.plugin.log(Level.WARNING, "World: " + worldname + " no longer exists, data will be wiped when disabling!");
                 }
             }
             // For any new worlds that are made available: generate a configuration here
