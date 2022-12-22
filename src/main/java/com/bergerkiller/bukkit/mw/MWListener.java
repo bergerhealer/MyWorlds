@@ -391,6 +391,31 @@ public class MWListener implements Listener {
                 return false;
             }
 
+            // Entity leaves player shoulder (ignore that, assume it was already spawned)
+            if (reason.name().equals("SHOULDER_ENTITY")) {
+                return false;
+            }
+
+            // Allay duplication logic
+            if (reason.name().equals("DUPLICATION")) {
+                return !MyWorlds.ignoreBreedingSpawns;
+            }
+
+            // Mushroom cow -> Sheared cow
+            if (reason.name().equals("SHEARED")) {
+                return false;
+            }
+
+            // Tadpole -> Frog growth stage
+            if (reason.name().equals("METAMORPHOSIS")) {
+                return false;
+            }
+
+            // Entity frozen in snow
+            if (reason.name().equals("FROZEN")) {
+                return false;
+            }
+
             // For all cases we don't know about, better safe than sorry. Block it.
             return true;
         }
