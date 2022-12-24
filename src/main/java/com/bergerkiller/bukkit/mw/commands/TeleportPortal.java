@@ -59,21 +59,19 @@ public class TeleportPortal extends Command {
 
     public void execute() {
         if (args.length >= 1) {
+            String dest = this.removeArg(0);
             Player[] targets = null;
-            String dest = null;
-            if (args.length > 1) {
+            if (args.length >= 1) {
                 HashSet<Player> found = new HashSet<Player>();
-                for (int i = 0; i < args.length - 1; i++) {
-                    Player player = Util.parsePlayerName(this.sender, args[i]);
+                for (String arg : args) {
+                    Player player = Util.parsePlayerName(this.sender, arg);
                     if (player != null) {
                         found.add(player);
                     }
                 }
                 targets = found.toArray(new Player[0]);
-                dest = args[args.length - 1];
             } else if (sender instanceof Player) {
                 targets = new Player[] {(Player) sender};
-                dest = args[0];
             } else {
                 sender.sendMessage("This command is only for players!");
                 return;
