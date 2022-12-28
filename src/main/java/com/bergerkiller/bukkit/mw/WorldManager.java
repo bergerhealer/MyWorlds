@@ -410,9 +410,13 @@ public class WorldManager {
         String[] portalnames;
         if (Permission.COMMAND_SPAWN.has(player) || Permission.COMMAND_TPP.has(player)) {
             for (World loadedWorld : Bukkit.getWorlds()) {
-                if (Permission.canEnter(player, loadedWorld)) {
-                    return WorldConfig.get(loadedWorld).getSpawnLocation();
+                if (!Permission.canEnter(player, loadedWorld)) {
+                    continue;
                 }
+                if (!WorldConfig.get(loadedWorld).checkPlayerLimit(player)) {
+                    continue;
+                }
+                return WorldConfig.get(loadedWorld).getSpawnLocation();
             }
             portalnames = Portal.getPortals();
         } else {

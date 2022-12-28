@@ -65,6 +65,7 @@ public class WorldConfig extends WorldConfigStore {
     public boolean bedRespawnEnabled = true;
     public boolean advancementsEnabled = true;
     public boolean advancementsSilent = false;
+    public int playerLimit = -1;
     public WorldInventory inventory;
 
     protected WorldConfig(String worldname) {
@@ -209,6 +210,7 @@ public class WorldConfig extends WorldConfigStore {
         this.bedRespawnEnabled = config.bedRespawnEnabled;
         this.advancementsEnabled = config.advancementsEnabled;
         this.advancementsSilent = config.advancementsSilent;
+        this.playerLimit = config.playerLimit;
         this.inventory = config.inventory.add(this.worldname);
     }
 
@@ -267,6 +269,7 @@ public class WorldConfig extends WorldConfigStore {
         this.bedRespawnEnabled = node.get("bedRespawnEnabled", this.bedRespawnEnabled);
         this.advancementsEnabled = node.get("advancementsEnabled", this.advancementsEnabled);
         this.advancementsSilent = node.get("advancementsSilent", this.advancementsSilent);
+        this.playerLimit = node.get("playerLimit", this.playerLimit);
         for (String type : node.getList("deniedCreatures", String.class)) {
             type = type.toUpperCase();
             if (type.equals("ANIMALS")) {
@@ -359,6 +362,7 @@ public class WorldConfig extends WorldConfigStore {
         node.set("bedRespawnEnabled", this.bedRespawnEnabled);
         node.set("advancementsEnabled", this.advancementsEnabled);
         node.set("advancementsSilent", this.advancementsSilent);
+        node.set("playerLimit", this.playerLimit);
 
         if (this.spawnPoint == null) {
             node.remove("spawn");
@@ -764,6 +768,29 @@ public class WorldConfig extends WorldConfigStore {
     }
     public void updateAdvancements(World world) {
         MyWorlds.plugin.getAdvancementManager().applyGameRule(world, this.advancementsEnabled && !this.advancementsSilent);
+    }
+
+    /**
+     * Checks whether the player can teleport/join a particular world according to the per-world
+     * player limits and the bypass permission. If the player cannot join it, message that
+     * the world is full.
+     *
+     * @param player
+     * @return True if the player is allowed to join the world
+     */
+    public boolean checkPlayerLimit(Player player) {
+        if (playerLimit <= -1) {
+            return true;
+        } else if (Permission.GENERAL_BYPASSPLAYERLIMITS.has(player)) {
+            return true;
+        } else {
+            return getNumberOfPlayersLimited() < playerLimit;
+        }
+    }
+
+    public int getNumberOfPlayersLimited() {
+        World world = this.getWorld();
+        return (world == null) ? 0 : world.getPlayers().size();
     }
 
     public boolean isTeleportingToLastPosition(Player player) {

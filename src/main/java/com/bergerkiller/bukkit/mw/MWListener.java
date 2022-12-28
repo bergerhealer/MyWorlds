@@ -76,7 +76,21 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
-        WorldConfig.get(event.getPlayer()).onPlayerEnter(event.getPlayer(), true);
+        WorldConfig wc = WorldConfig.get(event.getPlayer());
+        wc.onPlayerEnter(event.getPlayer(), true);
+
+        // If limit is reached, teleport the player to the main world one tick delayed
+        // Skip if the player is already on a main world (wut?)
+        if (!wc.checkPlayerLimit(event.getPlayer()) && wc != WorldConfig.getMain()) {
+            CommonUtil.nextTick(() -> {
+                if (!event.getPlayer().isOnline() || wc.checkPlayerLimit(event.getPlayer())) {
+                    return;
+                }
+
+                Localization.WORLD_FULL.message(event.getPlayer(), wc.worldname);
+                event.getPlayer().teleport(WorldConfig.getMain().getSpawnLocation());
+            });
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

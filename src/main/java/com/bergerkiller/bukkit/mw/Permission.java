@@ -46,6 +46,7 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_ADVANCEMENTS = new Permission("world.advancements", PermissionDefault.OP, "Sets if players can toggle advancements on/off for a world");
     public static final Permission COMMAND_ALIAS = new Permission("world.alias", PermissionDefault.OP, "Sets if the player can change the (PlaceholderAPI) world name alias");
     public static final Permission COMMAND_LAST_POSITION = new Permission("world.lastposition", PermissionDefault.OP, "Shows the last player positions on other worlds and allows teleporting to them");
+    public static final Permission COMMAND_PLAYERLIMIT = new Permission("world.playerlimit", PermissionDefault.OP, "Sets if players can modify the player count limits set for a world");
     public static final Permission COMMAND_TPP = new Permission("tpp", PermissionDefault.OP, "Sets if the player can teleport to any worlds or portals, ignoring the per-portal/world permissions");
     public static final Permission GENERAL_TELEPORT = new Permission("world.teleport", PermissionDefault.OP, "Sets the worlds a player can teleport to using /tpp and /world spawn", 1);
     public static final Permission GENERAL_ENTER = new Permission("world.enter", PermissionDefault.OP, "Sets if the player can enter a certain world through portals", 1);
@@ -57,6 +58,7 @@ public class Permission extends PermissionEnum {
     public static final Permission GENERAL_KEEPINV = new Permission("world.keepinventory", PermissionDefault.FALSE, "Sets if the player keeps his inventory while switching worlds");
     public static final Permission GENERAL_KEEPLASTPOS = new Permission("world.keeplastpos", PermissionDefault.FALSE, "Sets if the player overrides the world rememberlastpos setting to always permit it");
     public static final Permission GENERAL_LINKNETHER = new Permission("world.linknether", PermissionDefault.TRUE, "Sets if the player can spawn nether portals on other worlds when a nether link is enabled for a world");
+    public static final Permission GENERAL_BYPASSPLAYERLIMITS = new Permission("world.bypassplayerlimit", PermissionDefault.FALSE, "Sets if the player bypasses the per-world player limit (if set)");
     public static final Permission PORTAL_CREATE = new Permission("portal.create", PermissionDefault.OP, "Sets if the player can create teleport signs");
     public static final Permission PORTAL_OVERRIDE = new Permission("portal.override", PermissionDefault.OP, "Sets if the player can replace existing portals");
     public static final Permission PORTAL_USE = new Permission("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals", 1);
