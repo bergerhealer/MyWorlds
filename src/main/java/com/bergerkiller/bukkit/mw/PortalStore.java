@@ -7,6 +7,8 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 
+import com.bergerkiller.bukkit.mw.portal.PortalSignList;
+
 public class PortalStore {
 
     /**
@@ -54,17 +56,17 @@ public class PortalStore {
         }
         // Get a portal from a specified world
         if (world != null) {
-            Position pos = MyWorlds.plugin.getPortalSignList().findPortalOnWorld(portalname, world);
-            if (pos != null) {
-                Location loc = Util.getLocation(pos);
+            PortalSignList.PortalEntry portal = MyWorlds.plugin.getPortalSignList().findPortalOnWorld(portalname, world);
+            if (portal != null) {
+                Location loc = Util.getLocation(portal.position);
                 if (loc != null) {
                     return loc;
                 }
             }
         }
         // Get 'a' portal whose names matches and whose location is available
-        for (Position position : MyWorlds.plugin.getPortalSignList().findPortalsRelaxed(portalname)) {
-            Location loc = Util.getLocation(position);
+        for (PortalSignList.PortalEntry portal : MyWorlds.plugin.getPortalSignList().findPortalsRelaxed(portalname)) {
+            Location loc = Util.getLocation(portal.position);
             if (loc != null) {
                 return loc;
             }
@@ -89,15 +91,15 @@ public class PortalStore {
 
     public static String[] getPortals(World w) {
         return MyWorlds.plugin.getPortalSignList().listPortalsOnWorld(w.getName()).stream()
-                .filter(e -> canBeTeleportedTo(e.getKey(), e.getValue()))
-                .map(java.util.Map.Entry::getKey)
+                .filter(p -> canBeTeleportedTo(p.portalName, p.position))
+                .map(p -> p.portalName)
                 .toArray(String[]::new);
     }
 
     public static String[] getPortals() {
         return MyWorlds.plugin.getPortalSignList().listAllPortals().stream()
-                .filter(e -> canBeTeleportedTo(e.getKey(), e.getValue()))
-                .map(java.util.Map.Entry::getKey)
+                .filter(p -> canBeTeleportedTo(p.portalName, p.position))
+                .map(p -> p.portalName)
                 .distinct()
                 .toArray(String[]::new);
     }

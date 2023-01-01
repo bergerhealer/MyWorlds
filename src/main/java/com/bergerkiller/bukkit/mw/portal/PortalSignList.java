@@ -12,11 +12,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.io.AsyncTextWriter;
+import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Position;
@@ -27,7 +29,7 @@ import com.bergerkiller.bukkit.mw.Position;
  */
 public class PortalSignList {
     private static final int AUTOSAVE_INTERVAL = 100;
-    private final Map<String, Map<String, Position>> portals;
+    private final Map<String, Map<String, PortalEntry>> portals;
     private final File saveFile;
     private final MyWorlds plugin;
     private final Task autosaveTask;
@@ -85,7 +87,7 @@ public class PortalSignList {
      * @return True if the portal was removed
      */
     public boolean removePortal(String portalName, String worldName) {
-        Map<String, Position> onWorld = this.portals.get(worldName.toLowerCase(Locale.ENGLISH));
+        Map<String, PortalEntry> onWorld = this.portals.get(worldName.toLowerCase(Locale.ENGLISH));
         if (onWorld != null && onWorld.remove(portalName) != null) {
             scheduleSave();
             return true;
@@ -100,10 +102,12 @@ public class PortalSignList {
      * @param portalName
      * @param position
      */
-    public void storePortal(String portalName, Position position) {
+    public PortalEntry storePortal(String portalName, Position position) {
+        PortalEntry e = new PortalEntry(portalName, position);
         this.portals.computeIfAbsent(position.getWorldName().toLowerCase(Locale.ENGLISH), n -> new HashMap<>())
-                .put(portalName, position);
+                .put(portalName, e);
         scheduleSave();
+        return e;
     }
 
     /**
@@ -111,9 +115,9 @@ public class PortalSignList {
      * 
      * @return list of portalname - portalposition entries
      */
-    public Collection<Map.Entry<String, Position>> listAllPortals() {
+    public Collection<PortalEntry> listAllPortals() {
         return this.portals.values().stream()
-                .flatMap(map -> map.entrySet().stream())
+                .flatMap(map -> map.values().stream())
                 .collect(Collectors.toList());
     }
 
@@ -123,8 +127,8 @@ public class PortalSignList {
      * @param worldName Name of the world
      * @return portals on the world
      */
-    public Collection<Map.Entry<String, Position>> listPortalsOnWorld(String worldName) {
-        return this.portals.getOrDefault(worldName.toLowerCase(Locale.ENGLISH), Collections.emptyMap()).entrySet();
+    public Collection<PortalEntry> listPortalsOnWorld(String worldName) {
+        return this.portals.getOrDefault(worldName.toLowerCase(Locale.ENGLISH), Collections.emptyMap()).values();
     }
 
     /**
@@ -134,7 +138,7 @@ public class PortalSignList {
      * @param worldName World to look for the portal by this name
      * @return position on the world where a portal with this name exists
      */
-    public Position findPortalOnWorld(String portalName, String worldName) {
+    public PortalEntry findPortalOnWorld(String portalName, String worldName) {
         return this.portals.getOrDefault(worldName.toLowerCase(Locale.ENGLISH), Collections.emptyMap()).get(portalName);
     }
 
@@ -146,7 +150,7 @@ public class PortalSignList {
      * @param portalName
      * @return list of positions where a portal with this name exists
      */
-    public List<Position> findPortalsRelaxed(String portalName) {
+    public List<PortalEntry> findPortalsRelaxed(String portalName) {
         return this.portals.values().stream()
             .flatMap(map -> map.entrySet().stream()
                     .filter(e -> e.getKey().equalsIgnoreCase(portalName))
@@ -176,15 +180,27 @@ public class PortalSignList {
                 String textline;
                 while ((textline = reader.readLine()) != null) {
                     String[] args = StringUtil.convertArgs(textline.split(" "));
-                    if (args.length == 7) {
-                        String name = args[0];
-                        try {
-                            Position pos = new Position(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
-                            pos.setX(pos.getBlockX() + 0.5);
-                            pos.setZ(pos.getBlockZ() + 0.5);
-                            this.storePortal(name, pos);
-                        } catch (Exception ex) {
-                            MyWorlds.plugin.log(Level.SEVERE, "Failed to load portal: " + name);
+                    if (args.length < 7) {
+                        continue;
+                    }
+
+                    PortalEntry e;
+                    String name = args[0];
+                    try {
+                        Position pos = new Position(args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), Float.parseFloat(args[6]));
+                        pos.setX(pos.getBlockX() + 0.5);
+                        pos.setZ(pos.getBlockZ() + 0.5);
+                        e = this.storePortal(name, pos);
+                    } catch (Throwable t) {
+                        MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to load portal: " + name, t);
+                        continue;
+                    }
+
+                    // Additional options set for the portal
+                    for (int i = 7; i < args.length; i++) {
+                        String[] optionStr = args[i].split("=");
+                        if (optionStr.length == 2) {
+                            e.setOption(optionStr[0], optionStr[1]);
                         }
                     }
                 }
@@ -201,17 +217,8 @@ public class PortalSignList {
         // Save to a String, then write that out asynchronously
         StringBuilder saveText = new StringBuilder();
         this.portals.values().stream()
-            .flatMap(map -> map.entrySet().stream())
-            .forEachOrdered(e -> {
-                Position pos = e.getValue();
-                saveText.append("\"").append(e.getKey()).append("\" ");
-                saveText.append("\"" ).append(pos.getWorldName()).append("\" ");
-                saveText.append(pos.getBlockX()).append(' ');
-                saveText.append(pos.getBlockY()).append(' ');
-                saveText.append(pos.getBlockZ()).append(' ');
-                saveText.append(pos.getYaw()).append(' ');
-                saveText.append(pos.getPitch()).append('\n');
-            });
+            .flatMap(map -> map.values().stream())
+            .forEachOrdered(e -> e.toStringLine(saveText));
 
         // Save it, handle errors and log them
         this.saveFuture = AsyncTextWriter.writeSafe(this.saveFile, saveText.toString());
@@ -219,5 +226,63 @@ public class PortalSignList {
             plugin.getLogger().log(Level.SEVERE, "Failed to save portals.txt", t);
             return null;
         });
+    }
+
+    /**
+     * A single portal serialized in the portals.txt portal list
+     */
+    public final class PortalEntry {
+        public final String portalName;
+        public Position position;
+        private Map<String, String> options = new HashMap<>();
+
+        public PortalEntry(String portalName, Position position) {
+            this.portalName = portalName;
+            this.position = position;
+        }
+
+        public void setOption(String name, String value) {
+            if (value != null && options.isEmpty()) {
+                options = new HashMap<>();
+            }
+            if (value != null) {
+                if (!value.equals(options.put(name, value))) {
+                    scheduleSave();
+                }
+            } else if (!options.isEmpty() && options.remove(name) != null) {
+                scheduleSave();
+            }
+        }
+
+        public String getOption(String name, String defaultValue) {
+            return options.getOrDefault(name, defaultValue);
+        }
+
+        public boolean getOption(String name, boolean defaultValue) {
+            return getOption(name, defaultValue, ParseUtil::parseBool);
+        }
+
+        public <T> T getOption(String name, T defaultValue, Function<String, T> parseFunc) {
+            String value = options.get(name);
+            if (value == null) {
+                return defaultValue;
+            } else {
+                return parseFunc.apply(value);
+            }
+        }
+
+        public void toStringLine(StringBuilder saveText) {
+            saveText.append("\"").append(portalName).append("\" ");
+            saveText.append("\"" ).append(position.getWorldName()).append("\" ");
+            saveText.append(position.getBlockX()).append(' ');
+            saveText.append(position.getBlockY()).append(' ');
+            saveText.append(position.getBlockZ()).append(' ');
+            saveText.append(position.getYaw()).append(' ');
+            saveText.append(position.getPitch());
+            for (Map.Entry<String, String> e : options.entrySet()) {
+                saveText.append(' ').append(e.getKey()).append('=').append(e.getValue());
+            }
+            saveText.append('\n');
+        }
     }
 }

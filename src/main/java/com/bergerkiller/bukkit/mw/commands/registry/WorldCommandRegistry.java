@@ -63,6 +63,7 @@ public class WorldCommandRegistry extends CommandRegistry {
         register(WorldAlias::new, "alias", "setalias");
         register(WorldLastPosition::new, "lastposition", "lastpos");
         register(WorldSetPlayerLimit::new, "playerlimit");
+        register(WorldSetPortalOption::new, "setportaloption");
     }
 
 }

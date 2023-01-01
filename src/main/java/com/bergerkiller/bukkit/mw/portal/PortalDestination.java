@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
+import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.PortalType;
@@ -239,8 +240,25 @@ public class PortalDestination {
             } else {
                 portalDestination.setDisplayName(portalNearby.getDestinationDisplayName());
             }
+
+            // Default options for portals without name / not in list
             portalDestination.setPlayersOnly(!MyWorlds.portalSignsTeleportMobs);
             portalDestination.setCanTeleportMounts(true);
+
+            // Load options from portals.txt if set
+            if (!LogicUtil.nullOrEmpty(portalNearby.getName())) {
+                Location loc = portalNearby.getLocation();
+                if (loc != null) {
+                    PortalSignList.PortalEntry e = MyWorlds.plugin.getPortalSignList().findPortalOnWorld(
+                            loc.getWorld().getName(), portalNearby.getName());
+                    if (e != null) {
+                        // Load options
+                        portalDestination.setPlayersOnly(e.getOption("playersonly", portalDestination.isPlayersOnly()));
+                        portalDestination.setCanTeleportMounts(e.getOption("teleportmounts", portalDestination.canTeleportMounts()));
+                    }
+                }
+            }
+
             if (!portalNearby.isRejoin() && MyWorlds.portalToLastPosition) {
                 // Find destination location. If that world has rememberLastPos to true, use it.
                 Location dest = portalNearby.getDestination();

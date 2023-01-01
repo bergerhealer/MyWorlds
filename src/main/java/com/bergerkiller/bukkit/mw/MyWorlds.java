@@ -322,8 +322,9 @@ public class MyWorlds extends PluginBase {
         config.addHeader("portalToLastPosition", "It makes that option work not just for /tpp, but also when taking portals to a world");
         portalToLastPosition = config.get("portalToLastPosition", true);
 
-        config.setHeader("portalSignsTeleportMobs", "\nWhether [portal] signs can teleport non-player entities (mobs)");
+        config.setHeader("portalSignsTeleportMobs", "\nWhether [portal] signs can teleport non-player entities (mobs and items)");
         config.addHeader("portalSignsTeleportMobs", "If true, items and mobs can teleport using portals near [portal] signs");
+        config.addHeader("portalSignsTeleportMobs", "This option can be separately set per portal using /mw setportaloption (playersonly)");
         portalSignsTeleportMobs = config.get("portalSignsTeleportMobs", true);
 
         config.save();

@@ -1,7 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.util.Locale;
-import java.util.Map;
 import java.util.logging.Level;
 
 import org.bukkit.Location;
@@ -19,6 +18,7 @@ import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.StringUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
+import com.bergerkiller.bukkit.mw.portal.PortalSignList;
 
 public class Portal extends PortalStore {
     private String name;
@@ -208,9 +208,8 @@ public class Portal extends PortalStore {
     public static Portal getNear(Location middle, double radius) {
         Portal p = null;
         String worldname = middle.getWorld().getName();
-        for (Map.Entry<String, Position> pos : MyWorlds.plugin.getPortalSignList().listPortalsOnWorld(worldname)) {
-            Location ploc = Util.getLocation(pos.getValue());
-            String portalname = pos.getKey();
+        for (PortalSignList.PortalEntry portal : MyWorlds.plugin.getPortalSignList().listPortalsOnWorld(worldname)) {
+            Location ploc = Util.getLocation(portal.position);
             if (ploc != null && ploc.getWorld() == middle.getWorld()) {
                 double distance = ploc.distance(middle);
                 if (distance <= radius) {
@@ -221,8 +220,8 @@ public class Portal extends PortalStore {
                     } else if (ploc.getWorld().isChunkLoaded(ploc.getBlockX() >> 4, ploc.getBlockZ() >> 4)) {
                         //In loaded chunk and NOT found!
                         //Remove it
-                        MyWorlds.plugin.getPortalSignList().removePortal(portalname, worldname);
-                        MyWorlds.plugin.log(Level.WARNING, "Removed portal '" + portalname + "' because it is no longer there!");
+                        MyWorlds.plugin.getPortalSignList().removePortal(portal.portalName, worldname);
+                        MyWorlds.plugin.log(Level.WARNING, "Removed portal '" + portal.portalName + "' because it is no longer there!");
                         //End the loop and call the function again
                         return getNear(middle, radius);
                     }
