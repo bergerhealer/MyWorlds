@@ -73,7 +73,7 @@ public class MWListenerPost implements Listener {
             return false;
         }
         // World reached player limit?
-        if (!WorldConfig.get(to.getWorld()).checkPlayerLimit(player)) {
+        if (player.getWorld() != to.getWorld() && !WorldConfig.get(to.getWorld()).checkPlayerLimit(player)) {
             Localization.WORLD_FULL.message(player, to.getWorld().getName());
             return false;
         }
