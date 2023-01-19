@@ -151,7 +151,7 @@ public class MWListener implements Listener {
             CommonUtil.nextTick(new Runnable() {
                 @Override
                 public void run() {
-                    config.updateBedSpawnPoint(player);
+                    WorldManager.removeInvalidBedSpawnPoint(player);
                 }
             });
         }

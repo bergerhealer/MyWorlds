@@ -35,6 +35,7 @@ import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
+import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.bukkit.mw.utils.GeneratorStructuresParser;
 
 public class WorldManager {
@@ -452,6 +453,20 @@ public class WorldManager {
             Location loc = p.getLocation();
             loc.setWorld(cloned);
             p.teleport(loc);
+        }
+    }
+
+    /**
+     * Removes a player respawn point for a player if bed respawn is disabled for the world
+     * it is in.
+     *
+     * @param player
+     */
+    public static void removeInvalidBedSpawnPoint(Player player) {
+        PlayerRespawnPoint respawn = PlayerRespawnPoint.forPlayer(player);
+        World w;
+        if (!respawn.isNone() && (w = respawn.getWorld()) != null && !WorldConfig.get(w).bedRespawnEnabled) {
+            PlayerRespawnPoint.NONE.applyToPlayer(player);
         }
     }
 

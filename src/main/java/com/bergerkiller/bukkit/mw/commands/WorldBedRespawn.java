@@ -2,13 +2,14 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldBedRespawn extends Command {
 
@@ -23,11 +24,8 @@ public class WorldBedRespawn extends Command {
             if (args.length > 0) {
                 wc.bedRespawnEnabled = ParseUtil.parseBool(args[0]);
                 if (!wc.bedRespawnEnabled) {
-                    World w = wc.getWorld();
-                    if (w != null) {
-                        for (Player p : w.getPlayers()) {
-                            wc.updateBedSpawnPoint(p);
-                        }
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        WorldManager.removeInvalidBedSpawnPoint(player);
                     }
                 }
             }

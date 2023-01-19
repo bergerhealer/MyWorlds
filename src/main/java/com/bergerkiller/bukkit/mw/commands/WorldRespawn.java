@@ -3,8 +3,8 @@ package com.bergerkiller.bukkit.mw.commands;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
@@ -15,6 +15,7 @@ import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.PortalStore;
 import com.bergerkiller.bukkit.mw.RespawnPoint;
 import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldRespawn extends Command {
 
@@ -48,11 +49,8 @@ public class WorldRespawn extends Command {
             if (args.length >= 2) {
                 wc.bedRespawnEnabled = ParseUtil.parseBool(args[1]);
                 if (!wc.bedRespawnEnabled) {
-                    World w = wc.getWorld();
-                    if (w != null) {
-                        for (Player p : w.getPlayers()) {
-                            wc.updateBedSpawnPoint(p);
-                        }
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        WorldManager.removeInvalidBedSpawnPoint(player);
                     }
                 }
             }

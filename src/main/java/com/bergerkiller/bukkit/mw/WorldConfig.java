@@ -31,7 +31,6 @@ import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.StreamUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
-import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.bukkit.mw.external.MultiverseHandler;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataFile;
 import com.bergerkiller.bukkit.mw.portal.PortalDestination;
@@ -616,7 +615,7 @@ public class WorldConfig extends WorldConfigStore {
         updateOP(player);
         updateGamemode(player);
         updateHunger(player);
-        updateBedSpawnPoint(player);
+        WorldManager.removeInvalidBedSpawnPoint(player);
         // Store advancements
         MyWorlds.plugin.getAdvancementManager().cacheAdvancements(player);
     }
@@ -744,11 +743,6 @@ public class WorldConfig extends WorldConfigStore {
     public void updateGamemode(Player player) {
         if (this.gameMode != null && (MyWorlds.forceGamemodeChanges || !Permission.GENERAL_IGNOREGM.has(player))) {
             player.setGameMode(this.gameMode);
-        }
-    }
-    public void updateBedSpawnPoint(Player player) {
-        if (!this.bedRespawnEnabled) {
-            PlayerRespawnPoint.NONE.applyToPlayer(player);
         }
     }
     public void updatePVP(World world) {
