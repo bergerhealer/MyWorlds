@@ -545,6 +545,10 @@ public class MWPlayerDataController extends PlayerDataController {
             player.setFireTicks(playerData.getValue("Fire", (short) 0));
             player.setFallDistance(playerData.getValue("FallDistance", 0.0f));
 
+            try {
+                playerHandle.setAbsorptionAmount(playerData.getValue("AbsorptionAmount", 0.0f));
+            } catch (Throwable t) { /* Until BKCL 1.19.3-v2 is a hard-dep, we need this. */ }
+
             {
                 final double maxHealth = commonPlayer.getMaxHealth();
                 final double health;
