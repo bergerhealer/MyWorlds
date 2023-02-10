@@ -59,7 +59,6 @@ public class TeleportationTracker {
      * Handles the teleport delay and distance checks
      * 
      * @param e Entity to pre-teleport
-     * @param portalMaterial of the portal
      * @return True if teleporting happened, False if not
      */
     public boolean canTeleport(Entity e) {

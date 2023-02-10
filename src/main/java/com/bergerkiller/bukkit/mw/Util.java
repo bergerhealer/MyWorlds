@@ -93,7 +93,6 @@ public class Util {
      * <b>Deprecated: use {@link PortalType#detect(Block)} instead</b>
      * 
      * @param main portal block
-     * @param overrideMainType - True to override the main block type checking
      * @return True if it is a nether Portal, False if not
      */
     @Deprecated

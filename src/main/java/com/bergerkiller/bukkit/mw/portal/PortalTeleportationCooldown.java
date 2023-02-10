@@ -166,8 +166,7 @@ public class PortalTeleportationCooldown {
      * <br>
      * If the portal could not be entered, then the cooldown is extended.
      * 
-     * @param entity
-     * @param entityPosition expected position of the Entity
+     * @param entity Entity that wants to enter a portal
      * @return True if the entity is allowed to enter a (new) portal
      */
     public boolean tryEnterPortal(Entity entity) {
@@ -182,8 +181,8 @@ public class PortalTeleportationCooldown {
      * <br>
      * If the portal could not be entered, then the cooldown is extended.
      * 
-     * @param entity
-     * @param entityPosition expected position of the Entity
+     * @param entity Entity that wants to enter a portal
+     * @param entityPosition Expected position of the Entity
      * @return True if the entity is allowed to enter a (new) portal
      */
     public boolean tryEnterPortal(Entity entity, Location entityPosition) {

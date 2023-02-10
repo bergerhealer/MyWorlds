@@ -192,9 +192,9 @@ public class PlayerRespawnHandler {
      * respawns, the player is teleported to this location, moving at the velocity
      * as specified.
      * 
-     * @param player
-     * @param location
-     * @param velocity
+     * @param player Player that is about to respawn
+     * @param position Position the player should respawn at
+     * @param velocity Motion of the player right after respawning
      */
     public void setNextRespawn(Player player, Location position, Vector velocity) {
         _respawns.put(player.getUniqueId(), new RespawnDestination(position, velocity));

@@ -80,8 +80,7 @@ public class Portal extends PortalStore {
 
     /**
      * Gets the destination location of this Portal
-     * 
-     * @param player for which to get the destination. Null to ignore.
+     *
      * @return Portal destination
      */
     public Location getDestination() {

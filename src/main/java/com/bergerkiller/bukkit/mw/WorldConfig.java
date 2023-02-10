@@ -859,8 +859,8 @@ public class WorldConfig extends WorldConfigStore {
      * Tries to create a default portal link if none is currently set between two worlds
      * Only if the worlds match names and no portal is set will this create a link.
      * 
-     * @param world1
-     * @param world1
+     * @param world1 First configuration of the world of the portal link
+     * @param world2 Second configuration of the world of the portal link
      */
     public static void tryCreatePortalLink(WorldConfig world1, WorldConfig world2) {
         // Name compatibility check
