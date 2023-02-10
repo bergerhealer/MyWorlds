@@ -234,7 +234,7 @@
         <repository>
             <id>mg-dev-repo</id>
             <name>ci.mg-dev.eu repository</name>
-            <url>https://ci.mg-dev.eu/plugin/repository</url>
+            <url>https://ci.mg-dev.eu/plugin/repository/everything</url>
         </repository>
     </distributionManagement>
 </project>
