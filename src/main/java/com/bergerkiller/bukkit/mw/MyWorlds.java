@@ -225,6 +225,9 @@ public class MyWorlds extends PluginBase {
         useWorldBuildPermissions = config.get("useWorldBuildPermissions", false);
         useWorldUsePermissions = config.get("useWorldUsePermissions", false);
         useWorldChatPermissions = config.get("useWorldChatPermissions", false);
+        if (useWorldChatPermissions) {
+            this.register(new MWPlayerChatListener());
+        }
 
         config.setHeader("keepLastPositionPermissionEnabled", "\nWhether players with the myworlds.world.keeplastpos permission are teleported to");
         config.addHeader("keepLastPositionPermissionEnabled", "the last position they had on a world when using /tpp or using portals");

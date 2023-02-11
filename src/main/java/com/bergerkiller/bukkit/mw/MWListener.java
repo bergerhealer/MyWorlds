@@ -1,6 +1,5 @@
 package com.bergerkiller.bukkit.mw;
 
-import java.util.Iterator;
 import java.util.UUID;
 
 import org.bukkit.ChatColor;
@@ -23,7 +22,6 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -334,22 +332,6 @@ public class MWListener implements Listener {
 
         // Rest is handled by the portal mode
         teleportationHandler.handleWorld(world);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerChat(AsyncPlayerChatEvent event) {
-        // Handle chat permissions
-        if (!Permission.canChat(event.getPlayer())) {
-            event.setCancelled(true);
-            Localization.WORLD_NOCHATACCESS.message(event.getPlayer());
-            return;
-        }
-        Iterator<Player> iterator = event.getRecipients().iterator();
-        while (iterator.hasNext()) {
-            if (!Permission.canChat(event.getPlayer(), iterator.next())) {
-                iterator.remove();
-            }
-        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
