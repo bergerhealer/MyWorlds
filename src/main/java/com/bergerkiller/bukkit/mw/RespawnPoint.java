@@ -46,6 +46,19 @@ public abstract class RespawnPoint {
     }
 
     /**
+     * Adjusts this respawn point so that, if this respawn point used to refer to
+     * the old world name, it is changed to be the new world name. This is done after
+     * a world is copied.
+     *
+     * @param oldWorldName Old world name to match
+     * @param newWorldName New world name to set if it matches
+     * @return this, or a new updated respawn point
+     */
+    public RespawnPoint adjustAfterCopy(String oldWorldName, String newWorldName) {
+        return this;
+    }
+
+    /**
      * Selects and loads the respawn point from a configuration
      *
      * @param config
@@ -98,13 +111,16 @@ public abstract class RespawnPoint {
         private final Position position;
 
         public RespawnPointLocation(String worldName, double x, double y, double z, float yaw, float pitch) {
-            super(RespawnPoint.Type.LOCATION);
-            this.position = new Position(worldName, x, y, z, yaw, pitch);
+            this(new Position(worldName, x, y, z, yaw, pitch));
         }
 
         public RespawnPointLocation(Location location) {
+            this(new Position(location));
+        }
+
+        private RespawnPointLocation(Position position) {
             super(RespawnPoint.Type.LOCATION);
-            this.position = new Position(location);
+            this.position = position;
         }
 
         private RespawnPointLocation(ConfigurationNode config) {
@@ -128,6 +144,16 @@ public abstract class RespawnPoint {
             config.set("z", this.position.getZ());
             config.set("yaw", this.position.getYaw());
             config.set("pitch", this.position.getPitch());
+        }
+
+        @Override
+        public RespawnPoint adjustAfterCopy(String oldWorldName, String newWorldName) {
+            if (oldWorldName.equals(this.position.getWorldName())) {
+                Position updated = this.position.clone();
+                updated.setWorldName(newWorldName);
+                return new RespawnPointLocation(updated);
+            }
+            return this;
         }
 
         @Override
@@ -173,6 +199,14 @@ public abstract class RespawnPoint {
         @Override
         protected void writeToConfig(ConfigurationNode config) {
             config.set("world", this.worldName);
+        }
+
+        @Override
+        public RespawnPoint adjustAfterCopy(String oldWorldName, String newWorldName) {
+            if (oldWorldName.equals(this.worldName)) {
+                return new RespawnPointWorldSpawn(newWorldName);
+            }
+            return this;
         }
 
         @Override

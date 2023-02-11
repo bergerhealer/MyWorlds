@@ -191,8 +191,19 @@ public class WorldConfig extends WorldConfigStore {
         this.worldmode = config.worldmode;
         this.chunkGeneratorName = config.chunkGeneratorName;
         this.difficulty = config.difficulty;
+
+        // Copy spawn point. Swap world name if it referred to the original world
         this.spawnPoint = (config.spawnPoint == null) ? null : config.spawnPoint.clone();
-        this.respawnPoint = config.respawnPoint; // Is immutable
+        if (this.spawnPoint != null &&
+            this.spawnPoint.getWorldName() != null &&
+            this.spawnPoint.getWorldName().equals(config.worldname)
+        ) {
+            this.spawnPoint.setWorldName(this.worldname);
+        }
+
+        // Copy respawn point. Swap world name if it referred to the original world spawn
+        this.respawnPoint = config.respawnPoint.adjustAfterCopy(config.worldname, this.worldname);
+
         this.rejoinGroup = config.rejoinGroup; // Is immutable
         this.gameMode = config.gameMode;
         this.allowHunger = config.allowHunger;
@@ -410,7 +421,12 @@ public class WorldConfig extends WorldConfigStore {
         if (data != null) {
             double[] pos = data.getValue("Pos", double[].class);
             float[] rot = data.getValue("Rotation", float[].class);
-            return new Position(this.worldname, pos[0], pos[1], pos[2], rot[0], rot[1]);
+            if (pos != null) {
+                if (rot == null) {
+                    rot = new float[] { 0.0f, 0.0f };
+                }
+                return new Position(this.worldname, pos[0], pos[1], pos[2], rot[0], rot[1]);
+            }
         }
 
         // Absolutely NO idea, return a generic position
