@@ -271,7 +271,8 @@ public class WorldSetDefaultPortal extends Command {
         if (args[0].equalsIgnoreCase("destination")) {
             return processAutocomplete(Stream.concat(
                     Stream.of(PortalStore.getPortals()),
-                    Bukkit.getWorlds().stream().map(World::getName)
+                    /* Important: don't use World::getName(), that breaks on older mc */
+                    Bukkit.getWorlds().stream().map(w -> w.getName())
                 ));
         }
         if (args[0].equalsIgnoreCase("mode")) {

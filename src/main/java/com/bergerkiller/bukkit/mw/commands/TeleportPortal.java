@@ -139,7 +139,8 @@ public class TeleportPortal extends Command {
         if (args.length <= 1) {
             return processAutocomplete(Stream.concat(
                         Stream.of(PortalStore.getPortals()),
-                        Bukkit.getWorlds().stream().map(World::getName)
+                        /* Important: don't use World::getName(), that breaks on older mc */
+                        Bukkit.getWorlds().stream().map(w -> w.getName())
                     ));
         } else {
             return processPlayerNameAutocomplete();
