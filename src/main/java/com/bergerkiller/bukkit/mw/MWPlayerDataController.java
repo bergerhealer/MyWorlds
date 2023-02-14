@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
+import com.bergerkiller.mountiplex.reflection.resolver.Resolver;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -545,9 +546,26 @@ public class MWPlayerDataController extends PlayerDataController {
             player.setFireTicks(playerData.getValue("Fire", (short) 0));
             player.setFallDistance(playerData.getValue("FallDistance", 0.0f));
 
+            float absorptionAmount = playerData.getValue("AbsorptionAmount", 0.0f);
             try {
-                playerHandle.setAbsorptionAmount(playerData.getValue("AbsorptionAmount", 0.0f));
-            } catch (Throwable t) { /* Until BKCL 1.19.3-v2 is a hard-dep, we need this. */ }
+                playerHandle.setAbsorptionAmount(absorptionAmount);
+            } catch (Throwable t) {
+                /* Until BKCL 1.19.3-v2 is a hard-dep, we need this. */
+                try {
+                    java.lang.reflect.Method m;
+                    if (Common.evaluateMCVersion(">=", "1.18")) {
+                        m = Resolver.resolveAndGetDeclaredMethod(EntityLivingHandle.T.getType(),
+                                "setAbsorptionAmount", float.class);
+                    } else {
+                        m = Resolver.resolveAndGetDeclaredMethod(EntityLivingHandle.T.getType(),
+                                "setAbsorptionHearts", float.class);
+                    }
+                    m.setAccessible(true);
+                    m.invoke(playerHandle.getRaw(), absorptionAmount);
+                } catch (Throwable t2) {
+                    plugin.getLogger().log(Level.WARNING, "Failed to apply absorption. Update BKCL?", t2);
+                }
+            }
 
             {
                 final double maxHealth = commonPlayer.getMaxHealth();
