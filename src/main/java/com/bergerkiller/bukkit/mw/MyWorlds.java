@@ -255,7 +255,7 @@ public class MyWorlds extends PluginBase {
         mainWorld = config.get("mainWorld", "");
 
         config.setHeader("forceMainWorldSpawn", "\nWhether all players respawn on the main world at all times");
-        config.setHeader("forceMainWorldSpawn", "If this should only happen when players join the server, change forceJoinOnMainWorld instead");
+        config.addHeader("forceMainWorldSpawn", "If this should only happen when players join the server, change forceJoinOnMainWorld instead");
         forceMainWorldSpawn = config.get("forceMainWorldSpawn", false);
 
         config.setHeader("forceJoinOnMainWorld", "\nWhether all players that join the server spawn on the main world");
