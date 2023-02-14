@@ -124,7 +124,14 @@ public class PlayerDataFile {
         final World world = location.getWorld();
         tagCompound.putValue("World", world.getName());
         tagCompound.putUUID("World", world.getUID());
-        tagCompound.putValue("Dimension", WorldUtil.getDimensionType(world).getId());
+
+        if (Common.evaluateMCVersion(">=","1.16")) {
+            // Dimension stored as a string key
+            tagCompound.putMinecraftKey("Dimension", WorldUtil.getDimensionKey(world).getName());
+        } else {
+            // Dimension TYPE stored as an ID. Server uses world name / uuid fields to figure out what world.
+            tagCompound.putValue("Dimension", WorldUtil.getDimensionType(world).getId());
+        }
     }
 
     /**
