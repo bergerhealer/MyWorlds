@@ -249,17 +249,15 @@ public class WorldConfigStore {
         worldConfigs.remove(worldname);
         // Remove references to this World Configuration in other worlds
         for (WorldConfig otherConfig : all()) {
-            if (usesWorldAsDestination(worldname, otherConfig.getDefaultNetherPortalDestination())) {
-                otherConfig.setDefaultNetherPortalDestination(null);
-            }
-            if (usesWorldAsDestination(worldname, otherConfig.getDefaultEndPortalDestination())) {
-                otherConfig.setDefaultEndPortalDestination(null);
-            }
+            clearDestinationIfUsed(otherConfig.getDefaultNetherPortalDestination(), worldname);
+            clearDestinationIfUsed(otherConfig.getDefaultEndPortalDestination(), worldname);
             otherConfig.inventory.remove(worldname);
         }
     }
 
-    private static boolean usesWorldAsDestination(String worldname, PortalDestination destination) {
-        return destination != null && destination.getName() != null && destination.getName().equals(worldname);
+    private static void clearDestinationIfUsed(PortalDestination destination, String worldname) {
+        if (destination != null && destination.getName() != null && destination.getName().equals(worldname)) {
+            destination.setName("");
+        }
     }
 }

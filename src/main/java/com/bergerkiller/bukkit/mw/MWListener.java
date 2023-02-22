@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -19,6 +20,7 @@ import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -28,6 +30,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -49,6 +52,7 @@ import com.bergerkiller.mountiplex.reflection.declarations.MethodDeclaration;
 import com.bergerkiller.mountiplex.reflection.util.FastMethod;
 
 public class MWListener implements Listener {
+    private static final Material END_PORTAL_FRAME_TYPE = MaterialUtil.getFirst("END_PORTAL_FRAME", "LEGACY_ENDER_PORTAL_FRAME");
     private final MyWorlds plugin;
 
     public MWListener(MyWorlds plugin) {
@@ -152,6 +156,26 @@ public class MWListener implements Listener {
                     WorldManager.removeInvalidBedSpawnPoint(player);
                 }
             });
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onBlockChangedByEntity(EntityChangeBlockEvent event) {
+        if (event.getTo() == END_PORTAL_FRAME_TYPE) {
+            WorldConfig wc = WorldConfig.get(event.getBlock().getWorld());
+            if (!wc.getDefaultEndPortalDestination().isActivationEnabled()) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onPortalCreated(PortalCreateEvent event) {
+        if (event.getReason() == PortalCreateEvent.CreateReason.FIRE) {
+            WorldConfig wc = WorldConfig.get(event.getWorld());
+            if (!wc.getDefaultNetherPortalDestination().isActivationEnabled()) {
+                event.setCancelled(true);
+            }
         }
     }
 

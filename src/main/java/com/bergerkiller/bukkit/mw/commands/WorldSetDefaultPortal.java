@@ -57,13 +57,15 @@ public class WorldSetDefaultPortal extends Command {
             }
 
             WorldConfig config = WorldConfig.get(worldname);
-            PortalDestination old_dest = config.getDefaultDestination(this.type);
-            config.setDefaultDestination(this.type, null);
+            dest = config.getDefaultDestination(this.type);
+            String oldDest = dest.getName();
+            dest.setName("");
+            dest.setAutoDetectEnabled(true);
             config.tryCreatePortalLink();
             dest = config.getDefaultDestination(this.type);
-            if (dest == null) {
-                dest = old_dest;
-                config.setDefaultDestination(this.type, dest);
+            if (dest.getName().isEmpty()) {
+                dest.setName(oldDest);
+                dest.setAutoDetectEnabled(false);
                 message(ChatColor.RED + "Failed to automatically detect a link with another world");
             } else {
                 message(ChatColor.GREEN + "Detected a " + dest.getMode().name() + " to " + dest.getName());
@@ -132,8 +134,9 @@ public class WorldSetDefaultPortal extends Command {
                         dest = dest.clone();
                     }
 
-                    // Update destination
+                    // Update destination. No longer auto-detect this stuff.
                     dest.setName(new_destination);
+                    dest.setAutoDetectEnabled(false);
 
                     if (new_destination.isEmpty()) {
                         message(ChatColor.GREEN + "Destination " + ChatColor.RED + "cleared");
@@ -148,7 +151,10 @@ public class WorldSetDefaultPortal extends Command {
 
             } else if (command.equalsIgnoreCase("disable")) {
                 // Has no arguments
+                boolean hasActivation = dest.isActivationEnabled();
                 dest = new PortalDestination(); // Clear it
+                dest.setActivationEnabled(hasActivation);
+                dest.setAutoDetectEnabled(false);
 
             } else if (command.equalsIgnoreCase("mode")) {
                 if (args.length > 0) {
@@ -205,6 +211,17 @@ public class WorldSetDefaultPortal extends Command {
                         PortalDestination::canNonPlayersCreatePortals,
                         PortalDestination::setCanNonPlayersCreatePortals,
                         "Non-players creating portal links");
+            } else if (command.equalsIgnoreCase("can_be_lit")) {
+                String title = "Portals can be activated by the environment";
+                if (type == PortalType.NETHER) {
+                    title = "Portals can be lit using flint/fire";
+                } else if (type == PortalType.END) {
+                    title = "Portals can be opened using eyes of ender";
+                }
+                dest = handleBooleanProperty(dest,
+                        PortalDestination::isActivationEnabled,
+                        PortalDestination::setActivationEnabled,
+                        title);
             } else {
                 message(ChatColor.RED + "Unknown command: " + command);
                 return;
@@ -257,7 +274,7 @@ public class WorldSetDefaultPortal extends Command {
         if (args.length <= 1) {
             return this.processBasicAutocomplete("info", "autodetect", "disable", "destination", "mode",
                     "displayname", "playeronly", "lastposition", "teleportmounts",
-                    "showcredits", "nonplayerscreateportals");
+                    "showcredits", "nonplayerscreateportals", "can_be_lit");
         }
 
         // For info/autodetect, first arg is the world name. For other commands, its the arg following.
@@ -283,7 +300,7 @@ public class WorldSetDefaultPortal extends Command {
             return processAutocomplete(MountiplexUtil.toStream("[Display name]"));
         }
         if (LogicUtil.containsIgnoreCase(args[0], "playeronly", "lastposition",
-                "teleportmounts", "showcredits", "nonplayerscreateportals"))
+                "teleportmounts", "showcredits", "nonplayerscreateportals", "can_be_lit"))
         {
             return processAutocomplete(Stream.of("yes", "no"));
         }

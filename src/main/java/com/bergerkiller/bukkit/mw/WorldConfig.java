@@ -526,10 +526,7 @@ public class WorldConfig extends WorldConfigStore {
 
     /**
      * Gets the default nether portal destination for nether portals on this World.
-     * If this returns null, then none is known at this time, indicating that it can be
-     * automatically set. If the destination name is empty, it indicates the user forcibly
-     * requested no destination and no automatic detection will be attempted.
-     * 
+     *
      * @return Default nether portal destination
      */
     public PortalDestination getDefaultNetherPortalDestination() {
@@ -537,15 +534,15 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     public void setDefaultNetherPortalDestination(PortalDestination destination) {
+        if (destination == null) {
+            throw new IllegalArgumentException("Can not be null");
+        }
         this.defaultNetherPortal = destination;
     }
 
     /**
      * Gets the default end portal destination for end portals on this World.
-     * If this returns null, then none is known at this time, indicating that it can be
-     * automatically set. If the destination name is empty, it indicates the user forcibly
-     * requested no destination and no automatic detection will be attempted.
-     * 
+     *
      * @return Default end portal destination
      */
     public PortalDestination getDefaultEndPortalDestination() {
@@ -553,6 +550,9 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     public void setDefaultEndPortalDestination(PortalDestination destination) {
+        if (destination == null) {
+            throw new IllegalArgumentException("Can not be null");
+        }
         this.defaultEndPortal = destination;
     }
 
@@ -899,41 +899,45 @@ public class WorldConfig extends WorldConfigStore {
         }
 
         // Default nether portal check and detection
-        if (world2.worldmode == WorldMode.NETHER) {
-            if (world1.defaultNetherPortal == null) {
+        if (world2.worldmode.getEnvironment() == World.Environment.NETHER) {
+            if (world1.defaultNetherPortal.canAutoDetect()) {
                 world1.defaultNetherPortal = new PortalDestination();
                 world1.defaultNetherPortal.setMode(PortalMode.NETHER_LINK);
                 world1.defaultNetherPortal.setName(world2.worldname);
                 world1.defaultNetherPortal.setPlayersOnly(false);
+                world1.defaultNetherPortal.setAutoDetectEnabled(true);
                 MyWorlds.plugin.log(Level.INFO, "Created nether portal link from world '" + world1.worldname + "' to '" + world2.worldname + "'!");
             }
-            if (world2.defaultNetherPortal == null) {
+            if (world2.defaultNetherPortal.canAutoDetect()) {
                 world2.defaultNetherPortal = new PortalDestination();
                 world2.defaultNetherPortal.setMode(PortalMode.NETHER_LINK);
                 world2.defaultNetherPortal.setName(world1.worldname);
                 world2.defaultNetherPortal.setPlayersOnly(false);
+                world2.defaultNetherPortal.setAutoDetectEnabled(true);
                 MyWorlds.plugin.log(Level.INFO, "Created nether portal link from world '" + world2.worldname + "' to '" + world1.worldname + "'!");
             }
         }
 
         // Default ender portal check and detection
-        if (world2.worldmode == WorldMode.THE_END) {
+        if (world2.worldmode.getEnvironment() == World.Environment.THE_END) {
             // World 1 is the normal world, and it teleports to the end on a platform
             // World 2 is the end world, and it shows the end credits when teleported
-            if (world1.defaultEndPortal == null) {
+            if (world1.defaultEndPortal.canAutoDetect()) {
                 world1.defaultEndPortal = new PortalDestination();
                 world1.defaultEndPortal.setMode(PortalMode.END_PLATFORM);
                 world1.defaultEndPortal.setName(world2.worldname);
                 world1.defaultEndPortal.setPlayersOnly(false);
                 world1.defaultEndPortal.setShowCredits(false);
+                world1.defaultEndPortal.setAutoDetectEnabled(true);
                 MyWorlds.plugin.log(Level.INFO, "Created end portal gateway link from world '" + world1.worldname + "' to '" + world2.worldname + "'!");
             }
-            if (world2.defaultEndPortal == null) {
+            if (world2.defaultEndPortal.canAutoDetect()) {
                 world2.defaultEndPortal = new PortalDestination();
                 world2.defaultEndPortal.setMode(PortalMode.RESPAWN);
                 world2.defaultEndPortal.setName(world1.worldname);
                 world2.defaultEndPortal.setPlayersOnly(true);
                 world2.defaultEndPortal.setShowCredits(true);
+                world2.defaultEndPortal.setAutoDetectEnabled(true);
                 MyWorlds.plugin.log(Level.INFO, "Created end portal (show credits) link from world '" + world2.worldname + "' to '" + world1.worldname + "'!");
             }
         }

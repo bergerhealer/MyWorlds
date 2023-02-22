@@ -25,6 +25,8 @@ public class PortalDestination {
     private boolean _lastPosition = false;
     private boolean _showCredits = false;
     private boolean _nonPlayersCreatePortals = true;
+    private boolean _enableActivation = true;
+    private boolean _autoDetectDestination = false;
 
     public void setMode(PortalMode mode) {
         this._mode = mode;
@@ -61,6 +63,30 @@ public class PortalDestination {
 
         // World exists and is loaded.
         return true;
+    }
+
+    /**
+     * Gets whether MyWorlds should try and find a matching world to create a nether
+     * or end link automatically. If a destination is set manually, then auto-detection
+     * is turned off.
+     *
+     * @return True if auto-detection can occur right now
+     */
+    public boolean canAutoDetect() {
+        return _autoDetectDestination && (_name == null || _name.isEmpty());
+    }
+
+    /**
+     * Controls {@link #canAutoDetect()}
+     *
+     * @return True if auto-detection is enabled
+     */
+    public boolean isAutoDetectEnabled() {
+        return _autoDetectDestination;
+    }
+
+    public void setAutoDetectEnabled(boolean enabled) {
+        _autoDetectDestination = enabled;
     }
 
     public void setDisplayName(String displayName) {
@@ -111,6 +137,20 @@ public class PortalDestination {
         return this._nonPlayersCreatePortals;
     }
 
+    public void setActivationEnabled(boolean activate) {
+        this._enableActivation = activate;
+    }
+
+    /**
+     * Gets whether the portal can light automatically by placing fire in the obsidian
+     * frame (nether portal) or eyes of ender in the end gateways (end portal)
+     *
+     * @return True if activation of the portal is enabled
+     */
+    public boolean isActivationEnabled() {
+        return this._enableActivation;
+    }
+
     public String getInfoString() {
         if (this._name.isEmpty()) {
             return ChatColor.RED + "Disabled";
@@ -131,6 +171,9 @@ public class PortalDestination {
         if (this.isShowCredits()) {
             s += ChatColor.BLUE + " [Show Credits]";
         }
+        if (!this.isActivationEnabled()) {
+            s += ChatColor.RED + " [Cannot be lit]";
+        }
         return s;
     }
 
@@ -145,6 +188,7 @@ public class PortalDestination {
         clone.setShowCredits(this.isShowCredits());
         clone.setPlayersOnly(this.isPlayersOnly());
         clone.setTeleportToLastPosition(this.isTeleportToLastPosition());
+        clone.setActivationEnabled(this.isActivationEnabled());
         return clone;
     }
 
@@ -173,6 +217,8 @@ public class PortalDestination {
             result.setTeleportToLastPosition(false);
             result.setShowCredits(false);
             result.setCanNonPlayersCreatePortals(true);
+            result.setActivationEnabled(true);
+            result.setAutoDetectEnabled(false);
             return result;
         } else if (atKey instanceof ConfigurationNode) {
             // From yaml configuration, specifying various things
@@ -186,10 +232,23 @@ public class PortalDestination {
             result.setTeleportToLastPosition(node.get("teleportToLastPosition", false));
             result.setShowCredits(node.get("showCredits", false));
             result.setCanNonPlayersCreatePortals(node.get("nonPlayersCreatePortals", true));
+            result.setActivationEnabled(node.get("activationEnabled", true));
+            result.setAutoDetectEnabled(node.get("autoDetect", false));
             return result;
         } else {
-            // None stored
-            return null;
+            // None stored. Default unset configuration with autodetect on
+            PortalDestination result = new PortalDestination();
+            result.setMode(PortalMode.DEFAULT);
+            result.setName("");
+            result.setDisplayName(null);
+            result.setPlayersOnly(false);
+            result.setCanTeleportMounts(true);
+            result.setTeleportToLastPosition(false);
+            result.setShowCredits(false);
+            result.setCanNonPlayersCreatePortals(true);
+            result.setActivationEnabled(true);
+            result.setAutoDetectEnabled(true);
+            return result;
         }
     }
 
@@ -201,7 +260,7 @@ public class PortalDestination {
      * @param key
      */
     public static void toConfig(PortalDestination destination, ConfigurationNode config, String key) {
-        if (destination == null || destination.getName().isEmpty()) {
+        if (destination == null) {
             config.remove(key);
         } else {
             ConfigurationNode node = config.getNode(key);
@@ -213,6 +272,8 @@ public class PortalDestination {
             node.set("teleportToLastPosition", destination.isTeleportToLastPosition());
             node.set("showCredits", destination.isShowCredits());
             node.set("nonPlayersCreatePortals", destination.canNonPlayersCreatePortals());
+            node.set("activationEnabled", destination.isActivationEnabled());
+            node.set("autoDetect", destination.isAutoDetectEnabled());
         }
     }
 
