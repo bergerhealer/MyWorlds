@@ -84,7 +84,8 @@ public enum PortalType {
         }
 
         private boolean isOpen(Block block) {
-            return !BlockUtil.isSuffocating(block);
+            BlockData data = WorldUtil.getBlockData(block);
+            return !MaterialUtil.ISWATER.get(data) && !data.isSuffocating(block);
         }
     };
 
