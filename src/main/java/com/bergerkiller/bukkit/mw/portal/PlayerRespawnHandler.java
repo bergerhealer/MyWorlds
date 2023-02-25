@@ -1,11 +1,14 @@
 package com.bergerkiller.bukkit.mw.portal;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.mountiplex.reflection.util.FastConstructor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -38,6 +41,7 @@ public class PlayerRespawnHandler {
     private static final boolean END_RESPAWN_USING_PORTAL_EVENT = CommonBootstrap.evaluateMCVersion("<=", "1.13.2");
     private final MyWorlds plugin;
     private final Map<UUID, RespawnDestination> _respawns = new HashMap<>();
+    private boolean isHandlingEntityPortalEvent = false;
 
     // useTravelAgent(boolean) was removed at some point, but we must make sure to disable it on versions where it is active
     private static final Method useTravelAgentMethod;
@@ -57,6 +61,44 @@ public class PlayerRespawnHandler {
             m = PlayerRespawnEvent.class.getDeclaredMethod("isAnchorSpawn");
         } catch (Throwable t) {}
         isAnchorSpawnMethod = m;
+    }
+
+    // Different constructors for the EntityPortalEvent
+    private static final EntityPortalEventConstructor entityPortalEventConstructor = createEntityPortalEventConstructor();
+    private static EntityPortalEventConstructor createEntityPortalEventConstructor() {
+        try {
+            for (Constructor<?> c : EntityPortalEvent.class.getConstructors()) {
+                Class<?>[] params = c.getParameterTypes();
+
+                // Legacy
+                //   public EntityPortalEvent(final Entity entity, final Location from, final Location to, final TravelAgent pta)
+                if (params.length == 4 &&
+                        params[0] == Entity.class &&
+                        params[1] == Location.class &&
+                        params[2] == Location.class &&
+                        params[3].getSimpleName().equals("TravelAgent")
+                ) {
+                    final FastConstructor<EntityPortalEvent> fc = new FastConstructor<>(c);
+                    return (entity, from, to) -> fc.newInstance(entity, from, to, null);
+                }
+
+                // Modern
+                //   public EntityPortalEvent(@NotNull Entity entity, @NotNull Location from, @Nullable Location to)
+                if (params.length == 3 &&
+                        params[0] == Entity.class &&
+                        params[1] == Location.class &&
+                        params[2] == Location.class
+                ) {
+                    final FastConstructor<EntityPortalEvent> fc = new FastConstructor<>(c);
+                    return (entity, from, to) -> fc.newInstance(entity, from, to);
+                }
+            }
+            throw new IllegalStateException("No suitable constructor");
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.WARNING,
+                    "Failed to find EntityPortalEvent constructor", t);
+            return null;
+        }
     }
 
     public PlayerRespawnHandler(MyWorlds plugin) {
@@ -97,6 +139,35 @@ public class PlayerRespawnHandler {
             }
         }
         return false;
+    }
+
+    /**
+     * Handles when an Entity is being teleported by a Portal, by MyWorlds.
+     * Returns null if the teleportation is cancelled. Can also return
+     * a new (different) to Location if changed by another plugin.
+     *
+     * @param entity Entity that's teleporting by portal
+     * @param from Previous position of the Entity
+     * @param to Where MyWorlds wants to teleport the Player
+     * @return Final to Location, or null if cancelled
+     */
+    public Location handlePortalEnter(Entity entity, Location from, Location to) {
+        if (entityPortalEventConstructor == null) {
+            return to;
+        }
+
+        EntityPortalEvent event = entityPortalEventConstructor.create(entity, from, to);
+        event.setCancelled(false);
+        try {
+            isHandlingEntityPortalEvent = true;
+            if (CommonUtil.callEvent(event).isCancelled()) {
+                return null;
+            } else {
+                return event.getTo();
+            }
+        } finally {
+            isHandlingEntityPortalEvent = false;
+        }
     }
 
     public void enable() {
@@ -150,6 +221,12 @@ public class PlayerRespawnHandler {
 
             @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
             public void onEntityPortal(EntityPortalEvent event) {
+                // Ignore the event we're firing ourselves
+                if (isHandlingEntityPortalEvent) {
+                    isHandlingEntityPortalEvent = false;
+                    return;
+                }
+
                 // Cancel events that we handle ourselves, for all non-player entities
                 if (checkPortalHandled(event.getEntity(), event.getFrom())) {
                     event.setCancelled(true);
@@ -208,5 +285,10 @@ public class PlayerRespawnHandler {
             this.position = position;
             this.velocity = velocity;
         }
+    }
+
+    @FunctionalInterface
+    private interface EntityPortalEventConstructor {
+        EntityPortalEvent create(Entity entity, Location from, Location to);
     }
 }

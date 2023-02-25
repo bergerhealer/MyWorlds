@@ -89,11 +89,20 @@ public abstract class PortalTeleportationHandler {
      * Performs teleportation for an Entity, updating the last-entered portal position automatically.
      * If the teleportation fails, then the original (entered) portal position is restored.
      * 
-     * @param position
-     * @param velocity
+     * @param destPosition Original position MyWorlds wants to teleport the player to
+     * @param destVelocity Initial velocity of the Entity. Isn't used if position is changed by plugins.
      */
-    public void scheduleTeleportationWithVelocity(Location position, Vector velocity) {
+    public void scheduleTeleportationWithVelocity(Location destPosition, Vector destVelocity) {
         disablePortalsForCooldown();
+
+        // Fire an event that allows for updating the position, but can also cancel it
+        final Location position = plugin.getEndRespawnHandler().handlePortalEnter(entity, entity.getLocation(), destPosition.clone());
+        if (position == null) {
+            return;
+        }
+
+        // If position was changed by a plugin, keep Entity velocity
+        final Vector velocity = destPosition.equals(position) ? destVelocity : entity.getVelocity();
 
         if (entity instanceof Player) {
             Player player = (Player) entity;
@@ -134,7 +143,7 @@ public abstract class PortalTeleportationHandler {
      * @param position
      * @param velocity
      */
-    public boolean performTeleportation(Location position, Vector velocity) {
+    private boolean performTeleportation(Location position, Vector velocity) {
         disablePortalsForCooldown();
 
         Location original_position = plugin.getPortalTeleportationCooldown().getPortal(entity);
