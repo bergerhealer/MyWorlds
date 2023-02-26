@@ -1,11 +1,16 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
+import com.bergerkiller.bukkit.common.MaterialBooleanProperty;
+import com.bergerkiller.bukkit.common.wrappers.BlockState;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -31,6 +36,35 @@ public class Util {
     public static final MaterialTypeProperty IS_AIR = new MaterialTypeProperty("AIR", "LEGACY_AIR");
     public static final MaterialTypeProperty IS_ICE = new MaterialTypeProperty("ICE", "LEGACY_ICE");
     public static final MaterialTypeProperty IS_SNOW = new MaterialTypeProperty("SNOW", "LEGACY_SNOW");
+    public static final MaterialBooleanProperty IS_WATER_OR_WATERLOGGED = new MaterialBooleanProperty() {
+        private final HashMap<BlockData, Boolean> cache = new HashMap<>();
+
+        @Override
+        public Boolean get(BlockData blockData) {
+            return cache.computeIfAbsent(blockData, this::detect);
+        }
+
+        @Override
+        public Boolean get(Material material) {
+            return Boolean.FALSE;
+        }
+
+        private boolean detect(BlockData blockData) {
+            // BKCommonLibs ISWATER check
+            if (MaterialUtil.ISWATER.get(blockData)) {
+                return true;
+            }
+
+            // Try to find a 'waterlogged' state, and if present, return its state
+            for (Map.Entry<BlockState<?>, Comparable<?>> state : blockData.getStates().entrySet()) {
+                if ("waterlogged".equals(state.getKey().name()) && state.getValue() instanceof Boolean) {
+                    return (Boolean) state.getValue();
+                }
+            }
+
+            return false;
+        }
+    };
 
     public static boolean isSolid(Block b, BlockFace direction) {
         int maxwidth = 10;

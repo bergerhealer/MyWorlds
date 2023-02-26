@@ -8,7 +8,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
 import com.bergerkiller.bukkit.common.math.Matrix4x4;
-import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.common.utils.FaceUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
@@ -66,10 +65,10 @@ public enum PortalType {
 
         @Override
         public boolean detect(Block main) {
-            if (!MyWorlds.waterPortalEnabled || !MaterialUtil.ISWATER.get(main)) {
+            if (!MyWorlds.waterPortalEnabled || !Util.IS_WATER_OR_WATERLOGGED.get(main)) {
                 return false;
             }
-            if (MaterialUtil.ISWATER.get(main.getRelative(BlockFace.UP)) || MaterialUtil.ISWATER.get(main.getRelative(BlockFace.DOWN))) {
+            if (Util.IS_WATER_OR_WATERLOGGED.get(main.getRelative(BlockFace.UP)) || Util.IS_WATER_OR_WATERLOGGED.get(main.getRelative(BlockFace.DOWN))) {
                 if (isOpen(main.getRelative(BlockFace.NORTH)) || isOpen(main.getRelative(BlockFace.SOUTH))) {
                     if (Util.isSolid(main, BlockFace.WEST) && Util.isSolid(main, BlockFace.EAST)) {
                         return true;
@@ -85,7 +84,7 @@ public enum PortalType {
 
         private boolean isOpen(Block block) {
             BlockData data = WorldUtil.getBlockData(block);
-            return !MaterialUtil.ISWATER.get(data) && !data.isSuffocating(block);
+            return !Util.IS_WATER_OR_WATERLOGGED.get(data) && !data.isSuffocating(block);
         }
     };
 
@@ -209,7 +208,7 @@ public enum PortalType {
 
     private static PortalType findPortalTypeSingle(World world, int x, int y, int z) {
         BlockData data = WorldUtil.getBlockData(world, x, y, z);
-        if (MaterialUtil.ISWATER.get(data)) {
+        if (Util.IS_WATER_OR_WATERLOGGED.get(data)) {
             if (WATER.detect(world.getBlockAt(x, y, z))) {
                 return WATER;
             }
