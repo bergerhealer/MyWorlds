@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.UUID;
 
+import com.bergerkiller.bukkit.mw.portal.PortalMode;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -289,6 +290,11 @@ public class MWListener implements Listener {
             if (plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
                 Localization.PORTAL_NOACCESS.message((Player) entity);
             }
+            return;
+        }
+
+        // If destination mode is set to VANILLA, we do nothing ourselves here
+        if (destination.getMode() == PortalMode.VANILLA) {
             return;
         }
 

@@ -92,6 +92,9 @@ public class WorldSetDefaultPortal extends Command {
                     }
 
                     // Update destination. Detect other properties based on destination if previously none was configured.
+                    if (dest != null && dest.getMode() == PortalMode.VANILLA) {
+                        dest = null; // Regenerate
+                    }
                     if (dest == null) {
                         dest = new PortalDestination();
                         if (new_destination.isEmpty() || Portal.getPortalLocation(new_destination, null) != null) {

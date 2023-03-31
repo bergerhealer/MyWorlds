@@ -55,7 +55,12 @@ public enum PortalMode {
      * Prepares an obsidian platform at fixed coordinates of the destination
      * world and teleports players to it
      */
-    END_PLATFORM("End platform on", PortalTeleportationHandlerEndLink::new);
+    END_PLATFORM("End platform on", PortalTeleportationHandlerEndLink::new),
+    /**
+     * Lets Vanilla Minecraft deal with all logic, unless a [portal] sign is put
+     * nearby. Will allow the normal portal events to complete.
+     */
+    VANILLA("Vanilla Portal Behavior", PortalTeleportationHandlerDefault::new);
 
     private final String _infoPrefix;
     private final Supplier<PortalTeleportationHandler> _handlerSupplier;

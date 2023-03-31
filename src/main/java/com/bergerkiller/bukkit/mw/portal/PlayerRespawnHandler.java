@@ -11,6 +11,7 @@ import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.mountiplex.reflection.util.FastConstructor;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -240,7 +241,17 @@ public class PlayerRespawnHandler {
                 }
 
                 // If portal is nearby that we handle, we handle it for sure
-                if (PortalType.findPortalType(from.getBlock()) != null) {
+                Block portalBlock = from.getBlock();
+                PortalType portalType = PortalType.findPortalType(portalBlock);
+                if (portalType != null) {
+                    // If default portal mode is VANILLA, check whether there is a portal sign nearby at all
+                    // If not, we do NOT handle it, and allow default vanilla behavior
+                    if (WorldConfig.get(portalBlock).getDefaultDestination(portalType).getMode() == PortalMode.VANILLA) {
+                        if (!PortalDestination.findFromPortal(portalType, portalBlock).isFromPortal()) {
+                            return false;
+                        }
+                    }
+
                     return true;
                 }
 

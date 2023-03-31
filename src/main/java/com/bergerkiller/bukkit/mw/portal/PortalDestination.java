@@ -152,6 +152,9 @@ public class PortalDestination {
     }
 
     public String getInfoString() {
+        if (this._mode == PortalMode.VANILLA) {
+            return ChatColor.YELLOW + "Vanilla Portal Behavior";
+        }
         if (this._name.isEmpty()) {
             return ChatColor.RED + "Disabled";
         }
