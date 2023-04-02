@@ -839,9 +839,6 @@ public class MWPlayerDataController extends PlayerDataController {
 
             files.log("loading data");
 
-            // Disable bed spawn if not enabled for that world
-            removeInvalidBedSpawn(player.getWorld(), playerData);
-
             // When main world spawning is forced, reset location to there
             if (!hasPlayedBefore || MyWorlds.forceJoinOnMainWorld) {
                 PlayerDataFile.setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
@@ -854,6 +851,11 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // Save this player data back to file to make sure clear inventory is adhered
                 files.currentFile.write(playerData);
+            }
+
+            // Disable bed spawn if not enabled for that world
+            if (playerCurrentWorld != null) {
+                removeInvalidBedSpawn(playerCurrentWorld, playerData);
             }
 
             // Minecraft bugfix here: Clear mob/potion effects BEFORE loading the data
