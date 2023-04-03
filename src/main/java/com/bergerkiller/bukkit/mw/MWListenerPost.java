@@ -94,10 +94,10 @@ public class MWListenerPost implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerPortalMonitor(PlayerPortalEvent event) {
-        if (event.getTo() == null) {
-            return;
-        }
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        // This occurs right before we move to a new world.
+        // If this is a world change, it is time to save the old information!
+        // This event also fires when a portal teleportation happens
         if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
             WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
         }

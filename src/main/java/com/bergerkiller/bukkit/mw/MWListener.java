@@ -30,7 +30,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
@@ -125,15 +124,6 @@ public class MWListener implements Listener {
                 handlePortalEnter(PortalType.WATER, b, event.getPlayer(),
                         EntityUtil.getPortalCooldown(event.getPlayer()));
             }
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerTeleport(PlayerTeleportEvent event) {
-        // This occurs right before we move to a new world.
-        // If this is a world change, it is time to save the old information!
-        if (event.getTo().getWorld() != event.getPlayer().getWorld()) {
-            WorldConfig.get(event.getPlayer()).onPlayerLeave(event.getPlayer(), false);
         }
     }
 
