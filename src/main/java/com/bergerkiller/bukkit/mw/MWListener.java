@@ -503,7 +503,7 @@ public class MWListener implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         Portal portal = Portal.get(event.getBlock(), false);
         if (portal != null && portal.remove()) {
-            event.getPlayer().sendMessage(ChatColor.RED + "You removed portal " + ChatColor.WHITE + portal.getName() + ChatColor.RED + "!");
+            Localization.PORTAL_REMOVED.message(event.getPlayer(), portal.getName());
             MyWorlds.plugin.logAction(event.getPlayer(), "Removed portal '" + portal.getName() + "'!");
         }
     }
