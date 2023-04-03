@@ -182,6 +182,11 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
+        // If both end and nether portals are disabled, don't do anything
+        if (!MyWorlds.endPortalEnabled && !MyWorlds.netherPortalEnabled) {
+            return;
+        }
+
         Block portalBlock = event.getLocation().getBlock();
 
         // Don't do it for players, causes horrible problems!
