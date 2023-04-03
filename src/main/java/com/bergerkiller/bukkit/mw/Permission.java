@@ -37,8 +37,6 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_SETSPAWN = new Permission("world.setspawn", PermissionDefault.OP, "Sets if the player can change the (re)spawn point of a world, and whether bed respawning is enabled");
     public static final Permission COMMAND_SETREMEMBERLASTPOS = new Permission("world.setrememberlastpos", PermissionDefault.OP, "Sets if the player can change whether worlds remember the last player positions");
     public static final Permission COMMAND_INVENTORY = new Permission("world.inventory", PermissionDefault.OP, "Sets if the player can alter the inventory states of a world");
-    public static final Permission COMMAND_TOGGLERESPAWN = new Permission("world.togglerespawn", PermissionDefault.OP, "Sets if the player can toggle the forced respawn to the world spawn");
-    public static final Permission COMMAND_SPOUTWEATHER = new Permission("world.spoutweather", PermissionDefault.OP, "Sets if player can toggle virtual weather changes using Spout Plugin");
     public static final Permission COMMAND_FORMING = new Permission("world.forming", PermissionDefault.OP, "Sets if the player can toggle snow and ice forming on or off");
     public static final Permission COMMAND_RELOADWE = new Permission("world.reloadwe", PermissionDefault.OP, "Sets if players can toggle if worlds reload when empty");
     public static final Permission COMMAND_HUNGER = new Permission("world.hunger", PermissionDefault.OP, "Sets if players can toggle hunger on or off for worlds");
@@ -64,7 +62,6 @@ public class Permission extends PermissionEnum {
     public static final Permission PORTAL_OVERRIDE = new Permission("portal.override", PermissionDefault.OP, "Sets if the player can replace existing portals");
     public static final Permission PORTAL_USE = new Permission("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals", 1);
     public static final Permission PORTAL_TELEPORT = new Permission("portal.teleport", PermissionDefault.OP, "Sets the portals a player can teleport to using /tpp", 1);
-    public static final Permission PORTAL_ENTER = new Permission("portal.enter", PermissionDefault.OP, "Sets if the player can enter a certain portal", 1);
 
     private Permission(final String name, final PermissionDefault def, final String desc) {
         super("myworlds." + name, def, desc, 0);
@@ -81,13 +78,7 @@ public class Permission extends PermissionEnum {
         return canEnterWorld(player, world.getName());
     }
     public static boolean canEnterPortal(Player player, String portalname) {
-        if (!Permission.PORTAL_USE.has(player, portalname)) {
-            return false;
-        }
-        if (!MyWorlds.usePortalEnterPermissions) {
-            return true;
-        }
-        return Permission.PORTAL_ENTER.has(player, portalname);
+        return Permission.PORTAL_USE.has(player, portalname);
     }
     public static boolean canEnterWorld(Player player, String worldname) {
         if (!MyWorlds.useWorldEnterPermissions) {
