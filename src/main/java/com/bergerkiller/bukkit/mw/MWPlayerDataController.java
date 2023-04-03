@@ -98,7 +98,9 @@ public class MWPlayerDataController extends PlayerDataController {
         synchronized (worldToSaveTo) {
             worldToSaveTo.put(player, world);
         }
-        CommonUtil.savePlayer(player);
+        // This saves way too much. Only save data we manage
+        //CommonUtil.savePlayer(player);
+        MyWorlds.plugin.getPlayerDataController().onSave(player);
         synchronized (worldToSaveTo) {
             worldToSaveTo.remove(player);
         }
