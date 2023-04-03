@@ -210,6 +210,10 @@ public class Portal extends PortalStore {
         for (PortalSignList.PortalEntry portal : MyWorlds.plugin.getPortalSignList().listPortalsOnWorld(worldname)) {
             Location ploc = Util.getLocation(portal.position);
             if (ploc != null && ploc.getWorld() == middle.getWorld()) {
+                // This is important: it stores the y=0 position now, but for distance we
+                // want to use the middle of the block
+                ploc.setY(ploc.getBlockY() + 0.5);
+
                 double distance = ploc.distance(middle);
                 if (distance <= radius) {
                     Portal newp = Portal.get(ploc);
