@@ -37,6 +37,9 @@ public class PlayerDataFile {
         this.file.getParentFile().mkdirs();
     }
 
+    static void init() {
+    }
+
     public static File getPlayerDataFile(File playerDataFolder, UUID playerUUID) {
         return new File(playerDataFolder, playerUUID.toString() + ".dat");
     }

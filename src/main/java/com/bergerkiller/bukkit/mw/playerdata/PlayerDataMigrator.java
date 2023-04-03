@@ -46,6 +46,9 @@ public class PlayerDataMigrator implements Listener {
     private Migrator task = uuid -> {};
     private String taskName = "";
 
+    static void init() {
+    }
+
     public PlayerDataMigrator(MyWorlds plugin) {
         this.plugin = plugin;
     }

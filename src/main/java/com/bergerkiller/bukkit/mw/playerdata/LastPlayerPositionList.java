@@ -31,6 +31,10 @@ public class LastPlayerPositionList implements Cloneable {
     /** Timestamp the player was last on a last-position world */
     public static final String DATA_TAG_TIME = "time";
 
+    static void init() {
+        LastPosition.init();
+    }
+
     private final CommonTagList list;
 
     public LastPlayerPositionList() {
@@ -205,6 +209,9 @@ public class LastPlayerPositionList implements Cloneable {
     public static class LastPosition implements Comparable<LastPosition> {
         private final CommonTagCompound tag;
         private final int index;
+
+        static void init() {
+        }
 
         private LastPosition(CommonTagCompound tag, int index) {
             this.tag = tag;

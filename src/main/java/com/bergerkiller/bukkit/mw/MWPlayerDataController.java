@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.mw.playerdata.PlayerDataBootstrap;
 import com.bergerkiller.mountiplex.reflection.resolver.Resolver;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -77,6 +78,12 @@ public class MWPlayerDataController extends PlayerDataController {
     private static final Map<Player, World> worldToSaveTo = new IdentityHashMap<>();
     private static final Map<Player, LastPlayerPositionList> playerLastLocations = new IdentityHashMap<>();
     private final MyWorlds plugin;
+
+    static {
+        // Ensure <clinit> is done to avoid problems at server shutdown
+        PlayerDataBootstrap.init();
+        PlayerRespawnPoint.NONE.toString();
+    }
 
     public MWPlayerDataController(MyWorlds plugin) {
         this.plugin = plugin;

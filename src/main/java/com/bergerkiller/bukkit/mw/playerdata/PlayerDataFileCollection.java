@@ -12,6 +12,9 @@ public class PlayerDataFileCollection {
     public PlayerDataFile positionFile;  /* Stores the position of the player on a particular world */
     public PlayerDataFile currentFile;   /* Stores the inventory and data of the player on a particular world. Merge/split rules apply. */
 
+    static void init() {
+    }
+
     public PlayerDataFileCollection(OfflinePlayer player, World world) {
         this.player = player;
         this.mainWorldFile = PlayerDataFile.mainFile(player);
