@@ -50,8 +50,8 @@ public class WorldConfig extends WorldConfigStore {
     public boolean pvp = true;
     public final SpawnControl spawnControl = new SpawnControl();
     public final TimeControl timeControl = new TimeControl(this);
-    private PortalDestination defaultNetherPortal;
-    private PortalDestination defaultEndPortal;
+    private PortalDestination defaultNetherPortal = new PortalDestination();
+    private PortalDestination defaultEndPortal = new PortalDestination();
     public List<String> rejoinGroup = Collections.emptyList();
     public List<String> OPlist = new ArrayList<String>();
     public boolean allowHunger = true;
