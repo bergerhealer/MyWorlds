@@ -563,7 +563,7 @@ public class WorldConfig extends WorldConfigStore {
         case END:
             return getDefaultEndPortalDestination();
         default:
-            return null;
+            return new PortalDestination();
         }
     }
 
