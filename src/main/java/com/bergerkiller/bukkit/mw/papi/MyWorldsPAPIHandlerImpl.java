@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.bergerkiller.bukkit.mw.Util;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -13,7 +14,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.Common;
-import com.bergerkiller.bukkit.common.utils.TimeUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.WeatherState;
 import com.bergerkiller.bukkit.mw.Localization;
@@ -32,7 +32,7 @@ public class MyWorldsPAPIHandlerImpl implements MyWorldsPAPIHandler {
         register("world_alias", (world, player) -> world.alias);
         register("world_environment", (world, player) -> world.worldmode.getPAPIEnvName());
         register("world_type", (world, player) -> world.worldmode.getPAPITypeName());
-        register("world_time", (world, player) -> TimeUtil.getTimeString(world.getWorld().getFullTime()));
+        register("world_time", (world, player) -> Util.formatWorldTime(world.getWorld().getFullTime()));
         register("world_difficulty", (world, player) -> world.difficulty.toString().toLowerCase(Locale.ENGLISH));
         register("world_gamemode", (world, player) -> (world.gameMode == null)
                 ? "none" : world.gameMode.name().toLowerCase(Locale.ENGLISH));

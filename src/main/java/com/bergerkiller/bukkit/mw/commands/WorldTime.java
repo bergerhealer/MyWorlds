@@ -3,10 +3,11 @@ package com.bergerkiller.bukkit.mw.commands;
 import java.util.List;
 import java.util.stream.Stream;
 
+import com.bergerkiller.bukkit.common.utils.TimeUtil;
+import com.bergerkiller.bukkit.mw.Util;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
-import com.bergerkiller.bukkit.common.utils.TimeUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.TimeControl;
@@ -70,7 +71,7 @@ public class WorldTime extends Command {
             }
             if (args.length == 0) {
                 message(ChatColor.YELLOW + "The current time of world '" + 
-                        worldname + "' is " + TimeUtil.getTimeString(time));
+                        worldname + "' is " + Util.formatWorldTime(time));
             } else {
                 TimeControl tc = wc.timeControl;
                 boolean wasLocked = tc.isLocked();
@@ -78,22 +79,22 @@ public class WorldTime extends Command {
                 tc.setTime(time);
                 if (lock) {
                     if (wc.isLoaded()) {
-                        message(ChatColor.GREEN + "Time of world '" + worldname + "' locked to " + 
-                                TimeUtil.getTimeString(time) + "!");
+                        message(ChatColor.GREEN + "Time of world '" + worldname + "' locked to " +
+                                Util.formatWorldTime(time) + "!");
                     } else {
                         Localization.WORLD_NOTLOADED.message(sender, worldname);
-                        message(ChatColor.YELLOW + "Time will be locked to " + 
-                                TimeUtil.getTimeString(time) + " as soon it is loaded!");
+                        message(ChatColor.YELLOW + "Time will be locked to " +
+                                Util.formatWorldTime(time) + " as soon it is loaded!");
                     }
                 } else {
                     World w = wc.getWorld();
                     if (w != null) {
                         if (wasLocked) {
-                            message(ChatColor.GREEN + "Time of world '" + worldname + "' unlocked and set to " + 
-                                    TimeUtil.getTimeString(time) + "!");
+                            message(ChatColor.GREEN + "Time of world '" + worldname + "' unlocked and set to " +
+                                    Util.formatWorldTime(time) + "!");
                         } else {
-                            message(ChatColor.GREEN + "Time of world '" + worldname + "' set to " + 
-                                    TimeUtil.getTimeString(time) + "!");
+                            message(ChatColor.GREEN + "Time of world '" + worldname + "' set to " +
+                                    Util.formatWorldTime(time) + "!");
                         }
                     } else {
                         Localization.WORLD_NOTLOADED.message(sender, worldname);

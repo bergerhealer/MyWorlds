@@ -313,4 +313,14 @@ public class Util {
     private static ItemStack getEquipmentBKCL(Player player, EquipmentSlot slot) {
         return EntityUtil.getEquipment(player, slot);
     }
+
+    public static String formatWorldTime(long fullTime) {
+        int hours = (int) ((fullTime / 1000 + 8) % 24);
+        int minutes = (int) (60 * (fullTime % 1000) / 1000);
+        if (MyWorlds.worldTime24Hours) {
+            return String.format("%02d:%02d", hours, minutes);
+        } else {
+            return String.format("%d:%02d %s", (hours % 12) == 0 ? 12 : hours % 12, minutes, hours < 12 ? "am" : "pm");
+        }
+    }
 }

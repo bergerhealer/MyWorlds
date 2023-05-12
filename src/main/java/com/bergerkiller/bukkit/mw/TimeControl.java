@@ -3,7 +3,6 @@ package com.bergerkiller.bukkit.mw;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.Task;
-import com.bergerkiller.bukkit.common.utils.TimeUtil;
 
 public class TimeControl {
     private static final String LOCKING_RULE = "doDaylightCycle";
@@ -67,7 +66,7 @@ public class TimeControl {
         } else if (this.locking) {
             time = this.lockedTime;
         }
-        return TimeUtil.getTimeString(time);
+        return Util.formatWorldTime(time);
     }
 
     /*

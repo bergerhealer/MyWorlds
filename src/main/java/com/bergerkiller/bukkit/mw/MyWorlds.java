@@ -71,6 +71,7 @@ public class MyWorlds extends PluginBase {
     public static boolean portalToLastPosition;
     public static boolean keepInventoryPermissionEnabled;
     public static boolean portalSignsTeleportMobs;
+    public static boolean worldTime24Hours;
 
     // Portals
     public static boolean waterPortalEnabled;
@@ -327,6 +328,10 @@ public class MyWorlds extends PluginBase {
         config.addHeader("portalSignsTeleportMobs", "If true, items and mobs can teleport using portals near [portal] signs");
         config.addHeader("portalSignsTeleportMobs", "This option can be separately set per portal using /mw setportaloption (playersonly)");
         portalSignsTeleportMobs = config.get("portalSignsTeleportMobs", true);
+
+        config.setHeader("worldTime24Hours", "\nWhether /world time and %myworlds_world_time% PAPI variable use 24 hours time format");
+        config.addHeader("worldTime24Hours", "If true, shows format 23:45, if false, shows format 11:45 pm");
+        worldTime24Hours = config.get("worldTime24Hours", true);
 
         config.save();
 
