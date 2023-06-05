@@ -14,6 +14,7 @@ import com.bergerkiller.bukkit.common.config.ConfigurationNode;
  */
 public abstract class RespawnPoint {
     public static final RespawnPoint DEFAULT = new RespawnPointCurrentWorldSpawn();
+    public static final RespawnPoint IGNORED = new RespawnPointIgnored();
     private final RespawnPoint.Type type;
 
     private RespawnPoint(RespawnPoint.Type type) {
@@ -25,7 +26,7 @@ public abstract class RespawnPoint {
      *
      * @param player Player that is respawning
      * @param world World where the player died and wants to respawn from
-     * @return respawn location
+     * @return respawn location. <i>null</i> if the plugin shouldn't change the respawn location
      */
     public abstract Location get(Player player, World world);
 
@@ -80,6 +81,30 @@ public abstract class RespawnPoint {
     }
 
     /**
+     * Special respawn point type which does nothing at all, letting Vanilla
+     * or another plugin handle the respawning behavior for that world.
+     */
+    private static class RespawnPointIgnored extends RespawnPoint {
+        public RespawnPointIgnored() {
+            super(RespawnPoint.Type.IGNORED);
+        }
+
+        @Override
+        protected void writeToConfig(ConfigurationNode config) {
+        }
+
+        @Override
+        public Location get(Player player, World world) {
+            return null;
+        }
+
+        @Override
+        public String getDescription() {
+            return "be ignored: handled by the server and other plugins";
+        }
+    }
+
+    /**
      * Respawn at the current spawn point set where the player died.
      * Same as RespawnPointWorldSpawn in behavior. used as fallback if no
      * respawn point could be calculated.
@@ -100,7 +125,7 @@ public abstract class RespawnPoint {
 
         @Override
         public String getDescription() {
-            return "current World spawn point";
+            return "the current World spawn point";
         }
     }
 
@@ -170,7 +195,7 @@ public abstract class RespawnPoint {
 
         @Override
         public String getDescription() {
-            return "position x=" + this.position.getX() + " y=" + this.position.getY() + " z=" + this.position.getZ() +
+            return "the position x=" + this.position.getX() + " y=" + this.position.getY() + " z=" + this.position.getZ() +
                     " in world '" + this.position.getWorldName() + "'";
         }
     }
@@ -224,7 +249,7 @@ public abstract class RespawnPoint {
 
         @Override
         public String getDescription() {
-            return "spawn point of World '" + this.worldName + "'";
+            return "the spawn point of World '" + this.worldName + "'";
         }
     }
 
@@ -263,7 +288,7 @@ public abstract class RespawnPoint {
 
         @Override
         public String getDescription() {
-            return "portal '" + this.portalName + "'";
+            return "the portal '" + this.portalName + "'";
         }
     }
 
@@ -291,7 +316,7 @@ public abstract class RespawnPoint {
 
         @Override
         public String getDescription() {
-            return "position where the player died";
+            return "the position where the player died";
         }
     }
 
@@ -307,7 +332,8 @@ public abstract class RespawnPoint {
         LOCATION(RespawnPointLocation::new),
         WORLD_SPAWN(RespawnPointWorldSpawn::new),
         PORTAL(RespawnPointPortal::new),
-        PREVIOUS(RespawnPointPreviousLocation::new);
+        PREVIOUS(RespawnPointPreviousLocation::new),
+        IGNORED(cfg -> RespawnPoint.IGNORED);
 
         private final Function<ConfigurationNode, RespawnPoint> factory;
 

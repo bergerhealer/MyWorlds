@@ -65,7 +65,7 @@ public class WorldRespawn extends Command {
                 message(ChatColor.YELLOW + "Players will respawn at the world's spawn or home point when dying");
             }
 
-        } else if (args.length >= 1 && args[0].equals("here")) {
+        } else if (args[0].equals("here")) {
             this.genWorldname(1);
             if (!this.checkValidWorld()) {
                 return;
@@ -75,7 +75,7 @@ public class WorldRespawn extends Command {
             WorldConfig.get(worldname).respawnPoint = new RespawnPoint.RespawnPointLocation(player.getLocation());
             sender.sendMessage(ChatColor.GREEN + "Respawn location for world '" + worldname + "' set to your position!");
 
-        } else if (args.length >= 1 && args[0].equals("previous")) {
+        } else if (args[0].equals("previous")) {
             this.genWorldname(1);
             if (!this.checkValidWorld()) {
                 return;
@@ -85,6 +85,17 @@ public class WorldRespawn extends Command {
             WorldConfig.get(worldname).respawnPoint = new RespawnPoint.RespawnPointPreviousLocation();
             sender.sendMessage(ChatColor.GREEN + "Respawn location for world '" + worldname + "' set to the previous player position");
             sender.sendMessage(ChatColor.GREEN + "This respawns the players where they died");
+
+        } else if (args[0].equals("ignore")) {
+            this.genWorldname(1);
+            if (!this.checkValidWorld()) {
+                return;
+            }
+
+            // Set respawn point to be ignored, MyWorlds will not alter it.
+            WorldConfig.get(worldname).respawnPoint = RespawnPoint.IGNORED;
+            sender.sendMessage(ChatColor.YELLOW + "Respawn location for world '" + worldname + "' set to be ignored by MyWorlds");
+            sender.sendMessage(ChatColor.YELLOW + "The server and/or other plugins will handle the respawn location, instead");
 
         } else if (args.length >= 2 && args[0].equals("world")) {
             String destinationWorld = args[1];
@@ -160,7 +171,7 @@ public class WorldRespawn extends Command {
     public List<String> autocomplete() {
         if (args.length <= 1) {
             return processAutocomplete(Stream.of(
-                    "bed", "here", "world", "portal", "previous", "info"));
+                    "bed", "here", "world", "portal", "previous", "ignore", "info"));
         }
 
         if (args[0].equals("bed")) {
@@ -181,6 +192,8 @@ public class WorldRespawn extends Command {
                 return processAutocomplete(Stream.of(PortalStore.getPortals()));
             }
         } else if (args[0].equals("previous")) {
+            return processWorldNameAutocomplete();
+        } else if (args[0].equals("ignore")) {
             return processWorldNameAutocomplete();
         } else if (args[0].equals("info")) {
             return processWorldNameAutocomplete();

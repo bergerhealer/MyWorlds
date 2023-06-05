@@ -184,8 +184,11 @@ public class PlayerRespawnHandler {
                     } else if (!isBedOrAnchorRespawn(event) || !WorldConfig.get(event.getPlayer()).bedRespawnEnabled) {
                         // Respawn at what is set in the world configuration of this World
                         World fromWorld = event.getPlayer().getWorld();
-                        event.setRespawnLocation(WorldConfig.get(fromWorld).respawnPoint
-                                .get(event.getPlayer(), fromWorld));
+                        Location newRespawn = WorldConfig.get(fromWorld).respawnPoint
+                                .get(event.getPlayer(), fromWorld);
+                        if (newRespawn != null) {
+                            event.setRespawnLocation(newRespawn);
+                        }
                     }
                 } else {
                     // If we have a pending respawn, then the respawn event already has a pre-picked respawn location
