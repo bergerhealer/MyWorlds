@@ -314,7 +314,7 @@ public class PortalDestination {
                 Location loc = portalNearby.getLocation();
                 if (loc != null) {
                     PortalSignList.PortalEntry e = MyWorlds.plugin.getPortalSignList().findPortalOnWorld(
-                            loc.getWorld().getName(), portalNearby.getName());
+                            portalNearby.getName(), loc.getWorld().getName());
                     if (e != null) {
                         // Load options
                         portalDestination.setPlayersOnly(e.getOption("playersonly", portalDestination.isPlayersOnly()));

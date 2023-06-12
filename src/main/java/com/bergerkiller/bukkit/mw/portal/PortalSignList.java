@@ -271,7 +271,7 @@ public class PortalSignList {
             }
         }
 
-        public void toStringLine(StringBuilder saveText) {
+        public StringBuilder toStringLine(StringBuilder saveText) {
             saveText.append("\"").append(portalName).append("\" ");
             saveText.append("\"" ).append(position.getWorldName()).append("\" ");
             saveText.append(position.getBlockX()).append(' ');
@@ -283,6 +283,7 @@ public class PortalSignList {
                 saveText.append(' ').append(e.getKey()).append('=').append(e.getValue());
             }
             saveText.append('\n');
+            return saveText;
         }
     }
 }
