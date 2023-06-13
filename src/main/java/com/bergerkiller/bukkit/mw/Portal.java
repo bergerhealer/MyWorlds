@@ -3,9 +3,12 @@ package com.bergerkiller.bukkit.mw;
 import java.util.Locale;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.block.SignSide;
+import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -249,10 +252,22 @@ public class Portal extends PortalStore {
         } else if (!WorldUtil.isLoaded(signblock)) {
             return null;
         }
-        if (signblock.getState() instanceof Sign) {
-            return get(signblock, ((Sign) signblock.getState()).getLines());
+        BlockState blockState = BlockUtil.getState(signblock);
+        if (blockState instanceof Sign) {
+            for (SignSide side : SignSide.values()) {
+                if (side.isSupported()) {
+                    Portal portal = get((Sign) blockState, side);
+                    if (portal != null) {
+                        return portal;
+                    }
+                }
+            }
         }
         return null;
+    }
+
+    public static Portal get(Sign sign, SignSide side) {
+        return get(sign.getBlock(), side.getLines(sign));
     }
 
     public static Portal get(Block signblock, String[] lines) {

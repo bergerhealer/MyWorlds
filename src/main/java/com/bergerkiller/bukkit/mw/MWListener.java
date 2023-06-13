@@ -2,6 +2,8 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.UUID;
 
+import com.bergerkiller.bukkit.common.block.SignSide;
+import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -9,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -528,34 +531,49 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSignChange(SignChangeEvent event) {
+        // See if the player entered a portal on the sign
         Portal portal = Portal.get(event.getBlock(), event.getLines());
-        if (portal != null) {
-            if (Permission.PORTAL_CREATE.has(event.getPlayer())) {
-                if (Portal.exists(event.getPlayer().getWorld().getName(), portal.getName())) {
-                    if (!MyWorlds.allowPortalNameOverride || !Permission.PORTAL_OVERRIDE.has(event.getPlayer())) {
-                        event.getPlayer().sendMessage(ChatColor.RED + "This portal name is already used!");
-                        event.setCancelled(true);
-                        return;
-                    }
+        if (portal == null) {
+            return;
+        }
+
+        // If back-side is supported, verify the other side of the sign isn't also a portal
+        // This isn't supported and so we send a message in that case
+        if (SignSide.BACK.isSupported()) {
+            Sign sign = BlockUtil.getSign(event.getBlock());
+            SignSide side = SignSide.sideChanged(event).opposite();
+            if (sign != null && Portal.get(sign, side) != null) {
+                event.getPlayer().sendMessage(ChatColor.RED + "The other side of this sign already contains a portal!");
+                event.setCancelled(true);
+                return;
+            }
+        }
+
+        if (Permission.PORTAL_CREATE.has(event.getPlayer())) {
+            if (Portal.exists(event.getPlayer().getWorld().getName(), portal.getName())) {
+                if (!MyWorlds.allowPortalNameOverride || !Permission.PORTAL_OVERRIDE.has(event.getPlayer())) {
+                    event.getPlayer().sendMessage(ChatColor.RED + "This portal name is already used!");
+                    event.setCancelled(true);
+                    return;
                 }
-                portal.add();
-                MyWorlds.plugin.logAction(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
-                // Build message
-                if (portal.getDestinationName() != null) {
-                    Localization.PORTAL_CREATE_TO.message(event.getPlayer(), portal.getDestinationName());
-                    if (!portal.hasDestination()) {
-                        Localization.PORTAL_CREATE_MISSING.message(event.getPlayer());
-                    }
-                    if (portal.isRejoin()) {
-                        Localization.PORTAL_CREATE_REJOIN.message(event.getPlayer());
-                    }
-                } else {
-                    Localization.PORTAL_CREATE_END.message(event.getPlayer());
+            }
+            portal.add();
+            MyWorlds.plugin.logAction(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
+            // Build message
+            if (portal.getDestinationName() != null) {
+                Localization.PORTAL_CREATE_TO.message(event.getPlayer(), portal.getDestinationName());
+                if (!portal.hasDestination()) {
+                    Localization.PORTAL_CREATE_MISSING.message(event.getPlayer());
+                }
+                if (portal.isRejoin()) {
+                    Localization.PORTAL_CREATE_REJOIN.message(event.getPlayer());
                 }
             } else {
-                Localization.PORTAL_BUILD_NOPERM.message(event.getPlayer());
-                event.setCancelled(true);
+                Localization.PORTAL_CREATE_END.message(event.getPlayer());
             }
+        } else {
+            Localization.PORTAL_BUILD_NOPERM.message(event.getPlayer());
+            event.setCancelled(true);
         }
     }
 }
