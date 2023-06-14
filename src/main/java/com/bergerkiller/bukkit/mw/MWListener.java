@@ -1,7 +1,13 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
+import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.block.SignSide;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
@@ -57,9 +63,40 @@ import com.bergerkiller.mountiplex.reflection.util.FastMethod;
 public class MWListener implements Listener {
     private static final Material END_PORTAL_FRAME_TYPE = MaterialUtil.getFirst("END_PORTAL_FRAME", "LEGACY_ENDER_PORTAL_FRAME");
     private final MyWorlds plugin;
+    private final Map<Player, List<Consumer<Player>>> pendingPlayerJoinTasks = new HashMap<>();
 
     public MWListener(MyWorlds plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Schedules a task to be run for when a player joins the server properly, with a tick timeout.
+     * Runs immediately if player is already online/logged in.
+     *
+     * @param player Player
+     * @param tickTimeout Tick timeout
+     * @param runnable Task to run
+     */
+    public void scheduleForPlayerJoin(final Player player, int tickTimeout, final Consumer<Player> runnable) {
+        if (player.isOnline()) {
+            runnable.accept(player);
+            return;
+        }
+
+        synchronized (pendingPlayerJoinTasks) {
+            pendingPlayerJoinTasks.computeIfAbsent(player, p -> new ArrayList<>()).add(runnable);
+        }
+        new Task(plugin) {
+            @Override
+            public void run() {
+                synchronized (pendingPlayerJoinTasks) {
+                    List<Consumer<Player>> tasks = pendingPlayerJoinTasks.remove(player);
+                    if (tasks != null && tasks.remove(runnable) && !tasks.isEmpty()) {
+                        pendingPlayerJoinTasks.put(player, tasks);
+                    }
+                }
+            }
+        }.start(tickTimeout);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -83,6 +120,16 @@ public class MWListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         WorldConfig wc = WorldConfig.get(event.getPlayer());
         wc.onPlayerEnter(event.getPlayer(), true);
+
+        // Run actions for player join scheduled earlier
+        synchronized (pendingPlayerJoinTasks) {
+            List<Consumer<Player>> pendingTasks = pendingPlayerJoinTasks.remove(event.getPlayer());
+            if (pendingTasks != null) {
+                for (Consumer<Player> task : pendingTasks) {
+                    task.accept(event.getPlayer());
+                }
+            }
+        }
 
         // If limit is reached, teleport the player to the main world one tick delayed
         // Skip if the player is already on a main world (wut?)

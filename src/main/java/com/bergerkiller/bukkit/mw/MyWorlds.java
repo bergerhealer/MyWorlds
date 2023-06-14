@@ -80,7 +80,7 @@ public class MyWorlds extends PluginBase {
 
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
-    private final MWListener listener = new MWListener(this);
+    final MWListener listener = new MWListener(this);
     private MWPlayerDataController dataController;
     private final MyWorldsCommands commands = new MyWorldsCommands(this);
     private final WorldInventoriesDupingPatch worldDupingPatch = new WorldInventoriesDupingPatch();
