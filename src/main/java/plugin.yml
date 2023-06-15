@@ -8,6 +8,10 @@ loadbefore: [dynmap, Citizens, MobArena, RegionForSale, CreativeGates, HeroStron
 classdepend: [BetterPortals]
 metrics: true
 
+bstats:
+    enabled: true
+    plugin-id: 18763
+
 main: com.bergerkiller.bukkit.mw.Preloader
 preloader:
     main: com.bergerkiller.bukkit.mw.MyWorlds
