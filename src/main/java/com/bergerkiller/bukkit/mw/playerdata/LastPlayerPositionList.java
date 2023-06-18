@@ -30,6 +30,8 @@ public class LastPlayerPositionList implements Cloneable {
     public static final String DATA_TAG_ROT = "rot";
     /** Timestamp the player was last on a last-position world */
     public static final String DATA_TAG_TIME = "time";
+    /** Whether the player died at this position */
+    public static final String DATA_TAG_DIED = "died";
 
     static void init() {
         LastPosition.init();
@@ -240,6 +242,15 @@ public class LastPlayerPositionList implements Cloneable {
 
         public long getTime() {
             return tag.getValue(DATA_TAG_TIME, 0L);
+        }
+
+        /**
+         * Gets whether the player last died at this position
+         *
+         * @return True if this is a death position
+         */
+        public boolean hasDied() {
+            return tag.getValue(DATA_TAG_DIED, false);
         }
 
         /**

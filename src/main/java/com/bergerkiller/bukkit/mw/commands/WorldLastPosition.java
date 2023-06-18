@@ -138,6 +138,10 @@ public class WorldLastPosition extends Command {
             message.append(formatDate(now, yesterday, lastPos.getTime()));
             message.append(ChatColor.WHITE + " | ");
             message.append(formatPosition(pos, player));
+            if (lastPos.hasDied()) {
+                message.append(ChatColor.WHITE + " | ");
+                message.append(ChatColor.RED + "Died");
+            }
             message.sendTo(sender);
         }
 
@@ -145,6 +149,10 @@ public class WorldLastPosition extends Command {
         ChatText finalText = ChatText.fromMessage(ChatColor.WHITE + "- " +
                 ChatColor.BLUE + "Now" + ChatColor.WHITE + " | ");
         finalText.append(formatPosition(new Position(loc), player));
+        if (player.isDead()) {
+            finalText.append(ChatColor.WHITE + " | ");
+            finalText.append(ChatColor.RED + "Died");
+        }
         finalText.sendTo(sender);
     }
 

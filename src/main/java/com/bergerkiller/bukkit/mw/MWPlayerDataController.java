@@ -201,7 +201,8 @@ public class MWPlayerDataController extends PlayerDataController {
 
     /**
      * Gets the last-known position of a Player in a world, or any of the worlds set
-     * as the world rejoin group of that world. Based on time.
+     * as the world rejoin group of that world. Based on time. If the player had
+     * last died on the last world it was on, then returns null to force a respawn.
      *
      * @param player
      * @param possibleWorldConfigs Worlds to check for a last position
@@ -212,6 +213,10 @@ public class MWPlayerDataController extends PlayerDataController {
         // Import legacy positions of all worlds we need to check
         LastPlayerPositionList lastPositions = readLastPlayerPositions(player, possibleWorldConfigs);
         for (LastPlayerPositionList.LastPosition pos : lastPositions.all(true)) {
+            if (pos.hasDied()) {
+                break; // Fail instantly if the player last died here
+            }
+
             World posWorld = pos.getWorld();
             if (posWorld == null) {
                 continue; // Not loaded
@@ -455,7 +460,6 @@ public class MWPlayerDataController extends PlayerDataController {
      * </ul>
      * 
      * @param human
-     * @param firstTimeLoad
      */
     private static void resetState(HumanEntity human) {
         // Clear mob effects
@@ -647,7 +651,7 @@ public class MWPlayerDataController extends PlayerDataController {
     /**
      * Fired when a player respawns and all it's settings will be wiped.
      * The player contains all information right before respawning.
-     * All data that would be wiped should be written has being wiped.
+     * All data that would be wiped should be written as being wiped.
      * This involves a manual save.
      * 
      * @param player that respawned
@@ -718,6 +722,10 @@ public class MWPlayerDataController extends PlayerDataController {
             savedData.remove("ShoulderEntityRight");
             savedData.remove("SleepTimer");
 
+            // Track the last position on this world. Mark as a grave.
+            // Updates information tracked in the main world player data file
+            final Consumer<CommonTagCompound> mainWorldUpdater = saveCurrentPosition(player, player.getLocation(), true);
+
             // Now, go ahead and save this data
             files.currentFile.write(savedData);
 
@@ -729,6 +737,7 @@ public class MWPlayerDataController extends PlayerDataController {
             if (files.mainWorldFile.exists()) {
                 files.mainWorldFile.update(player, data -> {
                     data.putUUID("World", respawnLocation.getWorld().getUID());
+                    mainWorldUpdater.accept(data);
                 });
             }
         } catch (Throwable t) {
@@ -924,6 +933,31 @@ public class MWPlayerDataController extends PlayerDataController {
         }
     }
 
+    private Consumer<CommonTagCompound> saveCurrentPosition(final Player player, final Location loc, final boolean died) {
+        // Track the last position on this world
+        final LastPlayerPositionList lastPositions = readLastPlayerPositions(player, Collections.emptyList()).clone();
+        {
+            LastPlayerPositionList.LastPosition pos = lastPositions.getForWorld(WorldConfig.get(loc.getWorld()));
+            CommonTagCompound data = LastPlayerPositionList.createPositionData(loc, System.currentTimeMillis());
+            if (died) {
+                data.putValue(LastPlayerPositionList.DATA_TAG_DIED, true);
+            }
+            lastPositions.update(pos, data);
+        }
+        storeLastPlayerPositions(player, lastPositions);
+
+        // This returned consumer will update the input tag compound and save the locations
+        return data -> {
+            // Update last positions
+            CommonTagCompound myWorlds = data.createCompound(DATA_TAG_ROOT);
+            myWorlds.put(DATA_TAG_LAST_POSITIONS, lastPositions.getDataTag());
+
+            // Track for saved inventories whether at the time of saving multi-world inventories were enabled
+            // This is important to detect pre-enabled inventory data and migrate those inventories appropriately.
+            myWorlds.putValue(DATA_TAG_IS_SELF_CONTAINED, !MyWorlds.useWorldInventories);
+        };
+    }
+
     @Override
     public void onSave(final Player player) {
         try {
@@ -971,24 +1005,8 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             // Track the last position on this world
-            final LastPlayerPositionList lastPositions = readLastPlayerPositions(player, Collections.emptyList()).clone();
-            {
-                LastPlayerPositionList.LastPosition pos = lastPositions.getForWorld(WorldConfig.get(loc.getWorld()));
-                CommonTagCompound data = LastPlayerPositionList.createPositionData(loc, System.currentTimeMillis());
-                lastPositions.update(pos, data);
-            }
-            storeLastPlayerPositions(player, lastPositions);
-
             // Updates information tracked in the main world player data file
-            final Consumer<CommonTagCompound> mainWorldUpdater = data -> {
-                // Update last positions
-                CommonTagCompound myWorlds = data.createCompound(DATA_TAG_ROOT);
-                myWorlds.put(DATA_TAG_LAST_POSITIONS, lastPositions.getDataTag());
-
-                // Track for saved inventories whether at the time of saving multi-world inventories were enabled
-                // This is important to detect pre-enabled inventory data and migrate those inventories appropriately.
-                myWorlds.putValue(DATA_TAG_IS_SELF_CONTAINED, !MyWorlds.useWorldInventories);
-            };
+            final Consumer<CommonTagCompound> mainWorldUpdater = saveCurrentPosition(player, loc, player.isDead());
 
             // If main world, also write updated last position information to the file
             if (files.isMainWorld()) {
