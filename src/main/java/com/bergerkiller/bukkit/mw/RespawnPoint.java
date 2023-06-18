@@ -238,7 +238,7 @@ public abstract class RespawnPoint {
         public Location get(Player player, World world) {
             WorldConfig config = WorldConfig.getIfExists(this.worldName);
             Location loc;
-            if (config != null && (loc = config.getSpawnLocation()) != null) {
+            if (config != null && (loc = config.getSpawnLocation()) != null && loc.getWorld() != null) {
                 return loc;
             }
 
