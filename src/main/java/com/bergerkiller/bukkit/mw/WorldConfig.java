@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.Task;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
@@ -685,15 +686,8 @@ public class WorldConfig extends WorldConfigStore {
      */
     public void updateAll(World world) {
         // Fix spawn point if needed
-        Block spawnPointBlock;
-        if (this.spawnPoint != null) {
-            spawnPointBlock = this.spawnPoint.toLocation(world).getBlock();
-        } else {
-            spawnPointBlock = world.getSpawnLocation().getBlock();
-        }
-        if (BlockUtil.isSuffocating(spawnPointBlock)) {
-            this.fixSpawnLocation(spawnPointBlock.getWorld());
-        }
+        // Do this one tick delayed as it might mess with other plugins otherwise
+        (new FindSafeSpawnTask()).start(1);
 
         // Apply configured spawn point to world
         if (this.spawnPoint != null) {
@@ -1338,5 +1332,30 @@ public class WorldConfig extends WorldConfigStore {
 
     private static void setBukkitSpawnWithBlockXYZMethod(World world, Location location) {
         world.setSpawnLocation(location.getBlockX(), location.getBlockY(), location.getBlockZ());
+    }
+
+    private class FindSafeSpawnTask extends Task {
+
+        public FindSafeSpawnTask() {
+            super(MyWorlds.plugin);
+        }
+
+        @Override
+        public void run() {
+            World world = getWorld();
+            if (world == null) {
+                return; // Unloaded already?
+            }
+            Block spawnPointBlock;
+            if (spawnPoint != null) {
+                spawnPointBlock = spawnPoint.toLocation(world).getBlock();
+            } else {
+                spawnPointBlock = world.getSpawnLocation().getBlock();
+            }
+
+            if (BlockUtil.isSuffocating(spawnPointBlock)) {
+                fixSpawnLocation(world);
+            }
+        }
     }
 }
