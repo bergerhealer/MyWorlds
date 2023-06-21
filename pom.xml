@@ -4,7 +4,7 @@
 
     <groupId>com.bergerkiller.bukkit</groupId>
     <artifactId>MyWorlds</artifactId>
-    <version>1.20.1-v1-SNAPSHOT</version>
+    <version>1.20.1-v1</version>
     <packaging>jar</packaging>
 
     <name>MyWorlds</name>
@@ -14,7 +14,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.number>NO-CI</project.build.number>
         <project.serverVersion>1.19.3-R0.1-SNAPSHOT</project.serverVersion>
-        <project.bkcversion>1.20.1-v1-SNAPSHOT</project.bkcversion>
+        <project.bkcversion>1.20.1-v1</project.bkcversion>
         <project.preloaderversion>1.8</project.preloaderversion>
     </properties>
 
