@@ -79,7 +79,7 @@ public class MyWorldsPAPIHandlerImpl implements MyWorldsPAPIHandler {
         if (identifier.startsWith("world_") && identifier.endsWith("]")) {
             int openerIdx = identifier.lastIndexOf('[', identifier.length()-2);
             if (openerIdx != -1) {
-                String options = identifier.substring(openerIdx, identifier.length()-1);
+                String options = identifier.substring(openerIdx + 1, identifier.length()-1);
                 identifier = identifier.substring(0, openerIdx);
 
                 // Try to match the world name
