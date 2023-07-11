@@ -147,6 +147,7 @@ public class WorldConfigStore {
 
     public static void init() {
         initializing = true;
+        boolean isNewConfig;
         try {
             // Default configuration
             defaultProperties = new FileConfiguration(MyWorlds.plugin, "defaultproperties.yml");
@@ -171,6 +172,7 @@ public class WorldConfigStore {
             // Worlds configuration
             worldConfigs.clear();
             FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "worlds.yml");
+            isNewConfig = !config.exists();
             config.load();
             for (ConfigurationNode node : config.getNodes()) {
                 String worldname = node.get("name", node.getName());
@@ -195,6 +197,11 @@ public class WorldConfigStore {
             }
         } finally {
             initializing = false;
+        }
+
+        // If no worlds.yml existed yet, generate it
+        if (isNewConfig) {
+            saveAll();
         }
     }
 
