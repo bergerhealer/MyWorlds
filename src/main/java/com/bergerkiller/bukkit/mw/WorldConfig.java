@@ -322,6 +322,8 @@ public class WorldConfig extends WorldConfigStore {
         node.remove("spawn");
         node.remove("loaded");
         node.remove("rejoinGroup");
+        node.remove("defaultNetherPortal");
+        node.remove("defaultEndPortal");
     }
 
     public void save(ConfigurationNode node) {
