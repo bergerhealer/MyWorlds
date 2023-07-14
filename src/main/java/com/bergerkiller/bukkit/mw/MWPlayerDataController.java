@@ -795,7 +795,9 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // In this state we can't send a message to the player, delay it until the player
                 // has logged in
-                plugin.listener.scheduleForPlayerJoin(player, 100, Localization.WORLD_JOIN_REMOVED::message);
+                if (hasPlayedBefore) {
+                    plugin.listener.scheduleForPlayerJoin(player, 100, Localization.WORLD_JOIN_REMOVED::message);
+                }
             }
 
             // Find out where to find the save file
