@@ -185,7 +185,7 @@ public class WorldLastPosition extends Command {
 
         // Skip if target and sender are the same and already on this world
         if (lastPosPlayer == player && lastPosPlayer.getWorld() == world) {
-            sender.sendMessage(ChatColor.YELLOW + "You are already in this world");
+            Localization.COMMAND_LASTPOSITION_TP_SAME.message(sender, lastPosPlayer.getName(), world.getName());
             return;
         }
 
@@ -196,13 +196,12 @@ public class WorldLastPosition extends Command {
             lastLoc = MWPlayerDataController.readLastLocation(lastPosPlayer, world);
         }
         if (lastLoc == null) {
-            sender.sendMessage(ChatColor.RED + "Player " + lastPosPlayer.getName() + " never visited world " + world.getName() + "!");
+            Localization.COMMAND_LASTPOSITION_TP_NEVERVISITED.message(sender, lastPosPlayer.getName(), world.getName());
             return;
         }
 
         if (WorldManager.teleportToExact(player, lastLoc)) {
-            message(ChatColor.YELLOW.toString() + "Teleporting to last position of player '" +
-                    lastPosPlayer.getName() + "' on world '" + world.getName() + "'!");
+            Localization.COMMAND_LASTPOSITION_TP_SUCCESS.message(sender, lastPosPlayer.getName(), world.getName());
         }
     }
 
