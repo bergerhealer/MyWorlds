@@ -245,16 +245,28 @@ public class MWPlayerDataController extends PlayerDataController {
 
     /**
      * Attempts to read the last known Player position on a specific World
-     * 
+     *
      * @param player to get the last position for
      * @param world to get the last position for
      * @return Last known Location, or null if not found/stored
      */
     public static Location readLastLocation(Player player, World world) {
+        return readLastLocation(player, world, false);
+    }
+
+    /**
+     * Attempts to read the last known Player position on a specific World
+     * 
+     * @param player to get the last position for
+     * @param world to get the last position for
+     * @param ignoreDied True to ignore that the player last died in that world
+     * @return Last known Location, or null if not found/stored
+     */
+    public static Location readLastLocation(Player player, World world, boolean ignoreDied) {
         WorldConfig config = WorldConfig.get(world);
         LastPlayerPositionList posList = readLastPlayerPositions(player, Collections.singletonList(config));
         LastPlayerPositionList.LastPosition pos = posList.getForWorld(config);
-        if (pos == null) {
+        if (pos == null || pos.hasDied()) {
             return null;
         }
         Location loc = pos.getLocation();

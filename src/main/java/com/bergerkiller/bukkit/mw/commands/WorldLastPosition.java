@@ -193,7 +193,7 @@ public class WorldLastPosition extends Command {
         if (lastPosPlayer.getWorld() == world) {
             lastLoc = lastPosPlayer.getLocation();
         } else {
-            lastLoc = MWPlayerDataController.readLastLocation(lastPosPlayer, world);
+            lastLoc = MWPlayerDataController.readLastLocation(lastPosPlayer, world, true);
         }
         if (lastLoc == null) {
             Localization.COMMAND_LASTPOSITION_TP_NEVERVISITED.message(sender, lastPosPlayer.getName(), world.getName());
