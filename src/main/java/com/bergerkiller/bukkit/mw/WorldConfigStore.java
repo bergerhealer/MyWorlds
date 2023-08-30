@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.Task;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -21,11 +22,13 @@ public class WorldConfigStore {
     private static IdentityHashMap<World, WorldConfig> worldConfigsByWorld = new IdentityHashMap<>();
     private static FileConfiguration defaultProperties;
     private static boolean initializing = false;
+    private static Task fastAutoSaveTask = null;
 
     private static WorldConfig create(String worldname) {
         WorldConfig wc = new WorldConfig(worldname);
         worldConfigs.put(wc.worldname, wc);
         wc.loadDefaults();
+        saveAllLater(); // Save new world configs sooner
         return wc;
     }
 
@@ -205,7 +208,32 @@ public class WorldConfigStore {
         }
     }
 
+    /**
+     * Saves the worlds.yml in the next tick. Debounces autosaves after big changes happen.
+     */
+    public static void saveAllLater() {
+        if (initializing) {
+            return;
+        }
+
+        if (fastAutoSaveTask == null && MyWorlds.plugin.isEnabled()) {
+            fastAutoSaveTask = new Task(MyWorlds.plugin) {
+                @Override
+                public void run() {
+                    fastAutoSaveTask = null;
+                    saveAll();
+                }
+            }.start();
+        }
+    }
+
     public static void saveAll() {
+        // Cancel fast auto save
+        if (fastAutoSaveTask != null) {
+            fastAutoSaveTask.stop();
+            fastAutoSaveTask = null;
+        }
+
         // Do NOT do any saving while initializing the configuration
         // This causes a loss of state
         if (initializing) {
