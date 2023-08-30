@@ -179,7 +179,7 @@ public class WorldConfigStore {
                 if (WorldManager.worldExists(worldname)) {
                     WorldConfig wc = create(worldname);
                     wc.load(node);
-                    if (node.get("loaded", false)) {
+                    if (wc.loadOnStartup && node.get("loaded", false)) {
                         wc.loadWorld();
                     }
                 } else {

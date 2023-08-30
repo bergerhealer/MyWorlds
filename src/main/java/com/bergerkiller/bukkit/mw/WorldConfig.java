@@ -43,6 +43,7 @@ public class WorldConfig extends WorldConfigStore {
     public String alias;
     public boolean keepSpawnInMemory = true;
     public WorldMode worldmode = WorldMode.NORMAL;
+    public boolean loadOnStartup = true;
     private String chunkGeneratorName;
     public Difficulty difficulty = Difficulty.NORMAL;
     private Position spawnPoint; // If null, uses the World spawn
@@ -114,7 +115,16 @@ public class WorldConfig extends WorldConfigStore {
             this.respawnPoint = RespawnPoint.DEFAULT;
             this.pvp = world.getPVP();
             this.autosave = world.isAutoSave();
-            this.getChunkGeneratorName();
+            String generatorPluginName = WorldManager.getGeneratorPluginName(this.getChunkGeneratorName());
+
+            // Some chunk generator plugins do not handle it when MyWorlds loads the world before
+            if (generatorPluginName != null) {
+                if (generatorPluginName.equalsIgnoreCase("iris")) {
+                    this.loadOnStartup = false;
+                    MyWorlds.plugin.getLogger().log(Level.INFO, "Set auto-load for world '" + world.getName() +
+                            "' to 'no' because it uses chunk generator plugin '" + generatorPluginName + "'!");
+                }
+            }
         } else {
             this.alias = worldname;
             this.worldmode = WorldMode.get(worldname);
@@ -192,6 +202,7 @@ public class WorldConfig extends WorldConfigStore {
         this.worldmode = config.worldmode;
         this.chunkGeneratorName = config.chunkGeneratorName;
         this.difficulty = config.difficulty;
+        this.loadOnStartup = config.loadOnStartup;
 
         // Copy spawn point. Swap world name if it referred to the original world
         this.spawnPoint = (config.spawnPoint == null) ? null : config.spawnPoint.clone();
@@ -230,6 +241,7 @@ public class WorldConfig extends WorldConfigStore {
         this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
         this.worldmode = WorldMode.get(node.get("environment", this.worldmode.getName()));
         this.chunkGeneratorName = node.get("chunkGenerator", String.class, this.chunkGeneratorName);
+        this.loadOnStartup = !node.contains("loaded") || !"ignore".equalsIgnoreCase(node.get("loaded", String.class, ""));
         if (LogicUtil.nullOrEmpty(this.chunkGeneratorName)) {
             this.chunkGeneratorName = null;
         }
@@ -344,7 +356,11 @@ public class WorldConfig extends WorldConfigStore {
         } else {
             node.set("alias", this.alias);
         }
-        node.set("loaded", w != null);
+        if (this.loadOnStartup) {
+            node.set("loaded", w != null);
+        } else {
+            node.set("loaded", "ignore");
+        }
         node.set("keepSpawnLoaded", this.keepSpawnInMemory);
         node.set("environment", this.worldmode.getName());
         node.set("chunkGenerator", LogicUtil.fixNull(this.getChunkGeneratorName(), ""));

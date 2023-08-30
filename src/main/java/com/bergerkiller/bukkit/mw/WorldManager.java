@@ -152,6 +152,18 @@ public class WorldManager {
         return null;
     }
 
+    public static String getGeneratorPluginName(String generatorNameWithOptions) {
+        if (generatorNameWithOptions == null) {
+            return null;
+        }
+        String name = generatorNameWithOptions;
+        int index = name.indexOf(":");
+        if (index != -1) {
+            name = name.substring(0, index);
+        }
+        return name;
+    }
+
     public static ChunkGenerator getGenerator(String worldname, String name) {
         if (name == null) {
             return null;
