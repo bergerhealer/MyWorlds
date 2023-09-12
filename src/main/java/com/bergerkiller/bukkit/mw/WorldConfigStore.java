@@ -62,6 +62,7 @@ public class WorldConfigStore {
                 c.worldmode = worldmode;
             }
             c.reset();
+            c.detectGeneratorDisableAutoLoad();
         } else if (worldmode != null) {
             c.worldmode = worldmode;
         }
@@ -182,6 +183,7 @@ public class WorldConfigStore {
                 if (WorldManager.worldExists(worldname)) {
                     WorldConfig wc = create(worldname);
                     wc.load(node);
+                    wc.detectGeneratorDisableAutoLoad();
                     if (wc.loadOnStartup && node.get("loaded", false)) {
                         wc.loadWorld();
                     }

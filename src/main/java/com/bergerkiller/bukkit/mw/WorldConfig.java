@@ -115,16 +115,7 @@ public class WorldConfig extends WorldConfigStore {
             this.respawnPoint = RespawnPoint.DEFAULT;
             this.pvp = world.getPVP();
             this.autosave = world.isAutoSave();
-            String generatorPluginName = WorldManager.getGeneratorPluginName(this.getChunkGeneratorName());
-
-            // Some chunk generator plugins do not handle it when MyWorlds loads the world before
-            if (generatorPluginName != null) {
-                if (generatorPluginName.equalsIgnoreCase("iris")) {
-                    this.loadOnStartup = false;
-                    MyWorlds.plugin.getLogger().log(Level.INFO, "Set auto-load for world '" + world.getName() +
-                            "' to 'no' because it uses chunk generator plugin '" + generatorPluginName + "'!");
-                }
-            }
+            this.getChunkGeneratorName();
         } else {
             this.alias = worldname;
             this.worldmode = WorldMode.get(worldname);
@@ -156,7 +147,24 @@ public class WorldConfig extends WorldConfigStore {
         }
         this.inventory = WorldInventory.create(this.worldname);
     }
-    
+
+    /**
+     * Detects the generator plugin that is used and whether automatic loading of the world should
+     * be disabled because of it (Iris generator bugfix)
+     */
+    protected void detectGeneratorDisableAutoLoad() {
+        String generatorPluginName = WorldManager.getGeneratorPluginName(this.getChunkGeneratorName());
+
+        // Some chunk generator plugins do not handle it when MyWorlds loads the world before
+        if (generatorPluginName != null) {
+            if (generatorPluginName.equalsIgnoreCase("iris")) {
+                this.loadOnStartup = false;
+                MyWorlds.plugin.getLogger().log(Level.INFO, "Set auto-load for world '" + worldname +
+                        "' to 'no' because it uses chunk generator plugin '" + generatorPluginName + "'!");
+            }
+        }
+    }
+
     /**
      * Sets the generator name and arguments for this World.
      * Note that this does not alter the generator for a possible loaded world.
