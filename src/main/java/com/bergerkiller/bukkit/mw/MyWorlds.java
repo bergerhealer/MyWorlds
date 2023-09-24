@@ -131,7 +131,7 @@ public class MyWorlds extends PluginBase {
 
     @Override
     public int getMinimumLibVersion() {
-        return Common.VERSION;
+        return 12001; //TODO: Change back to Common.VERSION
     }
 
     public String root() {
