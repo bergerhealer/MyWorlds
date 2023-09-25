@@ -2,8 +2,10 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -64,6 +66,7 @@ public class MWListener implements Listener {
     private static final Material END_PORTAL_FRAME_TYPE = MaterialUtil.getFirst("END_PORTAL_FRAME", "LEGACY_ENDER_PORTAL_FRAME");
     private final MyWorlds plugin;
     private final Map<Player, List<Consumer<Player>>> pendingPlayerJoinTasks = new HashMap<>();
+    private final Set<Player> playersInWater = new HashSet<>();
 
     public MWListener(MyWorlds plugin) {
         this.plugin = plugin;
@@ -163,6 +166,8 @@ public class MWListener implements Listener {
         WorldConfig config = WorldConfig.get(event.getPlayer());
         config.onPlayerLeave(event.getPlayer(), true);
         config.onPlayerLeft(event.getPlayer());
+        // Cleanup
+        playersInWater.remove(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -170,7 +175,20 @@ public class MWListener implements Listener {
         // Water teleportation handling
         if (MyWorlds.waterPortalEnabled) {
             Block b = event.getTo().getBlock();
-            if (PortalType.WATER.detect(b)) {
+            boolean handleEnter = false;
+            if (MyWorlds.waterPortalStrict) {
+                // Must be inside a portal
+                handleEnter = PortalType.WATER.detect(b);
+            } else {
+                // Also allow transition air -> water to trigger them
+                boolean inWater = Util.IS_WATER_OR_WATERLOGGED.get(b);
+                if (!inWater) {
+                    playersInWater.remove(event.getPlayer());
+                } else if (playersInWater.add(event.getPlayer()) || PortalType.WATER.detect(b)) {
+                    handleEnter = true;
+                }
+            }
+            if (handleEnter) {
                 handlePortalEnter(PortalType.WATER, b, event.getPlayer(),
                         EntityUtil.getPortalCooldown(event.getPlayer()));
             }

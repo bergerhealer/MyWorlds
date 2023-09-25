@@ -75,6 +75,7 @@ public class MyWorlds extends PluginBase {
 
     // Portals
     public static boolean waterPortalEnabled;
+    public static boolean waterPortalStrict;
     public static boolean endPortalEnabled;
     public static boolean netherPortalEnabled;
 
@@ -280,6 +281,8 @@ public class MyWorlds extends PluginBase {
         enabledPortals.setHeader("endPortal", "Turns handling of end portal teleportation on or off");
         enabledPortals.addHeader("endPortal", "Vanilla Minecraft will handle end portals when disabled");
         enabledPortals.setHeader("waterPortal", "Enables or disables the water stream portals");
+        enabledPortals.setHeader("waterPortalStrict", "If water portal is enabled, true requires an exact water portal frame");
+        enabledPortals.addHeader("waterPortalStrict", "With false, any transition air->water also detects nearby portal signs and teleports players");
 
         // Transfer legacy options
         if (config.contains("useWaterTeleport")) {
@@ -298,6 +301,7 @@ public class MyWorlds extends PluginBase {
         netherPortalEnabled = enabledPortals.get("netherPortal", true);
         endPortalEnabled = enabledPortals.get("endPortal", true);
         waterPortalEnabled = enabledPortals.get("waterPortal", true);
+        waterPortalStrict = enabledPortals.get("waterPortalStrict", true);
 
         config.setHeader("ignoreEggSpawns", "\nWhether egg-spawned entities are allowed to spawn, even if worlds have these");
         config.addHeader("entities blacklisted to be spawned");
