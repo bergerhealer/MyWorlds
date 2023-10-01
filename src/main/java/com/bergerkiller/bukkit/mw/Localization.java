@@ -12,6 +12,7 @@ public class Localization extends LocalizationEnum {
     public static final Localization COMMAND_LASTPOSITION_TP_SUCCESS = new Localization("command.lastposition.tp.success", ChatColor.YELLOW + "Teleporting to last position of player '%0%' on world '%1%'!");
     public static final Localization COMMAND_LASTPOSITION_TP_NEVERVISITED = new Localization("command.lastposition.tp.nevervisited", ChatColor.RED + "Player %0% never visited world %1%!");
     public static final Localization COMMAND_LASTPOSITION_TP_SAME = new Localization("command.lastposition.tp.same", ChatColor.YELLOW + "You are already in this world");
+    public static final Localization COMMAND_REJOIN_OTHER = new Localization("command.rejoin.other", ChatColor.GREEN + "Made player '%0%' rejoin world group of '%1%'!");
     public static final Localization WORLD_ENTER = new Localization("world.enter", ChatColor.GREEN + "You teleported to world '%0%'!");
     public static final Localization WORLD_NOACCESS = new Localization("world.noaccess", ChatColor.DARK_RED + "You are not allowed to enter this world!");
     public static final Localization WORLD_NOCHATACCESS = new Localization("world.nochataccess", ChatColor.DARK_RED + "You are not allowed to use the chat in this world!");
