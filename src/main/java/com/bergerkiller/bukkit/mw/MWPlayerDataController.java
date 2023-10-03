@@ -1036,7 +1036,6 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // Write the current world name of the player to the save file of the main world
             if (!files.isMainWorld()) {
-                // Update the world in the main file
                 files.mainWorldFile.update(player, data -> {
                     data.put("Pos", savedData.get("Pos"));
                     data.put("Rotation", savedData.get("Rotation"));
@@ -1059,6 +1058,16 @@ public class MWPlayerDataController extends PlayerDataController {
                 dstBukkit.put("lastPlayed", srcBukkit.get("lastPlayed"));
                 dstBukkit.put("firstPlayed", srcBukkit.get("firstPlayed"));
                 dstBukkit.put("lastKnownName", srcBukkit.get("lastKnownName"));
+            }
+        }
+
+        // recipe book
+        {
+            CommonTagCompound srcRecipeBook = srcPlayerData.get("recipeBook", CommonTagCompound.class);
+            if (srcRecipeBook != null) {
+                dstPlayerData.put("recipeBook", srcRecipeBook);
+            } else {
+                dstPlayerData.remove("recipeBook");
             }
         }
     }
