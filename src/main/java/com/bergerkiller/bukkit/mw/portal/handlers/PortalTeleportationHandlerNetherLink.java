@@ -3,6 +3,8 @@ package com.bergerkiller.bukkit.mw.portal.handlers;
 import java.lang.reflect.Method;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.bases.IntCuboid;
+import com.bergerkiller.bukkit.common.bases.IntVector3;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
@@ -62,9 +64,37 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
 
         // Turn factor into a search radius
         int searchRadius = (int) (Math.max(1.0, factor) * baseSearch);
-        Block searchStartBlock = world.getBlockAt(MathUtil.floor(portalBlock.getX() * factor),
-                                                  portalBlock.getY(),
-                                                  MathUtil.floor(portalBlock.getZ() * factor));
+
+        // Find the start block of the search. Limit it to be within the world border.
+        IntVector3 searchStartBlockCoord = new IntVector3(MathUtil.floor(portalBlock.getX() * factor),
+                                                          portalBlock.getY(),
+                                                          MathUtil.floor(portalBlock.getZ() * factor));
+        IntCuboid worldBorder = WorldUtil.getBlockBorder(world);
+        if (!worldBorder.contains(searchStartBlockCoord)) {
+            int x = searchStartBlockCoord.x;
+            if (!worldBorder.isMinXUnlimited() && x < worldBorder.min.x) {
+                x = worldBorder.min.x;
+            } else if (!worldBorder.isMaxXUnlimited() && x > worldBorder.max.x) {
+                x = worldBorder.max.x;
+            }
+
+            int y = searchStartBlockCoord.y;
+            if (!worldBorder.isMinYUnlimited() && y < worldBorder.min.y) {
+                y = worldBorder.min.y;
+            } else if (!worldBorder.isMaxYUnlimited() && y > worldBorder.max.y) {
+                y = worldBorder.max.y;
+            }
+
+            int z = searchStartBlockCoord.z;
+            if (!worldBorder.isMinZUnlimited() && z < worldBorder.min.z) {
+                z = worldBorder.min.z;
+            } else if (!worldBorder.isMaxZUnlimited() && z > worldBorder.max.z) {
+                z = worldBorder.max.z;
+            }
+
+            searchStartBlockCoord = new IntVector3(x, y, z);
+        }
+        Block searchStartBlock = searchStartBlockCoord.toBlock(world);
 
         // Calculate the create options for the current entity teleportation
         NetherPortalSearcher.CreateOptions createOptions = null;
