@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -415,6 +416,10 @@ public class MyWorlds extends PluginBase {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (!Permission.SUGGESTIONS.has(sender)) {
+            return Collections.emptyList();
+        }
+
         return commands.autocomplete(sender, alias, args);
     }
 
