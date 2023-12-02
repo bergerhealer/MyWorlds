@@ -536,16 +536,8 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     private void postLoad(HumanEntity human) {
         if (WorldConfig.get(human.getWorld()).clearInventory) {
-            plugin.log(Level.INFO, "Clear inventory of [B] " + human.getName());
             resetState(human);
         }
-    }
-
-    private static int getItemCount(CommonTagCompound data) {
-        if (data != null && data.containsKey("Inventory")) {
-            return data.get("Inventory", CommonTagList.class).size();
-        }
-        return 0;
     }
 
     /**
@@ -571,9 +563,6 @@ public class MWPlayerDataController extends PlayerDataController {
                 final CommonTagCompound playerData = files.currentFile.read(player);
 
                 files.log("refreshing state");
-
-                plugin.log(Level.INFO, "Reloading data for " + player.getName() + " from " + files.currentFile.world.worldname + " main " + files.mainWorldFile.world.worldname +
-                        " inventory items " + getItemCount(playerData));
 
                 CommonPlayer commonPlayer = CommonEntity.get(player);
                 EntityPlayerHandle playerHandle = EntityPlayerHandle.fromBukkit(player);
@@ -905,9 +894,6 @@ public class MWPlayerDataController extends PlayerDataController {
                     }
                 }
 
-                plugin.log(Level.INFO, "Loading data for " + player.getName() + " from " + files.currentFile.world.worldname + " main " + files.mainWorldFile.world.worldname +
-                        " inventory items " + getItemCount(playerData));
-
                 // Initialize empty data for first-time joining
                 if (playerData == null) {
                     playerData = createEmptyData(player);
@@ -926,7 +912,6 @@ public class MWPlayerDataController extends PlayerDataController {
                 // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
                 World playerCurrentWorld = Bukkit.getWorld(((mainWorldData != null) ? mainWorldData : playerData).getUUID("World"));
                 if (playerCurrentWorld != null && WorldConfig.get(playerCurrentWorld).clearInventory) {
-                    plugin.log(Level.INFO, "Clear inventory of [A] " + player.getName());
                     resetPlayerData(playerData);
 
                     // Save this player data back to file to make sure clear inventory is adhered
@@ -1028,9 +1013,6 @@ public class MWPlayerDataController extends PlayerDataController {
                 removeInvalidBedSpawn(player.getWorld(), savedData);
 
                 files.log("saving data");
-
-                plugin.log(Level.INFO, "Saving data for " + player.getName() + " from " + files.currentFile.world.worldname + " main " + files.mainWorldFile.world.worldname +
-                        " inventory items " + getItemCount(savedData));
 
                 final Location loc = player.getLocation();
                 if (files.isSingleDataFile()) {
