@@ -2,6 +2,9 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.List;
 
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
+import org.bukkit.Location;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
@@ -25,7 +28,17 @@ public class WorldSpawn extends Command {
         if (this.handleWorld()) {
             World world = WorldManager.getWorld(worldname);
             if (world != null) {
-                EntityUtil.teleport(player, WorldManager.getSpawnLocation(world));
+                Location loc = WorldManager.getSpawnLocation(world).clone();
+                MyWorldsTeleportCommandEvent event = new MyWorldsTeleportCommandEvent(
+                        player,
+                        MyWorldsTeleportCommandEvent.CommandType.SPAWN,
+                        loc);
+                if (CommonUtil.callEvent(event).isCancelled()) {
+                    return;
+                }
+                loc = event.getTo();
+
+                EntityUtil.teleport(player, loc);
             } else {
                 Localization.WORLD_NOTLOADED.message(sender, worldname);
             }

@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw.portal;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -22,6 +23,7 @@ import com.bergerkiller.bukkit.mw.MyWorlds;
  */
 public final class PortalEnterEventDebouncer implements LibraryComponent {
     private final Set<Pending> pending = new LinkedHashSet<>();
+    private final Set<Pending> runThisTick = new HashSet<>();
     private final Callback callback;
     private final Task task;
 
@@ -34,8 +36,11 @@ public final class PortalEnterEventDebouncer implements LibraryComponent {
                     ArrayList<Pending> copy = new ArrayList<>(pending);
                     pending.clear();
                     for (Pending pending : copy) {
-                        callback.onPortalEnter(pending.portalBlock, pending.entity, pending.portalCooldown);
+                        if (!runThisTick.contains(pending)) {
+                            callback.onPortalEnter(pending.portalBlock, pending.entity, pending.portalCooldown);
+                        }
                     }
+                    runThisTick.clear();
                 }
             }
         };
@@ -50,6 +55,14 @@ public final class PortalEnterEventDebouncer implements LibraryComponent {
     public void disable() {
         pending.clear();
         task.stop();
+    }
+
+    public void triggerAndRunOnceATick(Block portalBlock, Entity entity) {
+        Pending newPending = new Pending(portalBlock, entity);
+        pending.add(newPending);
+        if (runThisTick.add(newPending)) {
+            callback.onPortalEnter(newPending.portalBlock, newPending.entity, newPending.portalCooldown);
+        }
     }
 
     public void trigger(Block portalBlock, Entity entity) {

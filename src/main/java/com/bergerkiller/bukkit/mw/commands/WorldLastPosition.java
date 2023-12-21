@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -200,7 +201,11 @@ public class WorldLastPosition extends Command {
             return;
         }
 
-        if (WorldManager.teleportToExact(player, lastLoc)) {
+        if (WorldManager.teleportToExact(player, lastLoc, (entity, to) -> new MyWorldsTeleportCommandEvent(
+                entity,
+                MyWorldsTeleportCommandEvent.CommandType.LAST_POSITION,
+                to
+        ))) {
             Localization.COMMAND_LASTPOSITION_TP_SUCCESS.message(sender, lastPosPlayer.getName(), world.getName());
         }
     }

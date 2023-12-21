@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -12,6 +13,7 @@ import java.util.function.Consumer;
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.block.SignSide;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
+import com.bergerkiller.bukkit.mw.portal.PortalDestinationDebouncer;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -67,9 +69,11 @@ public class MWListener implements Listener {
     private final MyWorlds plugin;
     private final Map<Player, List<Consumer<Player>>> pendingPlayerJoinTasks = new HashMap<>();
     private final Set<Player> playersInWater = new HashSet<>();
+    private final PortalDestinationDebouncer destinationDebouncer;
 
     public MWListener(MyWorlds plugin) {
         this.plugin = plugin;
+        this.destinationDebouncer = new PortalDestinationDebouncer(plugin);
     }
 
     /**
@@ -249,7 +253,7 @@ public class MWListener implements Listener {
 
         // Don't do it for players, causes horrible problems!
         if (event.getEntity() instanceof Player) {
-            onPortalEnter(portalBlock, event.getEntity(), EntityUtil.getPortalCooldown(event.getEntity()));
+            plugin.getPortalEnterEventDebouncer().triggerAndRunOnceATick(portalBlock, event.getEntity());
         } else {
             plugin.getPortalEnterEventDebouncer().trigger(portalBlock, event.getEntity());
         }
@@ -325,6 +329,13 @@ public class MWListener implements Listener {
             return;
         }
 
+        // If we already processed this destination for this entity this tick, do not process it again
+        // This prevents running 2 or 4 teleports to the same destination for a player entering a portal
+        // because the player position has become outdated.
+        if (!destinationDebouncer.tryDestination(entity, destination)) {
+            return;
+        }
+
         // If entity is a passenger of a vehicle, teleport the vehicle instead
         {
             CommonEntity<?> ce = CommonEntity.get(entity);
@@ -361,40 +372,47 @@ public class MWListener implements Listener {
             return;
         }
 
-        // Setup handler, which performs the teleportations for us
-        PortalTeleportationHandler teleportationHandler = destination.getMode().createTeleportationHandler();
-        teleportationHandler.setup(plugin, portalType, portalBlock, destination, entity, portalCooldown);
-
         // If the destination leads to a portal sign, let the portal sign deal with it
         // Do not run this logic if the portal mode is non-default and already matches a world name
         // This way if people name a portal "world", the mode nether-link default portal remains functional
+        Location portalLocation = null;
         if (!destination.isPortalLookupIgnored()) {
-            Location portalLocation = PortalStore.getPortalLocation(destination.getName(), portalBlock.getWorld().getName(), true, entity);
-            if (portalLocation != null) {
-                // Debounce
-                if (!plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
-                    return;
-                }
+            portalLocation = PortalStore.getPortalLocation(destination.getName(), portalBlock.getWorld().getName(), true, entity);
+        }
 
-                // Refers to an actual portal sign on this world or another world
-                // For players, setup the display message of the portal destination
-                if (entity instanceof Player) {
-                    String display = destination.getDisplayName();
-                    if (display.isEmpty()) {
-                        display = destination.getName();
-                    }
-                    MWListenerPost.setLastEntered((Player) entity, display);
-                }
+        // Setup handler, which performs the teleportations for us
+        PortalTeleportationHandler teleportationHandler = destination.getMode().createTeleportationHandler();
+        teleportationHandler.setup(plugin, portalType, portalBlock, destination,
+                findResults.getPortal(),
+                (portalLocation != null) ? Optional.of(destination.getName()) : Optional.empty(),
+                entity,
+                portalCooldown);
 
-                // Handle perms up-front
-                if (!Portal.canTeleportEntityTo(entity, portalLocation)) {
-                    return;
-                }
-
-                // Teleport the entity the next tick
-                teleportationHandler.scheduleTeleportation(portalLocation);
+        // If the destination leads to a portal sign, let the portal sign deal with it
+        if (portalLocation != null) {
+            // Debounce
+            if (!plugin.getPortalTeleportationCooldown().tryEnterPortal(entity)) {
                 return;
             }
+
+            // Refers to an actual portal sign on this world or another world
+            // For players, setup the display message of the portal destination
+            if (entity instanceof Player) {
+                String display = destination.getDisplayName();
+                if (display.isEmpty()) {
+                    display = destination.getName();
+                }
+                MWListenerPost.setLastEntered((Player) entity, display);
+            }
+
+            // Handle perms up-front
+            if (!Portal.canTeleportEntityTo(entity, portalLocation)) {
+                return;
+            }
+
+            // Teleport the entity the next tick
+            teleportationHandler.scheduleTeleportation(portalLocation);
+            return;
         }
 
         // Destination must be a world name, find out what world

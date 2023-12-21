@@ -1,5 +1,7 @@
 package com.bergerkiller.bukkit.mw.portal;
 
+import com.bergerkiller.bukkit.mw.Portal;
+import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportPortalEvent;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -20,6 +22,8 @@ import com.bergerkiller.bukkit.mw.PortalType;
 import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
 import com.bergerkiller.generated.net.minecraft.world.entity.EntityHandle;
 
+import java.util.Optional;
+
 /**
  * Interface for main teleportation handling functions
  */
@@ -28,6 +32,8 @@ public abstract class PortalTeleportationHandler {
     protected PortalType portalType;
     protected Block portalBlock;
     protected PortalDestination destination;
+    protected Optional<Portal> fromPortal;
+    protected Optional<String> toPortalName;
     protected Entity entity;
     protected int portalCooldown;
 
@@ -35,6 +41,8 @@ public abstract class PortalTeleportationHandler {
                       PortalType portalType,
                       Block portalBlock,
                       PortalDestination destination,
+                      Optional<Portal> fromPortal,
+                      Optional<String> toPortalName,
                       Entity entity,
                       int portalCooldown)
     {
@@ -42,6 +50,8 @@ public abstract class PortalTeleportationHandler {
         this.portalType = portalType;
         this.portalBlock = portalBlock;
         this.destination = destination;
+        this.fromPortal = fromPortal;
+        this.toPortalName = toPortalName;
         this.entity = entity;
         this.portalCooldown = portalCooldown;
     }
@@ -96,13 +106,30 @@ public abstract class PortalTeleportationHandler {
         disablePortalsForCooldown();
 
         // Fire an event that allows for updating the position, but can also cancel it
-        final Location position = plugin.getEndRespawnHandler().handlePortalEnter(entity, entity.getLocation(), destPosition.clone());
-        if (position == null) {
+        Location positionAdjusted = plugin.getEndRespawnHandler().handlePortalEnter(entity, entity.getLocation(), destPosition.clone());
+        if (positionAdjusted == null) {
             return;
         }
 
         // If position was changed by a plugin, keep Entity velocity
-        final Vector velocity = destPosition.equals(position) ? destVelocity : entity.getVelocity();
+        final Vector velocity = destPosition.equals(positionAdjusted) ? destVelocity : entity.getVelocity();
+
+        // Event stuff
+        {
+            MyWorldsTeleportPortalEvent event = new MyWorldsTeleportPortalEvent(
+                    entity,
+                    portalType,
+                    positionAdjusted,
+                    destination,
+                    fromPortal,
+                    toPortalName);
+            if (CommonUtil.callEvent(event).isCancelled()) {
+                return;
+            }
+            positionAdjusted = event.getTo();
+        }
+
+        final Location position = positionAdjusted;
 
         if (entity instanceof Player) {
             Player player = (Player) entity;

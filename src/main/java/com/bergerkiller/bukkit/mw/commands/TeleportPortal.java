@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
+import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -83,12 +84,17 @@ public class TeleportPortal extends Command {
                 //Get portal
                 Location signLocation = Portal.getPortalLocation(dest, world.getName());
                 if (signLocation != null) {
-                    Portal portal = Portal.getNear(signLocation, 3);
+                    final Portal portal = Portal.getNear(signLocation, 3);
                     if (portal != null) {
                         //Perform portal teleports
                         int succcount = 0;
                         for (Player target : targets) {
-                            if (portal.teleportSelf(target)) {
+                            if (portal.teleportSelf(target, (entity, loc) -> new MyWorldsTeleportCommandEvent(
+                                    entity,
+                                    MyWorldsTeleportCommandEvent.CommandType.TELEPORT_PORTAL,
+                                    loc,
+                                    portal.getName()
+                            ))) {
                                 //Success
                                 succcount++;
                             }
@@ -109,11 +115,16 @@ public class TeleportPortal extends Command {
                             //Perform world teleports
                             int succcount = 0;
                             for (Player target : targets) {
-                                if (WorldManager.teleportToWorld(target, w)) {
+                                if (WorldManager.teleportToWorld(target, w, (entity, loc) -> new MyWorldsTeleportCommandEvent(
+                                        entity,
+                                        MyWorldsTeleportCommandEvent.CommandType.TELEPORT_WORLD,
+                                        loc
+                                ))) {
                                     //Success
                                     succcount++;
                                 }
                             }
+
                             // Show message, but don't if only the sender was teleported
                             // He already receives an enter message by the teleport listener
                             if (targets.length > 1 || targets[0] != sender) {

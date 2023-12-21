@@ -12,6 +12,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import java.util.zip.ZipException;
 
+import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
+import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -453,11 +455,18 @@ public class WorldManager {
         for (Player player : world.getPlayers()) {
             Location loc = getEvacuation(player);
             if (loc != null) {
-                player.teleport(loc);
-                player.sendMessage(ChatColor.RED + message);
-            } else {
-                player.kickPlayer(message);
+                MyWorldsTeleportCommandEvent event = new MyWorldsTeleportCommandEvent(
+                        player,
+                        MyWorldsTeleportCommandEvent.CommandType.EVACUATE,
+                        loc);
+                if (!CommonUtil.callEvent(event).isCancelled()) {
+                    player.teleport(event.getTo());
+                    player.sendMessage(ChatColor.RED + message);
+                    continue;
+                }
             }
+
+            player.kickPlayer(message);
         }
     }
     public static void teleportToClonedWorld(World from, World cloned) {
@@ -636,6 +645,37 @@ public class WorldManager {
      * @return True if the teleport succeeded, False if not
      */
     public static boolean teleportToExact(Player player, Location destination) {
+        return teleportToExact(player, destination, null);
+    }
+
+    /**
+     * Teleports a player to a destination location. If the location is solid,
+     * and the teleportation is cross-world, normally the player is teleported
+     * away to a safe place. If this happens, a second teleport is done to
+     * put the player back at the 'unsafe' location.
+     *
+     * This extra logic is important when players rejoin a world at their
+     * last-known location, otherwise certain block glitches allow them to
+     * teleport upwards.
+     *
+     * @param player The player to teleport
+     * @param destination Destination location to teleport to
+     * @param eventFactory Handles a myworlds teleport event before teleportation commences
+     * @return True if the teleport succeeded, False if not
+     */
+    public static boolean teleportToExact(Player player, Location destination, MyWorldsTeleportEvent.Factory eventFactory) {
+        destination = destination.clone(); // Safety, people can muck with teleport events
+
+        if (eventFactory != null) {
+            MyWorldsTeleportEvent event = eventFactory.create(player, destination);
+            if (event != null) {
+                if (CommonUtil.callEvent(event).isCancelled()) {
+                    return false;
+                }
+                destination = event.getTo();
+            }
+        }
+
         boolean crossWorlds = (destination.getWorld() != player.getWorld());
         if (!EntityUtil.teleport(player, destination)) {
             return false;
@@ -660,12 +700,37 @@ public class WorldManager {
      * @return True if successful, False if not
      */
     public static boolean teleportToWorld(Player player, World world) {
+        return teleportToWorld(player, world, null);
+    }
+
+    /**
+     * Teleports a player to a world. If the world allows the last player position
+     * on the world to be used, this is used instead. If no last position is known,
+     * or last position remembering is disabled, the player is teleported to the
+     * world spawn position.
+     *
+     * @param player to teleport
+     * @param world to teleport to
+     * @param eventFactory Handles a myworlds teleport event before teleportation commences
+     * @return True if successful, False if not
+     */
+    public static boolean teleportToWorld(Player player, World world, MyWorldsTeleportEvent.Factory eventFactory) {
         WorldSpawnLocation spawn = getPlayerWorldSpawn(player, world, false);
         if (spawn.type == WorldSpawnLocation.Type.LAST_POSITION) {
-            return teleportToExact(player, spawn.location);
-        } else {
-            return EntityUtil.teleport(player, spawn.location);
+            return teleportToExact(player, spawn.location, eventFactory);
         }
+
+        Location loc = spawn.location.clone();
+        if (eventFactory != null) {
+            MyWorldsTeleportEvent event = eventFactory.create(player, loc);
+            if (event != null) {
+                if (CommonUtil.callEvent(event).isCancelled()) {
+                    return false;
+                }
+                loc = event.getTo();
+            }
+        }
+        return EntityUtil.teleport(player, loc);
     }
 
     /**

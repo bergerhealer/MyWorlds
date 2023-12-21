@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw.commands;
 import java.util.List;
 
 import com.bergerkiller.bukkit.mw.Util;
+import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.mw.Localization;
@@ -59,7 +60,11 @@ public class WorldRejoin extends Command {
                 }
             }
             if (player != null) {
-                WorldManager.teleportToExact(player, WorldManager.getPlayerRejoinPosition(player, world));
+                WorldManager.teleportToExact(player, WorldManager.getPlayerRejoinPosition(player, world), (entity, to) -> new MyWorldsTeleportCommandEvent(
+                        entity,
+                        MyWorldsTeleportCommandEvent.CommandType.REJOIN,
+                        to
+                ));
             }
         }
     }

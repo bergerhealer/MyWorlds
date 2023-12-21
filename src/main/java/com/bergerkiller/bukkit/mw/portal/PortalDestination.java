@@ -11,6 +11,8 @@ import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.PortalType;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
+import java.util.Optional;
+
 /**
  * Stores the rules for a single portal destination.
  * This is used for default portal rules of a world,
@@ -181,6 +183,32 @@ public class PortalDestination {
     }
 
     @Override
+    public int hashCode() {
+        return _name.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        } else if (o instanceof PortalDestination) {
+            PortalDestination other = (PortalDestination) o;
+            return _mode == other._mode &&
+                    _name.equals(other._name) &&
+                    _display.equals(other._display) &&
+                    _playersOnly == other._playersOnly &&
+                    _teleportMounts == other._teleportMounts &&
+                    _lastPosition == other._lastPosition &&
+                    _showCredits == other._showCredits &&
+                    _nonPlayersCreatePortals == other._nonPlayersCreatePortals &&
+                    _enableActivation == other._enableActivation &&
+                    _autoDetectDestination == other._autoDetectDestination;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
     public PortalDestination clone() {
         PortalDestination clone = new PortalDestination();
         clone.setMode(this.getMode());
@@ -330,20 +358,20 @@ public class PortalDestination {
                     portalDestination.setTeleportToLastPosition(true);
                 }
             }
-            return new FindResults(portalDestination, portalNearby.getName());
+            return new FindResults(portalDestination, Optional.of(portalNearby));
         }
 
         // Default behavior
-        return new FindResults(WorldConfig.get(portalBlock).getDefaultDestination(portalType), null);
+        return new FindResults(WorldConfig.get(portalBlock).getDefaultDestination(portalType), Optional.empty());
     }
 
     public static class FindResults {
         private final PortalDestination destination;
-        private final String portalName;
+        private final Optional<Portal> portal;
 
-        public FindResults(PortalDestination destination, String portalName) {
+        public FindResults(PortalDestination destination, Optional<Portal> portal) {
             this.destination = destination;
-            this.portalName = portalName;
+            this.portal = portal;
         }
 
         /**
@@ -366,23 +394,32 @@ public class PortalDestination {
         }
 
         /**
+         * Gets the portal sign details, if a portal sign was near the portal
+         *
+         * @return Portal information
+         */
+        public Optional<Portal> getPortal() {
+            return portal;
+        }
+
+        /**
          * Gets whether a nearby portal sign was used to find
          * this destination
          * 
          * @return True if a portal was used
          */
         public boolean isFromPortal() {
-            return this.portalName != null;
+            return portal.isPresent();
         }
 
         /**
          * If this destination was found because a nearby portal
          * sign was found, then this returns the name of that portal.
          * 
-         * @return portal name
+         * @return portal name, null if no portal sign was near
          */
         public String getPortalName() {
-            return this.portalName;
+            return portal.map(Portal::getName).orElse(null);
         }
     }
 }

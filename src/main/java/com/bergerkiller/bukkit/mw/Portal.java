@@ -5,6 +5,8 @@ import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.block.SignSide;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportEvent;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -140,16 +142,38 @@ public class Portal extends PortalStore {
 
     /**
      * Teleports an Entity to the location of this Portal
-     * 
+     *
      * @param entity to teleport
      * @return True if successful, False if not
      */
     public boolean teleportSelf(Entity entity) {
+        return teleportSelf(entity, null);
+    }
+
+    /**
+     * Teleports an Entity to the location of this Portal
+     * 
+     * @param entity to teleport
+     * @param eventFactory Creates a MyWorlds event fired before teleporting
+     * @return True if successful, False if not
+     */
+    public boolean teleportSelf(Entity entity, MyWorldsTeleportEvent.Factory eventFactory) {
         if (entity instanceof Player) {
             MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
         }
-        boolean rval = EntityUtil.teleport(entity, Util.spawnOffset(this.getLocation(), entity));
-        return rval;
+        Location loc = Util.spawnOffset(this.getLocation(), entity);
+        if (eventFactory != null) {
+            MyWorldsTeleportEvent event = eventFactory.create(entity, loc);
+            if (event != null) {
+                CommonUtil.callEvent(event);
+                if (event.isCancelled()) {
+                    return false;
+                }
+                loc = event.getTo();
+            }
+        }
+
+        return EntityUtil.teleport(entity, loc);
     }
 
     /**
