@@ -8,6 +8,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.softdependency.SoftDependency;
+import com.bergerkiller.bukkit.mw.mythicdungeons.MythicDungeonsHelper;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -99,6 +101,18 @@ public class MyWorlds extends PluginBase {
     private LibraryComponent placeholderApi = null;
     public static MyWorlds plugin;
 
+    private final SoftDependency<MythicDungeonsHelper> mythicDungeons = new SoftDependency<MythicDungeonsHelper>(this, "MythicDungeons", MythicDungeonsHelper.DISABLED) {
+        @Override
+        protected MythicDungeonsHelper initialize(Plugin plugin) throws Error, Exception {
+            return MythicDungeonsHelper.init(MyWorlds.this, plugin);
+        }
+
+        @Override
+        public void onEnable() {
+            getLogger().log(Level.INFO, "Mythic Dungeons detected: dungeon instances will automatically share inventory settings");
+        }
+    };
+
     public PortalSignList getPortalSignList() {
         return this.portalSignList;
     }
@@ -138,6 +152,10 @@ public class MyWorlds extends PluginBase {
 
     public String root() {
         return getDataFolder() + File.separator;
+    }
+
+    public MythicDungeonsHelper getMythicDungeonsHelper() {
+        return mythicDungeons.get();
     }
 
     @Override
@@ -351,6 +369,13 @@ public class MyWorlds extends PluginBase {
 
         // World inventories
         WorldInventory.load();
+
+        // Ensure mythic dungeons are setup correctly
+        // Is automatically done when new worlds load in
+        SoftDependency.detectAll(this);
+        for (WorldConfig world : new ArrayList<>(WorldConfig.all())) {
+            world.detectMythicDungeonsInstance();
+        }
 
         // Fire portal enter events (debounced)
         portalEnterEventDebouncer.enable();

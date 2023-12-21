@@ -234,22 +234,36 @@ public class WorldInventory {
         return removed;
     }
 
-    public WorldInventory add(String worldname) {
-        WorldInventory inv = this.addWithoutSaving(worldname);
-        save();
-        return inv;
+    public WorldInventory add(WorldConfig worldConfig) {
+        if (this.addWithoutSaving(worldConfig)) {
+            save();
+        }
+        return this;
     }
 
-    private WorldInventory addWithoutSaving(String worldname) {
-        WorldConfig config = WorldConfig.get(worldname);
-        if (config.inventory != null) {
-            config.inventory.removeWithoutSaving(config.worldname, false);
+    public WorldInventory add(String worldname) {
+        if (this.addWithoutSaving(worldname)) {
+            save();
         }
-        config.inventory = this;
-        this.worlds.add(worldname.toLowerCase());
+        return this;
+    }
+
+    private boolean addWithoutSaving(String worldname) {
+        return addWithoutSaving(WorldConfig.get(worldname));
+    }
+
+    private boolean addWithoutSaving(WorldConfig worldConfig) {
+        if (worldConfig.inventory == this) {
+            return false;
+        }
+        if (worldConfig.inventory != null) {
+            worldConfig.inventory.removeWithoutSaving(worldConfig.worldname, false);
+        }
+        worldConfig.inventory = this;
+        this.worlds.add(worldConfig.worldname.toLowerCase());
         if (this.worldname == null) {
             this.worldname = getSharedWorldName(this.worlds);
         }
-        return this;
+        return true;
     }
 }

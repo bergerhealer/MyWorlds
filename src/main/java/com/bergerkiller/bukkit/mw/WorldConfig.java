@@ -145,7 +145,25 @@ public class WorldConfig extends WorldConfigStore {
                 this.OPlist.add(op.getName());
             }
         }
+
         this.inventory = WorldInventory.create(this.worldname);
+    }
+
+    /**
+     * If this is a mythic dungeons instance, updates inventory sharing rules accordingly
+     * so that it shares inventory with the edit session.
+     */
+    protected void detectMythicDungeonsInstance() {
+        // If this is a mythic dungeons world, use the inventory of the edit session instance
+        // If this is the edit session then the api returns null.
+        World w = getWorld();
+        if (w != null) {
+            World editSessionWorld = MyWorlds.plugin.getMythicDungeonsHelper().getEditSession(w);
+            if (editSessionWorld != null) {
+                WorldConfig editSessionConfig = get(editSessionWorld);
+                editSessionConfig.inventory.add(this.worldname);
+            }
+        }
     }
 
     /**
@@ -668,6 +686,8 @@ public class WorldConfig extends WorldConfigStore {
         updateAll(world);
         // Detect default portals
         tryCreatePortalLink();
+        // Link inventories if it is a mythic dungeons instance
+        detectMythicDungeonsInstance();
     }
 
     public void onWorldUnload(World world) {
