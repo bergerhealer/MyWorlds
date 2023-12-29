@@ -68,6 +68,7 @@ public class WorldConfig extends WorldConfigStore {
     public boolean advancementsSilent = false;
     public int playerLimit = -1;
     public WorldInventory inventory;
+    private File worldPlayerDataFolderOverride = null;
 
     protected WorldConfig(String worldname) {
         this.worldname = worldname;
@@ -348,6 +349,16 @@ public class WorldConfig extends WorldConfigStore {
         this.defaultEndPortal = PortalDestination.fromConfig(node, "defaultEndPortal");
 
         this.OPlist = node.getList("operators", String.class, this.OPlist);
+
+        // Overrides the player data folder. Used when saving player data when inventories are split.
+        {
+            String playerDataFolderName = node.get("playerDataFolder", "");
+            if (playerDataFolderName.isEmpty()) {
+                this.worldPlayerDataFolderOverride = null;
+            } else {
+                this.worldPlayerDataFolderOverride = new File(playerDataFolderName);
+            }
+        }
     }
 
     public void saveDefault(ConfigurationNode node) {
@@ -362,6 +373,7 @@ public class WorldConfig extends WorldConfigStore {
         node.remove("rejoinGroup");
         node.remove("defaultNetherPortal");
         node.remove("defaultEndPortal");
+        node.remove("playerDataFolder");
     }
 
     public void save(ConfigurationNode node) {
@@ -418,6 +430,8 @@ public class WorldConfig extends WorldConfigStore {
         node.set("advancementsEnabled", this.advancementsEnabled);
         node.set("advancementsSilent", this.advancementsSilent);
         node.set("playerLimit", this.playerLimit);
+        node.set("playerDataFolder", (worldPlayerDataFolderOverride == null)
+                ? "" : worldPlayerDataFolderOverride.toString());
 
         if (this.spawnPoint == null) {
             node.remove("spawn");
@@ -1025,6 +1039,10 @@ public class WorldConfig extends WorldConfigStore {
      * @return Player data folder
      */
     public File getPlayerFolder() {
+        if (worldPlayerDataFolderOverride != null) {
+            return worldPlayerDataFolderOverride;
+        }
+
         World world = getWorld();
         if (world == null) {
             return new File(getWorldFolder(), "playerdata");
