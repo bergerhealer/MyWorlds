@@ -23,6 +23,13 @@ public class Localization extends LocalizationEnum {
     public static final Localization WORLD_NOBREAK = new Localization("world.nobreak", ChatColor.RED + "You are not allowed to break blocks in this world!");
     public static final Localization WORLD_FULL = new Localization("world.full", ChatColor.RED + "World %0% is full!");
     public static final Localization WORLD_JOIN_REMOVED = new Localization("world.joinremoved", ChatColor.RED + "The world you were last on no longer exists!");
+    public static final Localization WORLD_INVENTORY_AFTER_ACTIVATION = new Localization("world.inventory.after_activation",
+                    ChatColor.GREEN + "Use " + ChatColor.WHITE + "/world inventory split" +
+                    ChatColor.GREEN + " and " + ChatColor.WHITE + "/world inventory merge" +
+                    ChatColor.GREEN + " to give worlds their own inventory or combine them again\n" +
+                    ChatColor.GREEN + "If you want to go back to a single vanilla inventory for all, use " +
+                    ChatColor.WHITE + "/world inventory migrate deactivate");
+
     public static final Localization PORTAL_ENTER = new Localization("portal.enter", ChatColor.GREEN + "You teleported to '%0%'!");
     public static final Localization PORTAL_NOTFOUND = new Localization("portal.notfound", ChatColor.RED + "Portal '%0%' was not found!");
     public static final Localization PORTAL_NODESTINATION = new Localization("portal.nodestination", ChatColor.YELLOW + "This portal has no destination!");

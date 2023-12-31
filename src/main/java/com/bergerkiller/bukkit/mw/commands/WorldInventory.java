@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.bergerkiller.bukkit.mw.Localization;
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
@@ -88,13 +89,8 @@ public class WorldInventory extends Command {
                 com.bergerkiller.bukkit.mw.WorldInventory.merge(invWorlds);
                 sendWorldsMessage(invWorlds, "share the same player inventory!");
             }
-
             sender.sendMessage("");
-            message(ChatColor.GREEN + "Use " + ChatColor.WHITE + "/world inventory split" +
-                    ChatColor.GREEN + " and " + ChatColor.WHITE + "/world inventory merge" +
-                    ChatColor.GREEN + " to give worlds their own inventory or combine them again");
-            message(ChatColor.GREEN + "If you want to go back to a single vanilla inventory for all, use " +
-                    ChatColor.WHITE + "/world inventory migrate deactivate");
+            Localization.WORLD_INVENTORY_AFTER_ACTIVATION.message(sender);
             return;
         }
 
