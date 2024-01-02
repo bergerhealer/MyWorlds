@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.block.SignSide;
+import com.bergerkiller.bukkit.common.events.PlayerAdvancementProgressEvent;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.mw.portal.PortalDestinationDebouncer;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;

@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.advancement;
 
+import com.bergerkiller.bukkit.common.Common;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
@@ -40,8 +41,10 @@ public interface AdvancementManager {
      * @return advancement manager
      */
     static AdvancementManager create(MyWorlds plugin) {
-        if (CommonUtil.getClass("org.bukkit.event.player.PlayerAdvancementDoneEvent", false) != null) {
-            return new AdvancementManagerImpl(plugin);
+        if (Common.hasCapability("Common:Event:PlayerAdvancementProgressEvent")) {
+            return new AdvancementManagerUsingProgressEvent(plugin);
+        } else if (CommonUtil.getClass("org.bukkit.event.player.PlayerAdvancementDoneEvent", false) != null) {
+            return new AdvancementManagerUsingRewardDisabler(plugin);
         } else {
             return new AdvancementManagerDisabled();
         }

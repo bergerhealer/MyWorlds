@@ -27,12 +27,12 @@ import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
-public class AdvancementManagerImpl implements AdvancementManager {
+class AdvancementManagerUsingRewardDisabler implements AdvancementManager {
     private final MyWorlds plugin;
     private final Map<Player, Map<NamespacedKey, Collection<String>>> advancements;
     private final boolean hasGameRuleEnum;
 
-    public AdvancementManagerImpl(MyWorlds plugin) {
+    public AdvancementManagerUsingRewardDisabler(MyWorlds plugin) {
         this.plugin = plugin;
         this.advancements = new HashMap<>();
         this.hasGameRuleEnum = CommonUtil.getClass("org.bukkit.GameRule") != null;

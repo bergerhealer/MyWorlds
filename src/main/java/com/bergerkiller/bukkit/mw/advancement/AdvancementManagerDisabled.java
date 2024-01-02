@@ -3,7 +3,7 @@ package com.bergerkiller.bukkit.mw.advancement;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-public class AdvancementManagerDisabled implements AdvancementManager {
+class AdvancementManagerDisabled implements AdvancementManager {
 
     @Override
     public void enable() {
