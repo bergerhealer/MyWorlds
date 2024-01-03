@@ -41,12 +41,12 @@ public interface AdvancementManager {
      * @return advancement manager
      */
     static AdvancementManager create(MyWorlds plugin) {
-        if (Common.hasCapability("Common:Event:PlayerAdvancementProgressEvent")) {
+        if (CommonUtil.getClass("org.bukkit.advancement.Advancement", false) == null) {
+            return new AdvancementManagerDisabled(); // Advancements are not supported
+        } else if (Common.hasCapability("Common:Event:PlayerAdvancementProgressEvent")) {
             return new AdvancementManagerUsingProgressEvent(plugin);
-        } else if (CommonUtil.getClass("org.bukkit.event.player.PlayerAdvancementDoneEvent", false) != null) {
-            return new AdvancementManagerUsingRewardDisabler(plugin);
         } else {
-            return new AdvancementManagerDisabled();
+            return new AdvancementManagerUsingRewardDisabler(plugin);
         }
     }
 }
