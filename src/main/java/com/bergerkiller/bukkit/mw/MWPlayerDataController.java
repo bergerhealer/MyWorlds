@@ -642,11 +642,13 @@ public class MWPlayerDataController extends PlayerDataController {
                 // Load Mob Effects
                 {
                     Map<MobEffectListHandle, MobEffectHandle> effects = playerHandle.getMobEffects();
-                    if (playerData.containsKey("ActiveEffects")) {
-                        CommonTagList taglist = playerData.createList("ActiveEffects");
-                        for (int i = 0; i < taglist.size(); ++i) {
-                            MobEffectHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) taglist.get(i));
-                            effects.put(mobEffect.getEffectList(), mobEffect);
+                    CommonTagList effectsTagList = readPotionEffects(playerData);
+                    if (effectsTagList != null) {
+                        for (int i = 0; i < effectsTagList.size(); ++i) {
+                            MobEffectHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) effectsTagList.get(i));
+                            if (mobEffect != null) {
+                                effects.put(mobEffect.getEffectList(), mobEffect);
+                            }
                         }
                     }
                     playerHandle.setUpdateEffects(true);
@@ -723,7 +725,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 */
 
                 // Remove potion effects
-                savedData.remove("ActiveEffects");
+                clearPotionEffects(savedData);
                 savedData.remove("AbsorptionAmount");
 
                 // Replace health/damage info
@@ -1113,12 +1115,27 @@ public class MWPlayerDataController extends PlayerDataController {
         playerData.remove("Attributes");
         playerData.remove("SelectedItemSlot");
 
-        playerData.remove("ActiveEffects");
+        clearPotionEffects(playerData);
         playerData.putValue("XpLevel", 0);
         playerData.putValue("XpTotal", 0);
         playerData.putValue("XpP", 0.0F);
         playerData.remove("HealF");
         playerData.remove("Health");
+    }
+
+    private static CommonTagList readPotionEffects(CommonTagCompound data) {
+        if (data.containsKey("ActiveEffects")) {
+            return data.createList("ActiveEffects");
+        } else if (data.containsKey("active_effects")) {
+            return data.createList("active_effects");
+        } else {
+            return null;
+        }
+    }
+
+    private static void clearPotionEffects(CommonTagCompound data) {
+        data.remove("ActiveEffects");
+        data.remove("active_effects");
     }
 
     private static void removeInvalidBedSpawn(World world, CommonTagCompound playerData) {
