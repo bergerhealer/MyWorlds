@@ -102,13 +102,28 @@ public class MyWorlds extends PluginBase {
     public static MyWorlds plugin;
 
     private final SoftDependency<MythicDungeonsHelper> mythicDungeons = new SoftDependency<MythicDungeonsHelper>(this, "MythicDungeons", MythicDungeonsHelper.DISABLED) {
+        //@Override // SoftDependency lib v1.03
+        protected boolean identify(Plugin plugin) {
+            return plugin.getClass().getName().equals("net.playavalon.mythicdungeons.MythicDungeons");
+        }
+
         @Override
         protected MythicDungeonsHelper initialize(Plugin plugin) throws Error, Exception {
+            // For backwards support of older bkcl (softdep lib v1.02 and lower)
+            if (!identify(plugin)) {
+                return MythicDungeonsHelper.DISABLED;
+            }
+
             return MythicDungeonsHelper.init(MyWorlds.this, plugin);
         }
 
         @Override
         public void onEnable() {
+            // For backwards support of older bkcl (softdep lib v1.02 and lower)
+            if (get() == MythicDungeonsHelper.DISABLED) {
+                return;
+            }
+
             getLogger().log(Level.INFO, "Mythic Dungeons detected: dungeon instances will automatically share inventory settings");
         }
     };
