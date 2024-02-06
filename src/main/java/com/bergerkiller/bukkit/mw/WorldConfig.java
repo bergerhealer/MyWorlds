@@ -64,7 +64,7 @@ public class WorldConfig extends WorldConfigStore {
     public boolean clearInventory = false;
     public boolean rememberLastPlayerPosition = false;
     public boolean bedRespawnEnabled = true;
-    public boolean advancementsEnabled = true;
+    private boolean advancementsEnabled = true;
     public boolean advancementsSilent = false;
     public int playerLimit = -1;
     public WorldInventory inventory;
@@ -492,6 +492,19 @@ public class WorldConfig extends WorldConfigStore {
         return new Position(this.worldname, 0, 128, 0);
     }
 
+    public boolean isAdvancementsEnabled() {
+        return advancementsEnabled;
+    }
+
+    public void setAdvancementsEnabled(boolean enabled) {
+        if (advancementsEnabled != enabled) {
+            advancementsEnabled = enabled;
+            if (!enabled) {
+                MyWorlds.plugin.getAdvancementManager().notifyAdvancementsDisabledOnWorld();
+            }
+        }
+    }
+
     /**
      * Gets the Spawn location set for this world currently. If none is configured yet,
      * returns what is set by Bukkit.
@@ -702,6 +715,10 @@ public class WorldConfig extends WorldConfigStore {
         tryCreatePortalLink();
         // Link inventories if it is a mythic dungeons instance
         detectMythicDungeonsInstance();
+        // If advancements are disabled on this world, let the advancement manager know
+        if (!advancementsEnabled) {
+            MyWorlds.plugin.getAdvancementManager().notifyAdvancementsDisabledOnWorld();
+        }
     }
 
     public void onWorldUnload(World world) {

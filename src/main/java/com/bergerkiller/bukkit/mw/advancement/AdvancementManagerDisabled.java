@@ -10,6 +10,10 @@ class AdvancementManagerDisabled implements AdvancementManager {
     }
 
     @Override
+    public void notifyAdvancementsDisabledOnWorld() {
+    }
+
+    @Override
     public void cacheAdvancements(Player player) {
     }
 

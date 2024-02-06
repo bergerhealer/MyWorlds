@@ -36,7 +36,6 @@ import com.bergerkiller.bukkit.mw.portal.EntityStasisHandler;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationCooldown;
 import com.bergerkiller.bukkit.mw.portal.handlers.BetterPortalsHandler;
-import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.PluginBase;
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.component.LibraryComponent;

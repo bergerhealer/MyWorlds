@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 class AdvancementManagerUsingProgressEvent implements AdvancementManager {
     private final MyWorlds plugin;
     private final boolean hasGameRuleEnum;
+    private boolean listenerRegistered = false;
 
     public AdvancementManagerUsingProgressEvent(MyWorlds plugin) {
         this.plugin = plugin;
@@ -21,14 +22,22 @@ class AdvancementManagerUsingProgressEvent implements AdvancementManager {
 
     @Override
     public void enable() {
-        plugin.register(new Listener() {
-            @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-            public void onPlayerAdvancementProgress(PlayerAdvancementProgressEvent event) {
-                if (!WorldConfig.get(event.getPlayer()).advancementsEnabled) {
-                    event.setCancelled(true);
+        PlayerAdvancementProgressEvent.getHandlerList(); // Fail if this class doesn't exist or doesn't work
+    }
+
+    @Override
+    public void notifyAdvancementsDisabledOnWorld() {
+        if (!listenerRegistered) {
+            listenerRegistered = true;
+            plugin.register(new Listener() {
+                @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+                public void onPlayerAdvancementProgress(PlayerAdvancementProgressEvent event) {
+                    if (!WorldConfig.get(event.getPlayer()).isAdvancementsEnabled()) {
+                        event.setCancelled(true);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     @Override

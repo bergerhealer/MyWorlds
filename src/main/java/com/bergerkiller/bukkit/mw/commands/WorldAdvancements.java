@@ -20,7 +20,7 @@ public class WorldAdvancements extends Command {
         if (this.handleWorld()) {
             WorldConfig wc = WorldConfig.get(worldname);
             if (args.length > 0 && args[0].equalsIgnoreCase("silent")) {
-                wc.advancementsEnabled = true;
+                wc.setAdvancementsEnabled(true);
                 wc.advancementsSilent = true;
                 {
                     World w = wc.getWorld();
@@ -31,7 +31,7 @@ public class WorldAdvancements extends Command {
                 message(ChatColor.YELLOW + "Players can now get awarded advancements on world '" + worldname + "'!");
                 message(ChatColor.YELLOW + "No messages are sent in chat when this happens.");
             } else if (ParseUtil.isBool((args.length>0)?args[0]:"")) {
-                wc.advancementsEnabled = ParseUtil.parseBool(args[0]);
+                wc.setAdvancementsEnabled(ParseUtil.parseBool(args[0]));
                 wc.advancementsSilent = false;
                 {
                     World w = wc.getWorld();
@@ -39,14 +39,14 @@ public class WorldAdvancements extends Command {
                         wc.updateAdvancements(w);
                     }
                 }
-                if (wc.advancementsEnabled) {
+                if (wc.isAdvancementsEnabled()) {
                     message(ChatColor.YELLOW + "Players can now get awarded advancements on world '" + worldname + "'!");
                 } else {
                     message(ChatColor.YELLOW + "Players will " + ChatColor.RED + "not " + ChatColor.YELLOW +
                             "get awarded new advancements on world '" + worldname + "'!");
                 }
             } else {
-                if (wc.advancementsEnabled) {
+                if (wc.isAdvancementsEnabled()) {
                     message(ChatColor.YELLOW + "Players can get awarded advancements on world '" + worldname + "'!");
                     if (wc.advancementsSilent) {
                         message(ChatColor.YELLOW + "No messages are sent in chat when this happens.");

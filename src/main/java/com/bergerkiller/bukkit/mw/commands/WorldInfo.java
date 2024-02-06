@@ -74,7 +74,7 @@ public class WorldInfo extends Command {
                     message(ChatColor.WHITE + "Remember last pos.: " + ChatColor.GREEN + "No, teleport to spawn point");
                 }
                 //Advancements
-                if (wc.advancementsEnabled) {
+                if (wc.isAdvancementsEnabled()) {
                     message(ChatColor.WHITE+"Advancements: " + ChatColor.GREEN + "Enabled");
                 } else {
                     message(ChatColor.WHITE+"Advancements: " + ChatColor.RED + "Disabled");

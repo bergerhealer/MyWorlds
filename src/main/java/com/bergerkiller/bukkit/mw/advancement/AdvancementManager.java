@@ -34,6 +34,20 @@ public interface AdvancementManager {
     void applyGameRule(World world, boolean enabled);
 
     /**
+     * Called when on some world, advancements are expected to be disabled. When this is called,
+     * the manager can decide to instrument the server to enforce this.<br>
+     * <br>
+     * This makes sure the server isn't being hooked and hacked into unless someone actually
+     * wanted advancements disabled on some world. If that API has bugs in it for one reason or another,
+     * at least not everybody is going to be affected by it.<br>
+     * <br>
+     * This method is called directly after {@link #enable()} if on some world advancements are
+     * disabled. If this is not the case, and the player later on disables advancements anywhere
+     * using a command, then this method is called again.
+     */
+    void notifyAdvancementsDisabledOnWorld();
+
+    /**
      * Creates a new advancement manager relevant for the current server
      * version
      * 

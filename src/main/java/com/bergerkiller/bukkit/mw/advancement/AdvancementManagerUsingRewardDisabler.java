@@ -59,7 +59,7 @@ class AdvancementManagerUsingRewardDisabler implements AdvancementManager {
 
             @EventHandler(priority = EventPriority.MONITOR)
             public void onPlayerAdvancementDone(PlayerAdvancementDoneEvent event) {
-                if (WorldConfig.get(event.getPlayer()).advancementsEnabled) {
+                if (WorldConfig.get(event.getPlayer()).isAdvancementsEnabled()) {
                     award(event.getPlayer(), event.getAdvancement());
                 } else {
                     revoke(event.getPlayer(), event.getAdvancement());
@@ -82,7 +82,7 @@ class AdvancementManagerUsingRewardDisabler implements AdvancementManager {
 
             @Override
             public void onPacketSend(PacketSendEvent event) {
-                if (WorldConfig.get(event.getPlayer()).advancementsEnabled) {
+                if (WorldConfig.get(event.getPlayer()).isAdvancementsEnabled()) {
                     return; // allow regardless
                 }
 
@@ -98,6 +98,10 @@ class AdvancementManagerUsingRewardDisabler implements AdvancementManager {
 
     private static void disableNextGrant_BKCL(Advancement advancement) {
         CommonUtil.disableNextGrant(advancement);
+    }
+
+    @Override
+    public void notifyAdvancementsDisabledOnWorld() {
     }
 
     @Override
