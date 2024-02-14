@@ -781,6 +781,12 @@ public class MWPlayerDataController extends PlayerDataController {
 
     @Override
     public CommonTagCompound onLoad(final Player player) {
+        // If this is an openinv player, then we must not do the usual world-specific loading as that causes glitches
+        // In that case, load the default vanilla way to avoid trouble.
+        if (player.getClass().getName().startsWith("com.lishid.openinv.")) {
+            return super.onLoad(player);
+        }
+
         synchronized (getLock(player)) {
             try {
                 final PlayerDataFileCollection files = new PlayerDataFileCollection(player, player.getWorld());
