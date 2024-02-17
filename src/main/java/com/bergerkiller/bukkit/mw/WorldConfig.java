@@ -848,7 +848,11 @@ public class WorldConfig extends WorldConfigStore {
         }
     }
     public void updateAdvancements(World world) {
-        MyWorlds.plugin.getAdvancementManager().applyGameRule(world, this.advancementsEnabled && !this.advancementsSilent);
+        try {
+            MyWorlds.plugin.getAdvancementManager().applyGameRule(world, this.advancementsEnabled && !this.advancementsSilent);
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to update advancements enabled setting for world " + world.getName(), t);
+        }
     }
 
     /**
