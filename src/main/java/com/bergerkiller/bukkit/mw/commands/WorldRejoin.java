@@ -60,11 +60,12 @@ public class WorldRejoin extends Command {
                 }
             }
             if (player != null) {
-                WorldManager.teleportToExact(player, WorldManager.getPlayerRejoinPosition(player, world), (entity, to) -> new MyWorldsTeleportCommandEvent(
-                        entity,
-                        MyWorldsTeleportCommandEvent.CommandType.REJOIN,
-                        to
-                ));
+                WorldManager.teleportToExactAsync(player, WorldManager.getPlayerRejoinPosition(player, world),
+                        (entity, to) -> new MyWorldsTeleportCommandEvent(
+                                entity,
+                                MyWorldsTeleportCommandEvent.CommandType.REJOIN,
+                                to)
+                );
             }
         }
     }

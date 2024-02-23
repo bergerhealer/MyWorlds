@@ -1,6 +1,7 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.block.SignSide;
@@ -141,6 +142,33 @@ public class Portal extends PortalStore {
     }
 
     /**
+     * Asynchronously loads the destination.
+     * Teleports an Entity to the location of this Portal.
+     *
+     * @param entity to teleport
+     * @return Future completed with True if successful, False if not
+     */
+    public CompletableFuture<Boolean> teleportSelfAsync(Entity entity) {
+        return teleportSelfAsync(entity, null);
+    }
+
+    /**
+     * Asynchronously loads the destination.
+     * Teleports an Entity to the location of this Portal.
+     *
+     * @param entity to teleport
+     * @param eventFactory Creates a MyWorlds event fired before teleporting
+     * @return Future completed with True if successful, False if not
+     */
+    public CompletableFuture<Boolean> teleportSelfAsync(Entity entity, MyWorldsTeleportEvent.Factory eventFactory) {
+        if (entity instanceof Player) {
+            MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
+        }
+        Location loc = Util.spawnOffset(this.getLocation(), entity);
+        return WorldManager.teleportToExactAsync(entity, loc, eventFactory);
+    }
+
+    /**
      * Teleports an Entity to the location of this Portal
      *
      * @param entity to teleport
@@ -162,6 +190,8 @@ public class Portal extends PortalStore {
             MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
         }
         Location loc = Util.spawnOffset(this.getLocation(), entity);
+
+        //TODO: Should we use WorldManager.teleportToExact?
         if (eventFactory != null) {
             MyWorldsTeleportEvent event = eventFactory.create(entity, loc);
             if (event != null) {

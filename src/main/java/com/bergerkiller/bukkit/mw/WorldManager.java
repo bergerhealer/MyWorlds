@@ -6,12 +6,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import java.util.zip.ZipException;
 
+import com.bergerkiller.bukkit.common.chunk.ForcedChunk;
+import com.bergerkiller.bukkit.common.utils.MathUtil;
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportEvent;
 import org.bukkit.Bukkit;
@@ -23,6 +26,7 @@ import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -618,6 +622,60 @@ public class WorldManager {
         }
 
         /**
+         * Asynchronously loads the destination, then attempts to teleport the player to it. Relevant events
+         * are fired before teleporting starts, which might cause the single chunk at the location to load
+         * synchronously.
+         *
+         * @param player Player to teleport
+         * @param eventFactory Handles a myworlds teleport event before teleportation commences
+         * @return Future completed with True if successful, or False if not.
+         */
+        public CompletableFuture<Boolean> teleportAsync(Player player, MyWorldsTeleportEvent.Factory eventFactory) {
+            if (type == WorldSpawnLocation.Type.LAST_POSITION) {
+                return teleportToExactAsync(player, location, eventFactory);
+            }
+
+            Location loc = location.clone();
+            if (eventFactory != null) {
+                MyWorldsTeleportEvent event = eventFactory.create(player, loc);
+                if (event != null) {
+                    if (CommonUtil.callEvent(event).isCancelled()) {
+                        return CompletableFuture.completedFuture(Boolean.FALSE);
+                    }
+                    loc = event.getTo();
+                }
+            }
+
+            final Location locCopy = loc;
+            return loadChunksAsync(locCopy, 3).thenApply(u -> EntityUtil.teleport(player, locCopy));
+        }
+
+        /**
+         * Teleports a player to this spawn location
+         *
+         * @param player Player to teleport
+         * @param eventFactory Handles a myworlds teleport event before teleportation commences
+         * @return True if successful, False if not
+         */
+        public boolean teleport(Player player, MyWorldsTeleportEvent.Factory eventFactory) {
+            if (type == WorldSpawnLocation.Type.LAST_POSITION) {
+                return teleportToExact(player, location, eventFactory);
+            }
+
+            Location loc = location.clone();
+            if (eventFactory != null) {
+                MyWorldsTeleportEvent event = eventFactory.create(player, loc);
+                if (event != null) {
+                    if (CommonUtil.callEvent(event).isCancelled()) {
+                        return false;
+                    }
+                    loc = event.getTo();
+                }
+            }
+            return EntityUtil.teleport(player, loc);
+        }
+
+        /**
          * Type of world spawn location
          */
         public static enum Type {
@@ -631,21 +689,58 @@ public class WorldManager {
     }
 
     /**
-     * Teleports a player to a destination location. If the location is solid,
-     * and the teleportation is cross-world, normally the player is teleported
-     * away to a safe place. If this happens, a second teleport is done to
-     * put the player back at the 'unsafe' location.
+     * Asynchronously loads the destination, then performs the same logic as
+     * {@link #teleportToExact(Entity, Location)}
      *
-     * This extra logic is important when players rejoin a world at their
-     * last-known location, otherwise certain block glitches allow them to
-     * teleport upwards.
-     *
-     * @param player The player to teleport
+     * @param entity The entity to teleport
      * @param destination Destination location to teleport to
-     * @return True if the teleport succeeded, False if not
+     * @return Future completed with True if the teleport succeeded, False if not
      */
-    public static boolean teleportToExact(Player player, Location destination) {
-        return teleportToExact(player, destination, null);
+    public static CompletableFuture<Boolean> teleportToExactAsync(Entity entity, Location destination) {
+        return teleportToExactAsync(entity, destination, null);
+    }
+
+    /**
+     * Asynchronously loads the destination, then performs the same logic as
+     * {@link #teleportToExact(Entity, Location, MyWorldsTeleportEvent.Factory)}
+     *
+     * @param entity The Entity to teleport
+     * @param destination Destination location to teleport to
+     * @param eventFactory Handles a myworlds teleport event before teleportation commences
+     * @return Future completed with True if the teleport succeeded, False if not
+     */
+    public static CompletableFuture<Boolean> teleportToExactAsync(Entity entity, Location destination, MyWorldsTeleportEvent.Factory eventFactory) {
+        destination = destination.clone(); // Safety, people can muck with teleport events
+
+        if (eventFactory != null) {
+            MyWorldsTeleportEvent event = eventFactory.create(entity, destination);
+            if (event != null) {
+                if (CommonUtil.callEvent(event).isCancelled()) {
+                    return CompletableFuture.completedFuture(Boolean.FALSE);
+                }
+                destination = event.getTo();
+            }
+        }
+
+        final Location destinationCopy = destination;
+        return loadChunksAsync(destination, 3).thenApply(u -> {
+            if (entity.isDead() || (entity instanceof Player && !((Player) entity).isOnline())) {
+                return false;
+            }
+
+            boolean crossWorlds = (destinationCopy.getWorld() != entity.getWorld());
+
+            if (!EntityUtil.teleport(entity, destinationCopy)) {
+                return false;
+            }
+            if (crossWorlds &&
+                    entity.getWorld() == destinationCopy.getWorld() &&
+                    !entity.getLocation().equals(destinationCopy)
+            ) {
+                entity.teleport(destinationCopy);
+            }
+            return true;
+        });
     }
 
     /**
@@ -658,16 +753,34 @@ public class WorldManager {
      * last-known location, otherwise certain block glitches allow them to
      * teleport upwards.
      *
-     * @param player The player to teleport
+     * @param entity The entity to teleport
+     * @param destination Destination location to teleport to
+     * @return True if the teleport succeeded, False if not
+     */
+    public static boolean teleportToExact(Entity entity, Location destination) {
+        return teleportToExact(entity, destination, null);
+    }
+
+    /**
+     * Teleports a player to a destination location. If the location is solid,
+     * and the teleportation is cross-world, normally the player is teleported
+     * away to a safe place. If this happens, a second teleport is done to
+     * put the player back at the 'unsafe' location.
+     *
+     * This extra logic is important when players rejoin a world at their
+     * last-known location, otherwise certain block glitches allow them to
+     * teleport upwards.
+     *
+     * @param entity The entity to teleport
      * @param destination Destination location to teleport to
      * @param eventFactory Handles a myworlds teleport event before teleportation commences
      * @return True if the teleport succeeded, False if not
      */
-    public static boolean teleportToExact(Player player, Location destination, MyWorldsTeleportEvent.Factory eventFactory) {
+    public static boolean teleportToExact(Entity entity, Location destination, MyWorldsTeleportEvent.Factory eventFactory) {
         destination = destination.clone(); // Safety, people can muck with teleport events
 
         if (eventFactory != null) {
-            MyWorldsTeleportEvent event = eventFactory.create(player, destination);
+            MyWorldsTeleportEvent event = eventFactory.create(entity, destination);
             if (event != null) {
                 if (CommonUtil.callEvent(event).isCancelled()) {
                     return false;
@@ -676,15 +789,15 @@ public class WorldManager {
             }
         }
 
-        boolean crossWorlds = (destination.getWorld() != player.getWorld());
-        if (!EntityUtil.teleport(player, destination)) {
+        boolean crossWorlds = (destination.getWorld() != entity.getWorld());
+        if (!EntityUtil.teleport(entity, destination)) {
             return false;
         }
         if (crossWorlds &&
-                player.getWorld() == destination.getWorld() &&
-                !player.getLocation().equals(destination)
+                entity.getWorld() == destination.getWorld() &&
+                !entity.getLocation().equals(destination)
         ) {
-            player.teleport(destination);
+            entity.teleport(destination);
         }
         return true;
     }
@@ -715,22 +828,8 @@ public class WorldManager {
      * @return True if successful, False if not
      */
     public static boolean teleportToWorld(Player player, World world, MyWorldsTeleportEvent.Factory eventFactory) {
-        WorldSpawnLocation spawn = getPlayerWorldSpawn(player, world, false);
-        if (spawn.type == WorldSpawnLocation.Type.LAST_POSITION) {
-            return teleportToExact(player, spawn.location, eventFactory);
-        }
-
-        Location loc = spawn.location.clone();
-        if (eventFactory != null) {
-            MyWorldsTeleportEvent event = eventFactory.create(player, loc);
-            if (event != null) {
-                if (CommonUtil.callEvent(event).isCancelled()) {
-                    return false;
-                }
-                loc = event.getTo();
-            }
-        }
-        return EntityUtil.teleport(player, loc);
+        return getPlayerWorldSpawn(player, world, false)
+                .teleport(player, eventFactory);
     }
 
     /**
@@ -744,6 +843,47 @@ public class WorldManager {
         for (Player p : from.getPlayers().toArray(new Player[0])) {
             teleportToWorld(p, to);
         }
+    }
+
+    /**
+     * Same as {@link WorldUtil#loadChunks(Location, int)} but asynchronous
+     *
+     * @param center Center location
+     * @param chunkRadius Radius around center chunk in chunk size
+     * @return Future completed when chunks are loaded, completed on main thread.
+     *         After handling the chunks are allowed to unload again.
+     */
+    public static CompletableFuture<Void> loadChunksAsync(Location center, int chunkRadius) {
+        // Start loading all chunks asynchronously
+        List<ForcedChunk> chunks = new ArrayList<>((chunkRadius*2+1) * (chunkRadius*2+1));
+        int xmid = MathUtil.toChunk(center.getX());
+        int zmid = MathUtil.toChunk(center.getZ());
+        for(int cx = xmid - chunkRadius; cx <= xmid + chunkRadius; ++cx) {
+            for(int cz = zmid - chunkRadius; cz <= zmid + chunkRadius; ++cz) {
+                chunks.add(WorldUtil.forceChunkLoaded(center.getWorld(), cx, cz));
+            }
+        }
+
+        // Collect all futures and do an all() on it
+        CompletableFuture<Void> whenLoaded = CompletableFuture.allOf(chunks.stream()
+                .map(ForcedChunk::getChunkAsync)
+                .toArray(CompletableFuture[]::new));
+
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        whenLoaded.handle((v, err) -> {
+            try {
+                if (err != null) {
+                    future.completeExceptionally(err);
+                } else {
+                    future.complete(v);
+                }
+            } finally {
+                chunks.forEach(ForcedChunk::close);
+                chunks.clear();
+            }
+            return null;
+        });
+        return future;
     }
 
     /**

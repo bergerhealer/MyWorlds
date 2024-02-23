@@ -1,7 +1,9 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
@@ -59,90 +61,96 @@ public class TeleportPortal extends Command {
     }
 
     public void execute() {
+        if (args.length < 1) {
+            showInv();
+            return;
+        }
+
+        String dest = this.removeArg(0);
+        Player[] targets;
         if (args.length >= 1) {
-            String dest = this.removeArg(0);
-            Player[] targets = null;
-            if (args.length >= 1) {
-                HashSet<Player> found = new HashSet<Player>();
-                for (String arg : args) {
-                    Player player = Util.parsePlayerName(this.sender, arg);
-                    if (player != null) {
-                        found.add(player);
-                    }
+            HashSet<Player> found = new HashSet<Player>();
+            for (String arg : args) {
+                Player player = Util.parsePlayerName(this.sender, arg);
+                if (player != null) {
+                    found.add(player);
                 }
-                targets = found.toArray(new Player[0]);
-            } else if (sender instanceof Player) {
-                targets = new Player[] {(Player) sender};
-            } else {
-                sender.sendMessage("This command is only for players!");
+            }
+            targets = found.toArray(new Player[0]);
+            if (targets.length == 0) {
                 return;
             }
-            if (targets.length > 0) {
-                //Get prefered world
-                World world = targets[0].getWorld();
-                if (player != null) world = player.getWorld();
-                //Get portal
-                Location signLocation = Portal.getPortalLocation(dest, world.getName());
-                if (signLocation != null) {
-                    final Portal portal = Portal.getNear(signLocation, 3);
-                    if (portal != null) {
-                        //Perform portal teleports
-                        int succcount = 0;
-                        for (Player target : targets) {
-                            if (portal.teleportSelf(target, (entity, loc) -> new MyWorldsTeleportCommandEvent(
-                                    entity,
-                                    MyWorldsTeleportCommandEvent.CommandType.TELEPORT_PORTAL,
-                                    loc,
-                                    portal.getName()
-                            ))) {
-                                //Success
-                                succcount++;
-                            }
-                        }
-                        if (targets.length > 1 || targets[0] != sender) {
-                            message(ChatColor.YELLOW.toString() + succcount + "/" + targets.length + 
-                                    " Players have been teleported to portal '" + dest + "'!");
-                        }
-                    } else {
-                        message(ChatColor.RED + "The portal world is not loaded!");
-                    }
-                } else {
-                    //Match world
-                    String worldname = WorldManager.matchWorld(dest);
-                    if (worldname != null) {
-                        World w = WorldManager.getWorld(worldname);
-                        if (w != null) {
-                            //Perform world teleports
-                            int succcount = 0;
-                            for (Player target : targets) {
-                                if (WorldManager.teleportToWorld(target, w, (entity, loc) -> new MyWorldsTeleportCommandEvent(
-                                        entity,
-                                        MyWorldsTeleportCommandEvent.CommandType.TELEPORT_WORLD,
-                                        loc
-                                ))) {
-                                    //Success
-                                    succcount++;
-                                }
-                            }
+        } else if (sender instanceof Player) {
+            targets = new Player[] {(Player) sender};
+        } else {
+            sender.sendMessage("This command is only for players!");
+            return;
+        }
 
-                            // Show message, but don't if only the sender was teleported
-                            // He already receives an enter message by the teleport listener
-                            if (targets.length > 1 || targets[0] != sender) {
-                                message(ChatColor.YELLOW.toString() + succcount + "/" + targets.length + 
-                                        " Players have been teleported to world '" + w.getName() + "'!");
-                            }
-                        } else {
-                            message(ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
-                        }
-                    } else {
-                        Localization.PORTAL_NOTFOUND.message(sender, dest);
-                        listPortals(Portal.getPortals());
-                    }
+        //Get prefered world
+        World world = targets[0].getWorld();
+        if (player != null) world = player.getWorld();
+        //Get portal
+        Location signLocation = Portal.getPortalLocation(dest, world.getName());
+        if (signLocation != null) {
+            final Portal portal = Portal.getNear(signLocation, 3);
+            if (portal != null) {
+                final List<CompletableFuture<Boolean>> tpFutures = new ArrayList<>();
+                for (Player target : targets) {
+                    CompletableFuture<Boolean> tpFuture = portal.teleportSelfAsync(target, (entity, loc) -> new MyWorldsTeleportCommandEvent(
+                            entity,
+                            MyWorldsTeleportCommandEvent.CommandType.TELEPORT_PORTAL,
+                            loc,
+                            portal.getName()
+                    ));
                 }
+                if (targets.length > 1 || targets[0] != sender) {
+                    Util.whenAllOf(tpFutures)
+                            .thenApply(results -> results.stream().mapToInt(success -> success ? 1 : 0).sum())
+                            .thenAccept(succCount -> {
+                                message(ChatColor.YELLOW.toString() + succCount + "/" + targets.length +
+                                        " Players have been teleported to portal '" + dest + "'!");
+                            });
+                }
+            } else {
+                message(ChatColor.RED + "The portal world is not loaded!");
             }
         } else {
-            showInv();
-        }    
+            //Match world
+            String worldname = WorldManager.matchWorld(dest);
+            if (worldname != null) {
+                World w = WorldManager.getWorld(worldname);
+                if (w != null) {
+                    //Perform world teleports
+                    final List<CompletableFuture<Boolean>> tpFutures = new ArrayList<>();
+                    for (Player target : targets) {
+                        WorldManager.WorldSpawnLocation spawnLoc = WorldManager.getPlayerWorldSpawn(target, w, false);
+                        CompletableFuture<Boolean> tpFuture = spawnLoc.teleportAsync(target, (entity, loc) -> new MyWorldsTeleportCommandEvent(
+                                entity,
+                                MyWorldsTeleportCommandEvent.CommandType.TELEPORT_WORLD,
+                                loc
+                        ));
+                        tpFutures.add(tpFuture);
+                    }
+
+                    // Show message, but don't if only the sender was teleported
+                    // He already receives an enter message by the teleport listener
+                    if (targets.length > 1 || targets[0] != sender) {
+                        Util.whenAllOf(tpFutures)
+                                .thenApply(results -> results.stream().mapToInt(success -> success ? 1 : 0).sum())
+                                .thenAccept(succCount -> {
+                                    message(ChatColor.YELLOW.toString() + succCount + "/" + targets.length +
+                                            " Players have been teleported to world '" + w.getName() + "'!");
+                                });
+                    }
+                } else {
+                    message(ChatColor.YELLOW + "World '" + worldname + "' is not loaded!");
+                }
+            } else {
+                Localization.PORTAL_NOTFOUND.message(sender, dest);
+                listPortals(Portal.getPortals());
+            }
+        }
     }
 
     @Override

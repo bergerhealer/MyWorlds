@@ -1,9 +1,14 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import com.bergerkiller.bukkit.common.MaterialBooleanProperty;
 import org.bukkit.Bukkit;
@@ -330,5 +335,42 @@ public class Util {
         } else {
             return String.format("%d:%02d %s", (hours % 12) == 0 ? 12 : hours % 12, minutes, hours < 12 ? "am" : "pm");
         }
+    }
+
+    /**
+     * A less shit version of {@link CompletableFuture#allOf(CompletableFuture[])} that supports collections
+     * and returns the results of all futures.
+     *
+     * @param futures Futures
+     * @return Future completed once all futures complete, or one of them completes exceptionally
+     * @param <T> Type
+     */
+    public static <T> CompletableFuture<Collection<T>> whenAllOf(Collection<CompletableFuture<T>> futures) {
+        if (futures.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+
+        final CompletableFuture<T>[] futuresArr = futures.toArray(new CompletableFuture[0]);
+        final CompletableFuture<Collection<T>> all = new CompletableFuture<>();
+        CompletableFuture.allOf(futuresArr)
+                .handle((v, err) -> {
+                    if (err != null) {
+                        all.completeExceptionally(err);
+                        return null;
+                    }
+
+                    List<T> results = new ArrayList<>(futuresArr.length);
+                    for (CompletableFuture<T> future : futuresArr) {
+                        try {
+                            results.add(future.get());
+                        } catch (Throwable t) {
+                            all.completeExceptionally(t);
+                            return null;
+                        }
+                    }
+                    all.complete(results);
+                    return null;
+                });
+        return all;
     }
 }
