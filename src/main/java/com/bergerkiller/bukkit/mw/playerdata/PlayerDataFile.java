@@ -87,6 +87,17 @@ public class PlayerDataFile {
         data.writeToFile(file, true);
     }
 
+    public boolean updateIfExists(DataUpdater updater) throws IOException {
+        CommonTagCompound data = readIfExists();
+        if (data == null) {
+            return false;
+        }
+
+        updater.update(data);
+        write(data);
+        return true;
+    }
+
     public void update(Player player, DataUpdater updater) throws IOException {
         CommonTagCompound data = read(player);
         updater.update(data);

@@ -9,6 +9,7 @@ import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.mw.playerdata.InventoryEditRecovery;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataBootstrap;
 import com.bergerkiller.mountiplex.reflection.resolver.Resolver;
 import org.bukkit.Bukkit;
@@ -77,6 +78,11 @@ public class MWPlayerDataController extends PlayerDataController {
     public static final String LEGACY_DATA_TAG_LASTPOS = "MyWorlds.playerPos";
     public static final String LEGACY_DATA_TAG_LASTROT = "MyWorlds.playerRot";
     public static final String LEGACY_DATA_TAG_LASTWORLD = "MyWorlds.playerWorld";
+
+    /**
+     * The data tag below which player inventory data is saved
+     */
+    public static final String VANILLA_INVENTORY_TAG = "Inventory";
 
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
 
@@ -578,7 +584,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 }
 
                 // Load the data
-                NBTUtil.loadInventory(player.getInventory(), playerData.createList("Inventory"));
+                NBTUtil.loadInventory(player.getInventory(), playerData.createList(VANILLA_INVENTORY_TAG));
                 player.getInventory().setHeldItemSlot(playerData.getValue("SelectedItemSlot", 0));
                 playerHandle.setExp(playerData.getValue("XpP", 0.0f));
                 playerHandle.setExpLevel(playerData.getValue("XpLevel", 0));
@@ -783,8 +789,9 @@ public class MWPlayerDataController extends PlayerDataController {
     public CommonTagCompound onLoad(final Player player) {
         // If this is an openinv player, then we must not do the usual world-specific loading as that causes glitches
         // In that case, load the default vanilla way to avoid trouble.
+        boolean loadedByInventoryEditor = false;
         if (player.getClass().getName().startsWith("com.lishid.openinv.")) {
-            return super.onLoad(player);
+            loadedByInventoryEditor = true;
         }
 
         synchronized (getLock(player)) {
@@ -803,6 +810,18 @@ public class MWPlayerDataController extends PlayerDataController {
                 CommonTagCompound mainWorldData = null;
                 CommonTagCompound playerData = null;
                 if (hasPlayedBefore) {
+                    mainWorldData = files.mainWorldFile.read(player);
+                    playerData = mainWorldData; // Changed later if needed
+                }
+
+                // If player data was inventory edited, recover the original data of this world stored in a separate MyWorlds tag.
+                // Write the original data back to the vanilla world, and apply the inventory-edited modified contents
+                // to the world this was meant for.
+                // If any of this happens, reload the main world file which may have changed
+                //
+                // There is no need to do this when the inventory editor itself opens the file. In that case, we're
+                // already safekeeping the recovery metadata.
+                if (!loadedByInventoryEditor && InventoryEditRecovery.recoverInventoryData(player, mainWorldData)) {
                     mainWorldData = files.mainWorldFile.read(player);
                     playerData = mainWorldData; // Changed later if needed
                 }
@@ -970,6 +989,14 @@ public class MWPlayerDataController extends PlayerDataController {
                     }
                 }
 
+                // Track whether this inventory was inventory edited
+                if (loadedByInventoryEditor) {
+                    InventoryEditRecovery.writeInventoryRecoveryData(files, mainWorldData, playerData);
+                    InventoryEditRecovery.writeEditedInventoryWorld(playerData, files.currentFile.world.worldname);
+                } else {
+                    InventoryEditRecovery.clearEditedInventoryWorld(playerData);
+                }
+
                 return playerData;
             } catch (Throwable t) {
                 plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
@@ -1115,7 +1142,7 @@ public class MWPlayerDataController extends PlayerDataController {
             CommonTagList emptyInventory = new CommonTagList();
             emptyInventory.add(new CommonTagCompound());
             emptyInventory.remove(0);
-            playerData.put("Inventory", emptyInventory);
+            playerData.put(VANILLA_INVENTORY_TAG, emptyInventory);
         }
 
         playerData.remove("Attributes");
