@@ -72,8 +72,15 @@ public class InventoryEditRecovery {
         // Recover the original data of this world
         if (WorldConfig.getVanillaMain() == WorldConfig.getInventoryMain()) {
             // Same main, include it as data we send back to the inventory editing plugin
-            playerData.createCompound(MWPlayerDataController.DATA_TAG_ROOT)
-                    .put(DATA_TAG_INV_EDIT_RECOVERY, mainWorldData);
+            if (playerData == mainWorldData) {
+                // Note: I don't think this can ever happen. But if it did, it would be disastrous
+                // to create a circular reference. Better safe than sorry!
+                playerData.createCompound(MWPlayerDataController.DATA_TAG_ROOT)
+                        .put(DATA_TAG_INV_EDIT_RECOVERY, mainWorldData.clone());
+            } else {
+                playerData.createCompound(MWPlayerDataController.DATA_TAG_ROOT)
+                        .put(DATA_TAG_INV_EDIT_RECOVERY, mainWorldData);
+            }
         } else {
             // Different main, update the main world ourselves
             // Read the original vanilla world player file data
