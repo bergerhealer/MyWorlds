@@ -83,6 +83,10 @@ public class MWPlayerDataController extends PlayerDataController {
      * The data tag below which player inventory data is saved
      */
     public static final String VANILLA_INVENTORY_TAG = "Inventory";
+    /**
+     * The data tag below which player ender chest inventory data is saved
+     */
+    public static final String VANILLA_ENDER_CHEST_TAG = "EnderItems";
 
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
 
@@ -637,7 +641,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 playerHandle.setSpawnForced(playerData.getValue("SpawnForced", false));
 
                 NBTUtil.loadFoodMetaData(playerHandle.getFoodDataRaw(), playerData);
-                NBTUtil.loadInventory(player.getEnderChest(), playerData.createList("EnderItems"));
+                NBTUtil.loadInventory(player.getEnderChest(), playerData.createList(VANILLA_ENDER_CHEST_TAG));
 
                 if (playerData.containsKey("playerGameType")) {
                     player.setGameMode(GameMode.getByValue(playerData.getValue("playerGameType", 1)));

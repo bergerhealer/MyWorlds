@@ -135,8 +135,13 @@ public class InventoryEditRecovery {
             if (editedWorldConfig != null) {
                 PlayerDataFile editedWorldPlayerDataFile = new PlayerDataFile(player, editedWorldConfig);
                 editedWorldPlayerDataFile.updateIfExists(data -> {
-                    data.put(MWPlayerDataController.VANILLA_INVENTORY_TAG,
-                            vanillaEditedData.createList(MWPlayerDataController.VANILLA_INVENTORY_TAG));
+                    for (String tag : new String[] {
+                            MWPlayerDataController.VANILLA_INVENTORY_TAG,
+                            MWPlayerDataController.VANILLA_ENDER_CHEST_TAG
+                    }) {
+                        data.put(tag,
+                                vanillaEditedData.createList(tag));
+                    }
                 });
             }
         }
