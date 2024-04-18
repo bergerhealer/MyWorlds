@@ -1,6 +1,8 @@
 package com.bergerkiller.bukkit.mw.mythicdungeons;
 
+import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
+import com.bergerkiller.mountiplex.reflection.util.FastField;
 import net.playavalon.mythicdungeons.MythicDungeons;
 import net.playavalon.mythicdungeons.dungeons.Dungeon;
 import net.playavalon.mythicdungeons.dungeons.Instance;
@@ -16,28 +18,7 @@ import java.util.logging.Level;
  * Uses the mythic dungeons API for some extra integrations in MyWorlds
  */
 public interface MythicDungeonsHelper {
-    MythicDungeonsHelper DISABLED = new MythicDungeonsHelper() {
-        @Override
-        public World getEditSession(World world) {
-            return null;
-        }
-
-        @Override
-        public List<World> getSameDungeonWorlds(World world) {
-            return Collections.emptyList();
-        }
-    };
-
-    /**
-     * Asks Mythic Dungeon whether the World is a dungeon, and if it is, checks if
-     * the world specified is an instance. If it is, and it is not the edit session
-     * world, then looks up the associated dungeon and returns the edit session world.
-     *
-     * @param world World
-     * @return Edit Session world of the same dungeon, if World is a dungeon instance.
-     *         Null if the world isn't a mythic dungeons instance.
-     */
-    World getEditSession(World world);
+    MythicDungeonsHelper DISABLED = world -> Collections.emptyList();
 
     /**
      * Asks Mythic Dungeon whether the World is a dungeon, and if it is, returns all
@@ -55,34 +36,37 @@ public interface MythicDungeonsHelper {
         final MythicDungeons mythicDungeons = (MythicDungeons) plugin;
         mythicDungeons.getActiveInstances(); // We need this API to exist, so call it to verify
 
-        return new MythicDungeonsHelper() {
-            @Override
-            public World getEditSession(World world) {
-                try {
-                    for (Instance instance : mythicDungeons.getActiveInstances()) {
-                        if (instance.getInstanceWorld() == world) {
-                            Instance editInstance = instance.getDungeon().getEditSession();
-                            if (editInstance != null) {
-                                World w = editInstance.getInstanceWorld();
-                                if (w != null && w != world) {
-                                    return w;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                } catch (Throwable t) {
-                    myworlds.getLogger().log(Level.SEVERE, "Failed to check whether world is a mythic dungeons world", t);
-                }
-                return null;
+        // We need to read the instance name field to know the name of the world before the world loads in
+        // Instance world is null during this and cannot be used
+        // If this fails (code changes?) then hopefully/maybe the next-tick task will fix it.
+        FastField<String> instanceNameField = LogicUtil.tryCreate(() -> {
+            FastField<String> f = new FastField<>(Instance.class.getDeclaredField("instName"));
+            if (!f.getField().getType().equals(String.class)) {
+                throw new IllegalStateException("Instance name field is invalid");
             }
+            return f;
+        }, err -> {
+            myworlds.getLogger().log(Level.SEVERE, "Failed to identify mythic dungeons instance name field. Might be buggy!", err);
+            return null;
+        });
 
+        return new MythicDungeonsHelper() {
             @Override
             public List<World> getSameDungeonWorlds(World world) {
                 try {
                     for (Instance instance : mythicDungeons.getActiveInstances()) {
-                        if (instance.getInstanceWorld() != world) {
-                            continue;
+                        if (instance.getInstanceWorld() == null) {
+                            if (instanceNameField == null) {
+                                continue;
+                            }
+                            String name = instanceNameField.get(instance);
+                            if (name == null || !world.getName().equals(name)) {
+                                continue;
+                            }
+                        } else {
+                            if (instance.getInstanceWorld() != world) {
+                                continue;
+                            }
                         }
 
                         Dungeon dungeon = instance.getDungeon();

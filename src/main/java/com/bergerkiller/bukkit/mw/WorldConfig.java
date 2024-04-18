@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -159,11 +160,14 @@ public class WorldConfig extends WorldConfigStore {
         // If this is the edit session then the api returns null.
         World w = getWorld();
         if (w != null) {
-            World editSessionWorld = MyWorlds.plugin.getMythicDungeonsHelper().getEditSession(w);
-            if (editSessionWorld != null) {
-                WorldConfig editSessionConfig = get(editSessionWorld);
-                editSessionConfig.inventory.add(this.worldname);
-            }
+            // Find the other dungeon world with the most shared inventories in common
+            // If found, merge this world's inventory with it
+            MyWorlds.plugin.getMythicDungeonsHelper().getSameDungeonWorlds(w).stream()
+                    .map(WorldConfig::get)
+                    .map(wc -> wc.inventory)
+                    .distinct()
+                    .max(Comparator.comparing(inv -> inv.getWorlds().size()))
+                    .ifPresent(inventory -> inventory.add(this.worldname));
         }
     }
 
@@ -714,7 +718,9 @@ public class WorldConfig extends WorldConfigStore {
         // Detect default portals
         tryCreatePortalLink();
         // Link inventories if it is a mythic dungeons instance
+        // Also run this next-tick, just in case the instance isn't initialized yet during world load.
         detectMythicDungeonsInstance();
+        CommonUtil.nextTick(() -> detectMythicDungeonsInstance());
         // If advancements are disabled on this world, let the advancement manager know
         if (!advancementsEnabled) {
             MyWorlds.plugin.getAdvancementManager().notifyAdvancementsDisabledOnWorld();
