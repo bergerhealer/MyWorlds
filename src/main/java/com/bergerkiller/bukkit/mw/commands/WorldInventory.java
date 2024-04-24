@@ -27,9 +27,11 @@ public class WorldInventory extends Command {
     public boolean prepareWorlds() {
         this.removeArg(0);
         for (String world : this.args) {
-            world = WorldManager.matchWorld(world);
-            if (world != null) {
-                this.worlds.add(world);
+            String matchedWorld = WorldManager.matchWorld(world);
+            if (matchedWorld != null) {
+                this.worlds.add(matchedWorld);
+            } else {
+                message(ChatColor.RED + "World does not exist: '" + world + "'");
             }
         }
         if (this.worlds.isEmpty()) {
