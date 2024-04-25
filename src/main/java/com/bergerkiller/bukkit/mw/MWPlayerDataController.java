@@ -746,6 +746,10 @@ public class MWPlayerDataController extends PlayerDataController {
                     savedData.remove("HealF");
                 }
                 savedData.putValue("Health", (float) playerEntity.getMaxHealth());
+                savedData.putValue("foodLevel", 20);
+                savedData.putValue("foodTickTimer", 0);
+                savedData.putValue("foodExhaustionLevel", 0.0f);
+                savedData.putValue("foodSaturationLevel", 5.0f);
                 savedData.putValue("HurtTime", (short) 0);
                 savedData.putValue("DeathTime", (short) 0);
                 savedData.putValue("AttackTime", (short) 0);
