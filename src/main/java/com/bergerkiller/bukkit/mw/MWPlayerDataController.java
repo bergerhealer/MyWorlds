@@ -9,6 +9,7 @@ import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.wrappers.Holder;
 import com.bergerkiller.bukkit.mw.playerdata.InventoryEditRecovery;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataBootstrap;
 import com.bergerkiller.mountiplex.reflection.resolver.Resolver;
@@ -477,11 +478,11 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     private static void resetCurrentMobEffects(HumanEntity human) {
         EntityLivingHandle livingHandle = EntityLivingHandle.fromBukkit(human);
-        Map<MobEffectListHandle, MobEffectHandle> effects = livingHandle.getMobEffects();
+        Map<Holder<MobEffectListHandle>, MobEffectHandle> effects = livingHandle.getMobEffects();
         if (human instanceof Player) {
             // Send mob effect removal messages
             Player player = (Player) human;
-            for (MobEffectListHandle effect : effects.keySet()) {
+            for (Holder<MobEffectListHandle> effect : effects.keySet()) {
                 PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_REMOVE.newInstance(player.getEntityId(), effect));
             }
         }
@@ -651,7 +652,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // Load Mob Effects
                 {
-                    Map<MobEffectListHandle, MobEffectHandle> effects = playerHandle.getMobEffects();
+                    Map<Holder<MobEffectListHandle>, MobEffectHandle> effects = playerHandle.getMobEffects();
                     CommonTagList effectsTagList = readPotionEffects(playerData);
                     if (effectsTagList != null) {
                         for (int i = 0; i < effectsTagList.size(); ++i) {
