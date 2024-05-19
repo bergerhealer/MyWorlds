@@ -303,8 +303,8 @@ public class WorldInventory {
         return Collections.unmodifiableSet(this.worldNameMatchRules);
     }
 
-    public WorldInventory addMatchRule(String expression) {
-        if (this.worldNameMatchRules.add(MatchRule.of(expression))) {
+    public WorldInventory addMatchRule(MatchRule rule) {
+        if (this.worldNameMatchRules.add(rule)) {
             rebuildNamePatternMap();
             save();
         }

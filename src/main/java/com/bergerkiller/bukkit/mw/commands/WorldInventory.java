@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -153,12 +154,35 @@ public class WorldInventory extends Command {
                 } else if (args[0].equalsIgnoreCase("clear")) {
                     inv.clearMatchRules();
                     message(ChatColor.YELLOW + "Matched world names for inventory of world '" + matchedWorld + "' cleared");
-                } else if (args[0].equalsIgnoreCase("add")) {
+                } else if (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("add_new")) {
                     this.removeArg(0);
-                    String expression = String.join(" ", args);
-                    inv.addMatchRule(expression);
+                    com.bergerkiller.bukkit.mw.WorldInventory.MatchRule rule = com.bergerkiller.bukkit.mw.WorldInventory.MatchRule.of(String.join(" ", args));
+                    inv.addMatchRule(rule);
                     message(ChatColor.GREEN + "Added match rule for inventory of world '" + matchedWorld + "'");
-                    message(ChatColor.GREEN + "Rule: " + ChatColor.WHITE + expression);
+                    message(ChatColor.GREEN + "Rule: " + ChatColor.WHITE + rule.getExpression());
+                    message(ChatColor.GREEN + "This rule will take effect for all newly created worlds");
+                    boolean isNew = args[0].equalsIgnoreCase("add_new");
+                    if (!isNew) {
+                        // Find all other worlds that match this expression
+                        List<String> worldsToMerge = new ArrayList<>();
+                        worldsToMerge.add(matchedWorld);
+                        for (WorldConfig world : WorldConfig.all()) {
+                            if (world.inventory == inv || world.worldname.equals(matchedWorld)) {
+                                continue;
+                            }
+                            if (rule.matches(world.worldname)) {
+                                worldsToMerge.add(world.worldname);
+                            }
+                        }
+                        if (worldsToMerge.size() > 1) {
+                            com.bergerkiller.bukkit.mw.WorldInventory.merge(worldsToMerge);
+                            worldsToMerge.remove(matchedWorld);
+                            message(ChatColor.GREEN + "This merged the following worlds:");
+                            for (String worldMerged : worldsToMerge) {
+                                message(ChatColor.GREEN + "- " + worldMerged);
+                            }
+                        }
+                    }
                 } else {
                     message(ChatColor.RED + "Unknown matched_merge command: " + args[0]);
                     return;
@@ -328,7 +352,7 @@ public class WorldInventory extends Command {
             if (args.length == 2) {
                 return processWorldNameAutocomplete();
             } else if (args.length == 3) {
-                return Arrays.asList("add", "clear");
+                return Arrays.asList("add", "add_new", "clear");
             } else {
                 return Collections.emptyList();
             }
