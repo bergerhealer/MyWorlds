@@ -2,9 +2,15 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -16,9 +22,11 @@ import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 
 public class WorldInventory {
     private static final Set<WorldInventory> inventories = new HashSet<WorldInventory>();
+    private static final SortedMap<MatchRule, WorldInventory> inventoryByNamePattern = new TreeMap<>();
     private static boolean inventoriesLoaded = false;
     private static int counter = 0;
     private final Set<String> worlds = new HashSet<String>();
+    private final Set<MatchRule> worldNameMatchRules = new HashSet<>();
     private String worldname;
     private String name;
 
@@ -28,6 +36,23 @@ public class WorldInventory {
 
     public static WorldInventory create(String worldName) {
         return new WorldInventory(worldName).add(worldName);
+    }
+
+    /**
+     * Tries to see if any of the pre-existing inventories matches a world name pattern.
+     * If it does, returns that one. Otherwise, returns a new empty world inventory
+     * for this specific world name.
+     *
+     * @param worldName World name
+     * @return WorldInventory with a match rule for it, or null otherwise
+     */
+    public static WorldInventory matchOrCreate(String worldName) {
+        for (Map.Entry<MatchRule, WorldInventory> e : inventoryByNamePattern.entrySet()) {
+            if (e.getKey().matches(worldName)) {
+                return e.getValue();
+            }
+        }
+        return new WorldInventory(worldName);
     }
 
     public static void load() {
@@ -50,19 +75,27 @@ public class WorldInventory {
             if (sharedWorld == null) {
                 continue;
             }
+
             List<String> worlds = node.getList("worlds", String.class);
-            if (worlds.isEmpty()) {
+            List<String> matches = node.getList("matches", String.class);
+            if (worlds.isEmpty() && matches.isEmpty()) {
                 continue;
             }
 
             WorldInventory inv = new WorldInventory(WorldConfig.get(sharedWorld).worldname);
             inv.name = node.getName();
+            for (String matchExpression : matches) {
+                inv.worldNameMatchRules.add(MatchRule.of(matchExpression));
+            }
             for (String world : worlds) {
                 // This assigns inv to WorldConfig. If a previous WorldConfig was set for a world,
                 // that one is de-registered.
                 inv.addWithoutSaving(world);
             }
         }
+
+        // Rebuild global name matcher
+        rebuildNamePatternMap();
 
         // Re-save after loading in case merging of previous default inventories caused changes
         if (hadExistingInventoriesThatRequiredSaving) {
@@ -86,10 +119,28 @@ public class WorldInventory {
                 }
                 ConfigurationNode node = config.getNode(name);
                 node.set("folder", inventory.worldname);
-                node.set("worlds", new ArrayList<String>(inventory.worlds));
+                node.set("worlds", new ArrayList<>(inventory.worlds));
+                if (inventory.worldNameMatchRules.isEmpty()) {
+                    node.remove("matches");
+                } else {
+                    ArrayList<String> expressions = new ArrayList<>(inventory.worldNameMatchRules.size());
+                    for (MatchRule rule : inventory.worldNameMatchRules) {
+                        expressions.add(rule.getExpression());
+                    }
+                    node.set("matches", expressions);
+                }
             }
         }
         config.save();
+    }
+
+    private static void rebuildNamePatternMap() {
+        inventoryByNamePattern.clear();
+        for (WorldInventory inv : inventories) {
+            for (MatchRule rule : inv.worldNameMatchRules) {
+                inventoryByNamePattern.put(rule, inv);
+            }
+        }
     }
 
     public static void detach(Collection<String> worldnames) {
@@ -154,7 +205,7 @@ public class WorldInventory {
      * @return True if this entry must be saved for proper persistence
      */
     private boolean isRequiredSaving() {
-        return this.worlds.size() > 1;
+        return !this.worldNameMatchRules.isEmpty() || this.worlds.size() > 1;
     }
 
     /**
@@ -248,6 +299,27 @@ public class WorldInventory {
         return this;
     }
 
+    public Set<MatchRule> getMatchRules() {
+        return Collections.unmodifiableSet(this.worldNameMatchRules);
+    }
+
+    public WorldInventory addMatchRule(String expression) {
+        if (this.worldNameMatchRules.add(MatchRule.of(expression))) {
+            rebuildNamePatternMap();
+            save();
+        }
+        return this;
+    }
+
+    public WorldInventory clearMatchRules() {
+        if (!this.worldNameMatchRules.isEmpty()) {
+            this.worldNameMatchRules.clear();
+            rebuildNamePatternMap();
+            save();
+        }
+        return this;
+    }
+
     private boolean addWithoutSaving(String worldname) {
         return addWithoutSaving(WorldConfig.get(worldname));
     }
@@ -265,5 +337,85 @@ public class WorldInventory {
             this.worldname = getSharedWorldName(this.worlds);
         }
         return true;
+    }
+
+    /**
+     * Matches world names using a regular expression. Supports a simplified
+     * regex GLOB pattern as well.
+     */
+    public static abstract class MatchRule implements Comparable<MatchRule> {
+        private final String expression;
+
+        public final String getExpression() {
+            return expression;
+        }
+
+        public static MatchRule of(String expression) {
+            if (!expression.startsWith("^") && !expression.endsWith("$")) {
+                // Try to parse a simplified pattern where # changes into [0-9]+ and * changes into .*
+                String patternified = expression
+                        .replaceAll("\\.", "\\\\.")
+                        .replaceAll("\\*", ".*")
+                        .replaceAll("#", "[0-9]+");
+                try {
+                    final Pattern pattern = Pattern.compile(patternified);
+                    return new MatchRule(expression) {
+                        @Override
+                        public boolean matches(String worldName) {
+                            return pattern.matcher(worldName).matches();
+                        }
+                    };
+                } catch (PatternSyntaxException ex) { /* ignore */ }
+            }
+
+            // Try to parse as regex pattern
+            try {
+                final Pattern pattern = Pattern.compile(expression);
+                return new MatchRule(expression) {
+                    @Override
+                    public boolean matches(String worldName) {
+                        return pattern.matcher(worldName).matches();
+                    }
+                };
+            } catch (PatternSyntaxException ex) { /* ignore */ }
+
+            // Match exactly as fallback
+            return new MatchRule(expression) {
+                @Override
+                public boolean matches(String worldName) {
+                     return worldName.equals(this.getExpression());
+                }
+            };
+        }
+
+        private MatchRule(String expression) {
+            this.expression = expression;
+        }
+
+        public abstract boolean matches(String worldName);
+
+        @Override
+        public int compareTo(MatchRule other) {
+            return this.expression.compareTo(other.expression);
+        }
+
+        @Override
+        public String toString() {
+            return "Inventory.MatchRule{" + expression + "}";
+        }
+
+        @Override
+        public int hashCode() {
+            return this.expression.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof MatchRule) {
+                return this.expression.equals(((MatchRule) obj).expression);
+            } else {
+                return false;
+            }
+        }
     }
 }

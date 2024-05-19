@@ -16,6 +16,7 @@
         <project.serverVersion>1.19.3-R0.1-SNAPSHOT</project.serverVersion>
         <project.bkcversion>1.20.6-v1-SNAPSHOT</project.bkcversion>
         <project.preloaderversion>1.8</project.preloaderversion>
+        <junit.version>4.12</junit.version>
     </properties>
 
     <profiles>
@@ -99,10 +100,11 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Test engine -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>3.8.1</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

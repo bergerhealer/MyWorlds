@@ -1,6 +1,8 @@
 package com.bergerkiller.bukkit.mw.commands;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -128,6 +130,51 @@ public class WorldInventory extends Command {
                     }
                 }
                 return;
+            } else if (args[0].equalsIgnoreCase("matched_merge")) {
+                if (!this.checkInventoriesEnabled()) {
+                    return;
+                }
+
+                this.removeArg(0);
+                if (args.length == 0) {
+                    message(ChatColor.RED + "Specify a world name with a merged inventory to automatically merge other worlds into");
+                    return;
+                }
+                String inputWorldName = this.removeArg(0);
+                String matchedWorld = WorldManager.matchWorld(inputWorldName);
+                if (matchedWorld == null) {
+                    message(ChatColor.RED + "World does not exist: '" + inputWorldName + "'");
+                }
+                com.bergerkiller.bukkit.mw.WorldInventory inv = WorldConfig.get(matchedWorld).inventory;
+
+                if (args.length == 0) {
+                    message(ChatColor.RED + "Specify whether to add a new pattern, or to clear all current patterns");
+                    // Show currently set patterns
+                } else if (args[0].equalsIgnoreCase("clear")) {
+                    inv.clearMatchRules();
+                    message(ChatColor.YELLOW + "Matched world names for inventory of world '" + matchedWorld + "' cleared");
+                } else if (args[0].equalsIgnoreCase("add")) {
+                    this.removeArg(0);
+                    String expression = String.join(" ", args);
+                    inv.addMatchRule(expression);
+                    message(ChatColor.GREEN + "Added match rule for inventory of world '" + matchedWorld + "'");
+                    message(ChatColor.GREEN + "Rule: " + ChatColor.WHITE + expression);
+                } else {
+                    message(ChatColor.RED + "Unknown matched_merge command: " + args[0]);
+                    return;
+                }
+
+                message(" ");
+                if (inv.getMatchRules().isEmpty()) {
+                    message(ChatColor.WHITE + "Current match rules: " + ChatColor.RED + "None");
+                } else {
+                    message(ChatColor.WHITE + "Current match rules:");
+                    for (com.bergerkiller.bukkit.mw.WorldInventory.MatchRule rule : inv.getMatchRules()) {
+                        message(ChatColor.WHITE + "- " + rule.getExpression());
+                    }
+                }
+                return;
+
             } else if (args[0].equalsIgnoreCase("enable") || args[0].equalsIgnoreCase("disable")) {
                 boolean enable = args[0].equalsIgnoreCase("enable");
                 if (this.prepareWorlds()) {
@@ -276,7 +323,18 @@ public class WorldInventory extends Command {
             }
         }
 
+        // Matched merge commands
+        if (args.length > 1 && args[0].equalsIgnoreCase("matched_merge")) {
+            if (args.length == 2) {
+                return processWorldNameAutocomplete();
+            } else if (args.length == 3) {
+                return Arrays.asList("add", "clear");
+            } else {
+                return Collections.emptyList();
+            }
+        }
+
         // Default stuff
-        return processBasicAutocompleteOrWorldName("merge", "split", "enable", "disable", "migrate", "first_time_activation");
+        return processBasicAutocompleteOrWorldName("merge", "matched_merge", "split", "enable", "disable", "migrate", "first_time_activation");
     }
 }

@@ -148,7 +148,7 @@ public class WorldConfig extends WorldConfigStore {
             }
         }
 
-        this.inventory = WorldInventory.create(this.worldname);
+        this.inventory = WorldInventory.matchOrCreate(this.worldname).add(this.worldname);
     }
 
     /**
