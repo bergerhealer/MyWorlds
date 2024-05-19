@@ -177,7 +177,7 @@ public class WorldInventory extends Command {
                         if (worldsToMerge.size() > 1) {
                             com.bergerkiller.bukkit.mw.WorldInventory.merge(worldsToMerge);
                             worldsToMerge.remove(matchedWorld);
-                            message(ChatColor.GREEN + "This merged the following worlds:");
+                            message(ChatColor.GREEN + "This also merged the following existing worlds:");
                             for (String worldMerged : worldsToMerge) {
                                 message(ChatColor.GREEN + "- " + worldMerged);
                             }
