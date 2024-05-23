@@ -571,7 +571,10 @@ public class MWPlayerDataController extends PlayerDataController {
 
             try {
                 final PlayerDataFileCollection files = new PlayerDataFileCollection(player, player.getWorld());
-                final CommonTagCompound playerData = files.currentFile.read(player);
+                CommonTagCompound playerData = files.currentFile.read(player);
+
+                // Migrate loaded data to the newest version so that it works on the current version of the server
+                playerData = NBTUtil.migratePlayerProfileData(playerData);
 
                 files.log("refreshing state");
 
@@ -934,6 +937,9 @@ public class MWPlayerDataController extends PlayerDataController {
                 if (playerData == null) {
                     playerData = createEmptyData(player);
                 }
+
+                // Migrate loaded player data to work on the current version of the server
+                playerData = NBTUtil.migratePlayerProfileData(playerData);
 
                 // Store a snapshot of this information for faster future retrieval
                 storeLastPlayerPositions(player, lastPlayerPositions.clone());
