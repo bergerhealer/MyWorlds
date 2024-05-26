@@ -1,21 +1,19 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
-import org.bukkit.Bukkit;
+import com.bergerkiller.bukkit.mw.BedRespawnMode;
 import org.bukkit.ChatColor;
-import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
-import com.bergerkiller.bukkit.common.utils.ParseUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.PortalStore;
 import com.bergerkiller.bukkit.mw.RespawnPoint;
 import com.bergerkiller.bukkit.mw.WorldConfig;
-import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldRespawn extends Command {
 
@@ -47,23 +45,10 @@ public class WorldRespawn extends Command {
             WorldConfig wc = WorldConfig.get(worldname);
 
             if (args.length >= 2) {
-                wc.bedRespawnEnabled = ParseUtil.parseBool(args[1]);
-                if (!wc.bedRespawnEnabled) {
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        WorldManager.removeInvalidBedSpawnPoint(player);
-                    }
-                }
+                wc.setBedRespawnMode(BedRespawnMode.parse(args[1]));
             }
 
-            if (wc.bedRespawnEnabled) {
-                message(ChatColor.YELLOW + "Respawning at last slept beds on World: '" + ChatColor.WHITE + worldname +
-                        ChatColor.YELLOW + "' is " + ChatColor.GREEN + "ENABLED");
-                message(ChatColor.GREEN + "Players will respawn at the bed they last slept in, if set");
-            } else {
-                message(ChatColor.YELLOW + "Respawning at last slept beds on World: '" + ChatColor.WHITE + worldname +
-                        ChatColor.YELLOW + "' is " + ChatColor.RED + "DISABLED");
-                message(ChatColor.YELLOW + "Players will respawn at the world's spawn or home point when dying");
-            }
+            wc.getBedRespawnMode().showAsMessage(sender, worldname);
 
         } else if (args[0].equals("here")) {
             this.genWorldname(1);
@@ -178,8 +163,9 @@ public class WorldRespawn extends Command {
             if (args.length >= 3) {
                 return processWorldNameAutocomplete();
             } else {
-                return processAutocomplete(Stream.of(
-                        "enable", "disable"));
+                return processAutocomplete(Stream.of(BedRespawnMode.values())
+                                .map(BedRespawnMode::name)
+                                .map(s -> s.toLowerCase(Locale.ENGLISH)));
             }
         } else if (args[0].equals("here")) {
             return processWorldNameAutocomplete();

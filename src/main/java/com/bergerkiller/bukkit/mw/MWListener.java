@@ -12,7 +12,6 @@ import java.util.function.Consumer;
 
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.block.SignSide;
-import com.bergerkiller.bukkit.common.events.PlayerAdvancementProgressEvent;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
 import com.bergerkiller.bukkit.mw.portal.PortalDestinationDebouncer;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
@@ -212,7 +211,15 @@ public class MWListener implements Listener {
             return;
         }
         final WorldConfig config = WorldConfig.get(bed.getWorld());
-        if (!config.bedRespawnEnabled) {
+        if (!config.getBedRespawnMode().persistInProfile()) {
+            // If supported by bukkit, disable setting the spawn point
+            // We check for an invalid spawn point next tick anyways
+            try {
+                event.setSpawnLocation(false);
+            } catch (Throwable t) {
+                /* Does not exist */
+            }
+
             final Player player = event.getPlayer();
             CommonUtil.nextTick(new Runnable() {
                 @Override

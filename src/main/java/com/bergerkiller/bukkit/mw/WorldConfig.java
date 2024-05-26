@@ -64,7 +64,7 @@ public class WorldConfig extends WorldConfigStore {
     public boolean formIce = true;
     public boolean clearInventory = false;
     public boolean rememberLastPlayerPosition = false;
-    public boolean bedRespawnEnabled = true;
+    private BedRespawnMode bedRespawnMode = BedRespawnMode.ENABLED;
     private boolean advancementsEnabled = true;
     public boolean advancementsSilent = false;
     public int playerLimit = -1;
@@ -260,7 +260,7 @@ public class WorldConfig extends WorldConfigStore {
         this.formSnow = config.formSnow;
         this.formIce = config.formIce;
         this.clearInventory = config.clearInventory;
-        this.bedRespawnEnabled = config.bedRespawnEnabled;
+        this.bedRespawnMode = config.bedRespawnMode;
         this.advancementsEnabled = config.advancementsEnabled;
         this.advancementsSilent = config.advancementsSilent;
         this.playerLimit = config.playerLimit;
@@ -320,7 +320,14 @@ public class WorldConfig extends WorldConfigStore {
         this.allowHunger = node.get("hunger", this.allowHunger);
         this.rememberLastPlayerPosition = node.get("rememberlastplayerpos", this.rememberLastPlayerPosition);
         this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
-        this.bedRespawnEnabled = node.get("bedRespawnEnabled", this.bedRespawnEnabled);
+
+        if (node.contains("bedRespawnEnabled")) {
+            this.bedRespawnMode = node.get("bedRespawnEnabled", this.bedRespawnMode != BedRespawnMode.DISABLED)
+                    ? BedRespawnMode.ENABLED : BedRespawnMode.DISABLED;
+        } else {
+            this.bedRespawnMode = node.get("bedRespawnMode", this.bedRespawnMode);
+        }
+
         this.advancementsEnabled = node.get("advancementsEnabled", this.advancementsEnabled);
         this.advancementsSilent = node.get("advancementsSilent", this.advancementsSilent);
         this.playerLimit = node.get("playerLimit", this.playerLimit);
@@ -430,7 +437,7 @@ public class WorldConfig extends WorldConfigStore {
         node.set("formSnow", this.formSnow);
         node.set("difficulty", this.difficulty == null ? "NONE" : this.difficulty.toString());
         node.set("reloadWhenEmpty", this.reloadWhenEmpty);
-        node.set("bedRespawnEnabled", this.bedRespawnEnabled);
+        node.set("bedRespawnMode", this.bedRespawnMode);
         node.set("advancementsEnabled", this.advancementsEnabled);
         node.set("advancementsSilent", this.advancementsSilent);
         node.set("playerLimit", this.playerLimit);
@@ -505,6 +512,19 @@ public class WorldConfig extends WorldConfigStore {
             advancementsEnabled = enabled;
             if (!enabled) {
                 MyWorlds.plugin.getAdvancementManager().notifyAdvancementsDisabledOnWorld();
+            }
+        }
+    }
+
+    public BedRespawnMode getBedRespawnMode() {
+        return bedRespawnMode;
+    }
+
+    public void setBedRespawnMode(BedRespawnMode bedRespawnMode) {
+        this.bedRespawnMode = bedRespawnMode;
+        if (!bedRespawnMode.persistInProfile()) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                WorldManager.removeInvalidBedSpawnPoint(player);
             }
         }
     }

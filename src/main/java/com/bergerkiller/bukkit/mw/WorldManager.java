@@ -490,7 +490,7 @@ public class WorldManager {
     public static void removeInvalidBedSpawnPoint(Player player) {
         PlayerRespawnPoint respawn = PlayerRespawnPoint.forPlayer(player);
         World w;
-        if (!respawn.isNone() && (w = respawn.getWorld()) != null && !WorldConfig.get(w).bedRespawnEnabled) {
+        if (!respawn.isNone() && (w = respawn.getWorld()) != null && !WorldConfig.get(w).getBedRespawnMode().persistInProfile()) {
             PlayerRespawnPoint.NONE.applyToPlayer(player);
         }
     }

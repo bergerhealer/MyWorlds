@@ -181,7 +181,7 @@ public class PlayerRespawnHandler {
                     if (MyWorlds.forceMainWorldSpawn) {
                         // Force a respawn on the main world
                         event.setRespawnLocation(WorldConfig.get(MyWorlds.getMainWorld()).getSpawnLocation());
-                    } else if (!isBedOrAnchorRespawn(event) || !WorldConfig.get(event.getPlayer()).bedRespawnEnabled) {
+                    } else if (!isBedOrAnchorRespawn(event) || !WorldConfig.get(event.getPlayer()).getBedRespawnMode().useWhenRespawning()) {
                         // Respawn at what is set in the world configuration of this World
                         World fromWorld = event.getPlayer().getWorld();
                         Location newRespawn = WorldConfig.get(fromWorld).respawnPoint
