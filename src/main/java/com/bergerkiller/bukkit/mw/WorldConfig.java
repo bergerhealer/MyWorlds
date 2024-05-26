@@ -438,6 +438,7 @@ public class WorldConfig extends WorldConfigStore {
         node.set("difficulty", this.difficulty == null ? "NONE" : this.difficulty.toString());
         node.set("reloadWhenEmpty", this.reloadWhenEmpty);
         node.set("bedRespawnMode", this.bedRespawnMode);
+        node.remove("bedRespawnEnabled");
         node.set("advancementsEnabled", this.advancementsEnabled);
         node.set("advancementsSilent", this.advancementsSilent);
         node.set("playerLimit", this.playerLimit);
