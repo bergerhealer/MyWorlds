@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.bergerkiller.bukkit.mw.Localization;
@@ -43,6 +44,10 @@ public class WorldInventory extends Command {
         } else {
             return true;
         }
+    }
+
+    public void sendWorldConfigsMessage(Collection<WorldConfig> worlds, String text) {
+        sendWorldsMessage(worlds.stream().map(c -> c.worldname).collect(Collectors.toList()), text);
     }
 
     public void sendWorldsMessage(Collection<String> worlds, String text) {
@@ -82,17 +87,14 @@ public class WorldInventory extends Command {
 
             // Make all currently known worlds share the same inventories
             {
-                Set<String> invWorlds = new LinkedHashSet<String>();
+                Set<WorldConfig> invWorlds = new LinkedHashSet<>();
 
                 // Ensure main world is used as the first in the group to merge
-                invWorlds.add(WorldConfig.getInventoryMain().worldname.toLowerCase());
-
-                for (WorldConfig worldConfig : WorldConfig.all()) {
-                    invWorlds.add(worldConfig.worldname.toLowerCase());
-                    invWorlds.addAll(worldConfig.inventory.getWorlds());
-                }
-                com.bergerkiller.bukkit.mw.WorldInventory.merge(invWorlds);
-                sendWorldsMessage(invWorlds, "share the same player inventory!");
+                invWorlds.add(WorldConfig.getInventoryMain());
+                // Then all other worlds
+                invWorlds.addAll(WorldConfig.all());
+                com.bergerkiller.bukkit.mw.WorldInventory.mergeWorldConfigs(WorldConfig.all());
+                sendWorldConfigsMessage(invWorlds, "share the same player inventory!");
             }
             sender.sendMessage("");
             Localization.WORLD_INVENTORY_AFTER_ACTIVATION.message(sender);
@@ -106,16 +108,14 @@ public class WorldInventory extends Command {
         if (args.length > 1) {
             if (args[0].equalsIgnoreCase("merge")) {
                 if (this.checkInventoriesEnabled() && this.prepareWorlds()) {
-                    Set<String> invWorlds = new LinkedHashSet<String>();
-                    for (String world : worlds) {
-                        invWorlds.add(world.toLowerCase());
-                        invWorlds.addAll(com.bergerkiller.bukkit.mw.WorldConfig.get(world).inventory.getWorlds());
-                    }
+                    List<WorldConfig> invWorlds = worlds.stream()
+                            .map(WorldConfig::get)
+                            .collect(Collectors.toList());
                     if (invWorlds.size() <= 1) {
                         message(ChatColor.RED + "You need to specify more than one world to merge!");
                     } else {
-                        com.bergerkiller.bukkit.mw.WorldInventory.merge(invWorlds);
-                        sendWorldsMessage(invWorlds, "now share the same player inventory!");
+                        com.bergerkiller.bukkit.mw.WorldInventory.mergeWorldConfigs(invWorlds);
+                        sendWorldConfigsMessage(invWorlds, "now share the same player inventory!");
                     }
                 }
                 return;
@@ -142,11 +142,13 @@ public class WorldInventory extends Command {
                     return;
                 }
                 String inputWorldName = this.removeArg(0);
-                String matchedWorld = WorldManager.matchWorld(inputWorldName);
-                if (matchedWorld == null) {
+                String matchedWorldName = WorldManager.matchWorld(inputWorldName);
+                if (matchedWorldName == null) {
                     message(ChatColor.RED + "World does not exist: '" + inputWorldName + "'");
+                    return;
                 }
-                com.bergerkiller.bukkit.mw.WorldInventory inv = WorldConfig.get(matchedWorld).inventory;
+                WorldConfig matchedWorld = WorldConfig.get(matchedWorldName);
+                com.bergerkiller.bukkit.mw.WorldInventory inv = matchedWorld.inventory;
 
                 if (args.length == 0) {
                     message(ChatColor.RED + "Specify whether to add a new pattern, or to clear all current patterns");
@@ -164,22 +166,23 @@ public class WorldInventory extends Command {
                     boolean isNew = args[0].equalsIgnoreCase("add_new");
                     if (!isNew) {
                         // Find all other worlds that match this expression
-                        List<String> worldsToMerge = new ArrayList<>();
+                        List<WorldConfig> worldsToMerge = new ArrayList<>();
                         worldsToMerge.add(matchedWorld);
                         for (WorldConfig world : WorldConfig.all()) {
-                            if (world.inventory == inv || world.worldname.equals(matchedWorld)) {
+                            if (world.inventory == inv || world == matchedWorld) {
                                 continue;
                             }
                             if (rule.matches(world.worldname)) {
-                                worldsToMerge.add(world.worldname);
+                                worldsToMerge.add(world);
                             }
                         }
                         if (worldsToMerge.size() > 1) {
-                            com.bergerkiller.bukkit.mw.WorldInventory.merge(worldsToMerge);
-                            worldsToMerge.remove(matchedWorld);
+                            com.bergerkiller.bukkit.mw.WorldInventory.mergeWorldConfigs(worldsToMerge);
                             message(ChatColor.GREEN + "This also merged the following existing worlds:");
-                            for (String worldMerged : worldsToMerge) {
-                                message(ChatColor.GREEN + "- " + worldMerged);
+                            for (WorldConfig worldMerged : worldsToMerge) {
+                                if (worldMerged != matchedWorld) {
+                                    message(ChatColor.GREEN + "- " + worldMerged);
+                                }
                             }
                         }
                     }

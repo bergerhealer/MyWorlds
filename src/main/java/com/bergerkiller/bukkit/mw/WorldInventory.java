@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +12,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -26,7 +28,7 @@ public class WorldInventory {
     private static boolean inventoriesLoaded = false;
     private static int counter = 0;
     private final Set<String> worlds = new HashSet<String>();
-    private final Set<MatchRule> worldNameMatchRules = new HashSet<>();
+    private final Set<MatchRule> worldNameMatchRules = new LinkedHashSet<>();
     private String worldname;
     private String name;
 
@@ -179,11 +181,30 @@ public class WorldInventory {
     }
 
     public static void merge(Collection<String> worldnames) {
-        if (!worldnames.isEmpty()) {
-            WorldInventory inv = new WorldInventory(null);
-            for (String world : worldnames) {
-                inv.addWithoutSaving(world);
+        mergeWorldConfigs(worldnames.stream()
+                .map(WorldConfig::get)
+                .collect(Collectors.toList()));
+    }
+
+    public static void mergeWorldConfigs(Collection<WorldConfig> worldConfigurations) {
+        // Compute ALL world configurations based on the worlds already shared
+        Set<WorldConfig> allWorldConfigurations = new LinkedHashSet<>();
+        for (WorldConfig config : worldConfigurations) {
+            allWorldConfigurations.add(config);
+            for (String sharedWorldName : config.inventory.getWorlds()) {
+                allWorldConfigurations.add(WorldConfig.get(sharedWorldName));
             }
+        }
+
+        // Assign all found configurations to a singular inventory instance
+        // Preserve the match rules of all inventories combined
+        if (allWorldConfigurations.size() > 1) {
+            WorldInventory inv = new WorldInventory(null);
+            for (WorldConfig worldConfig : allWorldConfigurations) {
+                inv.worldNameMatchRules.addAll(worldConfig.inventory.worldNameMatchRules);
+                inv.addWithoutSaving(worldConfig);
+            }
+            rebuildNamePatternMap();
             save();
         }
     }
