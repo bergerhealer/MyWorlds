@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -8,7 +9,9 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.wrappers.Holder;
 import com.bergerkiller.bukkit.mw.playerdata.InventoryEditRecovery;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataBootstrap;
@@ -676,14 +679,26 @@ public class MWPlayerDataController extends PlayerDataController {
                     PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_ADD.newInstance(player.getEntityId(), effect));
                 }
 
+                // What equipment slots does this player support?
+                List<EquipmentSlot> playerSupportedSlots;
+                if (Common.hasCapability("Common:EquipmentSlot:IsSupportedCheck")) {
+                    playerSupportedSlots = Arrays.stream(EquipmentSlot.values())
+                            .filter(slot -> EntityUtil.isEquipmentSupported(player, slot))
+                            .collect(Collectors.toList());
+                } else {
+                    playerSupportedSlots = Arrays.stream(EquipmentSlot.values())
+                            .filter(slot -> !slot.name().equals("BODY"))
+                            .collect(Collectors.toList());
+                }
+
                 // Resend equipment of the players that see this player.
                 // Otherwise equipment stays visible that was there before.
                 Chunk chunk = player.getLocation().getChunk();
                 for (Player viewer : player.getWorld().getPlayers()) {
                     if (viewer != player && PlayerUtil.isChunkVisible(viewer, chunk)) {
-                        for (EquipmentSlot slot : EquipmentSlot.values()) {
+                        for (EquipmentSlot slot : playerSupportedSlots) {
                             PacketPlayOutEntityEquipmentHandle packet = PacketPlayOutEntityEquipmentHandle.createNew(
-                                    player.getEntityId(), slot, Util.getEquipment(player, slot));
+                                    player.getEntityId(), slot, EntityUtil.getEquipment(player, slot));
                             PacketUtil.sendPacket(viewer, packet);
                         }
                     }

@@ -23,12 +23,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 
-import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.MaterialTypeProperty;
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.utils.MaterialUtil;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.BlockData;
@@ -304,27 +300,6 @@ public class Util {
             sender.sendMessage(ChatColor.RED + "Player '" + playerName + "' is not online!");
         }
         return p;
-    }
-
-    // Can be removed once BKCommonLib 1.19-v2 or later is a hard-dependency
-    public static ItemStack getEquipment(Player player, EquipmentSlot slot) {
-        if (Common.hasCapability("Common:EntityUtil:GetSetEquipmentSlot")) {
-            return getEquipmentBKCL(player, slot);
-        } else {
-            return getEquipmentLegacy(player, slot);
-        }
-    }
-
-    private static ItemStack getEquipmentLegacy(Player player, EquipmentSlot slot) {
-        try {
-            return player.getEquipment().getItem(slot);
-        } catch (Throwable t) {
-            return null; // Ew.
-        }
-    }
-
-    private static ItemStack getEquipmentBKCL(Player player, EquipmentSlot slot) {
-        return EntityUtil.getEquipment(player, slot);
     }
 
     public static String formatWorldTime(long fullTime) {
