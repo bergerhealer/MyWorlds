@@ -346,17 +346,19 @@ public class WorldInventory {
     }
 
     private boolean addWithoutSaving(WorldConfig worldConfig) {
+        boolean changed = false;
         if (worldConfig.inventory != this) {
             if (worldConfig.inventory != null) {
                 worldConfig.inventory.removeWithoutSaving(worldConfig.worldname, false);
             }
             worldConfig.inventory = this;
+            changed = true;
         }
-        this.worlds.add(worldConfig.worldname.toLowerCase());
+        changed |= this.worlds.add(worldConfig.worldname.toLowerCase());
         if (this.worldname == null) {
             this.worldname = getSharedWorldName(this.worlds);
         }
-        return true;
+        return changed;
     }
 
     /**
