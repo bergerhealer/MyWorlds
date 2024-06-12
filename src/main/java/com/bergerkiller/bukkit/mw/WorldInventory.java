@@ -346,13 +346,12 @@ public class WorldInventory {
     }
 
     private boolean addWithoutSaving(WorldConfig worldConfig) {
-        if (worldConfig.inventory == this) {
-            return false;
+        if (worldConfig.inventory != this) {
+            if (worldConfig.inventory != null) {
+                worldConfig.inventory.removeWithoutSaving(worldConfig.worldname, false);
+            }
+            worldConfig.inventory = this;
         }
-        if (worldConfig.inventory != null) {
-            worldConfig.inventory.removeWithoutSaving(worldConfig.worldname, false);
-        }
-        worldConfig.inventory = this;
         this.worlds.add(worldConfig.worldname.toLowerCase());
         if (this.worldname == null) {
             this.worldname = getSharedWorldName(this.worlds);
