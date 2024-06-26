@@ -51,10 +51,11 @@ public class WorldInventory {
     public static WorldInventory matchOrCreate(String worldName) {
         for (Map.Entry<MatchRule, WorldInventory> e : inventoryByNamePattern.entrySet()) {
             if (e.getKey().matches(worldName)) {
+                e.getValue().add(worldName);
                 return e.getValue();
             }
         }
-        return new WorldInventory(worldName);
+        return new WorldInventory(worldName).add(worldName);
     }
 
     public static void load() {

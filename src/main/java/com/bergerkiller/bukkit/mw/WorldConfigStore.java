@@ -24,10 +24,10 @@ public class WorldConfigStore {
     private static boolean initializing = false;
     private static Task fastAutoSaveTask = null;
 
-    private static WorldConfig create(String worldname) {
+    private static WorldConfig create(String worldname, boolean assignToMatchedInventory) {
         WorldConfig wc = new WorldConfig(worldname);
         worldConfigs.put(wc.worldname, wc);
-        wc.loadDefaults();
+        wc.loadDefaults(assignToMatchedInventory);
         saveAllLater(); // Save new world configs sooner
         return wc;
     }
@@ -57,7 +57,7 @@ public class WorldConfigStore {
     public static WorldConfig get(String worldname, WorldMode worldmode) {
         WorldConfig c = worldConfigs.get(worldname);
         if (c == null) {
-            c = create(worldname);
+            c = create(worldname, true);
             if (worldmode != null) {
                 c.worldmode = worldmode;
             }
@@ -181,7 +181,7 @@ public class WorldConfigStore {
             for (ConfigurationNode node : config.getNodes()) {
                 String worldname = node.get("name", node.getName());
                 if (WorldManager.worldExists(worldname)) {
-                    WorldConfig wc = create(worldname);
+                    WorldConfig wc = create(worldname, false);
                     wc.load(node);
                     wc.detectGeneratorDisableAutoLoad();
                     if (wc.loadOnStartup && node.get("loaded", false)) {

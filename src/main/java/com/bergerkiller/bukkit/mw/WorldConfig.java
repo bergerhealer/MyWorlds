@@ -104,8 +104,11 @@ public class WorldConfig extends WorldConfigStore {
     /**
      * Loads the default settings for a world.
      * This method expects the world to be registered in the mapping prior.
+     *
+     * @param assignToMatchedInventory Whether to assign this world to an inventory matched by world name
+     *                                 This should not happen when loading world configurations on startup
      */
-    protected void loadDefaults() {
+    protected void loadDefaults(boolean assignToMatchedInventory) {
         World world = this.getWorld();
         if (world != null) {
             // Read from the loaded world directly
@@ -148,7 +151,11 @@ public class WorldConfig extends WorldConfigStore {
             }
         }
 
-        this.inventory = WorldInventory.matchOrCreate(this.worldname).add(this.worldname);
+        if (assignToMatchedInventory) {
+            this.inventory = WorldInventory.matchOrCreate(this.worldname);
+        } else {
+            this.inventory = WorldInventory.create(this.worldname);
+        }
     }
 
     /**
