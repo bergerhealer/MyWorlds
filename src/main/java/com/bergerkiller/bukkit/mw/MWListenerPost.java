@@ -125,7 +125,7 @@ public class MWListenerPost implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawnMsg(PlayerRespawnEvent event) {
-        if (!plugin.getEndRespawnHandler().isDeathRespawn(event)) {
+        if (plugin.getEndRespawnHandler().isEndPortalRespawn(event)) {
             handleTeleportMessage(event.getPlayer(), event.getRespawnLocation());
         }
     }

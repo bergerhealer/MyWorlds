@@ -5,10 +5,14 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.LogicUtil;
+import com.bergerkiller.mountiplex.MountiplexUtil;
 import com.bergerkiller.mountiplex.reflection.util.FastConstructor;
+import com.bergerkiller.mountiplex.reflection.util.FastMethod;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -39,10 +43,33 @@ import com.bergerkiller.bukkit.mw.WorldConfig;
  * position for normal deaths, if one is configured for the world.
  */
 public class PlayerRespawnHandler {
-    private static final boolean END_RESPAWN_USING_PORTAL_EVENT = CommonBootstrap.evaluateMCVersion("<=", "1.13.2");
     private final MyWorlds plugin;
     private final Map<UUID, RespawnDestination> _respawns = new HashMap<>();
     private boolean isHandlingEntityPortalEvent = false;
+
+    // Whether a respawn event is fired because the player entered an END portal, instead of dying/plugin cause
+    private static final boolean END_RESPAWN_USING_PORTAL_EVENT = !CommonBootstrap.evaluateMCVersion(">=", "1.14");
+    private static final Predicate<PlayerRespawnEvent> RESPAWN_IS_END_PORTAL = createRespawnIsEndPortalPredicate();
+    private static Predicate<PlayerRespawnEvent> createRespawnIsEndPortalPredicate() {
+        if (CommonBootstrap.evaluateMCVersion(">=", "1.20")) {
+            // Bukkit now has a respawn cause option we can use to check this
+            try {
+                final FastMethod<Enum<?>> getRespawnReasonMethod = new FastMethod<>(PlayerRespawnEvent.class.getMethod("getRespawnReason"));
+                return event -> {
+                    Enum<?> reason = (Enum<?>) getRespawnReasonMethod.invoke(event);
+                    return reason.name().equals("END_PORTAL");
+                };
+            } catch (Throwable t) {
+                return event -> { throw MountiplexUtil.uncheckedRethrow(t); };
+            }
+        } else if (CommonBootstrap.evaluateMCVersion(">=", "1.14")) {
+            // Must check using player health. If nonzero then it's (probably?) related to the end portal
+            return event -> event.getPlayer().getHealth() > 0.0;
+        } else {
+            // Here end respawns are handled using the portal event, instead. So always false.
+            return LogicUtil.alwaysFalsePredicate();
+        }
+    }
 
     // useTravelAgent(boolean) was removed at some point, but we must make sure to disable it on versions where it is active
     private static final Method useTravelAgentMethod;
@@ -107,15 +134,15 @@ public class PlayerRespawnHandler {
     }
 
     /**
-     * Gets whether a respawn event is the result of a player death or not.
+     * Gets whether a respawn event is the result of a player respawning in the end.
      * Since Minecraft 1.14 a respawn event also fires when the player
      * teleports away from the end. This checks for that situation.
      * 
      * @param event
-     * @return True if this respawn event was due to player death
+     * @return True if this respawn event was due to using an end portal
      */
-    public boolean isDeathRespawn(PlayerRespawnEvent event) {
-        return END_RESPAWN_USING_PORTAL_EVENT || event.getPlayer().getHealth() <= 0.0;
+    public boolean isEndPortalRespawn(PlayerRespawnEvent event) {
+        return RESPAWN_IS_END_PORTAL.test(event);
     }
 
     /**
@@ -176,7 +203,15 @@ public class PlayerRespawnHandler {
         this.plugin.register(new Listener() {
             @EventHandler(priority = EventPriority.NORMAL)
             public void onPlayerRespawn(PlayerRespawnEvent event) {
-                if (isDeathRespawn(event)) {
+                if (isEndPortalRespawn(event)) {
+                    // If we have a pending respawn, then the respawn event already has a pre-picked respawn location
+                    // Take it and don't handle anything more
+                    RespawnDestination newRespawn = _respawns.remove(event.getPlayer().getUniqueId());
+                    if (newRespawn != null) {
+                        event.setRespawnLocation(newRespawn.position);
+                        event.getPlayer().setVelocity(newRespawn.velocity);
+                    }
+                } else {
                     // Update spawn position based on world configuration
                     if (MyWorlds.forceMainWorldSpawn) {
                         // Force a respawn on the main world
@@ -189,14 +224,6 @@ public class PlayerRespawnHandler {
                         if (newRespawn != null) {
                             event.setRespawnLocation(newRespawn);
                         }
-                    }
-                } else {
-                    // If we have a pending respawn, then the respawn event already has a pre-picked respawn location
-                    // Take it and don't handle anything more
-                    RespawnDestination newRespawn = _respawns.remove(event.getPlayer().getUniqueId());
-                    if (newRespawn != null) {
-                        event.setRespawnLocation(newRespawn.position);
-                        event.getPlayer().setVelocity(newRespawn.velocity);
                     }
                 }
             }

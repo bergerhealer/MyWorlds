@@ -154,12 +154,11 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawnMonitor(PlayerRespawnEvent event) {
-        if (plugin.getEndRespawnHandler().isDeathRespawn(event)) {
-            WorldConfig.get(event.getPlayer()).onRespawn(event.getPlayer(), event.getRespawnLocation());
-        } else {
+        if (plugin.getEndRespawnHandler().isEndPortalRespawn(event)) {
             // Save inventory before it is reloaded again
             // This is important for 1.14 and later to guarantee consistent inventories
-            MyWorlds.plugin.getPlayerDataController().onSave(event.getPlayer());
+        } else {
+            WorldConfig.get(event.getPlayer()).onRespawn(event.getPlayer(), event.getRespawnLocation());
         }
     }
 
