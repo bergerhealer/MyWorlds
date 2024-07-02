@@ -190,10 +190,10 @@ public enum PortalType {
         // Check self
         PortalType type = findPortalTypeSingle(world, x, y, z);
         if (type == null) {
-            // Check in a 3x3x3 cube area
+            // Check in a 3x4x3 cube area (+1 above in case coming from below...)
             int dx, dy, dz;
             for (dx = -1; dx <= 1; dx++) {
-                for (dy = -1; dy <= 1; dy++) {
+                for (dy = -1; dy <= 2; dy++) {
                     for (dz = -1; dz <= 1; dz++) {
                         type = findPortalTypeSingle(world, x + dx, y + dy, z + dz);
                         if (type != null) {
