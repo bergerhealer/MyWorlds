@@ -1008,7 +1008,7 @@ public class MWPlayerDataController extends PlayerDataController {
                         CommonUtil.nextTick(new Runnable() {
                             @Override
                             public void run() {
-                                if (player.isOnline()) {
+                                if (player.isValid()) {
                                     try {
                                         player.setFlying(true);
                                     } catch (IllegalArgumentException ex) {

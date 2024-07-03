@@ -724,7 +724,7 @@ public class WorldManager {
 
         final Location destinationCopy = destination;
         return loadChunksAsync(destination, 3).thenApply(u -> {
-            if (entity.isDead() || (entity instanceof Player && !((Player) entity).isOnline())) {
+            if (entity.isDead() || (entity instanceof Player && !((Player) entity).isValid())) {
                 return false;
             }
 

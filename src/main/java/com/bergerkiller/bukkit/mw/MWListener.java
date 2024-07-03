@@ -85,7 +85,7 @@ public class MWListener implements Listener {
      * @param runnable Task to run
      */
     public void scheduleForPlayerJoin(final Player player, int tickTimeout, final Consumer<Player> runnable) {
-        if (player.isOnline()) {
+        if (player.isValid()) {
             runnable.accept(player);
             return;
         }
@@ -142,7 +142,7 @@ public class MWListener implements Listener {
         // Skip if the player is already on a main world (wut?)
         if (!wc.checkPlayerLimit(event.getPlayer()) && wc != WorldConfig.getMain()) {
             CommonUtil.nextTick(() -> {
-                if (!event.getPlayer().isOnline() || wc.checkPlayerLimit(event.getPlayer())) {
+                if (!event.getPlayer().isValid() || wc.checkPlayerLimit(event.getPlayer())) {
                     return;
                 }
 
