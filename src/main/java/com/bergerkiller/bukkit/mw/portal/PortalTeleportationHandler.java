@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.portal;
 
+import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportPortalEvent;
 import org.bukkit.Location;
@@ -175,8 +176,8 @@ public abstract class PortalTeleportationHandler {
 
         Location original_position = plugin.getPortalTeleportationCooldown().getPortal(entity);
         plugin.getPortalTeleportationCooldown().setPortal(entity, position);
-        //if (CommonEntity.get(entity).teleport(position, portalType.getTeleportCause())) {
-        if (entity.teleport(position, portalType.getTeleportCause())) {
+        if (CommonEntity.get(entity).teleport(position, portalType.getTeleportCause())) {
+        //if (entity.teleport(position, portalType.getTeleportCause())) {
             // Verify that the Entity position matches the same BLOCK coordinates
             // The server sometimes teleports entities at floor(coords) rather than the actual ones
             // We must correct for this
