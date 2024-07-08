@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.softdependency.SoftDependency;
 import com.bergerkiller.bukkit.mw.mythicdungeons.MythicDungeonsHelper;
 import org.bukkit.Bukkit;
@@ -204,6 +205,11 @@ public class MyWorlds extends PluginBase {
     @Override
     public void enable() {
         plugin = this;
+
+        // Pre-enable check
+        if (!Common.hasCapability("Common:CommonItemStack")) {
+            throw new UnsupportedOperationException("This version of MyWorlds requires BKCommonLib 1.21 or later");
+        }
 
         // Event registering
         this.worldDupingPatch.enable(this);
