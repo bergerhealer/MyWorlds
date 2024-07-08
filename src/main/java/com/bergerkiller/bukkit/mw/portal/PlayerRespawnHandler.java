@@ -25,6 +25,7 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.util.Vector;
 
 import com.bergerkiller.bukkit.common.internal.CommonBootstrap;
@@ -129,6 +130,44 @@ public class PlayerRespawnHandler {
         }
     }
 
+    // Different constructors for the PlayerPortalEvent
+    private static final PlayerPortalEventConstructor playerPortalEventConstructor = createPlayerPortalEventConstructor();
+    private static PlayerPortalEventConstructor createPlayerPortalEventConstructor() {
+        try {
+            for (Constructor<?> c : PlayerPortalEvent.class.getConstructors()) {
+                Class<?>[] params = c.getParameterTypes();
+
+                // Legacy
+                //   public PlayerPortalEvent(final Player entity, final Location from, final Location to, final TravelAgent pta)
+                if (params.length == 4 &&
+                        params[0] == Player.class &&
+                        params[1] == Location.class &&
+                        params[2] == Location.class &&
+                        params[3].getSimpleName().equals("TravelAgent")
+                ) {
+                    final FastConstructor<PlayerPortalEvent> fc = new FastConstructor<>(c);
+                    return (player, from, to) -> fc.newInstance(player, from, to, null);
+                }
+
+                // Modern
+                //   public PlayerPortalEvent(@NotNull Player entity, @NotNull Location from, @Nullable Location to)
+                if (params.length == 3 &&
+                        params[0] == Player.class &&
+                        params[1] == Location.class &&
+                        params[2] == Location.class
+                ) {
+                    final FastConstructor<PlayerPortalEvent> fc = new FastConstructor<>(c);
+                    return (player, from, to) -> fc.newInstance(player, from, to);
+                }
+            }
+            throw new IllegalStateException("No suitable constructor");
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.WARNING,
+                    "Failed to find PlayerPortalEvent constructor", t);
+            return null;
+        }
+    }
+
     public PlayerRespawnHandler(MyWorlds plugin) {
         this.plugin = plugin;
     }
@@ -184,17 +223,32 @@ public class PlayerRespawnHandler {
             return to;
         }
 
-        EntityPortalEvent event = entityPortalEventConstructor.create(entity, from, to);
-        event.setCancelled(false);
-        try {
-            isHandlingEntityPortalEvent = true;
-            if (CommonUtil.callEvent(event).isCancelled()) {
-                return null;
-            } else {
-                return event.getTo();
+        if (entity instanceof Player) {
+            PlayerTeleportEvent event = playerPortalEventConstructor.create((Player) entity, from, to);
+            event.setCancelled(false);
+            try {
+                isHandlingEntityPortalEvent = true;
+                if (CommonUtil.callEvent(event).isCancelled()) {
+                    return null;
+                } else {
+                    return event.getTo();
+                }
+            } finally {
+                isHandlingEntityPortalEvent = false;
             }
-        } finally {
-            isHandlingEntityPortalEvent = false;
+        } else {
+            EntityPortalEvent event = entityPortalEventConstructor.create(entity, from, to);
+            event.setCancelled(false);
+            try {
+                isHandlingEntityPortalEvent = true;
+                if (CommonUtil.callEvent(event).isCancelled()) {
+                    return null;
+                } else {
+                    return event.getTo();
+                }
+            } finally {
+                isHandlingEntityPortalEvent = false;
+            }
         }
     }
 
@@ -230,6 +284,12 @@ public class PlayerRespawnHandler {
 
             @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
             public void onPlayerPortal(PlayerPortalEvent event) {
+                // Ignore the event we're firing ourselves
+                if (isHandlingEntityPortalEvent) {
+                    isHandlingEntityPortalEvent = false;
+                    return;
+                }
+
                 if (END_RESPAWN_USING_PORTAL_EVENT) {
                     RespawnDestination newRespawn = _respawns.remove(event.getPlayer().getUniqueId());
                     if (newRespawn != null) {
@@ -331,5 +391,10 @@ public class PlayerRespawnHandler {
     @FunctionalInterface
     private interface EntityPortalEventConstructor {
         EntityPortalEvent create(Entity entity, Location from, Location to);
+    }
+
+    @FunctionalInterface
+    private interface PlayerPortalEventConstructor {
+        PlayerPortalEvent create(Player player, Location from, Location to);
     }
 }
