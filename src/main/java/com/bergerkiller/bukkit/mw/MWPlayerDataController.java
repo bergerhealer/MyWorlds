@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,6 +16,8 @@ import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.wrappers.Holder;
 import com.bergerkiller.bukkit.mw.playerdata.InventoryEditRecovery;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataBootstrap;
+import com.bergerkiller.generated.net.minecraft.world.entity.ai.attributes.AttributeMapBaseHandle;
+import com.bergerkiller.generated.net.minecraft.world.entity.ai.attributes.AttributeModifiableHandle;
 import com.bergerkiller.mountiplex.reflection.resolver.Resolver;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -93,6 +96,7 @@ public class MWPlayerDataController extends PlayerDataController {
     public static final String VANILLA_ENDER_CHEST_TAG = "EnderItems";
 
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
+    private static final boolean CAN_RESET_ATTRIBUTES = Common.hasCapability("Common:Attributes:RemoveAllModifiers");
 
     private static final Map<Player, World> worldToSaveTo = new IdentityHashMap<>();
     private static final Map<Player, LastPlayerPositionList> playerLastLocations = new IdentityHashMap<>();
@@ -481,15 +485,34 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     private static void resetCurrentMobEffects(HumanEntity human) {
         EntityLivingHandle livingHandle = EntityLivingHandle.fromBukkit(human);
-        Map<Holder<MobEffectListHandle>, MobEffectHandle> effects = livingHandle.getMobEffects();
-        if (human instanceof Player) {
-            // Send mob effect removal messages
-            Player player = (Player) human;
-            for (Holder<MobEffectListHandle> effect : effects.keySet()) {
-                PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_REMOVE.newInstance(player.getEntityId(), effect));
+
+        // Reset current mob effects applied to the player
+        // Notify the player of these effects being gone so they don't ghost
+        {
+            Map<Holder<MobEffectListHandle>, MobEffectHandle> effects = livingHandle.getMobEffects();
+            if (human instanceof Player) {
+                // Send mob effect removal messages
+                Player player = (Player) human;
+                for (Holder<MobEffectListHandle> effect : effects.keySet()) {
+                    PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_REMOVE.newInstance(player.getEntityId(), effect));
+                }
             }
+            effects.clear();
         }
-        effects.clear();
+
+        // Reset all attributes of the player to the defaults
+        // The reset method calls setDirty(), which will cause a synchronization later
+        if (CAN_RESET_ATTRIBUTES && human instanceof Player) {
+            resetAttributes(livingHandle, (Player) human);
+        }
+    }
+
+    //TODO: Make inline when bkcl 1.21 or later is a hard-dep
+    private static void resetAttributes(EntityLivingHandle handle, Player player) {
+        AttributeMapBaseHandle map = handle.getAttributeMap();
+        Collection<AttributeModifiableHandle> allAttributes = new ArrayList<>(map.getAllAttributes());
+        allAttributes.forEach(AttributeModifiableHandle::removeAllModifiers);
+        PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_UPDATE_ATTRIBUTES.newInstance(player.getEntityId(), allAttributes));
     }
 
     /**
