@@ -512,7 +512,7 @@ public class MWPlayerDataController extends PlayerDataController {
         AttributeMapBaseHandle map = handle.getAttributeMap();
         Collection<AttributeModifiableHandle> allAttributes = new ArrayList<>(map.getAllAttributes());
         allAttributes.forEach(AttributeModifiableHandle::removeAllModifiers);
-        PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_UPDATE_ATTRIBUTES.newInstance(player.getEntityId(), allAttributes));
+        PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_UPDATE_ATTRIBUTES.newInstance(player.getEntityId(), map.getSynchronizedAttributes()));
     }
 
     /**
