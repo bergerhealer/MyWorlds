@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.bases.IntVector3;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -103,7 +104,7 @@ public class NetherPortalSearcher {
      * to searching the area for a portal. If a portal was already
      * found before, then that result becomes instantly available,
      * after verifying the portal is still there.
-     * 
+     *
      * @param start Block around which to look for portals
      * @param radius Search radius around the block
      * @param createOptions Options for creating a portal if none exists.
@@ -195,7 +196,8 @@ public class NetherPortalSearcher {
             int dx = Math.abs(block.x - _start.x);
             int dy = Math.abs(block.y - _start.y);
             int dz = Math.abs(block.z - _start.z);
-            return dx <= 32 && dy <= 4 && dz <= 32;
+            IntVector3 radius = MyWorlds.portalSearchMatchRadius;
+            return dx <= radius.x && dy <= radius.y && dz <= radius.z;
         }
 
         /**

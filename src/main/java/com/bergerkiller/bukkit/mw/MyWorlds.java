@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.Common;
+import com.bergerkiller.bukkit.common.bases.IntVector3;
 import com.bergerkiller.bukkit.common.softdependency.SoftDependency;
 import com.bergerkiller.bukkit.mw.mythicdungeons.MythicDungeonsHelper;
 import org.bukkit.Bukkit;
@@ -67,6 +68,7 @@ public class MyWorlds extends PluginBase {
     public static boolean forceJoinOnMainWorld;
     public static boolean forceGamemodeChanges;
     public static boolean overridePortalPhysics;
+    public static IntVector3 portalSearchMatchRadius = new IntVector3(32, 4, 32);
     public static boolean alwaysInstantPortal;
     public static boolean ignoreEggSpawns;
     public static boolean ignoreBreedingSpawns;
@@ -352,6 +354,16 @@ public class MyWorlds extends PluginBase {
 
         config.setHeader("overridePortalPhysics", "\nWhether Vanilla portal physics are overrided to allow them to be built/stacked");
         overridePortalPhysics = config.get("overridePortalPhysics", true);
+
+        ConfigurationNode portalSearchMatchRadiusNode = config.getNode("portalSearchMatchRadius");
+        portalSearchMatchRadiusNode.setHeader("\nMyWorlds caches destinations for portals frequently entered to minimize lag");
+        portalSearchMatchRadiusNode.addHeader("When a portal block is activated near to a previously activated one, search results are reused");
+        portalSearchMatchRadiusNode.addHeader("The width and height control the sensitivity of matching these results");
+        portalSearchMatchRadiusNode.addHeader("If a wrong portal is entered because of this, you can lower these values to fix that");
+        portalSearchMatchRadius = new IntVector3(
+                portalSearchMatchRadiusNode.get("width", 32),
+                portalSearchMatchRadiusNode.get("height", 4),
+                portalSearchMatchRadiusNode.get("width", 32));
 
         config.setHeader("importFromMultiVerse", "\nWhether to automatically import the world configuration of MultiVerse for new (unknown) worlds");
         config.addHeader("importFromMultiverse", "Note that default world properties are then no longer applied, as MultiVerse takes that over");
