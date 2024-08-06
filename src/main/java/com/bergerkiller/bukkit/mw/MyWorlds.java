@@ -46,6 +46,12 @@ public class MyWorlds extends PluginBase {
     private static final String MULTIVERSE_NAME = "Multiverse-Core";
     private static final String PLACEHOLDERAPI_NAME = "PlaceholderAPI";
     private static final String BETTERPORTALS_NAME = "BetterPortals";
+
+    /*
+     * ========================================================================
+     * =============== Configurations loaded from config.yml ==================
+     * ========================================================================
+     */
     public static int teleportInterval;
     public static int timeLockInterval;
     public static boolean useWorldEnterPermissions;
@@ -56,8 +62,6 @@ public class MyWorlds extends PluginBase {
     public static boolean allowPortalNameOverride;
     public static boolean useWorldOperators;
     public static boolean onlyObsidianPortals = false;
-    public static boolean isSpoutPluginEnabled = false;
-    public static boolean isMultiverseEnabled = false;
     public static boolean importFromMultiVerse = true;
     public static boolean useWorldInventories;
     public static boolean storeInventoryInMainWorld;
@@ -77,13 +81,20 @@ public class MyWorlds extends PluginBase {
     public static boolean keepInventoryPermissionEnabled;
     public static boolean portalSignsTeleportMobs;
     public static boolean worldTime24Hours;
-
     // Portals
     public static boolean waterPortalEnabled;
     public static boolean waterPortalStrict;
     public static boolean endPortalEnabled;
     public static boolean netherPortalEnabled;
+    /* ===================================================================== */
 
+    /*
+     * ========================================================================
+     * ========================== Plugin internals ============================
+     * ========================================================================
+     */
+    public static boolean isSpoutPluginEnabled = false;
+    public static boolean isMultiverseEnabled = false;
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
     final MWListener listener = new MWListener(this);
