@@ -175,6 +175,7 @@ public class WorldConfigStore {
 
             // Worlds configuration
             worldConfigs.clear();
+            worldConfigsByWorld.clear();
             FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "worlds.yml");
             isNewConfig = !config.exists();
             config.load();
