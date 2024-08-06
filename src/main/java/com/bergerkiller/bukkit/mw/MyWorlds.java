@@ -98,6 +98,7 @@ public class MyWorlds extends PluginBase {
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
     final MWListener listener = new MWListener(this);
+    private MWPlayerChatListener chatListener = null; // Only initialized if used
     private MWPlayerDataController dataController;
     private final MyWorldsCommands commands = new MyWorldsCommands(this);
     private final WorldInventoriesDupingPatch worldDupingPatch = new WorldInventoriesDupingPatch();
@@ -241,7 +242,85 @@ public class MyWorlds extends PluginBase {
         endRespawnHandler.enable();
         advancementManager.enable();
 
-        // Continue loading the configuration(s)
+        // Load configurations, all below depends on these values too
+        loadConfig();
+
+        // Start automatic cleanup of portals we haven't been visited in a while
+        netherPortalSearcher.enable();
+
+        // World configurations have to be loaded first
+        WorldConfig.init();
+
+        // Portals
+        this.portalSignList.enable();
+
+        // World inventories
+        WorldInventory.load();
+
+        // Ensure mythic dungeons are setup correctly
+        // Is automatically done when new worlds load in
+        SoftDependency.detectAll(this);
+        for (WorldConfig world : new ArrayList<>(WorldConfig.all())) {
+            world.detectMythicDungeonsInstance();
+        }
+
+        // Fire portal enter events (debounced)
+        portalEnterEventDebouncer.enable();
+
+        // Player data controller
+        dataController = new MWPlayerDataController(this);
+        dataController.assign();
+
+        // Auto-save every 15 minutes
+        autoSaveTask.start(15*60*20, 15*60*20);
+    }
+
+    @Override
+    public void disable() {
+        // Portals
+        this.portalSignList.disable();
+
+        // Stop this
+        portalEnterEventDebouncer.disable();
+        netherPortalSearcher.disable();
+        portalTeleportationCooldown.disable();
+        entityStasisHandler.disable();
+        endRespawnHandler.disable();
+        setPAPIIntegrationEnabled(false, true);
+
+        // Stop auto-saving
+        autoSaveTask.stop();
+
+        // World inventories
+        // Now done for every change / command
+        //WorldInventory.save();
+
+        // World configurations have to be cleared last
+        WorldConfig.deinit();
+
+        // Abort chunk loader
+        LoadChunksTask.abort(true);
+
+        // Make sure to save all players before disabling - this prevents lost state
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            CommonUtil.savePlayer(player);
+        }
+
+        // Detach data controller. Only do so when reloading, do not do it when
+        // shutting down so we handle player saving correctly.
+        if (!CommonUtil.isShuttingDown() && dataController != null) {
+            dataController.detach();
+            dataController = null;
+        }
+
+        // Wait until inventory migration is done
+        migrator.waitUntilFinished();
+
+        this.worldDupingPatch.disable();
+        plugin = null;
+    }
+
+    public void loadConfig() {
         FileConfiguration config = new FileConfiguration(this);
         config.load();
 
@@ -277,8 +356,11 @@ public class MyWorlds extends PluginBase {
         useWorldBuildPermissions = config.get("useWorldBuildPermissions", false);
         useWorldUsePermissions = config.get("useWorldUsePermissions", false);
         useWorldChatPermissions = config.get("useWorldChatPermissions", false);
-        if (useWorldChatPermissions) {
-            this.register(new MWPlayerChatListener());
+        if (useWorldChatPermissions && chatListener == null) {
+            this.register(chatListener = new MWPlayerChatListener());
+        } else if (!useWorldChatPermissions && chatListener != null) {
+            CommonUtil.unregisterListener(chatListener);
+            chatListener = null;
         }
 
         config.setHeader("keepLastPositionPermissionEnabled", "\nWhether players with the myworlds.world.keeplastpos permission are teleported to");
@@ -400,80 +482,6 @@ public class MyWorlds extends PluginBase {
         worldTime24Hours = config.get("worldTime24Hours", true);
 
         config.save();
-
-        // Start automatic cleanup of portals we haven't been visited in a while
-        netherPortalSearcher.enable();
-
-        // World configurations have to be loaded first
-        WorldConfig.init();
-
-        // Portals
-        this.portalSignList.enable();
-
-        // World inventories
-        WorldInventory.load();
-
-        // Ensure mythic dungeons are setup correctly
-        // Is automatically done when new worlds load in
-        SoftDependency.detectAll(this);
-        for (WorldConfig world : new ArrayList<>(WorldConfig.all())) {
-            world.detectMythicDungeonsInstance();
-        }
-
-        // Fire portal enter events (debounced)
-        portalEnterEventDebouncer.enable();
-
-        // Player data controller
-        dataController = new MWPlayerDataController(this);
-        dataController.assign();
-
-        // Auto-save every 15 minutes
-        autoSaveTask.start(15*60*20, 15*60*20);
-    }
-
-    @Override
-    public void disable() {
-        // Portals
-        this.portalSignList.disable();
-
-        // Stop this
-        portalEnterEventDebouncer.disable();
-        netherPortalSearcher.disable();
-        portalTeleportationCooldown.disable();
-        entityStasisHandler.disable();
-        endRespawnHandler.disable();
-        setPAPIIntegrationEnabled(false, true);
-
-        // Stop auto-saving
-        autoSaveTask.stop();
-
-        // World inventories
-        // Now done for every change / command
-        //WorldInventory.save();
-
-        // World configurations have to be cleared last
-        WorldConfig.deinit();
-
-        // Abort chunk loader
-        LoadChunksTask.abort(true);
-
-        // Make sure to save all players before disabling - this prevents lost state
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            CommonUtil.savePlayer(player);
-        }
-
-        // Detach data controller. Only do so when reloading, do not do it when
-        // shutting down so we handle player saving correctly.
-        if (!CommonUtil.isShuttingDown() && dataController != null) {
-            dataController.detach();
-            dataController = null;
-        }
-
-        // Wait until inventory migration is done
-        migrator.waitUntilFinished();
-
-        this.worldDupingPatch.disable();
-        plugin = null;
     }
 
     @Override

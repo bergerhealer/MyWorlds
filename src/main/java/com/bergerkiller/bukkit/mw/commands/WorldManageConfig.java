@@ -24,6 +24,7 @@ public class WorldManageConfig extends Command {
         if (args.length >= 1) {
             String cmd = this.removeArg(0);
             if (cmd.equalsIgnoreCase("load")) {
+                plugin.loadConfig();
                 com.bergerkiller.bukkit.mw.WorldConfig.init();
                 message(ChatColor.GREEN + "World configuration has been loaded!");
             } else if (cmd.equalsIgnoreCase("save")) {
