@@ -613,7 +613,9 @@ public class MWPlayerDataController extends PlayerDataController {
                 // Refresh attributes
                 // Note: must be done before loading inventory, since this sets
                 //       the base attributes for armor.
-                if (playerData.containsKey("Attributes")) {
+                if (playerData.containsKey("attributes")) {
+                    NBTUtil.loadAttributes(player, playerData.get("attributes", CommonTagList.class));
+                } else if (playerData.containsKey("Attributes")) {
                     NBTUtil.loadAttributes(player, playerData.get("Attributes", CommonTagList.class));
                 }
 
@@ -1198,6 +1200,7 @@ public class MWPlayerDataController extends PlayerDataController {
             playerData.put(VANILLA_INVENTORY_TAG, emptyInventory);
         }
 
+        playerData.remove("attributes");
         playerData.remove("Attributes");
         playerData.remove("SelectedItemSlot");
 
