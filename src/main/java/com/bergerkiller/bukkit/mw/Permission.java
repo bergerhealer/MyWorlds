@@ -7,6 +7,7 @@ import org.bukkit.permissions.PermissionDefault;
 import com.bergerkiller.bukkit.common.permissions.PermissionEnum;
 
 public class Permission extends PermissionEnum {
+    public static final Permission COMMAND_INVENTORY_CLEAR = new Permission("world.clearinventory", PermissionDefault.OP, "Allows clearing a player's inventory in a specific world");
     public static final Permission COMMAND_LIST = new Permission("world.list", PermissionDefault.OP, "Sets if the player can list all worlds on the server");
     public static final Permission COMMAND_INFO = new Permission("world.info", PermissionDefault.OP, "Sets if the player can see world information, such as the seed and size");
     public static final Permission COMMAND_CONFIG = new Permission("world.config", PermissionDefault.OP, "Sets if the player can manually load, save and reset the world configuration");

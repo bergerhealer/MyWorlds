@@ -21,6 +21,7 @@ public class WorldCommandRegistry extends CommandRegistry {
         register(WorldInfo::new, "info", "i");
         register(WorldPortals::new, "portals", "portal");
         register(WorldGivePortal::new, "giveportal");
+        register(WorldClearInventory::new, "clearinventory", "clearinv");
         register(WorldLoad::new, "load");
         register(WorldUnload::new, "unload");
         register(WorldCreate::new, "create");

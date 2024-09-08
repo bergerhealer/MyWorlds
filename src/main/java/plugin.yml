@@ -239,6 +239,10 @@ commands:
         description: Enables or disables player getting advancements on the world
         usage: |
             /world advancements [enable/disable/silent] - Enable/disable/no chat
+    world clearinventory:
+        description: Clears a player's inventory in a specific world
+        aliases: [world clearinv]
+        usage: /world clearinventory <player> <world>
     tpp:
         description: Cross-world teleportation commands
         usage: /tpp [Portalname/Worldname] - Teleport to a Portal or World
