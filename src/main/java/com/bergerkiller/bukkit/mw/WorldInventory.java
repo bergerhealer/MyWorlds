@@ -386,12 +386,24 @@ public class WorldInventory {
      */
     public static abstract class MatchRule implements Comparable<MatchRule> {
         private final String expression;
+        private final boolean isAny;
 
         public final String getExpression() {
             return expression;
         }
 
         public static MatchRule of(String expression) {
+            // These match-all expressions are special, as they need to be sorted to the back
+            // They must be selected after all other conditions
+            if (expression.equals("*") || expression.equals("^.*$") || expression.equals(".*$") || expression.equals("^.*")) {
+                return new MatchRule(expression, true) {
+                    @Override
+                    public boolean matches(String worldName) {
+                        return true;
+                    }
+                };
+            }
+
             if (!expression.startsWith("^") && !expression.endsWith("$")) {
                 // Try to parse a simplified pattern where # changes into [0-9]+ and * changes into .*
                 String patternified = expression
@@ -430,13 +442,24 @@ public class WorldInventory {
         }
 
         private MatchRule(String expression) {
+            this(expression, false);
+        }
+
+        private MatchRule(String expression, boolean isAny) {
             this.expression = expression;
+            this.isAny = isAny;
         }
 
         public abstract boolean matches(String worldName);
 
         @Override
         public int compareTo(MatchRule other) {
+            if (this.isAny != other.isAny) {
+                // Make sure the 'any' rule is sorted to the back
+                return this.isAny ? 1 : -1;
+            } else if (this.isAny) {
+                return 0; // Equal in behavior
+            }
             return this.expression.compareTo(other.expression);
         }
 
@@ -447,13 +470,20 @@ public class WorldInventory {
 
         @Override
         public int hashCode() {
+            if (this.isAny) {
+                return 1337;
+            }
             return this.expression.hashCode();
         }
 
         @Override
         public boolean equals(Object obj) {
             if (obj instanceof MatchRule) {
-                return this.expression.equals(((MatchRule) obj).expression);
+                if (this.isAny) {
+                    return ((MatchRule) obj).isAny;
+                } else {
+                    return this.expression.equals(((MatchRule) obj).expression);
+                }
             } else {
                 return false;
             }

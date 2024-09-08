@@ -1,9 +1,25 @@
 import com.bergerkiller.bukkit.mw.WorldInventory;
 import org.junit.Test;
 
+import java.util.Iterator;
+import java.util.TreeSet;
+
 import static org.junit.Assert.*;
 
 public class InventoryMatchRuleTest {
+
+    @Test
+    public void testAnyMatchRuleSortedBack() {
+        TreeSet<WorldInventory.MatchRule> rules = new TreeSet<>();
+        rules.add(WorldInventory.MatchRule.of("*"));
+        rules.add(WorldInventory.MatchRule.of("*"));
+        rules.add(WorldInventory.MatchRule.of("^.*$"));
+        rules.add(WorldInventory.MatchRule.of("world*"));
+        assertEquals(2, rules.size());
+        Iterator<WorldInventory.MatchRule> iter = rules.iterator();
+        assertEquals("world*", iter.next().getExpression());
+        assertEquals("*", iter.next().getExpression());
+    }
 
     @Test
     public void testMatchRuleAny() {
