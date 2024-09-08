@@ -284,7 +284,10 @@ public class WorldConfigStore {
      */
     public static void remove(String worldname) {
         // Unregister the world configuration to remove it
-        worldConfigs.remove(worldname);
+        WorldConfig removedConfig = worldConfigs.remove(worldname);
+        if (removedConfig != null) {
+            removedConfig.inventory.remove(worldname); // In case of 1-world inventories
+        }
         // Remove references to this World Configuration in other worlds
         for (WorldConfig otherConfig : all()) {
             clearDestinationIfUsed(otherConfig.getDefaultNetherPortalDestination(), worldname);
