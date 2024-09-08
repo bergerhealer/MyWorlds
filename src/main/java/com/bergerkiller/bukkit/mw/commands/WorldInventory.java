@@ -155,12 +155,23 @@ public class WorldInventory extends Command {
                     // Show currently set patterns
                 } else if (args[0].equalsIgnoreCase("clear")) {
                     inv.clearMatchRules();
-                    message(ChatColor.YELLOW + "Matched world names for inventory of world '" + matchedWorld + "' cleared");
+                    message(ChatColor.YELLOW + "Matched world names for inventory of world '" + matchedWorld.worldname + "' cleared");
+                } else if (args[0].equalsIgnoreCase("remove")) {
+                    this.removeArg(0);
+                    com.bergerkiller.bukkit.mw.WorldInventory.MatchRule rule = com.bergerkiller.bukkit.mw.WorldInventory.MatchRule.of(String.join(" ", args));
+                    if (inv.removeMatchRule(rule)) {
+                        message(ChatColor.YELLOW + "Removed match rule from inventory of world '" + matchedWorld.worldname + "'");
+                        message(ChatColor.YELLOW + "Rule: " + ChatColor.WHITE + rule.getExpression());
+                        message(ChatColor.YELLOW + "This rule will no longer be applied to new worlds");
+                    } else {
+                        message(ChatColor.RED + "Match rule does not exist!");
+                        message(ChatColor.RED + "Rule: " + ChatColor.WHITE + rule.getExpression());
+                    }
                 } else if (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("add_new")) {
                     this.removeArg(0);
                     com.bergerkiller.bukkit.mw.WorldInventory.MatchRule rule = com.bergerkiller.bukkit.mw.WorldInventory.MatchRule.of(String.join(" ", args));
                     inv.addMatchRule(rule);
-                    message(ChatColor.GREEN + "Added match rule for inventory of world '" + matchedWorld + "'");
+                    message(ChatColor.GREEN + "Added match rule for inventory of world '" + matchedWorld.worldname + "'");
                     message(ChatColor.GREEN + "Rule: " + ChatColor.WHITE + rule.getExpression());
                     message(ChatColor.GREEN + "This rule will take effect for all newly created worlds");
                     boolean isNew = args[0].equalsIgnoreCase("add_new");
@@ -181,7 +192,7 @@ public class WorldInventory extends Command {
                             message(ChatColor.GREEN + "This also merged the following existing worlds:");
                             for (WorldConfig worldMerged : worldsToMerge) {
                                 if (worldMerged != matchedWorld) {
-                                    message(ChatColor.GREEN + "- " + worldMerged);
+                                    message(ChatColor.GREEN + "- " + worldMerged.worldname);
                                 }
                             }
                         }
@@ -355,7 +366,7 @@ public class WorldInventory extends Command {
             if (args.length == 2) {
                 return processWorldNameAutocomplete();
             } else if (args.length == 3) {
-                return Arrays.asList("add", "add_new", "clear");
+                return Arrays.asList("add", "add_new", "remove", "clear");
             } else {
                 return Collections.emptyList();
             }

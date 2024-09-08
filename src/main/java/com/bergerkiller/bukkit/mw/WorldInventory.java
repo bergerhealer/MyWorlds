@@ -49,13 +49,21 @@ public class WorldInventory {
      * @return WorldInventory with a match rule for it, or null otherwise
      */
     public static WorldInventory matchOrCreate(String worldName) {
+        WorldInventory inventory = findInventoryByMatchRule(worldName);
+        if (inventory == null) {
+            inventory = new WorldInventory(worldName);
+        }
+        inventory.add(worldName);
+        return inventory;
+    }
+
+    private static WorldInventory findInventoryByMatchRule(String worldName) {
         for (Map.Entry<MatchRule, WorldInventory> e : inventoryByNamePattern.entrySet()) {
             if (e.getKey().matches(worldName)) {
-                e.getValue().add(worldName);
                 return e.getValue();
             }
         }
-        return new WorldInventory(worldName).add(worldName);
+        return null;
     }
 
     public static void load() {
@@ -227,7 +235,7 @@ public class WorldInventory {
      * @return True if this entry must be saved for proper persistence
      */
     private boolean isRequiredSaving() {
-        return !this.worldNameMatchRules.isEmpty() || this.worlds.size() > 1;
+        return !this.worldNameMatchRules.isEmpty() || this.worlds.size() > 1 || findInventoryByMatchRule(this.worldname) != null;
     }
 
     /**
@@ -331,6 +339,16 @@ public class WorldInventory {
             save();
         }
         return this;
+    }
+
+    public boolean removeMatchRule(MatchRule rule) {
+        if (this.worldNameMatchRules.remove(rule)) {
+            rebuildNamePatternMap();
+            save();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public WorldInventory clearMatchRules() {
