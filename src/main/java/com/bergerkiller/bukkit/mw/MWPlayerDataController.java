@@ -1047,7 +1047,6 @@ public class MWPlayerDataController extends PlayerDataController {
                 // Track whether this inventory was inventory edited
                 if (loadedByInventoryEditor) {
                     InventoryEditRecovery.writeInventoryRecoveryData(files, mainWorldData, playerData);
-                    InventoryEditRecovery.writeEditedInventoryWorld(playerData, files.currentFile.world.worldname);
                 } else {
                     InventoryEditRecovery.clearEditedInventoryWorld(playerData);
                 }
