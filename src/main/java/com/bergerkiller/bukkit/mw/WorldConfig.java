@@ -1108,6 +1108,17 @@ public class WorldConfig extends WorldConfigStore {
 
     /**
      * Gets the File where player data for this world is saved
+     *
+     * @param playerUUID UUID String of the Player to get this world's save file for.
+     *                   Also works for invalid uuid names to locate files by that name.
+     * @return Player Data File
+     */
+    public File getPlayerData(String playerUUID) {
+        return PlayerDataFile.getPlayerDataFile(getPlayerFolder(), playerUUID);
+    }
+
+    /**
+     * Gets the File where player data for this world is saved
      * 
      * @param player to get this world's save file for
      * @return Player Data File

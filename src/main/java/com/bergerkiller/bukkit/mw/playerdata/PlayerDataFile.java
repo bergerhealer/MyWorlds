@@ -26,14 +26,20 @@ import com.bergerkiller.bukkit.mw.WorldManager;
 public class PlayerDataFile {
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
 
-    public final OfflinePlayer player;
+    public final String playerName;
+    public final String playerUUID;
     public final WorldConfig world;
     public final File file;
 
     public PlayerDataFile(OfflinePlayer player, WorldConfig worldConfig) {
-        this.player = player;
+        this(player.getName(), player.getUniqueId().toString(), worldConfig);
+    }
+
+    public PlayerDataFile(String playerName, String playerUUID, WorldConfig worldConfig) {
+        this.playerName = playerName;
+        this.playerUUID = playerUUID;
         this.world = worldConfig;
-        this.file = worldConfig.getPlayerData(player);
+        this.file = worldConfig.getPlayerData(playerUUID);
         this.file.getParentFile().mkdirs();
     }
 
@@ -41,7 +47,11 @@ public class PlayerDataFile {
     }
 
     public static File getPlayerDataFile(File playerDataFolder, UUID playerUUID) {
-        return new File(playerDataFolder, playerUUID.toString() + ".dat");
+        return getPlayerDataFile(playerDataFolder, playerUUID.toString());
+    }
+
+    public static File getPlayerDataFile(File playerDataFolder, String playerUUID) {
+        return new File(playerDataFolder, playerUUID + ".dat");
     }
 
     public boolean exists() {
@@ -53,7 +63,11 @@ public class PlayerDataFile {
     }
 
     public CommonTagCompound readIfExists() {
-        return tryReadIfExists(MyWorlds.plugin, file, player.getName());
+        return tryReadIfExists(MyWorlds.plugin, file, playerName);
+    }
+
+    public static CommonTagCompound readIfExists(MyWorlds plugin, File playerDataFolder, String playerUUID) {
+        return tryReadIfExists(plugin, getPlayerDataFile(playerDataFolder, playerUUID), playerUUID);
     }
 
     public static CommonTagCompound readIfExists(MyWorlds plugin, File playerDataFolder, UUID playerUUID) {
@@ -104,13 +118,17 @@ public class PlayerDataFile {
         write(data);
     }
 
+    public static PlayerDataFile mainFile(String playerName, String playerUUID) {
+        return new PlayerDataFile(playerName, playerUUID, WorldConfig.getInventoryMain());
+    }
+
     public static PlayerDataFile mainFile(OfflinePlayer player) {
         return new PlayerDataFile(player, WorldConfig.getInventoryMain());
     }
 
     /**
      * Creates new player data information as if the player just joined the server.
-     * 
+     *
      * @param player to generate information about
      * @return empty data
      */
@@ -129,6 +147,32 @@ public class PlayerDataFile {
         empty.putListValues("Motion", velocity.getX(), velocity.getY(), velocity.getZ());
         setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
         PlayerRespawnPoint.forPlayer(player).toNBT(empty);
+        return empty;
+    }
+
+    /**
+     * Creates new player data information as if the player just joined the server.
+     * Used for offline reading if the player data of another world was lost.
+     * 
+     * @param playerUUID UUID String of the Player to generate information about
+     * @return empty data
+     */
+    public static CommonTagCompound createEmptyData(String playerUUID) {
+        CommonTagCompound empty = new CommonTagCompound();
+        try {
+            empty.putUUID("", UUID.fromString(playerUUID));
+        } catch (IllegalArgumentException ex) { /* ignore */}
+
+        if (SAVE_HEAL_F) {
+            empty.putValue("HealF", 20.0f);
+        }
+        empty.putValue("Health", 20.0f);
+        empty.putValue("HurtTime", (short) 0);
+        empty.putValue("DeathTime", (short) 0);
+        empty.putValue("AttackTime", (short) 0);
+        empty.putListValues("Motion", 0.0, 0.0, 0.0);
+        setLocation(empty, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
+        PlayerRespawnPoint.NONE.toNBT(empty);
         return empty;
     }
 

@@ -269,7 +269,7 @@ public class MyWorlds extends PluginBase {
 
         // Player data controller
         dataController = new MWPlayerDataController(this);
-        dataController.assign();
+        dataController.enable();
 
         // Auto-save every 15 minutes
         autoSaveTask.start(15*60*20, 15*60*20);

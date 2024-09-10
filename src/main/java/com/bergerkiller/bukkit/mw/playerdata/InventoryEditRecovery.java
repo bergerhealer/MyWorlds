@@ -84,13 +84,10 @@ public class InventoryEditRecovery {
                 playerData.createCompound(MWPlayerDataController.DATA_TAG_ROOT)
                         .put(DATA_TAG_INV_EDIT_RECOVERY, mainWorldData);
             }
-
-            // Still write to the vanilla main world in case the inventory editing plugin tries reading the actual data file
-            files.mainWorldFile.write(playerData);
         } else {
             // Different main, update the main world ourselves
             // Read the original vanilla world player file data
-            PlayerDataFile vanillaDataFile = new PlayerDataFile(files.player, WorldConfig.getVanillaMain());
+            PlayerDataFile vanillaDataFile = files.createFile(WorldConfig.getVanillaMain());
             CommonTagCompound vanillaWorldDataRead = vanillaDataFile.readIfExists();
             if (vanillaWorldDataRead != null) {
                 mainWorldData.createCompound(MWPlayerDataController.DATA_TAG_ROOT)
