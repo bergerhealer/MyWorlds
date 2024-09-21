@@ -1042,7 +1042,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
     // Used on 1.20.5+ to handle when openinv loads player profiles 'offline'
     // Method callback added since BKCL 1.21.1 snapshots
-    // @Override
+    @Override
     public CommonTagCompound onLoadOffline(String playerName, String playerUUID) {
         // There is no real way to tell, but this only gets called when openinv calls it
         // This is because the normal base operation of onLoad(player) calling this method doesn't happen,
