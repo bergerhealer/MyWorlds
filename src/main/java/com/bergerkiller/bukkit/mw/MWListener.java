@@ -32,7 +32,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
@@ -619,51 +618,49 @@ public class MWListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onSignChange(SignChangeEvent event) {
+    public boolean handleSignEdit(Player player, Block signBlock, SignSide signSide, String[] signLines) {
         // See if the player entered a portal on the sign
-        Portal portal = Portal.get(event.getBlock(), event.getLines());
+        Portal portal = Portal.get(signBlock, signLines);
         if (portal == null) {
-            return;
+            return true;
         }
 
         // If back-side is supported, verify the other side of the sign isn't also a portal
         // This isn't supported and so we send a message in that case
         if (SignSide.BACK.isSupported()) {
-            Sign sign = BlockUtil.getSign(event.getBlock());
-            SignSide side = SignSide.sideChanged(event).opposite();
-            if (sign != null && Portal.get(sign, side) != null) {
-                event.getPlayer().sendMessage(ChatColor.RED + "The other side of this sign already contains a portal!");
-                event.setCancelled(true);
-                return;
+            Sign sign = BlockUtil.getSign(signBlock);
+            if (sign != null && Portal.get(sign, signSide.opposite()) != null) {
+                player.sendMessage(ChatColor.RED + "The other side of this sign already contains a portal!");
+                return false;
             }
         }
 
-        if (Permission.PORTAL_CREATE.has(event.getPlayer())) {
-            if (Portal.exists(event.getPlayer().getWorld().getName(), portal.getName())) {
-                if (!MyWorlds.allowPortalNameOverride || !Permission.PORTAL_OVERRIDE.has(event.getPlayer())) {
-                    event.getPlayer().sendMessage(ChatColor.RED + "This portal name is already used!");
-                    event.setCancelled(true);
-                    return;
+        if (Permission.PORTAL_CREATE.has(player)) {
+            if (Portal.exists(player.getWorld().getName(), portal.getName())) {
+                if (!MyWorlds.allowPortalNameOverride || !Permission.PORTAL_OVERRIDE.has(player)) {
+                    player.sendMessage(ChatColor.RED + "This portal name is already used!");
+                    return false;
                 }
             }
             portal.add();
-            MyWorlds.plugin.logAction(event.getPlayer(), "Created a new portal: '" + portal.getName() + "'!");
+            MyWorlds.plugin.logAction(player, "Created a new portal: '" + portal.getName() + "'!");
             // Build message
             if (portal.getDestinationName() != null) {
-                Localization.PORTAL_CREATE_TO.message(event.getPlayer(), portal.getDestinationName());
+                Localization.PORTAL_CREATE_TO.message(player, portal.getDestinationName());
                 if (!portal.hasDestination()) {
-                    Localization.PORTAL_CREATE_MISSING.message(event.getPlayer());
+                    Localization.PORTAL_CREATE_MISSING.message(player);
                 }
                 if (portal.isRejoin()) {
-                    Localization.PORTAL_CREATE_REJOIN.message(event.getPlayer());
+                    Localization.PORTAL_CREATE_REJOIN.message(player);
                 }
             } else {
-                Localization.PORTAL_CREATE_END.message(event.getPlayer());
+                Localization.PORTAL_CREATE_END.message(player);
             }
+
+            return true;
         } else {
-            Localization.PORTAL_BUILD_NOPERM.message(event.getPlayer());
-            event.setCancelled(true);
+            Localization.PORTAL_BUILD_NOPERM.message(player);
+            return false;
         }
     }
 }

@@ -228,6 +228,11 @@ public class MyWorlds extends PluginBase {
         // Event registering
         this.worldDupingPatch.enable(this);
         this.register(listener);
+        if (Common.hasCapability("Common:SignEditTextEvent")) {
+            this.register(new MWListenerSignEditBKCL(listener));
+        } else {
+            this.register(new MWListenerSignEditLegacy(listener));
+        }
         this.register(new MWListenerPost(this));
         this.register("tpp", "world");
         this.register(this.migrator);
