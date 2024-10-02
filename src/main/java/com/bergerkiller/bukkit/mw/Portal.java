@@ -3,6 +3,8 @@ package com.bergerkiller.bukkit.mw;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.bergerkiller.bukkit.common.block.SignSide;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
@@ -27,6 +29,9 @@ import com.bergerkiller.bukkit.common.wrappers.BlockData;
 import com.bergerkiller.bukkit.mw.portal.PortalSignList;
 
 public class Portal extends PortalStore {
+    // Regex: \[[+\-\!\/\\]*portal\s*([a-z]*)\]
+    private static final Pattern PORTAL_SIGN_PATTERN = Pattern.compile("\\[[+\\-\\!\\/\\\\]*portal\\s*([a-z]*)\\]");
+
     private String name;
     private String destination;
     private String destdisplayname;
@@ -332,17 +337,17 @@ public class Portal extends PortalStore {
 
         boolean isRejoin = false;
         {
-            String header = lines[0].toLowerCase(Locale.ENGLISH);
-            if (!header.startsWith("[portal") || header.charAt(header.length()-1) != ']') {
+            Matcher matcher = PORTAL_SIGN_PATTERN.matcher(lines[0].toLowerCase(Locale.ENGLISH));
+            if (!matcher.matches()) {
                 return null;
             }
 
-            String mid = header.substring(7, header.length() - 1).trim();
-            if (!mid.isEmpty()) {
-                if (mid.equals("rejoin")) {
+            String specialMode = matcher.group(1);
+            if (specialMode != null && !specialMode.isEmpty()) {
+                if (specialMode.equals("rejoin")) {
                     isRejoin = true;
                 } else {
-                    return null; // Invalid syntax
+                    return null; // Invalid special mode
                 }
             }
         }
