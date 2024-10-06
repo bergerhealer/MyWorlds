@@ -66,6 +66,7 @@ public class Permission extends PermissionEnum {
     public static final Permission PORTAL_USE = new Permission("portal.use", PermissionDefault.TRUE, "Sets if the player can use portals", 1);
     public static final Permission PORTAL_TELEPORT = new Permission("portal.teleport", PermissionDefault.OP, "Sets the portals a player can teleport to using /tpp", 1);
     public static final Permission SUGGESTIONS = new Permission("command.suggestions", PermissionDefault.TRUE, "Sets whether the player can see myworlds command suggestions");
+    public static final Permission DEBUGGING = new Permission("command.debug", PermissionDefault.OP, "Sets whether the player can toggle debugging of Bukkit events on/off");
 
     private Permission(final String name, final PermissionDefault def, final String desc) {
         super("myworlds." + name, def, desc, 0);

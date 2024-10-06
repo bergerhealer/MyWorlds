@@ -65,6 +65,7 @@ public class WorldCommandRegistry extends CommandRegistry {
         register(WorldSetPlayerLimit::new, "playerlimit");
         register(WorldSetPortalOption::new, "setportaloption");
         register(WorldSetAutoLoad::new, "setautoload");
+        register(WorldDebug::new, "debug");
     }
 
 }
