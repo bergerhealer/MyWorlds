@@ -44,7 +44,7 @@ public class WorldConfig extends WorldConfigStore {
     public String alias;
     public boolean keepSpawnInMemory = true;
     public WorldMode worldmode = WorldMode.NORMAL;
-    public boolean loadOnStartup = true;
+    private WorldStartupLoadMode startupLoadMode = WorldStartupLoadMode.NOT_LOADED;
     private String chunkGeneratorName;
     public Difficulty difficulty = Difficulty.NORMAL;
     private Position spawnPoint; // If null, uses the World spawn
@@ -188,7 +188,7 @@ public class WorldConfig extends WorldConfigStore {
         // Some chunk generator plugins do not handle it when MyWorlds loads the world before
         if (generatorPluginName != null) {
             if (generatorPluginName.equalsIgnoreCase("iris")) {
-                this.loadOnStartup = false;
+                this.setStartupLoadMode(WorldStartupLoadMode.IGNORE);
                 MyWorlds.plugin.getLogger().log(Level.INFO, "Set auto-load for world '" + worldname +
                         "' to 'no' because it uses chunk generator plugin '" + generatorPluginName + "'!");
             }
@@ -240,7 +240,7 @@ public class WorldConfig extends WorldConfigStore {
         this.worldmode = config.worldmode;
         this.chunkGeneratorName = config.chunkGeneratorName;
         this.difficulty = config.difficulty;
-        this.loadOnStartup = config.loadOnStartup;
+        this.startupLoadMode = config.startupLoadMode.afterWorldLoadedChanged(isLoaded());
 
         // Copy spawn point. Swap world name if it referred to the original world
         this.spawnPoint = (config.spawnPoint == null) ? null : config.spawnPoint.clone();
@@ -279,7 +279,7 @@ public class WorldConfig extends WorldConfigStore {
         this.keepSpawnInMemory = node.get("keepSpawnLoaded", this.keepSpawnInMemory);
         this.worldmode = WorldMode.get(node.get("environment", this.worldmode.getName()));
         this.chunkGeneratorName = node.get("chunkGenerator", String.class, this.chunkGeneratorName);
-        this.loadOnStartup = !node.contains("loaded") || !"ignore".equalsIgnoreCase(node.get("loaded", String.class, ""));
+        this.startupLoadMode = WorldStartupLoadMode.readFromConfig(node);
         if (LogicUtil.nullOrEmpty(this.chunkGeneratorName)) {
             this.chunkGeneratorName = null;
         }
@@ -412,11 +412,7 @@ public class WorldConfig extends WorldConfigStore {
         } else {
             node.set("alias", this.alias);
         }
-        if (this.loadOnStartup) {
-            node.set("loaded", w != null);
-        } else {
-            node.set("loaded", "ignore");
-        }
+        this.startupLoadMode.writeToConfig(node);
         node.set("keepSpawnLoaded", this.keepSpawnInMemory);
         node.set("environment", this.worldmode.getName());
         node.set("chunkGenerator", LogicUtil.fixNull(this.getChunkGeneratorName(), ""));
@@ -535,6 +531,26 @@ public class WorldConfig extends WorldConfigStore {
                 WorldManager.removeInvalidBedSpawnPoint(player);
             }
         }
+    }
+
+    /**
+     * Gets what kind of behavior MyWorlds should have on server restart/startup
+     * for this world.
+     *
+     * @return WorldStartupLoadMode
+     */
+    public WorldStartupLoadMode getStartupLoadMode() {
+        return this.startupLoadMode;
+    }
+
+    /**
+     * Sets what kind of behavior MyWorlds should have on server restart/startup
+     * for this world.
+     *
+     * @param mode WorldStartupLoadMode
+     */
+    public void setStartupLoadMode(WorldStartupLoadMode mode) {
+        this.startupLoadMode = mode;
     }
 
     /**
@@ -741,6 +757,9 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     public void onWorldLoad(World world) {
+        // If startup mode was set to NOT_LOADED, change it to LOADED automatically
+        setStartupLoadMode(getStartupLoadMode().afterWorldLoadedChanged(true));
+
         // Update settings
         updateAll(world);
         // Detect default portals
@@ -756,6 +775,9 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     public void onWorldUnload(World world) {
+        // If startup mode was set to LOADED, change it to NOT_LOADED automatically
+        setStartupLoadMode(getStartupLoadMode().afterWorldLoadedChanged(false));
+
         // If the actual World spawnpoint changed, be sure to update accordingly
         // This is so that if another plugin changes the spawn point, MyWorlds updates too
         if (this.spawnPoint != null) {

@@ -185,7 +185,8 @@ public class WorldConfigStore {
                     WorldConfig wc = create(worldname, false);
                     wc.load(node);
                     wc.detectGeneratorDisableAutoLoad();
-                    if (wc.loadOnStartup && node.get("loaded", false)) {
+
+                    if (wc.getStartupLoadMode() == WorldStartupLoadMode.LOADED) {
                         wc.loadWorld();
                     }
                 } else {
