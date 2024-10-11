@@ -107,7 +107,7 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onWorldUnload(WorldUnloadEvent event) {
-        WorldConfig.get(event.getWorld()).onWorldUnload(event.getWorld());
+        WorldConfig.get(event.getWorld()).onWorldUnload(event.getWorld(), false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

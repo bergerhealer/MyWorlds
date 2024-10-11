@@ -28,7 +28,7 @@ public class WorldManageConfig extends Command {
                 com.bergerkiller.bukkit.mw.WorldConfig.init();
                 message(ChatColor.GREEN + "World configuration has been loaded!");
             } else if (cmd.equalsIgnoreCase("save")) {
-                com.bergerkiller.bukkit.mw.WorldConfig.saveAll();
+                com.bergerkiller.bukkit.mw.WorldConfig.saveAll(plugin);
                 message(ChatColor.GREEN + "World configuration has been saved!");
             } else if (cmd.equalsIgnoreCase("reset")) {
                 List<String> toReset = new ArrayList<String>();

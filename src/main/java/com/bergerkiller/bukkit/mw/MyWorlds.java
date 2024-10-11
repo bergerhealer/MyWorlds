@@ -217,6 +217,13 @@ public class MyWorlds extends PluginBase {
     }
 
     @Override
+    public void onLoad() {
+        // Ensure world configurations are loaded from disk before the full plugin actually enables
+        // This is important if we need to do some operation on startup before the worlds are loaded.
+        WorldConfig.initLoadConfig(this);
+    }
+
+    @Override
     public void enable() {
         plugin = this;
 
@@ -253,14 +260,16 @@ public class MyWorlds extends PluginBase {
         // Start automatic cleanup of portals we haven't been visited in a while
         netherPortalSearcher.enable();
 
-        // World configurations have to be loaded first
-        WorldConfig.init();
+        // Start loading worlds that need to be loaded on startup
+        // Also apply information about loaded worlds to the current configuration,
+        // in case they have changed.
+        WorldConfig.initStartup(this);
 
         // Portals
         this.portalSignList.enable();
 
         // World inventories
-        WorldInventory.load();
+        WorldInventory.load(this);
 
         // Ensure mythic dungeons are setup correctly
         // Is automatically done when new worlds load in
@@ -301,7 +310,7 @@ public class MyWorlds extends PluginBase {
         //WorldInventory.save();
 
         // World configurations have to be cleared last
-        WorldConfig.deinit();
+        WorldConfig.deinit(this);
 
         // Abort chunk loader
         LoadChunksTask.abort(true);
@@ -634,7 +643,7 @@ public class MyWorlds extends PluginBase {
 
         @Override
         public void run() {
-            WorldConfigStore.saveAll();
+            WorldConfigStore.saveAll(MyWorlds.plugin);
         }
     }
 }

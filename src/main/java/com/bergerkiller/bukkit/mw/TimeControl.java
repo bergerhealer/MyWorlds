@@ -15,21 +15,7 @@ public class TimeControl {
 
     public TimeControl(WorldConfig owner) {
         this.config = owner;
-        this.lockingTask = new Task(MyWorlds.plugin) {
-            @Override
-            public Task start() {
-                return this.start(MyWorlds.timeLockInterval, MyWorlds.timeLockInterval);
-            }
-
-            @Override
-            public void run() {
-                if (locking && world != null) {
-                    world.setTime(lockedTime);
-                } else {
-                    stop();
-                }
-            }
-        };
+        this.lockingTask = null;
     }
 
     public void setTime(long time) {
@@ -86,10 +72,13 @@ public class TimeControl {
                     this.world.setGameRuleValue(LOCKING_RULE, Boolean.valueOf(!locking).toString());
                 } else if (locking) {
                     // Start the locking task
+                    this.initLockingTask();
                     this.lockingTask.start();
                 } else {
                     // Stop the locking task
-                    this.lockingTask.stop();
+                    if (this.lockingTask != null) {
+                        this.lockingTask.stop();
+                    }
                 }
             }
         }
@@ -99,17 +88,40 @@ public class TimeControl {
         if (this.world != world) {
             this.world = world;
             if (world == null && !canUseGameRule) {
-                this.lockingTask.stop();
+                if (this.lockingTask != null) {
+                    this.lockingTask.stop();
+                }
             } else if (world != null) {
                 this.canUseGameRule = this.world.isGameRule(LOCKING_RULE);
                 if (canUseGameRule) {
                     this.world.setGameRuleValue(LOCKING_RULE, Boolean.valueOf(!locking).toString());
                 } else {
+                    this.initLockingTask();
                     this.lockingTask.start();
                 }
             }
             return true;
         }
         return false;
+    }
+
+    private void initLockingTask() {
+        if (this.lockingTask == null) {
+            this.lockingTask = new Task(MyWorlds.plugin) {
+                @Override
+                public Task start() {
+                    return this.start(MyWorlds.timeLockInterval, MyWorlds.timeLockInterval);
+                }
+
+                @Override
+                public void run() {
+                    if (locking && world != null) {
+                        world.setTime(lockedTime);
+                    } else {
+                        stop();
+                    }
+                }
+            };
+        }
     }
 }

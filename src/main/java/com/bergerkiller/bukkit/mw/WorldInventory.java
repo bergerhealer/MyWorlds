@@ -27,6 +27,7 @@ public class WorldInventory {
     private static final SortedMap<MatchRule, WorldInventory> inventoryByNamePattern = new TreeMap<>();
     private static boolean inventoriesLoaded = false;
     private static int counter = 0;
+    private final MyWorlds plugin;
     private final Set<String> worlds = new HashSet<String>();
     private final Set<MatchRule> worldNameMatchRules = new LinkedHashSet<>();
     private String worldname;
@@ -36,8 +37,8 @@ public class WorldInventory {
         return inventories;
     }
 
-    public static WorldInventory create(String worldName) {
-        return new WorldInventory(worldName).add(worldName);
+    public static WorldInventory create(MyWorlds plugin, String worldName) {
+        return new WorldInventory(plugin, worldName).add(worldName);
     }
 
     /**
@@ -45,13 +46,14 @@ public class WorldInventory {
      * If it does, returns that one. Otherwise, returns a new empty world inventory
      * for this specific world name.
      *
+     * @param plugin MyWorlds plugin instance
      * @param worldName World name
      * @return WorldInventory with a match rule for it, or null otherwise
      */
-    public static WorldInventory matchOrCreate(String worldName) {
+    public static WorldInventory matchOrCreate(MyWorlds plugin, String worldName) {
         WorldInventory inventory = findInventoryByMatchRule(worldName);
         if (inventory == null) {
-            inventory = new WorldInventory(worldName);
+            inventory = new WorldInventory(plugin, worldName);
         }
         inventory.add(worldName);
         return inventory;
@@ -66,7 +68,7 @@ public class WorldInventory {
         return null;
     }
 
-    public static void load() {
+    public static void load(MyWorlds plugin) {
         inventoriesLoaded = true;
 
         // Check whether there are any configured entries that would result in saving
@@ -79,7 +81,7 @@ public class WorldInventory {
         }
 
         // Load the new configuration. Replace found settings with already-generated ones.
-        FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "inventories.yml");
+        FileConfiguration config = new FileConfiguration(plugin, "inventories.yml");
         config.load();
         for (ConfigurationNode node : config.getNodes()) {
             String sharedWorld = node.get("folder", String.class, null);
@@ -93,7 +95,7 @@ public class WorldInventory {
                 continue;
             }
 
-            WorldInventory inv = new WorldInventory(WorldConfig.get(sharedWorld).worldname);
+            WorldInventory inv = new WorldInventory(plugin, WorldConfig.get(sharedWorld).worldname);
             inv.name = node.getName();
             for (String matchExpression : matches) {
                 inv.worldNameMatchRules.add(MatchRule.of(matchExpression));
@@ -110,17 +112,17 @@ public class WorldInventory {
 
         // Re-save after loading in case merging of previous default inventories caused changes
         if (hadExistingInventoriesThatRequiredSaving) {
-            save();
+            save(plugin);
         }
     }
 
-    public static void save() {
+    public static void save(MyWorlds plugin) {
         // Avoid overwriting inventories.yml with incomplete data before it is all loaded in
         if (!inventoriesLoaded) {
             return;
         }
 
-        FileConfiguration config = new FileConfiguration(MyWorlds.plugin, "inventories.yml");
+        FileConfiguration config = new FileConfiguration(plugin, "inventories.yml");
         Set<String> savedNames = new HashSet<String>();
         for (WorldInventory inventory : inventories) {
             if (inventory.isRequiredSaving()) {
@@ -172,7 +174,7 @@ public class WorldInventory {
                 WorldConfig wc = WorldConfig.get(world);
                 wc.inventory.removeWithoutSaving(world, true);
             }
-            save();
+            save(MyWorlds.plugin);
 
             // Validate the bed spawn points of all worlds impacted, to make sure none of them
             // refer to a now-inaccessible world.
@@ -208,20 +210,34 @@ public class WorldInventory {
         // Assign all found configurations to a singular inventory instance
         // Preserve the match rules of all inventories combined
         if (allWorldConfigurations.size() > 1) {
-            WorldInventory inv = new WorldInventory(null);
+            WorldInventory inv = new WorldInventory(MyWorlds.plugin, null);
             for (WorldConfig worldConfig : allWorldConfigurations) {
                 inv.worldNameMatchRules.addAll(worldConfig.inventory.worldNameMatchRules);
                 inv.addWithoutSaving(worldConfig);
             }
             rebuildNamePatternMap();
-            save();
+            save(MyWorlds.plugin);
         }
     }
 
-    private WorldInventory(String sharedWorldName) {
+    private WorldInventory(MyWorlds plugin, String sharedWorldName) {
+        if (plugin == null) {
+            throw new IllegalArgumentException("MyWorlds plugin instance is null (load order?)");
+        }
+
+        this.plugin = plugin;
         inventories.add(this);
         this.name = "inv" + counter++;
         this.worldname = sharedWorldName;
+    }
+
+    /**
+     * Gets the main MyWorlds plugin instance
+     *
+     * @return MyWorlds plugin instance
+     */
+    public MyWorlds getPlugin() {
+        return plugin;
     }
 
     public Collection<String> getWorlds() {
@@ -249,7 +265,7 @@ public class WorldInventory {
             throw new IllegalArgumentException("World name " + worldName + " is not part of this inventory group");
         }
         this.worldname = worldName;
-        save();
+        save(plugin);
     }
 
     /**
@@ -287,7 +303,7 @@ public class WorldInventory {
     public boolean remove(String worldname) {
         boolean result = removeWithoutSaving(worldname, false);
         if (result) {
-            save();
+            save(plugin);
         }
         return result;
     }
@@ -299,7 +315,7 @@ public class WorldInventory {
 
             //constructor handles world config update
             if (createNew) {
-                new WorldInventory(worldname).addWithoutSaving(worldname);
+                new WorldInventory(plugin, worldname).addWithoutSaving(worldname);
             }
         }
         if (this.worlds.isEmpty()) {
@@ -317,14 +333,14 @@ public class WorldInventory {
 
     public WorldInventory add(WorldConfig worldConfig) {
         if (this.addWithoutSaving(worldConfig)) {
-            save();
+            save(plugin);
         }
         return this;
     }
 
     public WorldInventory add(String worldname) {
         if (this.addWithoutSaving(worldname)) {
-            save();
+            save(plugin);
         }
         return this;
     }
@@ -336,7 +352,7 @@ public class WorldInventory {
     public WorldInventory addMatchRule(MatchRule rule) {
         if (this.worldNameMatchRules.add(rule)) {
             rebuildNamePatternMap();
-            save();
+            save(plugin);
         }
         return this;
     }
@@ -344,7 +360,7 @@ public class WorldInventory {
     public boolean removeMatchRule(MatchRule rule) {
         if (this.worldNameMatchRules.remove(rule)) {
             rebuildNamePatternMap();
-            save();
+            save(plugin);
             return true;
         } else {
             return false;
@@ -355,7 +371,7 @@ public class WorldInventory {
         if (!this.worldNameMatchRules.isEmpty()) {
             this.worldNameMatchRules.clear();
             rebuildNamePatternMap();
-            save();
+            save(plugin);
         }
         return this;
     }

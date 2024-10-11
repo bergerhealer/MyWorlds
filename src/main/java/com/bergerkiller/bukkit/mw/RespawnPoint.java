@@ -62,17 +62,18 @@ public abstract class RespawnPoint {
     /**
      * Selects and loads the respawn point from a configuration
      *
+     * @param plugin MyWorlds plugin instance
      * @param config
      * @return respawn point
      */
-    public static RespawnPoint fromConfig(ConfigurationNode config) {
+    public static RespawnPoint fromConfig(MyWorlds plugin, ConfigurationNode config) {
         RespawnPoint.Type type = config.get("type", RespawnPoint.Type.class);
         if (type != null) {
             try {
                 return type.create(config);
             } catch (Throwable t) {
-                MyWorlds.plugin.getLogger().log(Level.SEVERE, "Broken respawn point config: " + config.toString());
-                MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to load respawn point config", t);
+                plugin.getLogger().log(Level.SEVERE, "Broken respawn point config: " + config.toString());
+                plugin.getLogger().log(Level.SEVERE, "Failed to load respawn point config", t);
             }
         }
 

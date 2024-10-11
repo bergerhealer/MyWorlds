@@ -303,6 +303,8 @@ public class WorldManager {
      * @return The created World, or null on failure
      */
     public static World createWorld(String worldname, long seed, CommandSender sender) {
+        final MyWorlds plugin = MyWorlds.plugin;
+
         WorldConfig wc = WorldConfig.get(worldname);
         final boolean load = wc.isInitialized();
         String chunkGeneratorName = wc.getChunkGeneratorName();
@@ -323,7 +325,7 @@ public class WorldManager {
                 msg.append(" and chunk generator: '").append(chunkGeneratorName).append("'");
             }
         }
-        MyWorlds.plugin.log(Level.INFO, msg.toString());
+        plugin.log(Level.INFO, msg.toString());
 
         World w = null;
         int i = 0;
@@ -333,7 +335,7 @@ public class WorldManager {
                 cgen = getGenerator(worldname, chunkGeneratorName);
             }
         } catch (Throwable t) {
-            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to initialize generator " + chunkGeneratorName, t);
+            plugin.getLogger().log(Level.SEVERE, "Failed to initialize generator " + chunkGeneratorName, t);
             if (sender != null) {
                 sender.sendMessage(ChatColor.RED + "Failed to initialize generator " + chunkGeneratorName + ": " +
                         t.getMessage());
@@ -346,7 +348,7 @@ public class WorldManager {
                 msg.append("World '").append(worldname);
                 msg.append("' could not be created because the chunk generator '");
                 msg.append(chunkGeneratorName).append("' was not found!");
-                MyWorlds.plugin.log(Level.SEVERE, msg.toString());
+                plugin.log(Level.SEVERE, msg.toString());
                 if (sender != null) {
                     sender.sendMessage(ChatColor.RED + msg.toString());
                 }
@@ -395,22 +397,22 @@ public class WorldManager {
         }
         if (w == null) {
             if (failReason != null) {
-                MyWorlds.plugin.getLogger().log(Level.SEVERE, "World creation failed after " + i + " retries!", failReason);
+                plugin.getLogger().log(Level.SEVERE, "World creation failed after " + i + " retries!", failReason);
                 if (sender != null) {
                     sender.sendMessage(ChatColor.RED + "Failed to create world: " + failReason.getMessage());
                 }
             } else {
-                MyWorlds.plugin.log(Level.SEVERE, "World creation failed after " + i + " retries!");
+                plugin.log(Level.SEVERE, "World creation failed after " + i + " retries!");
             }
         } else if (i == 1) {
-            MyWorlds.plugin.log(Level.INFO, "World creation succeeded after 1 retry!");
+            plugin.log(Level.INFO, "World creation succeeded after 1 retry!");
         } else if (i > 0) {
-            MyWorlds.plugin.log(Level.INFO, "World creation succeeded after " + i + " retries!");
+            plugin.log(Level.INFO, "World creation succeeded after " + i + " retries!");
         }
 
         // Force a save of world configurations so this persists
         // The just-loaded world will have the configuration applied to it thanks to the WorldLoadEvent
-        WorldConfigStore.saveAll();
+        WorldConfigStore.saveAll(plugin);
 
         return w;
     }

@@ -40,6 +40,7 @@ import com.bergerkiller.bukkit.mw.portal.PortalMode;
 import com.bergerkiller.bukkit.mw.utils.GeneratorStructuresParser;
 
 public class WorldConfig extends WorldConfigStore {
+    private final MyWorlds plugin;
     public final String worldname;
     public String alias;
     public boolean keepSpawnInMemory = true;
@@ -71,9 +72,23 @@ public class WorldConfig extends WorldConfigStore {
     public WorldInventory inventory;
     private File worldPlayerDataFolderOverride = null;
 
-    protected WorldConfig(String worldname) {
+    protected WorldConfig(MyWorlds plugin, String worldname) {
+        if (plugin == null) {
+            throw new IllegalArgumentException("Null MyWorlds plugin instance (out of order loading?)");
+        }
+
+        this.plugin = plugin;
         this.worldname = worldname;
         this.alias = worldname;
+    }
+
+    /**
+     * Gets the MyWorlds plugin instance that manages this WorldConfig
+     *
+     * @return MyWorlds main plugin instance
+     */
+    public MyWorlds getPlugin() {
+        return plugin;
     }
 
     /**
@@ -152,9 +167,9 @@ public class WorldConfig extends WorldConfigStore {
         }
 
         if (assignToMatchedInventory) {
-            this.inventory = WorldInventory.matchOrCreate(this.worldname);
+            this.inventory = WorldInventory.matchOrCreate(this.plugin, this.worldname);
         } else {
-            this.inventory = WorldInventory.create(this.worldname);
+            this.inventory = WorldInventory.create(this.plugin, this.worldname);
         }
     }
 
@@ -289,7 +304,7 @@ public class WorldConfig extends WorldConfigStore {
 
         // Respawn point
         if (node.isNode("respawn")) {
-            this.respawnPoint = RespawnPoint.fromConfig(node.getNode("respawn"));
+            this.respawnPoint = RespawnPoint.fromConfig(plugin, node.getNode("respawn"));
         } else {
             this.respawnPoint = RespawnPoint.DEFAULT;
         }
@@ -774,9 +789,11 @@ public class WorldConfig extends WorldConfigStore {
         }
     }
 
-    public void onWorldUnload(World world) {
+    public void onWorldUnload(World world, boolean isPluginDisable) {
         // If startup mode was set to LOADED, change it to NOT_LOADED automatically
-        setStartupLoadMode(getStartupLoadMode().afterWorldLoadedChanged(false));
+        if (!isPluginDisable) {
+            setStartupLoadMode(getStartupLoadMode().afterWorldLoadedChanged(false));
+        }
 
         // If the actual World spawnpoint changed, be sure to update accordingly
         // This is so that if another plugin changes the spawn point, MyWorlds updates too
