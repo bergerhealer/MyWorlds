@@ -7,6 +7,7 @@ import org.bukkit.ChatColor;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfigStore;
 import com.bergerkiller.bukkit.mw.WorldManager;
+import org.bukkit.World;
 
 public class WorldLoad extends Command {
 
@@ -53,8 +54,15 @@ public class WorldLoad extends Command {
                     }
                     message(ChatColor.YELLOW + msg);
                     logAction("Issued a load command for world: " + this.worldname);
-                    if (WorldManager.createWorld(worldname, 0, sender) != null) {
-                        message(ChatColor.GREEN + "World loaded!");
+
+                    boolean isInitialized = WorldConfigStore.get(worldname).isInitialized();
+                    World world = WorldManager.createWorld(worldname, 0, sender);
+                    if (world != null) {
+                        if (isInitialized) {
+                            message(ChatColor.GREEN + "World loaded!");
+                        } else {
+                            loadSpawnArea(world);
+                        }
                     }
                 }
             }
