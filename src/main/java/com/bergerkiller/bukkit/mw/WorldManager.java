@@ -298,7 +298,7 @@ public class WorldManager {
      * Creates a new World
      * 
      * @param worldname to create
-     * @param seed to use
+     * @param seed to use, 0 does not override it (TODO: Fix this?)
      * @param sender to send creation problems to if they occur (null to ignore)
      * @return The created World, or null on failure
      */

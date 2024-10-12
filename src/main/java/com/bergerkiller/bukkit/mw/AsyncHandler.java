@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 import org.bukkit.ChatColor;
@@ -12,6 +13,29 @@ import com.bergerkiller.bukkit.common.AsyncTask;
 import com.bergerkiller.bukkit.common.utils.CommonUtil;
 
 public class AsyncHandler {
+    public static CompletableFuture<Boolean> reset(final CommandSender sender, String worldname, WorldRegenerateOptions options) {
+        final WorldConfig worldConfig = WorldConfig.get(worldname);
+        if (worldConfig.isLoaded()) {
+            CommonUtil.sendMessage(sender, ChatColor.RED + "Can not reset chunk data of a loaded world!");
+            return CompletableFuture.completedFuture(Boolean.FALSE);
+        }
+
+        final CompletableFuture<Boolean> future = new CompletableFuture<>();
+        new AsyncTask("World reset thread") {
+            public void run() {
+                future.complete(worldConfig.regenerateWorldData(options));
+            }
+        }.start();
+
+        return future.thenApplyAsync(success -> {
+            if (success) {
+                CommonUtil.sendMessage(sender, ChatColor.GREEN + "World '" + worldConfig.worldname + "' chunk data has been reset!");
+            } else {
+                CommonUtil.sendMessage(sender, ChatColor.RED + "Failed to (completely) reset the world chunk data!");
+            }
+            return success;
+        }, CommonUtil.getMainThreadExecutor());
+    }
     public static void delete(final CommandSender sender, String worldname) {
         final WorldConfig worldConfig = WorldConfig.get(worldname);
         if (worldConfig.isLoaded()) {

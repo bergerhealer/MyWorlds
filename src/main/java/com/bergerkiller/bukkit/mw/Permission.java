@@ -27,6 +27,7 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_SAVE = new Permission("world.save", PermissionDefault.OP, "Sets if the player can save worlds");
     public static final Permission COMMAND_SETSAVING = new Permission("world.setsaving", PermissionDefault.OP, "Sets if the player can toggle world auto-saving on or off");
     public static final Permission COMMAND_DELETE = new Permission("world.delete", PermissionDefault.OP, "Sets if the player can permanently delete worlds");
+    public static final Permission COMMAND_REGENERATE = new Permission("world.regenerate", PermissionDefault.OP, "Sets if the player can permanently reset worlds (regenerate entirely)");
     public static final Permission COMMAND_COPY = new Permission("world.copy", PermissionDefault.OP, "Sets if the player can clone worlds");
     public static final Permission COMMAND_DIFFICULTY = new Permission("world.difficulty", PermissionDefault.OP, "Sets if the player can change the difficulty setting of worlds");
     public static final Permission COMMAND_TOGGLEPVP = new Permission("world.togglepvp", PermissionDefault.OP, "Sets if the player can change the PvP setting of worlds");

@@ -52,6 +52,7 @@ commands:
             /world rememberlastpos - Toggles last-position memory on/off
             /world evacuate - Evacuate all players of a world
             /world delete - Delete a world permanently
+            /world regenerate - Resets world data and regenerates
             /world copy - Copy a world to a new name
             /world repair - Repair a world
             /world advancements - Enable/disable awarding advancements on a world
@@ -208,6 +209,9 @@ commands:
     world delete:
         description: Deletes an unloaded world
         usage: /world delete [world]
+    world regenerate:
+        description: Regenerates world data
+        usage: /world regenerate [world] [extra options...]
     world copy:
         description: Copies a world
         usage: /world copy [world_from] [world_to]

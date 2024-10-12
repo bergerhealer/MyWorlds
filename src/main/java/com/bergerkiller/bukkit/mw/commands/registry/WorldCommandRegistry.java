@@ -30,6 +30,7 @@ public class WorldCommandRegistry extends CommandRegistry {
         register(WorldRepair::new, "repair", "rep");
         register(WorldSave::new, "save");
         register(WorldDelete::new, "delete", "del");
+        register(WorldRegenerate::new, "regenerate");
         register(WorldCopy::new, "copy");
         register(WorldSetPVP::new, "pvp", "togglepvp", "tpvp");
         register(WorldWeather::new, "weather", "w");
