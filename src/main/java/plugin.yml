@@ -235,6 +235,14 @@ commands:
         usage: |
             /world setendportal [portal/world]
             /world setendportal    - Reset to default
+    world setautoload:
+        description: Sets if the world is automatically loaded on startup or not
+        usage:
+            /world setautoload [yes/no] [world]
+    world setautoregenerate:
+        description: Sets if world chunk data is reset on startup, regenerating it
+        usage:
+            /world setautoregenerate [world] [enabled/disabled] [extra options...]
     world showcredits:
         description: Enables showing the end-game credits a second time
         usage: |

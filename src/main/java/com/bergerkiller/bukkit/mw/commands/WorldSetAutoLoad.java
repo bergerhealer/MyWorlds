@@ -11,7 +11,7 @@ import java.util.List;
 public class WorldSetAutoLoad extends Command {
 
     public WorldSetAutoLoad() {
-        super(Permission.COMMAND_AUTOLOAD, "world.autoload");
+        super(Permission.COMMAND_AUTOLOAD, "world.setautoload");
     }
 
     public void execute() {

@@ -47,6 +47,7 @@ public class WorldConfig extends WorldConfigStore {
     public boolean keepSpawnInMemory = true;
     public WorldMode worldmode = WorldMode.NORMAL;
     private WorldStartupLoadMode startupLoadMode = WorldStartupLoadMode.NOT_LOADED;
+    private WorldRegenerateOptions startupRegenerateOptions = null;
     private String chunkGeneratorName;
     public Difficulty difficulty = Difficulty.NORMAL;
     private Position spawnPoint; // If null, uses the World spawn
@@ -257,6 +258,7 @@ public class WorldConfig extends WorldConfigStore {
         this.chunkGeneratorName = config.chunkGeneratorName;
         this.difficulty = config.difficulty;
         this.startupLoadMode = config.startupLoadMode.afterWorldLoadedChanged(isLoaded());
+        this.startupRegenerateOptions = config.startupRegenerateOptions == null ? null : config.startupRegenerateOptions.clone();
 
         // Copy spawn point. Swap world name if it referred to the original world
         this.spawnPoint = (config.spawnPoint == null) ? null : config.spawnPoint.clone();
@@ -296,6 +298,7 @@ public class WorldConfig extends WorldConfigStore {
         this.worldmode = WorldMode.get(node.get("environment", this.worldmode.getName()));
         this.chunkGeneratorName = node.get("chunkGenerator", String.class, this.chunkGeneratorName);
         this.startupLoadMode = WorldStartupLoadMode.readFromConfig(node);
+        this.startupRegenerateOptions = WorldRegenerateOptions.readFromConfig(node);
         if (LogicUtil.nullOrEmpty(this.chunkGeneratorName)) {
             this.chunkGeneratorName = null;
         }
@@ -429,6 +432,7 @@ public class WorldConfig extends WorldConfigStore {
             node.set("alias", this.alias);
         }
         this.startupLoadMode.writeToConfig(node);
+        WorldRegenerateOptions.writeToConfig(node, this.startupRegenerateOptions);
         node.set("keepSpawnLoaded", this.keepSpawnInMemory);
         node.set("environment", this.worldmode.getName());
         node.set("chunkGenerator", LogicUtil.fixNull(this.getChunkGeneratorName(), ""));
@@ -567,6 +571,27 @@ public class WorldConfig extends WorldConfigStore {
      */
     public void setStartupLoadMode(WorldStartupLoadMode mode) {
         this.startupLoadMode = mode;
+    }
+
+    /**
+     * Gets what to do at startup with this world. If set to non-null, it will reset
+     * the old data of the world based on these options.
+     *
+     * @return WorldRegenerateOptions
+     */
+    public WorldRegenerateOptions getStartupRegenerateOptions() {
+        return this.startupRegenerateOptions;
+    }
+
+    /**
+     * Sets what to do at startup with this world. If set to non-null, it will reset
+     * the old data of the world based on these options.
+     *
+     * @param options WorldRegenerateOptions, or null to disable regenerating the world
+     *                on startup
+     */
+    public void setStartupRegenerateOptions(WorldRegenerateOptions options) {
+        this.startupRegenerateOptions = options;
     }
 
     /**

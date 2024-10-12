@@ -221,6 +221,19 @@ public class MyWorlds extends PluginBase {
         // Ensure world configurations are loaded from disk before the full plugin actually enables
         // This is important if we need to do some operation on startup before the worlds are loaded.
         WorldConfig.initLoadConfig(this);
+
+        // Reset the world data if this was set to be done on startup
+        for (WorldConfig config : WorldConfig.all()) {
+            WorldRegenerateOptions options = config.getStartupRegenerateOptions();
+            if (options != null) {
+                getLogger().log(Level.WARNING, "Resetting chunk data of world '" + config.worldname + "'...");
+                if (config.regenerateWorldData(options)) {
+                    getLogger().log(Level.WARNING, "World chunk data has been reset.");
+                } else {
+                    getLogger().log(Level.SEVERE, "Not all world chunk data could be reset!");
+                }
+            }
+        }
     }
 
     @Override
