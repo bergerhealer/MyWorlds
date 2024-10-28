@@ -43,6 +43,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.world.PortalCreateEvent;
+import org.bukkit.event.world.SpawnChangeEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -616,6 +617,11 @@ public class MWListener implements Listener {
                 }
             });
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onSpawnChange(SpawnChangeEvent event) {
+        WorldConfig.get(event.getWorld()).resetSpawnLocationIfNotAt(event.getWorld().getSpawnLocation());
     }
 
     public boolean handleSignEdit(Player player, Block signBlock, SignSide signSide, String[] signLines) {

@@ -647,6 +647,25 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     /**
+     * Resets the MyWorlds-managed spawn locations if the new location block is not the same as the
+     * current spawn location. This is called when Bukkit fires the SpawnChangeEvent.
+     *
+     * @param location New world spawn location
+     */
+    public void resetSpawnLocationIfNotAt(Location location) {
+        if (this.spawnPoint != null) {
+            if (this.spawnPoint.getBlockX() != location.getBlockX() ||
+                this.spawnPoint.getBlockY() != location.getBlockY() ||
+                this.spawnPoint.getBlockZ() != location.getBlockZ()
+            ) {
+                this.spawnPoint = null;
+                plugin.getLogger().info("Spawn point of world '" + worldname + "' was changed outside of MyWorlds. Position reset to [" +
+                        location.getBlockX() + " " + location.getBlockY() + " " + location.getBlockZ() + "]");
+            }
+        }
+    }
+
+    /**
      * Regenerates the spawn point for a world if it is not properly set<br>
      * Also updates the spawn position in the world configuration
      */
