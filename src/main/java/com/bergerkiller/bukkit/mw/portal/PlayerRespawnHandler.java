@@ -92,6 +92,16 @@ public class PlayerRespawnHandler {
         isAnchorSpawnMethod = m;
     }
 
+    // When a spawn point was set using /spawnpoint
+    private static final Method getRespawnLocationMethod;
+    static {
+        Method m = null;
+        try {
+            m = Player.class.getMethod("getRespawnLocation");
+        } catch (Throwable t) {}
+        getRespawnLocationMethod = m;
+    }
+
     // Different constructors for the EntityPortalEvent
     private static final EntityPortalEventConstructor entityPortalEventConstructor = createEntityPortalEventConstructor();
     private static EntityPortalEventConstructor createEntityPortalEventConstructor() {
@@ -199,6 +209,16 @@ public class PlayerRespawnHandler {
             try {
                 Boolean isAnchorSpawn = (Boolean) isAnchorSpawnMethod.invoke(event);
                 if (isAnchorSpawn.booleanValue()) {
+                    return true;
+                }
+            } catch (Throwable t) {
+                this.plugin.getLogger().log(Level.SEVERE, "Unhandled error handling respawn event", t);
+            }
+        }
+        if (getRespawnLocationMethod != null) {
+            try {
+                Location loc = (Location) getRespawnLocationMethod.invoke(event.getPlayer());
+                if (loc != null) {
                     return true;
                 }
             } catch (Throwable t) {
