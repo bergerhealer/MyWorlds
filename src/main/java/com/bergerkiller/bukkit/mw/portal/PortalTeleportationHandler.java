@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw.portal;
 
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportPortalEvent;
@@ -29,6 +30,8 @@ import java.util.Optional;
  * Interface for main teleportation handling functions
  */
 public abstract class PortalTeleportationHandler {
+    private static final boolean IS_END_PORTAL_CANCELLABLE = Common.evaluateMCVersion(">=", "1.21");
+
     protected MyWorlds plugin;
     protected PortalType portalType;
     protected Block portalBlock;
@@ -147,7 +150,10 @@ public abstract class PortalTeleportationHandler {
                     }                    
                 }
                 plugin.getEndRespawnHandler().setNextRespawn(player, position, velocity);
-                return;
+
+                if (!IS_END_PORTAL_CANCELLABLE) {
+                    return;
+                }
             }
 
             // Forcibly show the credits, which creates a respawn event similar to the default behavior
