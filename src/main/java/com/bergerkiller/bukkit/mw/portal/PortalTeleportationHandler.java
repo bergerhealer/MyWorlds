@@ -3,6 +3,7 @@ package com.bergerkiller.bukkit.mw.portal;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.entity.CommonEntity;
 import com.bergerkiller.bukkit.mw.Portal;
+import com.bergerkiller.bukkit.mw.WorldConfig;
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportPortalEvent;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -128,6 +129,9 @@ public abstract class PortalTeleportationHandler {
                     fromPortal,
                     toPortalName);
             if (CommonUtil.callEvent(event).isCancelled()) {
+                if (entity instanceof Player && this.isFromTheMainEnd()) {
+                    plugin.getEndRespawnHandler().cancelNextRespawn((Player) entity);
+                }
                 return;
             }
             positionAdjusted = event.getTo();
@@ -136,13 +140,24 @@ public abstract class PortalTeleportationHandler {
         final Location position = positionAdjusted;
 
         if (entity instanceof Player) {
-            Player player = (Player) entity;
+            final Player player = (Player) entity;
 
             // Cannot cancel the default respawn behavior of the server
             // All we can do is handle the respawn event and teleport there
             // However, what we can do is avoid showing the end credits if not desired
             if (this.isFromTheMainEnd()) {
-                if (!this.destination.isShowCredits()) {
+                if (this.destination.isShowCredits()) {
+                    // Credits will be shown, but during this time the player left the world.
+                    // Make sure to save current player state while credits are shown to the player
+                    // Must be done a tick delayed though
+                    final WorldConfig config = WorldConfig.get(portalBlock);
+                    CommonUtil.nextTick(() -> {
+                        if (!player.isValid()) {
+                            config.onPlayerLeave(player, false);
+                        }
+                    });
+                } else {
+                    // Skip credits
                     final EntityPlayerHandle player_handle = EntityPlayerHandle.fromBukkit(player);
                     if (!player_handle.hasSeenCredits()) {
                         player_handle.setHasSeenCredits(true);
@@ -157,7 +172,12 @@ public abstract class PortalTeleportationHandler {
             }
 
             // Forcibly show the credits, which creates a respawn event similar to the default behavior
+            boolean showCreditsScreen = false;
             if (this.destination.isShowCredits()) {
+                final EntityPlayerHandle player_handle = EntityPlayerHandle.fromBukkit(player);
+                showCreditsScreen = !player_handle.hasSeenCredits();
+            }
+            if (showCreditsScreen) {
                 PlayerUtil.showEndCredits(player);
                 plugin.getEndRespawnHandler().setNextRespawn(player, position, velocity);
                 return;
