@@ -282,8 +282,12 @@ public class PlayerRespawnHandler {
                     // Take it and don't handle anything more
                     RespawnDestination newRespawn = _respawns.remove(event.getPlayer().getUniqueId());
                     if (newRespawn != null) {
-                        event.setRespawnLocation(newRespawn.position);
-                        event.getPlayer().setVelocity(newRespawn.velocity);
+                        if (newRespawn.isCancelled()) {
+                            event.setRespawnLocation(event.getPlayer().getLocation());
+                        } else {
+                            event.setRespawnLocation(newRespawn.position);
+                            event.getPlayer().setVelocity(newRespawn.velocity);
+                        }
                     }
                 } else {
                     // Update spawn position based on world configuration
@@ -403,8 +407,12 @@ public class PlayerRespawnHandler {
         public final Vector velocity;
 
         public RespawnDestination(Location position, Vector velocity) {
-            this.position = position;
-            this.velocity = velocity;
+            this.position = position; // Can be null!
+            this.velocity = velocity; // Can be null!
+        }
+
+        public boolean isCancelled() {
+            return this.position == null;
         }
     }
 

@@ -431,6 +431,12 @@ public class MWListener implements Listener {
                 if (entity instanceof Player && portalType != PortalType.WATER) {
                     Localization.PORTAL_NODESTINATION.message((Player) entity);
                 }
+
+                // If coming from the end, also inform the respawn handler
+                // This cancels a future respawn event to prevent teleportation
+                if (entity instanceof Player && teleportationHandler.isFromTheMainEnd()) {
+                    plugin.getEndRespawnHandler().setNextRespawn((Player) entity, null, null);
+                }
             }
             return;
         }
