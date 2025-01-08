@@ -40,8 +40,10 @@ public final class PortalEnterEventDebouncer implements LibraryComponent {
                             callback.onPortalEnter(pending.portalBlock, pending.entity, pending.portalCooldown);
                         }
                     }
-                    runThisTick.clear();
                 }
+
+                // Note: it's possible this contains items and pending is empty when clear(entity) was called
+                runThisTick.clear();
             }
         };
     }
@@ -54,6 +56,7 @@ public final class PortalEnterEventDebouncer implements LibraryComponent {
     @Override
     public void disable() {
         pending.clear();
+        runThisTick.clear();
         task.stop();
     }
 
