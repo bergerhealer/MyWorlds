@@ -435,7 +435,7 @@ public class MWListener implements Listener {
                 // If coming from the end, also inform the respawn handler
                 // This cancels a future respawn event to prevent teleportation
                 if (entity instanceof Player && teleportationHandler.isFromTheMainEnd()) {
-                    plugin.getEndRespawnHandler().setNextRespawn((Player) entity, null, null);
+                    plugin.getEndRespawnHandler().cancelNextRespawn((Player) entity);
                 }
             }
             return;

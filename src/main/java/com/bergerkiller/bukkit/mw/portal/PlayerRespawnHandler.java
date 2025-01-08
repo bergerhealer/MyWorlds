@@ -402,6 +402,15 @@ public class PlayerRespawnHandler {
         _respawns.put(player.getUniqueId(), new RespawnDestination(position, velocity));
     }
 
+    /**
+     * Cancels the next respawn. This teleports the player exactly where the player already is.
+     *
+     * @param player Player to cancel the respawn for
+     */
+    public void cancelNextRespawn(Player player) {
+        _respawns.put(player.getUniqueId(), new RespawnDestination(null, null));
+    }
+
     private static final class RespawnDestination {
         public final Location position;
         public final Vector velocity;
