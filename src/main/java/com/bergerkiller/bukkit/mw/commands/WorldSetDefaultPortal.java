@@ -206,8 +206,8 @@ public class WorldSetDefaultPortal extends Command {
                         "Teleporting mounted entities");
             } else if (command.equalsIgnoreCase("showcredits")) {
                 dest = handleBooleanProperty(dest,
-                        PortalDestination::canTeleportMounts,
-                        PortalDestination::setCanTeleportMounts,
+                        PortalDestination::isShowCredits,
+                        PortalDestination::setShowCredits,
                         "Showing end-game credits");
             } else if (command.equalsIgnoreCase("nonplayerscreateportals")) {
                 dest = handleBooleanProperty(dest,
