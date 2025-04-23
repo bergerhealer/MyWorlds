@@ -673,10 +673,10 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // Initialize spawn point
                 PlayerRespawnPoint respawnPoint = PlayerRespawnPoint.fromNBT(playerData);
-                if (MWPlayerDataController.isValidRespawnPoint(player.getWorld(), respawnPoint)) {
-                    respawnPoint.applyToPlayer(player);
+                if (!MWPlayerDataController.isValidRespawnPoint(player.getWorld(), respawnPoint)) {
+                    respawnPoint = PlayerRespawnPoint.NONE;
                 }
-                playerHandle.setSpawnForced(playerData.getValue("SpawnForced", false));
+                respawnPoint.applyToPlayer(player);
 
                 NBTUtil.loadFoodMetaData(playerHandle.getFoodDataRaw(), playerData);
                 NBTUtil.loadInventory(player.getEnderChest(), playerData.createList(VANILLA_ENDER_CHEST_TAG));
