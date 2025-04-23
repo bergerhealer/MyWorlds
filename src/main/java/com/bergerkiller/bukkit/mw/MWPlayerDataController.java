@@ -28,6 +28,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 
 import com.bergerkiller.bukkit.common.Common;
@@ -627,6 +628,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // Load the data
                 NBTUtil.loadInventory(player.getInventory(), playerData.createList(VANILLA_INVENTORY_TAG));
+                NBTUtil.loadEquipment(player.getEquipment(), playerData.get("equipment", CommonTagCompound.class));
                 player.getInventory().setHeldItemSlot(playerData.getValue("SelectedItemSlot", 0));
                 playerHandle.setExp(playerData.getValue("XpP", 0.0f));
                 playerHandle.setExpLevel(playerData.getValue("XpLevel", 0));
@@ -1327,6 +1329,7 @@ public class MWPlayerDataController extends PlayerDataController {
             playerData.put(VANILLA_INVENTORY_TAG, emptyInventory);
         }
 
+        playerData.remove("equipment");
         playerData.remove("attributes");
         playerData.remove("Attributes");
         playerData.remove("SelectedItemSlot");
