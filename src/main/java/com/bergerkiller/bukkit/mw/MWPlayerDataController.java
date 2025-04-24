@@ -539,7 +539,6 @@ public class MWPlayerDataController extends PlayerDataController {
 
         // Clear attributes
         EntityLivingHandle livingHandle = EntityLivingHandle.fromBukkit(human);
-        NBTUtil.resetAttributes(human);
         livingHandle.resetAttributes();
 
         // Clear inventory
