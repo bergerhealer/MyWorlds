@@ -61,6 +61,7 @@ public class WorldConfig extends WorldConfigStore {
     public List<String> rejoinGroup = Collections.emptyList();
     public List<String> OPlist = new ArrayList<String>();
     public boolean allowHunger = true;
+    public boolean allowHealthRegen = true;
     public boolean autosave = true;
     public boolean reloadWhenEmpty = false;
     public boolean formSnow = true;
@@ -137,6 +138,7 @@ public class WorldConfig extends WorldConfigStore {
             this.respawnPoint = RespawnPoint.DEFAULT;
             this.pvp = world.getPVP();
             this.autosave = world.isAutoSave();
+            this.allowHealthRegen = !"false".equals(world.getGameRuleValue("naturalRegeneration"));
             this.getChunkGeneratorName();
         } else {
             this.alias = worldname;
@@ -275,6 +277,7 @@ public class WorldConfig extends WorldConfigStore {
         this.rejoinGroup = config.rejoinGroup; // Is immutable
         this.gameMode = config.gameMode;
         this.allowHunger = config.allowHunger;
+        this.allowHealthRegen = config.allowHealthRegen;
         this.pvp = config.pvp;
         this.spawnControl.deniedCreatures.clear();
         this.spawnControl.deniedCreatures.addAll(config.spawnControl.deniedCreatures);
@@ -344,6 +347,7 @@ public class WorldConfig extends WorldConfigStore {
         this.formSnow = node.get("formSnow", this.formSnow);
         this.pvp = node.get("pvp", this.pvp);
         this.allowHunger = node.get("hunger", this.allowHunger);
+        this.allowHealthRegen = node.get("healthRegen", this.allowHealthRegen);
         this.rememberLastPlayerPosition = node.get("rememberlastplayerpos", this.rememberLastPlayerPosition);
         this.reloadWhenEmpty = node.get("reloadWhenEmpty", this.reloadWhenEmpty);
 
@@ -420,6 +424,7 @@ public class WorldConfig extends WorldConfigStore {
             this.difficulty = w.getDifficulty();
             this.keepSpawnInMemory = w.getKeepSpawnInMemory();
             this.autosave = w.isAutoSave();
+            this.allowHealthRegen = !"false".equals(w.getGameRuleValue("naturalRegeneration"));
         }
         if (this.worldname == null || this.worldname.equals(this.getConfigName())) {
             node.remove("name");
@@ -456,6 +461,7 @@ public class WorldConfig extends WorldConfigStore {
         node.set("operators", this.OPlist);
         node.set("deniedCreatures", creatures);
         node.set("hunger", this.allowHunger);
+        node.set("healthRegen", this.allowHealthRegen);
         node.set("formIce", this.formIce);
         node.set("formSnow", this.formSnow);
         node.set("difficulty", this.difficulty == null ? "NONE" : this.difficulty.toString());
@@ -895,6 +901,7 @@ public class WorldConfig extends WorldConfigStore {
         updateDifficulty(world);
         updateAutoSave(world);
         updateAdvancements(world);
+        updateHealthRegen(world);
         timeControl.updateWorld(world);
     }
     public void updateReload() {
@@ -915,6 +922,11 @@ public class WorldConfig extends WorldConfigStore {
     public void updateAutoSave(World world) {
         if (world != null && world.isAutoSave() != this.autosave) {
             world.setAutoSave(this.autosave);
+        }
+    }
+    public void updateHealthRegen(World world) {
+        if (world != null) {
+            world.setGameRuleValue("naturalRegeneration", allowHealthRegen ? "true" : "false");
         }
     }
     public void updateOP(Player player) {

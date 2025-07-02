@@ -43,6 +43,7 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_FORMING = new Permission("world.forming", PermissionDefault.OP, "Sets if the player can toggle snow and ice forming on or off");
     public static final Permission COMMAND_RELOADWE = new Permission("world.reloadwe", PermissionDefault.OP, "Sets if players can toggle if worlds reload when empty");
     public static final Permission COMMAND_HUNGER = new Permission("world.hunger", PermissionDefault.OP, "Sets if players can toggle hunger on or off for worlds");
+    public static final Permission COMMAND_HEALTH_REGEN = new Permission("world.healthregen", PermissionDefault.OP, "Sets if players can toggle natural health regeneration on or off for worlds");
     public static final Permission COMMAND_ENABLECREDITS = new Permission("world.enablecredits", PermissionDefault.TRUE, "Enables a player to view the end-game credits a second time, after already completing the end before");
     public static final Permission COMMAND_ADVANCEMENTS = new Permission("world.advancements", PermissionDefault.OP, "Sets if players can toggle advancements on/off for a world");
     public static final Permission COMMAND_ALIAS = new Permission("world.alias", PermissionDefault.OP, "Sets if the player can change the (PlaceholderAPI) world name alias");

@@ -59,6 +59,7 @@ public class WorldCommandRegistry extends CommandRegistry {
                 "rememberlastplayerpos", "setrememberlastplayerpos", "setrememberlastposition",
                 "rememberlastplayerposition", "setrememberlastplayerposition");
         register(WorldSetHunger::new, "hunger", "sethunger");
+        register(WorldSetHealthRegen::new, "healthregen", "sethealthregen", "naturalregeneration");
         register(EnableCredits::new, "showcredits", "enablecredits");
         register(WorldAdvancements::new, "advancements", "setadvancements");
         register(WorldAlias::new, "alias", "setalias");
