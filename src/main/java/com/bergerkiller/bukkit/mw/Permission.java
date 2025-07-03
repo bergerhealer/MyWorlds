@@ -61,6 +61,7 @@ public class Permission extends PermissionEnum {
     public static final Permission GENERAL_IGNOREGM = new Permission("world.ignoregamemode", PermissionDefault.FALSE, "Sets if the player game mode is not changed by the world game mode");
     public static final Permission GENERAL_USE = new Permission("world.use", PermissionDefault.OP, "Sets if the player can interact with blocks in a certain world", 1);
     public static final Permission GENERAL_KEEPINV = new Permission("world.keepinventory", PermissionDefault.FALSE, "Sets if the player keeps his inventory while switching worlds");
+    public static final Permission GENERAL_IGNORE_FORCE_JOIN = new Permission("world.ignoreforcejoin", PermissionDefault.FALSE, "Whether the force-join-main-world setting in config.yml is ignored for the player");
     public static final Permission GENERAL_KEEPLASTPOS = new Permission("world.keeplastpos", PermissionDefault.FALSE, "Sets if the player overrides the world rememberlastpos setting to always permit it");
     public static final Permission GENERAL_LINKNETHER = new Permission("world.linknether", PermissionDefault.TRUE, "Sets if the player can spawn nether portals on other worlds when a nether link is enabled for a world");
     public static final Permission GENERAL_BYPASSPLAYERLIMITS = new Permission("world.bypassplayerlimit", PermissionDefault.FALSE, "Sets if the player bypasses the per-world player limit (if set)");

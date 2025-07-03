@@ -902,7 +902,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // If force-joining the main world is enabled, and we got main world data, switch
                 // the stored world to the MyWorlds main world
-                if (MyWorlds.forceJoinOnMainWorld && hasPlayedBefore) {
+                if (MyWorlds.forceJoinOnMainWorld && hasPlayedBefore && !Permission.GENERAL_IGNORE_FORCE_JOIN.has(player)) {
                     mainWorldData.putUUID("World", MyWorlds.getMainWorld().getUID());
                     respawnAtServerSpawn = true;
                 }
