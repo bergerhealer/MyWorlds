@@ -50,10 +50,10 @@ public class WorldInfo extends Command {
                 } else {
                     message(ChatColor.WHITE + "Nether portal: " + wc.getDefaultNetherPortalDestination().getInfoString());
                 }
-                if (wc.getDefaultNetherPortalDestination() == null) {
+                if (wc.getDefaultEndPortalDestination() == null) {
                     message(ChatColor.WHITE + "End portal: " + ChatColor.YELLOW + "None (will auto-detect when available)");
                 } else {
-                    message(ChatColor.WHITE + "End portal: " + wc.getDefaultNetherPortalDestination().getInfoString());
+                    message(ChatColor.WHITE + "End portal: " + wc.getDefaultEndPortalDestination().getInfoString());
                 }
                 //PvP
                 if (wc.pvp) { 
