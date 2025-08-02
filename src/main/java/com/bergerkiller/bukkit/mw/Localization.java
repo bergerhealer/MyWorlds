@@ -42,7 +42,7 @@ public class Localization extends LocalizationEnum {
     public static final Localization PORTAL_CREATE_REJOIN = new Localization("portal.create.rejoin", ChatColor.GREEN + "This is a rejoin portal: players will be sent to the last position they were at, if known");
     public static final Localization PORTAL_PREPARING = new Localization("portal.preparing", ChatColor.YELLOW + "The other portal is being prepared (this can take a while...)");
     public static final Localization PORTAL_LINK_UNAVAILABLE = new Localization("portal.link.unavailable", ChatColor.YELLOW + "The other end of this portal is missing, and you cannot create it");
-    public static final Localization PORTAL_LINK_FAILED = new Localization("portal.link.unavailable", ChatColor.YELLOW + "The other end of this portal could not be generated");
+    public static final Localization PORTAL_LINK_FAILED = new Localization("portal.link.failed", ChatColor.YELLOW + "The other end of this portal could not be generated");
     public static final Localization PAPI_WEATHER_CLEAR = new Localization("papi.weather.clear", "clear");
     public static final Localization PAPI_WEATHER_DESERT_RAIN = new Localization("papi.weather.desert_rain", "humid");
     public static final Localization PAPI_WEATHER_DESERT_STORM = new Localization("papi.weather.desert_storm", "windy");
