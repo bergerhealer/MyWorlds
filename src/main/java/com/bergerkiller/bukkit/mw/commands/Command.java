@@ -16,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -84,6 +85,16 @@ public abstract class Command {
     }
 
     /**
+     * Whether command blocks can use this Command. If {@link #allowConsole()}} is overridden
+     * to return false, this one can be overridden to return true so that those still work.
+     *
+     * @return True if command blocks can use it
+     */
+    public boolean allowCommandBlocks() {
+        return allowConsole();
+    }
+
+    /**
      * Removes a single argument from the arguments of this command and returns it
      * 
      * @param index of the argument to remove
@@ -99,10 +110,12 @@ public abstract class Command {
         if (this.permission == null) {
             return true;
         }
-        if (this.player == null) {
-            return this.allowConsole();
-        } else {
+        if (this.player != null) {
             return this.permission.has(this.player);
+        } else if (this.sender instanceof BlockCommandSender) {
+            return this.allowCommandBlocks();
+        } else {
+            return this.allowConsole();
         }
     }
 
@@ -267,6 +280,8 @@ public abstract class Command {
         }
         if (player != null) {
             this.worldname = player.getWorld().getName();
+        } else if (sender instanceof BlockCommandSender) {
+            this.worldname = ((BlockCommandSender) sender).getBlock().getWorld().getName();
         } else {
             this.worldname = WorldUtil.getWorlds().iterator().next().getName();
         }

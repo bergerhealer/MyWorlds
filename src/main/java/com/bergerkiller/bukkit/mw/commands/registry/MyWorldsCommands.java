@@ -2,6 +2,7 @@ package com.bergerkiller.bukkit.mw.commands.registry;
 
 import java.util.List;
 
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.CommandSender;
 
 import com.bergerkiller.bukkit.common.utils.StringUtil;
@@ -44,10 +45,12 @@ public class MyWorldsCommands {
         if (command.hasPermission()) {
             command.execute();
         } else {
-            if (command.player == null) {
-                command.sender.sendMessage("This command is only for players!");
-            } else {
+            if (command.player != null) {
                 command.locmessage(Localization.COMMAND_NOPERM);
+            } else if (!(command.sender instanceof BlockCommandSender) && command.allowCommandBlocks()) {
+                command.sender.sendMessage("This command is only for players and command blocks!");
+            } else {
+                command.sender.sendMessage("This command is only for players!");
             }
         }
     }
