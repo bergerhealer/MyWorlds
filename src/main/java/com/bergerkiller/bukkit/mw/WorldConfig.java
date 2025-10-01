@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.mountiplex.logic.TextValueSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
@@ -206,7 +207,17 @@ public class WorldConfig extends WorldConfigStore {
 
         // Some chunk generator plugins do not handle it when MyWorlds loads the world before
         if (generatorPluginName != null) {
+            boolean allowAutoLoad = true;
+
+            // Iris plugin version before 3.7
             if (generatorPluginName.equalsIgnoreCase("iris")) {
+                Plugin plugin = Bukkit.getPluginManager().getPlugin(generatorPluginName);
+                if (plugin == null || TextValueSequence.evaluateText(plugin.getDescription().getVersion(), "<", "3.7")) {
+                    allowAutoLoad = false;
+                }
+            }
+
+            if (!allowAutoLoad) {
                 this.setStartupLoadMode(WorldStartupLoadMode.IGNORE);
                 MyWorlds.plugin.getLogger().log(Level.INFO, "Set auto-load for world '" + worldname +
                         "' to 'no' because it uses chunk generator plugin '" + generatorPluginName + "'!");
