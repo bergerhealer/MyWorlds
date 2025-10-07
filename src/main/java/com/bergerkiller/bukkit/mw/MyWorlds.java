@@ -343,6 +343,9 @@ public class MyWorlds extends PluginBase {
         // Wait until inventory migration is done
         migrator.waitUntilFinished();
 
+        // Prepare player data saving system for shutdown
+        dataController.disable();
+
         this.worldDupingPatch.disable();
         plugin = null;
     }

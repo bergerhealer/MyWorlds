@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
@@ -109,6 +112,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
     private static final Map<Player, World> worldToSaveTo = new IdentityHashMap<>();
     private static final LastPlayerPositionCache lastPlayerPositionCache = new LastPlayerPositionCache();
+    private static Set<UUID> playerUUIDsWithIgnoreForceSpawnAtDisable = Collections.emptySet();
     private final MyWorlds plugin;
 
     static {
@@ -128,6 +132,15 @@ public class MWPlayerDataController extends PlayerDataController {
         int lastPositionCleanupInterval = 20 * 60; // 1 minute
         Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, lastPlayerPositionCache::cleanup,
                 lastPositionCleanupInterval, lastPositionCleanupInterval);
+    }
+
+    public void disable() {
+        // For all players on the server, save the permissions for whether force spawn ignoring permission is present
+        // This avoids issues when players are saved after this plugin (and bkcl and any perm system) is available.
+        playerUUIDsWithIgnoreForceSpawnAtDisable = Bukkit.getOnlinePlayers().stream()
+                .filter(Permission.GENERAL_IGNORE_FORCE_JOIN::has)
+                .map(Entity::getUniqueId)
+                .collect(Collectors.toSet());
     }
 
     private static Object getLock(InventoryPlayer player) {
@@ -952,7 +965,7 @@ public class MWPlayerDataController extends PlayerDataController {
             // the stored world to the MyWorlds main world
             if (MyWorlds.forceJoinOnMainWorld && hasPlayedBefore && mainWorldData != null) {
                 boolean ignored;
-                if (player.isOnline()) {
+                if (plugin.isEnabled() && player.isOnline()) {
                     // Happens to be online, so we can check it right away
                     ignored = Permission.GENERAL_IGNORE_FORCE_JOIN.has(((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer());
                 } else {
@@ -1158,8 +1171,17 @@ public class MWPlayerDataController extends PlayerDataController {
             // If player has the "force join" permission, set an attribute in the NBT so next time
             // we load this player's profile we skip the force respawning logic.
             // During load we can no longer tell, as we don't have a Player instance
-            if (player.isOnline()) {
-                if (Permission.GENERAL_IGNORE_FORCE_JOIN.has(((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer())) {
+            if (plugin.isEnabled()) {
+                if (player.isOnline()) {
+                    if (Permission.GENERAL_IGNORE_FORCE_JOIN.has(((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer())) {
+                        myWorlds.putValue(DATA_TAG_IGNORE_FORCE_RESPAWN, true);
+                    } else {
+                        myWorlds.remove(DATA_TAG_IGNORE_FORCE_RESPAWN);
+                    }
+                }
+            } else {
+                // Saved after shutdown - players that had this permission are saved in a UUID Set
+                if (playerUUIDsWithIgnoreForceSpawnAtDisable.contains(player.parseUniqueId())) {
                     myWorlds.putValue(DATA_TAG_IGNORE_FORCE_RESPAWN, true);
                 } else {
                     myWorlds.remove(DATA_TAG_IGNORE_FORCE_RESPAWN);
