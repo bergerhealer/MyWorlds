@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.block.SignSide;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
+import com.bergerkiller.bukkit.mw.playerdata.InventoryPlayer;
 import com.bergerkiller.bukkit.mw.portal.PortalDestinationDebouncer;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
 import org.bukkit.ChatColor;
@@ -67,7 +68,7 @@ import com.bergerkiller.mountiplex.reflection.util.FastMethod;
 public class MWListener implements Listener {
     private static final Material END_PORTAL_FRAME_TYPE = MaterialUtil.getFirst("END_PORTAL_FRAME", "LEGACY_ENDER_PORTAL_FRAME");
     private final MyWorlds plugin;
-    private final Map<Player, List<Consumer<Player>>> pendingPlayerJoinTasks = new HashMap<>();
+    private final Map<String, List<Consumer<Player>>> pendingPlayerJoinTasksByUUIDStr = new HashMap<>();
     private final Set<Player> playersInWater = new HashSet<>();
     private final PortalDestinationDebouncer destinationDebouncer;
 
@@ -84,22 +85,22 @@ public class MWListener implements Listener {
      * @param tickTimeout Tick timeout
      * @param runnable Task to run
      */
-    public void scheduleForPlayerJoin(final Player player, int tickTimeout, final Consumer<Player> runnable) {
-        if (player.isValid()) {
-            runnable.accept(player);
+    public void scheduleForPlayerJoin(final InventoryPlayer player, int tickTimeout, final Consumer<Player> runnable) {
+        if (player.isOnline() && ((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer().isValid()) {
+            runnable.accept(((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer());
             return;
         }
 
-        synchronized (pendingPlayerJoinTasks) {
-            pendingPlayerJoinTasks.computeIfAbsent(player, p -> new ArrayList<>()).add(runnable);
+        synchronized (pendingPlayerJoinTasksByUUIDStr) {
+            pendingPlayerJoinTasksByUUIDStr.computeIfAbsent(player.getUniqueId(), p -> new ArrayList<>()).add(runnable);
         }
         new Task(plugin) {
             @Override
             public void run() {
-                synchronized (pendingPlayerJoinTasks) {
-                    List<Consumer<Player>> tasks = pendingPlayerJoinTasks.remove(player);
+                synchronized (pendingPlayerJoinTasksByUUIDStr) {
+                    List<Consumer<Player>> tasks = pendingPlayerJoinTasksByUUIDStr.remove(player.getUniqueId());
                     if (tasks != null && tasks.remove(runnable) && !tasks.isEmpty()) {
-                        pendingPlayerJoinTasks.put(player, tasks);
+                        pendingPlayerJoinTasksByUUIDStr.put(player.getUniqueId(), tasks);
                     }
                 }
             }
@@ -129,8 +130,8 @@ public class MWListener implements Listener {
         wc.onPlayerEnter(event.getPlayer(), true);
 
         // Run actions for player join scheduled earlier
-        synchronized (pendingPlayerJoinTasks) {
-            List<Consumer<Player>> pendingTasks = pendingPlayerJoinTasks.remove(event.getPlayer());
+        synchronized (pendingPlayerJoinTasksByUUIDStr) {
+            List<Consumer<Player>> pendingTasks = pendingPlayerJoinTasksByUUIDStr.remove(event.getPlayer().getUniqueId().toString());
             if (pendingTasks != null) {
                 for (Consumer<Player> task : pendingTasks) {
                     task.accept(event.getPlayer());

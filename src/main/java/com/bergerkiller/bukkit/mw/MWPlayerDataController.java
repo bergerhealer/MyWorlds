@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 import com.bergerkiller.bukkit.common.utils.EntityUtil;
 import com.bergerkiller.bukkit.common.wrappers.Holder;
 import com.bergerkiller.bukkit.mw.playerdata.InventoryEditRecovery;
+import com.bergerkiller.bukkit.mw.playerdata.InventoryPlayer;
+import com.bergerkiller.bukkit.mw.playerdata.LastPlayerPositionCache;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataBootstrap;
 import com.bergerkiller.bukkit.mw.utils.KeyedLockMap;
 import com.bergerkiller.generated.net.minecraft.world.entity.ai.attributes.AttributeMapBaseHandle;
@@ -28,7 +30,6 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 
 import com.bergerkiller.bukkit.common.Common;
@@ -77,6 +78,11 @@ public class MWPlayerDataController extends PlayerDataController {
      */
     public static final String DATA_TAG_IS_SELF_CONTAINED = "isSelfContained";
     /**
+     * A tag that, if set (and true), makes the player ignore the "force respawn" logic.
+     * Set when the player has that permission set the last time it was saved.
+     */
+    public static final String DATA_TAG_IGNORE_FORCE_RESPAWN = "ignoreForceRespawn";
+    /**
      * Stores synchronization locks per player, so that asynchronous saves/loads don't cause corruption
      */
     public static final KeyedLockMap<String> PLAYER_PROFILE_LOCKS = new KeyedLockMap<>();
@@ -99,9 +105,10 @@ public class MWPlayerDataController extends PlayerDataController {
 
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
     private static final boolean CAN_RESET_ATTRIBUTES = Common.hasCapability("Common:Attributes:RemoveAllModifiers");
+    private static final boolean OFFLINE_LOAD_MEANS_OPENINV = Common.evaluateMCVersion("<=", "1.21.8");
 
     private static final Map<Player, World> worldToSaveTo = new IdentityHashMap<>();
-    private static final Map<Player, LastPlayerPositionList> playerLastLocations = new IdentityHashMap<>();
+    private static final LastPlayerPositionCache lastPlayerPositionCache = new LastPlayerPositionCache();
     private final MyWorlds plugin;
 
     static {
@@ -117,10 +124,14 @@ public class MWPlayerDataController extends PlayerDataController {
     public void enable() {
         PLAYER_PROFILE_LOCKS.startCleanup(plugin);
         this.assign();
+
+        int lastPositionCleanupInterval = 20 * 60; // 1 minute
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, lastPlayerPositionCache::cleanup,
+                lastPositionCleanupInterval, lastPositionCleanupInterval);
     }
 
-    private static Object getLock(OfflinePlayer player) {
-        return PLAYER_PROFILE_LOCKS.getLock(player.getUniqueId().toString());
+    private static Object getLock(InventoryPlayer player) {
+        return PLAYER_PROFILE_LOCKS.getLock(player.getUniqueId());
     }
 
     /**
@@ -154,7 +165,7 @@ public class MWPlayerDataController extends PlayerDataController {
      * @return empty data
      */
     public static CommonTagCompound createEmptyData(Player player) {
-        return PlayerDataFile.createEmptyData(player);
+        return PlayerDataFile.createNewEmptyData(player);
     }
 
     /**
@@ -182,13 +193,14 @@ public class MWPlayerDataController extends PlayerDataController {
             return PlayerRespawnPoint.forPlayer(player);
         }
 
-        synchronized (getLock(player)) {
-            PlayerDataFile posFile = new PlayerDataFile(player, worldConfigStoringInventory);
+        InventoryPlayer inventoryPlayer = InventoryPlayer.online(player);
+        synchronized (getLock(inventoryPlayer)) {
+            PlayerDataFile posFile = new PlayerDataFile(inventoryPlayer, worldConfigStoringInventory);
             if (!posFile.exists()) {
                 return PlayerRespawnPoint.NONE;
             }
 
-            CommonTagCompound data = posFile.read(player);
+            CommonTagCompound data = posFile.read();
             PlayerRespawnPoint respawn = PlayerRespawnPoint.fromNBT(data);
             return isValidRespawnPoint(world, respawn) ? respawn : PlayerRespawnPoint.NONE;
         }
@@ -221,6 +233,18 @@ public class MWPlayerDataController extends PlayerDataController {
      * @return Last world this player was on
      */
     public static World findPlayerWorld(OfflinePlayer player) {
+        return findPlayerWorld(InventoryPlayer.offline(player));
+    }
+
+    /**
+     * Tries to find the world an offline player was last on.
+     * Returns the configured main spawn/join world if no data is available,
+     * or the original world isn't loaded anymore.
+     *
+     * @param player
+     * @return Last world this player was on
+     */
+    public static World findPlayerWorld(InventoryPlayer player) {
         synchronized (getLock(player)) {
             // Try to read this information
             PlayerDataFile mainWorldFile = PlayerDataFile.mainFile(player);
@@ -247,6 +271,19 @@ public class MWPlayerDataController extends PlayerDataController {
      * @return Last known Location, or null if not found/stored
      */
     public static Location readLastLocationOfWorldGroup(Player player, List<WorldConfig> possibleWorldConfigs) {
+        return readLastLocationOfWorldGroup(InventoryPlayer.online(player), possibleWorldConfigs);
+    }
+
+    /**
+     * Gets the last-known position of a Player in a world, or any of the worlds set
+     * as the world rejoin group of that world. Based on time. If the player had
+     * last died on the last world it was on, then returns null to force a respawn.
+     *
+     * @param player
+     * @param possibleWorldConfigs Worlds to check for a last position
+     * @return Last known Location, or null if not found/stored
+     */
+    public static Location readLastLocationOfWorldGroup(InventoryPlayer player, List<WorldConfig> possibleWorldConfigs) {
         // Find all positions known for the player
         // Import legacy positions of all worlds we need to check
         LastPlayerPositionList lastPositions = readLastPlayerPositions(player, possibleWorldConfigs);
@@ -269,7 +306,7 @@ public class MWPlayerDataController extends PlayerDataController {
                     if (!verifyLastLocationValid(loc, player)) {
                         lastPositions = lastPositions.clone();
                         lastPositions.removeForWorld(wc);
-                        storeLastPlayerPositions(player, lastPositions);
+                        lastPlayerPositionCache.put(player, lastPositions);
                         break;
                     }
                     return loc;
@@ -294,13 +331,25 @@ public class MWPlayerDataController extends PlayerDataController {
 
     /**
      * Attempts to read the last known Player position on a specific World
-     * 
+     *
      * @param player to get the last position for
      * @param world to get the last position for
      * @param ignoreDied True to ignore that the player last died in that world
      * @return Last known Location, or null if not found/stored
      */
     public static Location readLastLocation(Player player, World world, boolean ignoreDied) {
+        return readLastLocation(InventoryPlayer.online(player), world, ignoreDied);
+    }
+
+    /**
+     * Attempts to read the last known Player position on a specific World
+     * 
+     * @param player to get the last position for
+     * @param world to get the last position for
+     * @param ignoreDied True to ignore that the player last died in that world
+     * @return Last known Location, or null if not found/stored
+     */
+    public static Location readLastLocation(InventoryPlayer player, World world, boolean ignoreDied) {
         WorldConfig config = WorldConfig.get(world);
         LastPlayerPositionList posList = readLastPlayerPositions(player, Collections.singletonList(config));
         LastPlayerPositionList.LastPosition pos = posList.getForWorld(config);
@@ -314,13 +363,13 @@ public class MWPlayerDataController extends PlayerDataController {
         if (!verifyLastLocationValid(loc, player)) {
             posList = posList.clone();
             posList.removeForWorld(config);
-            storeLastPlayerPositions(player, posList);
+            lastPlayerPositionCache.put(player, posList);
             return null;
         }
         return loc;
     }
 
-    private static boolean verifyLastLocationValid(Location loc, Player player) {
+    private static boolean verifyLastLocationValid(Location loc, InventoryPlayer player) {
         // Verify a player profile file actually exists at the destination path
         // If there is not, then the player profile was wiped out and this last position
         // information got out of sync.
@@ -356,11 +405,22 @@ public class MWPlayerDataController extends PlayerDataController {
      * @return Previous positions of this Player. Should not be modified.
      */
     public static LastPlayerPositionList readLastPlayerPositions(Player player, Collection<WorldConfig> worlds) {
+        return readLastPlayerPositions(InventoryPlayer.online(player), worlds);
+    }
+
+    /**
+     * Looks up the previous positions on worlds a Player had. Reads this information from cache,
+     * or by re-reading the main world player data file.
+     *
+     * @param player Player for which to read or load the player positions
+     * @param worlds Worlds for which last-player position data must be made available.
+     *               This is used to read last-player position data in legacy formats.
+     *               If left empty, will just show data stored in the new format.
+     * @return Previous positions of this Player. Should not be modified.
+     */
+    public static LastPlayerPositionList readLastPlayerPositions(InventoryPlayer player, Collection<WorldConfig> worlds) {
         synchronized (getLock(player)) {
-            LastPlayerPositionList positions;
-            synchronized (playerLastLocations) {
-                positions = playerLastLocations.get(player);
-            }
+            LastPlayerPositionList positions = lastPlayerPositionCache.get(player);
             boolean changed = false;
             if (positions == null) {
                 PlayerDataFile mainWorldFile = PlayerDataFile.mainFile(player);
@@ -394,16 +454,10 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             if (changed) {
-                playerLastLocations.put(player, positions);
+                lastPlayerPositionCache.put(player, positions);
             }
 
             return positions;
-        }
-    }
-
-    private static void storeLastPlayerPositions(Player player, LastPlayerPositionList positions) {
-        synchronized (playerLastLocations) {
-            playerLastLocations.put(player, positions);
         }
     }
 
@@ -594,7 +648,8 @@ public class MWPlayerDataController extends PlayerDataController {
             return;
         }
 
-        synchronized (getLock(player)) {
+        InventoryPlayer inventoryPlayer = InventoryPlayer.online(player);
+        synchronized (getLock(inventoryPlayer)) {
             // If inventory logic not enabled, only do the post-load logic (clear inventory rule)
             if (!MyWorlds.useWorldInventories) {
                 postLoad(player);
@@ -602,8 +657,8 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             try {
-                final PlayerDataFileCollection files = new PlayerDataFileCollection(player, player.getWorld());
-                CommonTagCompound playerData = files.currentFile.read(player);
+                final PlayerDataFileCollection files = new PlayerDataFileCollection(inventoryPlayer, player.getWorld());
+                CommonTagCompound playerData = files.currentFile.read();
 
                 // Migrate loaded data to the newest version so that it works on the current version of the server
                 playerData = NBTUtil.migratePlayerProfileData(playerData);
@@ -751,9 +806,10 @@ public class MWPlayerDataController extends PlayerDataController {
      * @param respawnLocation where the player respawns at
      */
     public void onRespawnSave(Player player, final Location respawnLocation) {
-        synchronized (getLock(player)) {
+        InventoryPlayer inventoryPlayer = InventoryPlayer.online(player);
+        synchronized (getLock(inventoryPlayer)) {
             try {
-                final PlayerDataFileCollection files = new PlayerDataFileCollection(player, player.getWorld());
+                final PlayerDataFileCollection files = new PlayerDataFileCollection(inventoryPlayer, player.getWorld());
                 CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
 
                 files.log("saving data after respawn");
@@ -822,7 +878,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // Track the last position on this world. Mark as a grave.
                 // Updates information tracked in the main world player data file
-                final Consumer<CommonTagCompound> mainWorldUpdater = saveCurrentPosition(player, player.getLocation(), true);
+                final Consumer<CommonTagCompound> mainWorldUpdater = saveCurrentPosition(inventoryPlayer, player.getLocation(), true);
 
                 // Now, go ahead and save this data
                 files.currentFile.write(savedData);
@@ -833,7 +889,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 // This is only needed if a main player data file doesn't exist
                 // (this should in theory never happen either...player is not joining)
                 if (files.mainWorldFile.exists()) {
-                    files.mainWorldFile.update(player, data -> {
+                    files.mainWorldFile.update(data -> {
                         data.putUUID("World", respawnLocation.getWorld().getUID());
                         mainWorldUpdater.accept(data);
                     });
@@ -844,316 +900,240 @@ public class MWPlayerDataController extends PlayerDataController {
         }
     }
 
-    @Override
-    public CommonTagCompound onLoad(final Player player) {
-        // If this is an openinv player, then we must not do the usual world-specific loading as that causes glitches
-        // In that case, load the default vanilla way to avoid trouble.
-        boolean loadedByInventoryEditor = false;
-        if (player.getClass().getName().startsWith("com.lishid.openinv.")) {
-            loadedByInventoryEditor = true;
-        }
-
+    public LoadResult handleLoad(InventoryPlayer player, LoadOptions options) throws IOException {
         synchronized (getLock(player)) {
-            try {
-                final PlayerDataFileCollection files = new PlayerDataFileCollection(player, player.getWorld());
+            final PlayerDataFileCollection files = new PlayerDataFileCollection(player, WorldConfig.getVanillaMain().getWorld());
 
-                // If a main world player data file exists, then the player has been on the server before
-                boolean hasPlayedBefore = files.mainWorldFile.exists();
+            // If a main world player data file exists, then the player has been on the server before
+            boolean hasPlayedBefore = files.mainWorldFile.exists();
 
-                // Read the main world file first. We need this information regardless of whether or not
-                // the MyWorlds inventories system is enabled. In here we store what world to send the player
-                // to when multiple inventories are used. It also stores the last positions a player had on
-                // various worlds.
-                // If loading of this main world player profile fails, then we can't do anything more,
-                // anyway.
-                CommonTagCompound mainWorldData = null;
-                CommonTagCompound playerData = null;
-                if (hasPlayedBefore) {
-                    mainWorldData = files.mainWorldFile.read(player);
-                    playerData = mainWorldData; // Changed later if needed
-                }
+            // Read the main world file first. We need this information regardless of whether or not
+            // the MyWorlds inventories system is enabled. In here we store what world to send the player
+            // to when multiple inventories are used. It also stores the last positions a player had on
+            // various worlds.
+            // If loading of this main world player profile fails, then we can't do anything more,
+            // anyway.
+            CommonTagCompound mainWorldData = null;
+            CommonTagCompound playerData = null;
+            if (hasPlayedBefore) {
+                mainWorldData = files.mainWorldFile.read();
+                playerData = mainWorldData; // Changed later if needed
+            }
 
-                // If player data was inventory edited, recover the original data of this world stored in a separate MyWorlds tag.
-                // Write the original data back to the vanilla world, and apply the inventory-edited modified contents
-                // to the world this was meant for.
-                // If any of this happens, reload the main world file which may have changed
-                //
-                // There is no need to do this when the inventory editor itself opens the file. In that case, we're
-                // already safekeeping the recovery metadata.
-                if (!loadedByInventoryEditor && InventoryEditRecovery.recoverInventoryData(player, mainWorldData)) {
-                    mainWorldData = files.mainWorldFile.read(player);
-                    playerData = mainWorldData; // Changed later if needed
-                }
+            // If player data was inventory edited, recover the original data of this world stored in a separate MyWorlds tag.
+            // Write the original data back to the vanilla world, and apply the inventory-edited modified contents
+            // to the world this was meant for.
+            // If any of this happens, reload the main world file which may have changed
+            //
+            // There is no need to do this when the inventory editor itself opens the file. In that case, we're
+            // already safekeeping the recovery metadata.
+            if (!options.loadedByInventoryEditor && InventoryEditRecovery.recoverInventoryData(player, mainWorldData)) {
+                mainWorldData = files.mainWorldFile.read();
+                playerData = mainWorldData; // Changed later if needed
+            }
 
-                // Initialize and cache the per-player tracked 'last positions on world' information
-                LastPlayerPositionList lastPlayerPositions;
-                if (mainWorldData != null) {
-                    // Parse from the main world data. Also imports legacy info of the main world itself.
-                    lastPlayerPositions = parseLastPlayerPositions(files.mainWorldFile, mainWorldData);
+            // Initialize and cache the per-player tracked 'last positions on world' information
+            LastPlayerPositionList lastPlayerPositions;
+            if (mainWorldData != null) {
+                // Parse from the main world data. Also imports legacy info of the main world itself.
+                lastPlayerPositions = parseLastPlayerPositions(files.mainWorldFile, mainWorldData);
+            } else {
+                // No data. Initialize an empty list.
+                lastPlayerPositions = new LastPlayerPositionList();
+                lastPlayerPositions.addNoPositionSlot(files.mainWorldFile.world);
+            }
+
+            // If set to true, force player to respawn at the server spawn location as if joining
+            // for the first time
+            boolean respawnAtServerSpawn = !hasPlayedBefore;
+
+            // TODO: This broke
+            // If force-joining the main world is enabled, and we got main world data, switch
+            // the stored world to the MyWorlds main world
+            if (MyWorlds.forceJoinOnMainWorld && hasPlayedBefore && mainWorldData != null) {
+                boolean ignored;
+                if (player.isOnline()) {
+                    // Happens to be online, so we can check it right away
+                    ignored = Permission.GENERAL_IGNORE_FORCE_JOIN.has(((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer());
                 } else {
-                    // No data. Initialize an empty list.
-                    lastPlayerPositions = new LastPlayerPositionList();
-                    lastPlayerPositions.addNoPositionSlot(files.mainWorldFile.world);
+                    // Check if the player has the force-spawn ignore set (from permission during previous save)
+                    ignored = mainWorldData.getCompoundOrEmpty(DATA_TAG_ROOT)
+                            .getValue(DATA_TAG_IGNORE_FORCE_RESPAWN, false);
                 }
-
-                // If set to true, force player to respawn at the server spawn location as if joining
-                // for the first time
-                boolean respawnAtServerSpawn = !hasPlayedBefore;
-
-                // If force-joining the main world is enabled, and we got main world data, switch
-                // the stored world to the MyWorlds main world
-                if (MyWorlds.forceJoinOnMainWorld && hasPlayedBefore && !Permission.GENERAL_IGNORE_FORCE_JOIN.has(player)) {
+                if (!ignored) {
                     mainWorldData.putUUID("World", MyWorlds.getMainWorld().getUID());
                     respawnAtServerSpawn = true;
                 }
-
-                // Check world player was last on actually still exists
-                World lastPlayerWorld = hasPlayedBefore ? Bukkit.getWorld(mainWorldData.getUUID("World")) : null;
-                if (lastPlayerWorld == null) {
-                    respawnAtServerSpawn = true;
-
-                    // In this state we can't send a message to the player, delay it until the player
-                    // has logged in
-                    if (hasPlayedBefore) {
-                        plugin.listener.scheduleForPlayerJoin(player, 100, Localization.WORLD_JOIN_REMOVED::message);
-                    }
-                }
-
-                // Find out where to find the save file
-                // No need to check for this if not using world inventories - it is always the main file then
-                if (MyWorlds.useWorldInventories && hasPlayedBefore && lastPlayerWorld != null) {
-                    try {
-                        // Allow switching worlds and positions
-                        // Switch to the save file of the loaded world
-                        files.setCurrentWorld(lastPlayerWorld);
-
-                        if (!files.isMainWorld()) {
-                            migrateSelfContainedMainProfile(files, mainWorldData);
-
-                            // Load this world's specific player data
-                            playerData = files.currentFile.read(player);
-                            if (playerData == null) {
-                                playerData = createEmptyData(player);
-                            }
-
-                            // Import legacy 'last player positions' of this world if we don't already have them
-                            if (!lastPlayerPositions.containsWorld(files.currentFile.world)) {
-                                CommonTagCompound pos = parseLegacyLastPosition(files.currentFile, playerData);
-                                if (pos != null) {
-                                    lastPlayerPositions.add(pos);
-                                } else {
-                                    lastPlayerPositions.addNoPositionSlot(files.currentFile.world);
-                                }
-                            }
-
-                            // Preserve some of the global player state (stored in main world)
-                            copyGlobalPlayerData(mainWorldData, playerData);
-                        }
-                    } catch (Throwable t) {
-                        // Stick with the current world for now.
-                        plugin.getLogger().log(Level.SEVERE, "Failed to load per-world-inventory player data of " + player.getName(), t);
-                    }
-                }
-
-                // Initialize empty data for first-time joining
-                if (playerData == null) {
-                    playerData = createEmptyData(player);
-                }
-
-                // Migrate loaded player data to work on the current version of the server
-                playerData = NBTUtil.migratePlayerProfileData(playerData);
-
-                // Store a snapshot of this information for faster future retrieval
-                storeLastPlayerPositions(player, lastPlayerPositions.clone());
-
-                files.log("loading data");
-
-                // When main world spawning is forced, reset location to there
-                if (respawnAtServerSpawn) {
-                    PlayerDataFile.setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
-                }
-
-                // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
-                World playerCurrentWorld = Bukkit.getWorld(((mainWorldData != null) ? mainWorldData : playerData).getUUID("World"));
-                if (playerCurrentWorld != null && WorldConfig.get(playerCurrentWorld).clearInventory) {
-                    resetPlayerData(playerData);
-
-                    // Save this player data back to file to make sure clear inventory is adhered
-                    files.currentFile.write(playerData);
-                }
-
-                // Disable bed spawn if not enabled for that world
-                if (playerCurrentWorld != null) {
-                    removeInvalidBedSpawn(playerCurrentWorld, playerData);
-                }
-
-                // Minecraft bugfix here: Clear mob/potion effects BEFORE loading the data
-                // This resolves issues with effects staying behind
-                resetCurrentMobEffects(player);
-
-                // Load the entity using the player data compound
-                NBTUtil.loadEntity(player, playerData);
-
-                // Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
-                // Make sure the player is marked as being new
-                PlayerUtil.setHasPlayedBefore(player, hasPlayedBefore);
-
-                // As specified in the WorldNBTStorage implementation, use modified data if earlier than nbt data
-                if (hasPlayedBefore && files.mainWorldFile.lastModified() < player.getFirstPlayed()) {
-                    PlayerUtil.setFirstPlayed(player, files.mainWorldFile.lastModified());
-                }
-
-                // DISABLED: NPE on some servers when inventory clear is called this early
-                // postLoad(player);
-
-                // When set as flying, there appears to be a problem or bug where this is reset
-                // This causes the player to come falling down upon (re-)join, which is really annoying
-                // For now this is fixed by explicitly calling setFlying one tick later
-                if (playerData.containsKey("abilities")) {
-                    CommonTagCompound abilities = (CommonTagCompound) playerData.get("abilities");
-                    if (abilities.getValue("flying", false)) {
-                        CommonUtil.nextTick(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (player.isValid()) {
-                                    try {
-                                        player.setFlying(true);
-                                    } catch (IllegalArgumentException ex) {
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }
-
-                // Track whether this inventory was inventory edited
-                if (loadedByInventoryEditor) {
-                    InventoryEditRecovery.writeInventoryRecoveryData(files, mainWorldData, playerData);
-                } else {
-                    InventoryEditRecovery.clearEditedInventoryWorld(playerData);
-                }
-
-                return playerData;
-            } catch (Throwable t) {
-                plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
-                return super.onLoad(player);
             }
+
+            // Check world player was last on actually still exists
+            World lastPlayerWorld = hasPlayedBefore ? Bukkit.getWorld(mainWorldData.getUUID("World")) : null;
+            if (lastPlayerWorld == null) {
+                respawnAtServerSpawn = true;
+
+                // In this state we can't send a message to the player, delay it until the player
+                // has logged in
+                if (hasPlayedBefore) {
+                    plugin.listener.scheduleForPlayerJoin(player, 100, Localization.WORLD_JOIN_REMOVED::message);
+                }
+            }
+
+            // Find out where to find the save file
+            // No need to check for this if not using world inventories - it is always the main file then
+            if (MyWorlds.useWorldInventories && hasPlayedBefore && lastPlayerWorld != null) {
+                try {
+                    // Allow switching worlds and positions
+                    // Switch to the save file of the loaded world
+                    files.setCurrentWorld(lastPlayerWorld);
+
+                    if (!files.isMainWorld()) {
+                        migrateSelfContainedMainProfile(files, mainWorldData);
+
+                        // Load this world's specific player data
+                        playerData = files.currentFile.read();
+
+                        // Import legacy 'last player positions' of this world if we don't already have them
+                        if (!lastPlayerPositions.containsWorld(files.currentFile.world)) {
+                            CommonTagCompound pos = parseLegacyLastPosition(files.currentFile, playerData);
+                            if (pos != null) {
+                                lastPlayerPositions.add(pos);
+                            } else {
+                                lastPlayerPositions.addNoPositionSlot(files.currentFile.world);
+                            }
+                        }
+
+                        // Preserve some of the global player state (stored in main world)
+                        copyGlobalPlayerData(mainWorldData, playerData);
+                    }
+                } catch (Throwable t) {
+                    // Stick with the current world for now.
+                    plugin.getLogger().log(Level.SEVERE, "Failed to load per-world-inventory player data of " + player.getName(), t);
+                }
+            }
+
+            // Initialize empty data for first-time joining
+            if (playerData == null) {
+                playerData = files.mainWorldFile.createEmptyData();
+            }
+
+            // Migrate loaded player data to work on the current version of the server
+            playerData = NBTUtil.migratePlayerProfileData(playerData);
+
+            // Store a snapshot of this information for faster future retrieval
+            lastPlayerPositionCache.put(player, lastPlayerPositions.clone());
+
+            files.log("loading data");
+
+            // When main world spawning is forced, reset location to there
+            if (respawnAtServerSpawn) {
+                PlayerDataFile.setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
+            }
+
+            // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
+            World playerCurrentWorld = Bukkit.getWorld(((mainWorldData != null) ? mainWorldData : playerData).getUUID("World"));
+            if (playerCurrentWorld != null && WorldConfig.get(playerCurrentWorld).clearInventory) {
+                resetPlayerData(playerData);
+
+                // Save this player data back to file to make sure clear inventory is adhered
+                files.currentFile.write(playerData);
+            }
+
+            // Disable bed spawn if not enabled for that world
+            if (playerCurrentWorld != null) {
+                removeInvalidBedSpawn(playerCurrentWorld, playerData);
+            }
+
+            // TODO: All of this stuff must now be done the next time the player joins the server
+            /*
+            // Minecraft bugfix here: Clear mob/potion effects BEFORE loading the data
+            // This resolves issues with effects staying behind
+            resetCurrentMobEffects(player);
+
+            // Load the entity using the player data compound
+            NBTUtil.loadEntity(player, playerData);
+
+            // Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
+            // Make sure the player is marked as being new
+            PlayerUtil.setHasPlayedBefore(player, hasPlayedBefore);
+
+            // As specified in the WorldNBTStorage implementation, use modified data if earlier than nbt data
+            if (hasPlayedBefore && files.mainWorldFile.lastModified() < player.getFirstPlayed()) {
+                PlayerUtil.setFirstPlayed(player, files.mainWorldFile.lastModified());
+            }
+
+            // When set as flying, there appears to be a problem or bug where this is reset
+            // This causes the player to come falling down upon (re-)join, which is really annoying
+            // For now this is fixed by explicitly calling setFlying one tick later
+            if (playerData.containsKey("abilities")) {
+                CommonTagCompound abilities = (CommonTagCompound) playerData.get("abilities");
+                if (abilities.getValue("flying", false)) {
+                    CommonUtil.nextTick(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (player.isValid()) {
+                                try {
+                                    player.setFlying(true);
+                                } catch (IllegalArgumentException ex) {
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            */
+
+            // Track whether this inventory was inventory edited
+            if (options.loadedByInventoryEditor) {
+                InventoryEditRecovery.writeInventoryRecoveryData(files, mainWorldData, playerData);
+            } else {
+                InventoryEditRecovery.clearEditedInventoryWorld(playerData);
+            }
+
+            return new LoadResult(files, playerData, hasPlayedBefore);
         }
     }
 
-    // Used on 1.20.5+ to handle when openinv loads player profiles 'offline'
-    // Method callback added since BKCL 1.21.1 snapshots
     @Override
     public CommonTagCompound onLoadOffline(String playerName, String playerUUID) {
-        // There is no real way to tell, but this only gets called when openinv calls it
-        // This is because the normal base operation of onLoad(player) calling this method doesn't happen,
-        // as we override that method already.
-        boolean loadedByInventoryEditor = true;
+        LoadOptions loadOptions = new LoadOptions();
 
-        // Always loaded...
-        World vanillaMainWorld = WorldConfig.getVanillaMain().getWorld();;
+        if (OFFLINE_LOAD_MEANS_OPENINV) {
+            // There is no real way to tell, but this only gets called when openinv calls it
+            // This is because the normal base operation of onLoad(player) calling this method doesn't happen,
+            // as we override that method already.
+            loadOptions.loadedByInventoryEditor = true;
+        }
 
-        synchronized (PLAYER_PROFILE_LOCKS.getLock(playerUUID)) {
-            try {
-                final PlayerDataFileCollection files = new PlayerDataFileCollection(playerName, playerUUID, vanillaMainWorld);
-
-                // Read the main world file first. We need this information regardless of whether or not
-                // the MyWorlds inventories system is enabled. In here we store what world to send the player
-                // to when multiple inventories are used. It also stores the last positions a player had on
-                // various worlds.
-                // If loading of this main world player profile fails, then we can't do anything more,
-                // anyway.
-                CommonTagCompound mainWorldData = files.mainWorldFile.readIfExists();
-                if (mainWorldData == null) {
-                    return null; // Player has not played before
-                }
-
-                CommonTagCompound playerData = mainWorldData; // Changed later if needed
-
-                // If set to true, force player to respawn at the server spawn location as if joining
-                // for the first time
-                boolean respawnAtServerSpawn = false;
-
-                // If force-joining the main world is enabled, and we got main world data, switch
-                // the stored world to the MyWorlds main world
-                if (MyWorlds.forceJoinOnMainWorld) {
-                    mainWorldData.putUUID("World", MyWorlds.getMainWorld().getUID());
-                    respawnAtServerSpawn = true;
-                }
-
-                // Check world player was last on actually still exists
-                World lastPlayerWorld = Bukkit.getWorld(mainWorldData.getUUID("World"));
-                if (lastPlayerWorld == null) {
-                    respawnAtServerSpawn = true;
-                }
-
-                // Find out where to find the save file
-                // No need to check for this if not using world inventories - it is always the main file then
-                if (MyWorlds.useWorldInventories && lastPlayerWorld != null) {
-                    try {
-                        // Allow switching worlds and positions
-                        // Switch to the save file of the loaded world
-                        files.setCurrentWorld(lastPlayerWorld);
-
-                        if (!files.isMainWorld()) {
-                            migrateSelfContainedMainProfile(files, mainWorldData);
-
-                            // Load this world's specific player data
-                            playerData = files.currentFile.readIfExists();
-                            if (playerData == null) {
-                                playerData = PlayerDataFile.createEmptyData(playerUUID);
-                            }
-
-                            // Preserve some of the global player state (stored in main world)
-                            copyGlobalPlayerData(mainWorldData, playerData);
-                        }
-                    } catch (Throwable t) {
-                        // Stick with the current world for now.
-                        plugin.getLogger().log(Level.SEVERE, "Failed to load per-world-inventory (offline) player data of " + playerName, t);
-                    }
-                }
-
-                // Initialize empty data for first-time joining
-                if (playerData == null) {
-                    playerData = PlayerDataFile.createEmptyData(playerUUID);
-                }
-
-                // Migrate loaded player data to work on the current version of the server
-                playerData = NBTUtil.migratePlayerProfileData(playerData);
-
-                files.log("loading data");
-
-                // When main world spawning is forced, reset location to there
-                if (respawnAtServerSpawn) {
-                    PlayerDataFile.setLocation(playerData, WorldManager.getSpawnLocation(MyWorlds.getMainWorld()));
-                }
-
-                // If for this world the inventory is cleared, clear relevant data in the NBT that should be removed
-                World playerCurrentWorld = Bukkit.getWorld(((mainWorldData != null) ? mainWorldData : playerData).getUUID("World"));
-                if (playerCurrentWorld != null && WorldConfig.get(playerCurrentWorld).clearInventory) {
-                    resetPlayerData(playerData);
-
-                    // Save this player data back to file to make sure clear inventory is adhered
-                    files.currentFile.write(playerData);
-                }
-
-                // Disable bed spawn if not enabled for that world
-                if (playerCurrentWorld != null) {
-                    removeInvalidBedSpawn(playerCurrentWorld, playerData);
-                }
-
-                // Track whether this inventory was inventory edited
-                InventoryEditRecovery.writeInventoryRecoveryData(files, mainWorldData, playerData);
-
-                return playerData;
-            } catch (Throwable t) {
-                plugin.getLogger().log(Level.WARNING, "Failed to load (offline) player data for " + playerName, t);
-                return null; //TODO: Super onloadoffline?
-            }
+        try {
+            return handleLoad(InventoryPlayer.tryOnline(playerName, playerUUID), loadOptions).data;
+        } catch (Throwable t) {
+            plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + playerName, t);
+            return super.onLoadOffline(playerName, playerUUID);
         }
     }
 
-    private Consumer<CommonTagCompound> saveCurrentPosition(final Player player, final Location loc, final boolean died) {
+    // Only functional on 1.8 - 1.21.8
+    @Override
+    public CommonTagCompound onLoad(Player player) {
+        LoadOptions loadOptions = new LoadOptions();
+
+        // If this is an openinv player, then we must not do the usual world-specific loading as that causes glitches
+        // In that case, load the default vanilla way to avoid trouble.
+        if (player.getClass().getName().startsWith("com.lishid.openinv.")) {
+            loadOptions.loadedByInventoryEditor = true;
+        }
+
+        try {
+            LoadResult result = handleLoad(InventoryPlayer.online(player), loadOptions);
+            result.applyToPlayer(player);
+            return result.data;
+        } catch (Throwable t) {
+            plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
+            return super.onLoad(player);
+        }
+    }
+
+    private Consumer<CommonTagCompound> saveCurrentPosition(final InventoryPlayer player, final Location loc, final boolean died) {
         // Track the last position on this world
         final LastPlayerPositionList lastPositions;
         synchronized (getLock(player)) {
@@ -1166,7 +1146,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 }
                 lastPositions.update(pos, data);
             }
-            storeLastPlayerPositions(player, lastPositions);
+            lastPlayerPositionCache.put(player, lastPositions);
         }
 
         // This returned consumer will update the input tag compound and save the locations
@@ -1174,6 +1154,17 @@ public class MWPlayerDataController extends PlayerDataController {
             // Update last positions
             CommonTagCompound myWorlds = data.createCompound(DATA_TAG_ROOT);
             myWorlds.put(DATA_TAG_LAST_POSITIONS, lastPositions.getDataTag());
+
+            // If player has the "force join" permission, set an attribute in the NBT so next time
+            // we load this player's profile we skip the force respawning logic.
+            // During load we can no longer tell, as we don't have a Player instance
+            if (player.isOnline()) {
+                if (Permission.GENERAL_IGNORE_FORCE_JOIN.has(((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer())) {
+                    myWorlds.putValue(DATA_TAG_IGNORE_FORCE_RESPAWN, true);
+                } else {
+                    myWorlds.remove(DATA_TAG_IGNORE_FORCE_RESPAWN);
+                }
+            }
 
             // Track for saved inventories whether at the time of saving multi-world inventories were enabled
             // This is important to detect pre-enabled inventory data and migrate those inventories appropriately.
@@ -1183,11 +1174,12 @@ public class MWPlayerDataController extends PlayerDataController {
 
     @Override
     public void onSave(final Player player) {
-        synchronized (getLock(player)) {
+        InventoryPlayer inventoryPlayer = InventoryPlayer.online(player);
+        synchronized (getLock(inventoryPlayer)) {
             try {
                 final PlayerDataFileCollection files;
                 synchronized (worldToSaveTo) {
-                    files = new PlayerDataFileCollection(player, worldToSaveTo.getOrDefault(player, player.getWorld()));
+                    files = new PlayerDataFileCollection(inventoryPlayer, worldToSaveTo.getOrDefault(player, player.getWorld()));
                 }
 
                 final CommonTagCompound savedData = NBTUtil.saveEntity(player, null);
@@ -1205,7 +1197,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 } else {
                     // Append original last position (if available) to the data
                     if (files.currentFile.exists()) {
-                        CommonTagCompound data = files.currentFile.read(player);
+                        CommonTagCompound data = files.currentFile.read();
                         if (data.containsKey(LEGACY_DATA_TAG_LASTPOS)) {
                             savedData.put(LEGACY_DATA_TAG_LASTPOS, data.get(LEGACY_DATA_TAG_LASTPOS));
                         }
@@ -1215,7 +1207,7 @@ public class MWPlayerDataController extends PlayerDataController {
                     }
 
                     // Write the Last Pos/Rot to the official world file instead
-                    files.positionFile.update(player, data -> {
+                    files.positionFile.update(data -> {
                         data.putListValues(LEGACY_DATA_TAG_LASTPOS, loc.getX(), loc.getY(), loc.getZ());
                         data.putListValues(LEGACY_DATA_TAG_LASTROT, loc.getYaw(), loc.getPitch());
 
@@ -1230,7 +1222,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // Track the last position on this world
                 // Updates information tracked in the main world player data file
-                final Consumer<CommonTagCompound> mainWorldUpdater = saveCurrentPosition(player, loc, player.isDead());
+                final Consumer<CommonTagCompound> mainWorldUpdater = saveCurrentPosition(inventoryPlayer, loc, player.isDead());
 
                 // If main world, also write updated last position information to the file
                 if (files.isMainWorld()) {
@@ -1246,7 +1238,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // Write the current world name of the player to the save file of the main world
                 if (!files.isMainWorld()) {
-                    files.mainWorldFile.update(player, data -> {
+                    files.mainWorldFile.update(data -> {
                         data.put("Pos", savedData.get("Pos"));
                         data.put("Rotation", savedData.get("Rotation"));
                         data.putUUID("World", player.getWorld().getUID());
@@ -1362,6 +1354,72 @@ public class MWPlayerDataController extends PlayerDataController {
             PlayerRespawnPoint.NONE.toNBT(playerData);
         } else if (!isValidRespawnPoint(world, current)) {
             PlayerRespawnPoint.NONE.toNBT(playerData);
+        }
+    }
+
+    /**
+     * Custom options for loading a player profile offline.
+     */
+    public static class LoadOptions {
+        public boolean loadedByInventoryEditor = false;
+    }
+
+    /**
+     * The result of loading the data of a Player / Offline Player
+     */
+    public static class LoadResult {
+        public final PlayerDataFileCollection files;
+        public final CommonTagCompound data;
+        public final boolean hasPlayedBefore;
+
+        public LoadResult(PlayerDataFileCollection files, CommonTagCompound data, boolean hasPlayedBefore) {
+            this.files = files;
+            this.data = data;
+            this.hasPlayedBefore = hasPlayedBefore;
+        }
+
+        /**
+         * Applies the loaded {@link #data} to an online Player, reloading it.
+         * Only suitable for loading in a freshly spawned new player.
+         *
+         * @param player Player
+         */
+        public void applyToPlayer(Player player) {
+            // Minecraft bugfix here: Clear mob/potion effects BEFORE loading the data
+            // This resolves issues with effects staying behind
+            resetCurrentMobEffects(player);
+
+            // Load the entity using the player data compound
+            NBTUtil.loadEntity(player, data);
+
+            // Bukkit bug: entityplayer.e(tag) -> b(tag) -> craft.readExtraData(tag) which instantly sets it
+            // Make sure the player is marked as being new
+            PlayerUtil.setHasPlayedBefore(player, hasPlayedBefore);
+
+            // As specified in the WorldNBTStorage implementation, use modified data if earlier than nbt data
+            if (hasPlayedBefore && files.mainWorldFile.lastModified() < player.getFirstPlayed()) {
+                PlayerUtil.setFirstPlayed(player, files.mainWorldFile.lastModified());
+            }
+
+            // When set as flying, there appears to be a problem or bug where this is reset
+            // This causes the player to come falling down upon (re-)join, which is really annoying
+            // For now this is fixed by explicitly calling setFlying one tick later
+            if (data.containsKey("abilities")) {
+                CommonTagCompound abilities = (CommonTagCompound) data.get("abilities");
+                if (abilities.getValue("flying", false)) {
+                    CommonUtil.nextTick(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (player.isValid()) {
+                                try {
+                                    player.setFlying(true);
+                                } catch (IllegalArgumentException ex) {
+                                }
+                            }
+                        }
+                    });
+                }
+            }
         }
     }
 }

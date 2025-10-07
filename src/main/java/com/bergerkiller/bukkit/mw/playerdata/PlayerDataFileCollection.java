@@ -7,6 +7,7 @@ import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.WorldConfig;
 
 public class PlayerDataFileCollection {
+    public final InventoryPlayer player;
     public final String playerName;
     public final String playerUUID;
     public PlayerDataFile mainWorldFile; /* Stores the name of the main world the player is on */
@@ -16,14 +17,27 @@ public class PlayerDataFileCollection {
     static void init() {
     }
 
+    /**
+     * @deprecated Pass InventoryPlayer instead
+     */
+    @Deprecated
     public PlayerDataFileCollection(OfflinePlayer player, World world) {
         this(player.getName(), player.getUniqueId().toString(), world);
     }
 
+    /**
+     * @deprecated Pass InventoryPlayer instead
+     */
+    @Deprecated
     public PlayerDataFileCollection(String playerName, String playerUUID, World world) {
-        this.playerName = playerName;
-        this.playerUUID = playerUUID;
-        this.mainWorldFile = PlayerDataFile.mainFile(playerName, playerUUID);
+        this(InventoryPlayer.offline(playerName, playerUUID), world);
+    }
+
+    public PlayerDataFileCollection(InventoryPlayer player, World world) {
+        this.player = player;
+        this.playerName = player.getName();
+        this.playerUUID = player.getUniqueId();
+        this.mainWorldFile = PlayerDataFile.mainFile(player);
 
         setCurrentWorld(world);
     }
@@ -35,7 +49,7 @@ public class PlayerDataFileCollection {
      * @return new PlayerDataFile
      */
     public PlayerDataFile createFile(WorldConfig worldConfig) {
-        return new PlayerDataFile(playerName, playerUUID, worldConfig);
+        return new PlayerDataFile(player, worldConfig);
     }
 
     /**

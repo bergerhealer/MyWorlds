@@ -107,6 +107,19 @@ public class InventoryEditRecovery {
      * @throws IOException
      */
     public static boolean recoverInventoryData(Player player, CommonTagCompound mainWorldPlayerData) throws IOException {
+        return recoverInventoryData(InventoryPlayer.online(player), mainWorldPlayerData);
+    }
+
+    /**
+     * Sees if the main world contains an inventory recovery segment, and if it does, recovers the inventories
+     * bringing data back into correct alignment.
+     *
+     * @param player InventoryPlayer
+     * @param mainWorldPlayerData Previously read main world data
+     * @return True if data was changed and a reload is required, False if no recovery of any sort occurred
+     * @throws IOException
+     */
+    public static boolean recoverInventoryData(InventoryPlayer player, CommonTagCompound mainWorldPlayerData) throws IOException {
         // See if recovery data exists in the main world player data
         Optional<CommonTagCompound> vanillaRecoveryData = readInventoryRecoveryData(mainWorldPlayerData);
         if (!vanillaRecoveryData.isPresent()) {
@@ -164,11 +177,11 @@ public class InventoryEditRecovery {
      * Which effectively also makes it exit this mode.
      * As such this is more of a data saving / performance tweak.
      *
-     * @param player Player
+     * @param player InventoryPlayer
      * @param mainWorldPlayerData Previously read MyWorlds main world player data
      * @throws IOException
      */
-    private static void clearInventoryRecoveryData(Player player, CommonTagCompound mainWorldPlayerData) throws IOException {
+    private static void clearInventoryRecoveryData(InventoryPlayer player, CommonTagCompound mainWorldPlayerData) throws IOException {
         mainWorldPlayerData.createCompound(MWPlayerDataController.DATA_TAG_ROOT)
                 .remove(DATA_TAG_INV_EDIT_RECOVERY);
         PlayerDataFile myworldsMainPlayerDataFile = new PlayerDataFile(player, WorldConfig.getInventoryMain());

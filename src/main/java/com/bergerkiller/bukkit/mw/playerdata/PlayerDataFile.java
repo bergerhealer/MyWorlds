@@ -26,18 +26,32 @@ import com.bergerkiller.bukkit.mw.WorldManager;
 public class PlayerDataFile {
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
 
+    public final InventoryPlayer player;
     public final String playerName;
     public final String playerUUID;
     public final WorldConfig world;
     public final File file;
 
+    /**
+     * @deprecated Use InventoryPlayer constructor instead
+     */
+    @Deprecated
     public PlayerDataFile(OfflinePlayer player, WorldConfig worldConfig) {
-        this(player.getName(), player.getUniqueId().toString(), worldConfig);
+        this(InventoryPlayer.offline(player), worldConfig);
     }
 
+    /**
+     * @deprecated Use InventoryPlayer constructor instead
+     */
+    @Deprecated
     public PlayerDataFile(String playerName, String playerUUID, WorldConfig worldConfig) {
-        this.playerName = playerName;
-        this.playerUUID = playerUUID;
+        this(InventoryPlayer.offline(playerName, playerUUID), worldConfig);
+    }
+
+    public PlayerDataFile(InventoryPlayer player, WorldConfig worldConfig) {
+        this.player = player;
+        this.playerName = player.getName();
+        this.playerUUID = player.getUniqueId();
         this.world = worldConfig;
         this.file = worldConfig.getPlayerData(playerUUID);
         this.file.getParentFile().mkdirs();
@@ -92,9 +106,9 @@ public class PlayerDataFile {
         data.writeToFile(getPlayerDataFile(playerDataFolder, playerUUID), true);
     }
 
-    public CommonTagCompound read(Player player) {
+    public CommonTagCompound read() {
         CommonTagCompound data = this.readIfExists();
-        return (data != null) ? data : createEmptyData(player);
+        return (data != null) ? data : createEmptyData();
     }
 
     public void write(CommonTagCompound data) throws IOException {
@@ -112,18 +126,38 @@ public class PlayerDataFile {
         return true;
     }
 
-    public void update(Player player, DataUpdater updater) throws IOException {
-        CommonTagCompound data = read(player);
+    public void update(DataUpdater updater) throws IOException {
+        CommonTagCompound data = read();
         updater.update(data);
         write(data);
     }
 
+    public static PlayerDataFile mainFile(InventoryPlayer player) {
+        return new PlayerDataFile(player, WorldConfig.getInventoryMain());
+    }
+
+    @Deprecated
     public static PlayerDataFile mainFile(String playerName, String playerUUID) {
         return new PlayerDataFile(playerName, playerUUID, WorldConfig.getInventoryMain());
     }
 
+    @Deprecated
     public static PlayerDataFile mainFile(OfflinePlayer player) {
         return new PlayerDataFile(player, WorldConfig.getInventoryMain());
+    }
+
+    /**
+     * Creates new player data information as if the player just joined the server.
+     * If online player information is known, makes use of it in the initial empty data.
+     *
+     * @return empty data
+     */
+    public CommonTagCompound createEmptyData() {
+        if (player.isOnline()) {
+            return createNewEmptyData(((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer());
+        } else {
+            return createNewEmptyData(player.getUniqueId());
+        }
     }
 
     /**
@@ -132,7 +166,7 @@ public class PlayerDataFile {
      * @param player to generate information about
      * @return empty data
      */
-    public static CommonTagCompound createEmptyData(Player player) {
+    public static CommonTagCompound createNewEmptyData(Player player) {
         final Vector velocity = player.getVelocity();
         CommonTagCompound empty = new CommonTagCompound();
         CommonPlayer playerEntity = CommonEntity.get(player);
@@ -157,7 +191,7 @@ public class PlayerDataFile {
      * @param playerUUID UUID String of the Player to generate information about
      * @return empty data
      */
-    public static CommonTagCompound createEmptyData(String playerUUID) {
+    public static CommonTagCompound createNewEmptyData(String playerUUID) {
         CommonTagCompound empty = new CommonTagCompound();
         try {
             empty.putUUID("", UUID.fromString(playerUUID));
