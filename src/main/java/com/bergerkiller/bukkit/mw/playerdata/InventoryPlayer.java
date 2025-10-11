@@ -48,6 +48,10 @@ public interface InventoryPlayer {
         }
     }
 
+    default boolean isOpenInvPlayer() {
+        return false;
+    }
+
     static InventoryPlayer tryOnline(String name, String uuid) {
         OfflineInventoryPlayer offline = offline(name, uuid);
         UUID parsedUUID = offline.parseUniqueId();
@@ -145,6 +149,11 @@ public interface InventoryPlayer {
         @Override
         public UUID parseUniqueId() {
             return player.getUniqueId();
+        }
+
+        @Override
+        public boolean isOpenInvPlayer() {
+            return player.getClass().getName().startsWith("com.lishid.openinv.");
         }
 
         @Override

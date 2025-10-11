@@ -108,7 +108,6 @@ public class MWPlayerDataController extends PlayerDataController {
 
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
     private static final boolean CAN_RESET_ATTRIBUTES = Common.hasCapability("Common:Attributes:RemoveAllModifiers");
-    private static final boolean OFFLINE_LOAD_MEANS_OPENINV = Common.evaluateMCVersion("<=", "1.21.8");
 
     private static final Map<Player, World> worldToSaveTo = new IdentityHashMap<>();
     private static final LastPlayerPositionCache lastPlayerPositionCache = new LastPlayerPositionCache();
@@ -913,7 +912,7 @@ public class MWPlayerDataController extends PlayerDataController {
         }
     }
 
-    public LoadResult handleLoad(InventoryPlayer player, LoadOptions options) throws IOException {
+    public LoadResult handleLoad(InventoryPlayer player) throws IOException {
         synchronized (getLock(player)) {
             final PlayerDataFileCollection files = new PlayerDataFileCollection(player, WorldConfig.getVanillaMain().getWorld());
 
@@ -940,7 +939,7 @@ public class MWPlayerDataController extends PlayerDataController {
             //
             // There is no need to do this when the inventory editor itself opens the file. In that case, we're
             // already safekeeping the recovery metadata.
-            if (!options.loadedByInventoryEditor && InventoryEditRecovery.recoverInventoryData(player, mainWorldData)) {
+            if (InventoryEditRecovery.recoverInventoryData(player, mainWorldData)) {
                 mainWorldData = files.mainWorldFile.read();
                 playerData = mainWorldData; // Changed later if needed
             }
@@ -1096,11 +1095,9 @@ public class MWPlayerDataController extends PlayerDataController {
             */
 
             // Track whether this inventory was inventory edited
-            if (options.loadedByInventoryEditor) {
-                InventoryEditRecovery.writeInventoryRecoveryData(files, mainWorldData, playerData);
-            } else {
-                InventoryEditRecovery.clearEditedInventoryWorld(playerData);
-            }
+            // This metadata is ignored when this NBT is loaded into a player by the server,
+            // but it is kept when inventory-editing plugins write the nbt back to the vanilla world.
+            InventoryEditRecovery.writeInventoryRecoveryData(files, mainWorldData, playerData);
 
             return new LoadResult(files, playerData, hasPlayedBefore);
         }
@@ -1108,17 +1105,8 @@ public class MWPlayerDataController extends PlayerDataController {
 
     @Override
     public CommonTagCompound onLoadOffline(String playerName, String playerUUID) {
-        LoadOptions loadOptions = new LoadOptions();
-
-        if (OFFLINE_LOAD_MEANS_OPENINV) {
-            // There is no real way to tell, but this only gets called when openinv calls it
-            // This is because the normal base operation of onLoad(player) calling this method doesn't happen,
-            // as we override that method already.
-            loadOptions.loadedByInventoryEditor = true;
-        }
-
         try {
-            return handleLoad(InventoryPlayer.tryOnline(playerName, playerUUID), loadOptions).data;
+            return handleLoad(InventoryPlayer.tryOnline(playerName, playerUUID)).data;
         } catch (Throwable t) {
             plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + playerName, t);
             return super.onLoadOffline(playerName, playerUUID);
@@ -1128,16 +1116,8 @@ public class MWPlayerDataController extends PlayerDataController {
     // Only functional on 1.8 - 1.21.8
     @Override
     public CommonTagCompound onLoad(Player player) {
-        LoadOptions loadOptions = new LoadOptions();
-
-        // If this is an openinv player, then we must not do the usual world-specific loading as that causes glitches
-        // In that case, load the default vanilla way to avoid trouble.
-        if (player.getClass().getName().startsWith("com.lishid.openinv.")) {
-            loadOptions.loadedByInventoryEditor = true;
-        }
-
         try {
-            LoadResult result = handleLoad(InventoryPlayer.online(player), loadOptions);
+            LoadResult result = handleLoad(InventoryPlayer.online(player));
             result.applyToPlayer(player);
             return result.data;
         } catch (Throwable t) {
@@ -1377,13 +1357,6 @@ public class MWPlayerDataController extends PlayerDataController {
         } else if (!isValidRespawnPoint(world, current)) {
             PlayerRespawnPoint.NONE.toNBT(playerData);
         }
-    }
-
-    /**
-     * Custom options for loading a player profile offline.
-     */
-    public static class LoadOptions {
-        public boolean loadedByInventoryEditor = false;
     }
 
     /**
