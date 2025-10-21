@@ -1378,6 +1378,10 @@ public class MWPlayerDataController extends PlayerDataController {
          * @param player Player
          */
         public void applyToPlayer(Player player) {
+            if (data == null) {
+                return;
+            }
+
             // Minecraft bugfix here: Clear mob/potion effects BEFORE loading the data
             // This resolves issues with effects staying behind
             resetCurrentMobEffects(player);
