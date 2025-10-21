@@ -916,8 +916,12 @@ public class MWPlayerDataController extends PlayerDataController {
         synchronized (getLock(player)) {
             final PlayerDataFileCollection files = new PlayerDataFileCollection(player, WorldConfig.getVanillaMain().getWorld());
 
-            // If a main world player data file exists, then the player has been on the server before
-            boolean hasPlayedBefore = files.mainWorldFile.exists();
+            // If no main world player data file exists, just return null instantly
+            // This indicates to the server this player has not played before
+            // We cannot return anything else as that will break that mechanism
+            if (!files.mainWorldFile.exists()) {
+                return new LoadResult(files, null, false);
+            }
 
             // Read the main world file first. We need this information regardless of whether or not
             // the MyWorlds inventories system is enabled. In here we store what world to send the player
@@ -925,12 +929,8 @@ public class MWPlayerDataController extends PlayerDataController {
             // various worlds.
             // If loading of this main world player profile fails, then we can't do anything more,
             // anyway.
-            CommonTagCompound mainWorldData = null;
-            CommonTagCompound playerData = null;
-            if (hasPlayedBefore) {
-                mainWorldData = files.mainWorldFile.read();
-                playerData = mainWorldData; // Changed later if needed
-            }
+            CommonTagCompound mainWorldData = files.mainWorldFile.read();
+            CommonTagCompound playerData = mainWorldData; // Changed later if needed
 
             // If player data was inventory edited, recover the original data of this world stored in a separate MyWorlds tag.
             // Write the original data back to the vanilla world, and apply the inventory-edited modified contents
@@ -957,12 +957,12 @@ public class MWPlayerDataController extends PlayerDataController {
 
             // If set to true, force player to respawn at the server spawn location as if joining
             // for the first time
-            boolean respawnAtServerSpawn = !hasPlayedBefore;
+            boolean respawnAtServerSpawn = false;
 
             // TODO: This broke
             // If force-joining the main world is enabled, and we got main world data, switch
             // the stored world to the MyWorlds main world
-            if (MyWorlds.forceJoinOnMainWorld && hasPlayedBefore && mainWorldData != null) {
+            if (MyWorlds.forceJoinOnMainWorld && mainWorldData != null) {
                 boolean ignored;
                 if (plugin.isEnabled() && player.isOnline()) {
                     // Happens to be online, so we can check it right away
@@ -979,20 +979,18 @@ public class MWPlayerDataController extends PlayerDataController {
             }
 
             // Check world player was last on actually still exists
-            World lastPlayerWorld = hasPlayedBefore ? Bukkit.getWorld(mainWorldData.getUUID("World")) : null;
+            World lastPlayerWorld = Bukkit.getWorld(mainWorldData.getUUID("World"));
             if (lastPlayerWorld == null) {
                 respawnAtServerSpawn = true;
 
                 // In this state we can't send a message to the player, delay it until the player
                 // has logged in
-                if (hasPlayedBefore) {
-                    plugin.listener.scheduleForPlayerJoin(player, 100, Localization.WORLD_JOIN_REMOVED::message);
-                }
+                plugin.listener.scheduleForPlayerJoin(player, 100, Localization.WORLD_JOIN_REMOVED::message);
             }
 
             // Find out where to find the save file
             // No need to check for this if not using world inventories - it is always the main file then
-            if (MyWorlds.useWorldInventories && hasPlayedBefore && lastPlayerWorld != null) {
+            if (MyWorlds.useWorldInventories && lastPlayerWorld != null) {
                 try {
                     // Allow switching worlds and positions
                     // Switch to the save file of the loaded world
@@ -1099,7 +1097,7 @@ public class MWPlayerDataController extends PlayerDataController {
             // but it is kept when inventory-editing plugins write the nbt back to the vanilla world.
             InventoryEditRecovery.writeInventoryRecoveryData(files, mainWorldData, playerData);
 
-            return new LoadResult(files, playerData, hasPlayedBefore);
+            return new LoadResult(files, playerData, true);
         }
     }
 
