@@ -1379,6 +1379,7 @@ public class MWPlayerDataController extends PlayerDataController {
          */
         public void applyToPlayer(Player player) {
             if (data == null) {
+                PlayerUtil.setHasPlayedBefore(player, hasPlayedBefore);
                 return;
             }
 
