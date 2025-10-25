@@ -32,6 +32,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 
@@ -695,7 +696,40 @@ public class MWPlayerDataController extends PlayerDataController {
                 // Load the data
                 NBTUtil.loadInventory(player.getInventory(), playerData.createList(VANILLA_INVENTORY_TAG));
                 NBTUtil.loadEquipment(player.getEquipment(), playerData.get("equipment", CommonTagCompound.class));
+
+                // Initialize spawn point
+                PlayerRespawnPoint respawnPoint = PlayerRespawnPoint.fromNBT(playerData);
+                if (!MWPlayerDataController.isValidRespawnPoint(player.getWorld(), respawnPoint)) {
+                    respawnPoint = PlayerRespawnPoint.NONE;
+                }
+                respawnPoint.applyToPlayer(player);
+
+                NBTUtil.loadFoodMetaData(playerHandle.getFoodDataRaw(), playerData);
+                NBTUtil.loadInventory(player.getEnderChest(), playerData.createList(VANILLA_ENDER_CHEST_TAG));
                 player.getInventory().setHeldItemSlot(playerData.getValue("SelectedItemSlot", 0));
+
+                // Load Potion Effects active on the player right now
+                // Better to do this early in case later equipment changes alter them again
+                {
+                    Map<Holder<MobEffectListHandle>, MobEffectHandle> effects = playerHandle.getMobEffects();
+                    CommonTagList effectsTagList = readPotionEffects(playerData);
+                    if (effectsTagList != null) {
+                        for (int i = 0; i < effectsTagList.size(); ++i) {
+                            MobEffectHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) effectsTagList.get(i));
+                            if (mobEffect != null) {
+                                effects.put(mobEffect.getEffectList(), mobEffect);
+                            }
+                        }
+                    }
+                    playerHandle.setUpdateEffects(true);
+                }
+
+                // Refresh equipment modifiers now. If they change things that the current value depends on,
+                // like health, then they will be applied properly.
+                if (Common.hasCapability("Common:EntityUtil:detectEquipmentChanges")) {
+                    detectEquipmentChanges(player);
+                }
+
                 playerHandle.setExp(playerData.getValue("XpP", 0.0f));
                 playerHandle.setExpLevel(playerData.getValue("XpLevel", 0));
                 playerHandle.setExpTotal(playerData.getValue("XpTotal", 0));
@@ -725,6 +759,12 @@ public class MWPlayerDataController extends PlayerDataController {
                     }
                 }
 
+                if (playerData.containsKey("playerGameType")) {
+                    player.setGameMode(GameMode.getByValue(playerData.getValue("playerGameType", 1)));
+                }
+
+                // data.getValue("Bukkit.MaxHealth", (float) commonPlayer.getMaxHealth());
+
                 {
                     final double maxHealth = commonPlayer.getMaxHealth();
                     final double health;
@@ -737,37 +777,6 @@ public class MWPlayerDataController extends PlayerDataController {
                         health = playerData.getValue("Health", maxHealth);
                     }
                     commonPlayer.setHealth(Math.min(maxHealth, health));
-                }
-
-                // Initialize spawn point
-                PlayerRespawnPoint respawnPoint = PlayerRespawnPoint.fromNBT(playerData);
-                if (!MWPlayerDataController.isValidRespawnPoint(player.getWorld(), respawnPoint)) {
-                    respawnPoint = PlayerRespawnPoint.NONE;
-                }
-                respawnPoint.applyToPlayer(player);
-
-                NBTUtil.loadFoodMetaData(playerHandle.getFoodDataRaw(), playerData);
-                NBTUtil.loadInventory(player.getEnderChest(), playerData.createList(VANILLA_ENDER_CHEST_TAG));
-
-                if (playerData.containsKey("playerGameType")) {
-                    player.setGameMode(GameMode.getByValue(playerData.getValue("playerGameType", 1)));
-                }
-
-                // data.getValue("Bukkit.MaxHealth", (float) commonPlayer.getMaxHealth());
-
-                // Load Mob Effects
-                {
-                    Map<Holder<MobEffectListHandle>, MobEffectHandle> effects = playerHandle.getMobEffects();
-                    CommonTagList effectsTagList = readPotionEffects(playerData);
-                    if (effectsTagList != null) {
-                        for (int i = 0; i < effectsTagList.size(); ++i) {
-                            MobEffectHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) effectsTagList.get(i));
-                            if (mobEffect != null) {
-                                effects.put(mobEffect.getEffectList(), mobEffect);
-                            }
-                        }
-                    }
-                    playerHandle.setUpdateEffects(true);
                 }
 
                 // Perform post loading
@@ -806,6 +815,11 @@ public class MWPlayerDataController extends PlayerDataController {
                 plugin.getLogger().log(Level.WARNING, "Failed to load player data for " + player.getName(), t);
             }
         }
+    }
+
+    // Only available BKCommonLib 1.21.10-v2+
+    private static void detectEquipmentChanges(LivingEntity livingEntity) {
+        EntityUtil.detectEquipmentChanges(livingEntity);
     }
 
     /**
