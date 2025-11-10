@@ -66,8 +66,12 @@ public class WorldConfigStore {
             if (worldmode != null) {
                 c.worldmode = worldmode;
             }
-            c.reset();
-            c.detectGeneratorDisableAutoLoad();
+            try {
+                c.reset();
+                c.detectGeneratorDisableAutoLoad();
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.WARNING, "Failed to apply configuration for world '" + worldname + "'", t);
+            }
         } else if (worldmode != null) {
             c.worldmode = worldmode;
         }
