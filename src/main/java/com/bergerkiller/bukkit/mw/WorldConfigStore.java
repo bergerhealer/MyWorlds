@@ -2,39 +2,51 @@ package com.bergerkiller.bukkit.mw;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.IdentityHashMap;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.mw.utils.WorldConfigMap;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 
-import com.bergerkiller.bukkit.common.collections.StringMapCaseInsensitive;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
 import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 
 public class WorldConfigStore {
-    private static StringMapCaseInsensitive<WorldConfig> worldConfigs = new StringMapCaseInsensitive<WorldConfig>();
-    private static IdentityHashMap<World, WorldConfig> worldConfigsByWorld = new IdentityHashMap<>();
+    private static final WorldConfigMap worldConfigs = new WorldConfigMap() {
+        @Override
+        protected WorldConfig createNewConfiguration(MyWorlds plugin, String worldName, World world) {
+            return new WorldConfig(plugin, worldName);
+        }
+
+        @Override
+        protected void initializeValue(MyWorlds plugin, WorldConfig wc, World world, WorldMode worldmode, boolean doInitialization) {
+            wc.loadDefaults(doInitialization);
+            if (doInitialization) {
+                saveAllLater(); // Save new world configs sooner
+            }
+            if (worldmode != null) {
+                wc.worldmode = worldmode;
+            }
+        }
+
+        @Override
+        protected void applyConfiguration(WorldConfig wc) {
+            wc.reset();
+            wc.detectGeneratorDisableAutoLoad();
+        }
+    };
     private static FileConfiguration defaultProperties;
     private static boolean initializing = false;
     private static Task fastAutoSaveTask = null;
 
-    private static WorldConfig create(MyWorlds plugin, String worldname, boolean assignToMatchedInventory) {
-        WorldConfig wc = new WorldConfig(plugin, worldname);
-        worldConfigs.put(wc.worldname, wc);
-        wc.loadDefaults(assignToMatchedInventory);
-        saveAllLater(); // Save new world configs sooner
-        return wc;
-    }
-
     protected static void purgeWorldFromByWorldLookup(World world) {
-        worldConfigsByWorld.remove(world);
+        worldConfigs.removeFromByBukkitWorldLookup(world);
     }
 
     /**
@@ -45,7 +57,7 @@ public class WorldConfigStore {
      * @return World Config of the world, null if not found
      */
     public static WorldConfig getIfExists(String worldname) {
-        return worldConfigs.get(worldname);
+        return worldConfigs.getIfExists(worldname);
     }
 
     /**
@@ -60,22 +72,11 @@ public class WorldConfigStore {
     }
 
     private static WorldConfig get(MyWorlds plugin, String worldname, WorldMode worldmode) {
-        WorldConfig c = worldConfigs.get(worldname);
-        if (c == null) {
-            c = create(plugin, worldname, true);
-            if (worldmode != null) {
-                c.worldmode = worldmode;
-            }
-            try {
-                c.reset();
-                c.detectGeneratorDisableAutoLoad();
-            } catch (Throwable t) {
-                plugin.getLogger().log(Level.WARNING, "Failed to apply configuration for world '" + worldname + "'", t);
-            }
-        } else if (worldmode != null) {
-            c.worldmode = worldmode;
+        WorldConfig wc =  worldConfigs.create(plugin, worldname, worldmode, true);
+        if (worldmode != null) {
+            wc.worldmode = worldmode;
         }
-        return c;
+        return wc;
     }
 
     public static WorldConfig get(String worldName) {
@@ -87,7 +88,7 @@ public class WorldConfigStore {
     }
 
     private static WorldConfig get(MyWorlds plugin, World world) {
-        return worldConfigsByWorld.computeIfAbsent(world, w -> get(plugin, w.getName(), null));
+        return worldConfigs.create(plugin, world, null, true);
     }
 
     public static WorldConfig get(Entity entity) {
@@ -134,7 +135,7 @@ public class WorldConfigStore {
     }
 
     public static Collection<WorldConfig> all() {
-        return worldConfigs.values();
+        return worldConfigs.all();
     }
 
     /**
@@ -159,7 +160,7 @@ public class WorldConfigStore {
     }
 
     public static boolean exists(String worldname) {
-        return worldConfigs.containsKey(worldname);
+        return worldConfigs.getIfExists(worldname) != null;
     }
 
     /**
@@ -204,14 +205,13 @@ public class WorldConfigStore {
 
             // Worlds configuration
             worldConfigs.clear();
-            worldConfigsByWorld.clear();
             FileConfiguration config = new FileConfiguration(plugin, "worlds.yml");
             isNewConfig = !config.exists();
             config.load();
             for (ConfigurationNode node : config.getNodes()) {
                 String worldName = node.get("name", node.getName());
                 if (WorldManager.worldExists(worldName)) {
-                    WorldConfig wc = create(plugin, worldName, false);
+                    WorldConfig wc = worldConfigs.create(plugin, worldName, null, false);
                     wc.load(node);
                 } else {
                     plugin.log(Level.WARNING, "World: " + worldName + " no longer exists, data will be wiped when disabling!");
@@ -231,8 +231,8 @@ public class WorldConfigStore {
             initializing = false;
         }
 
-        // If no worlds.yml existed yet, generate it
-        if (isNewConfig) {
+        // If no worlds.yml existed yet or new configurations were added, save right away
+        if (isNewConfig || fastAutoSaveTask != null) {
             saveAll(plugin);
         }
     }
@@ -247,6 +247,7 @@ public class WorldConfigStore {
         // Ensure all currently loaded worlds have a configuration, generate a new one if needed
         // Fire an initial onWorldLoad event for them
         for (World world : WorldUtil.getWorlds()) {
+            plugin.getLogger().info("Loading world on startup: " + world.getName());
             get(world).onWorldLoad(world);
         }
 
@@ -257,13 +258,16 @@ public class WorldConfigStore {
                 wc.loadWorld();
             }
         }
+
+        // Just in case
+        worldConfigs.applyWorldConfigurations();
     }
 
     /**
      * Saves the worlds.yml in the next tick. Debounces autosaves after big changes happen.
      */
     public static void saveAllLater() {
-        if (initializing || MyWorlds.plugin == null) {
+        if (MyWorlds.plugin == null) {
             return;
         }
 
@@ -284,16 +288,16 @@ public class WorldConfigStore {
     }
 
     public static void saveAll(MyWorlds plugin) {
-        // Cancel fast auto save
-        if (fastAutoSaveTask != null) {
-            fastAutoSaveTask.stop();
-            fastAutoSaveTask = null;
-        }
-
         // Do NOT do any saving while initializing the configuration
         // This causes a loss of state
         if (initializing) {
             return;
+        }
+
+        // Cancel fast auto save
+        if (fastAutoSaveTask != null) {
+            fastAutoSaveTask.stop();
+            fastAutoSaveTask = null;
         }
 
         FileConfiguration cfg = new FileConfiguration(plugin, "worlds.yml");
@@ -305,7 +309,7 @@ public class WorldConfigStore {
         cfg.save();
 
         // Clean up the cache by bukkit world - is repopulated automatically
-        worldConfigsByWorld.clear();
+        worldConfigs.resetByBukkitWorldMap();
     }
 
     public static void deinit(MyWorlds plugin) {
