@@ -247,7 +247,6 @@ public class WorldConfigStore {
         // Ensure all currently loaded worlds have a configuration, generate a new one if needed
         // Fire an initial onWorldLoad event for them
         for (World world : WorldUtil.getWorlds()) {
-            plugin.getLogger().info("Loading world on startup: " + world.getName());
             get(world).onWorldLoad(world);
         }
 
