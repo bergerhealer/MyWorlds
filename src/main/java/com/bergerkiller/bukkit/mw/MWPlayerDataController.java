@@ -1364,7 +1364,12 @@ public class MWPlayerDataController extends PlayerDataController {
 
     private static void removeInvalidBedSpawn(World world, CommonTagCompound playerData) {
         PlayerRespawnPoint current = PlayerRespawnPoint.fromNBT(playerData);
-        if (!current.isNone() && !WorldConfig.get(current.getWorld()).getBedRespawnMode().persistInProfile()) {
+        if (current.isNone()) {
+            return;
+        }
+
+        World currentSpawnWorld = current.getWorld();
+        if (currentSpawnWorld == null || !WorldConfig.get(current.getWorld()).getBedRespawnMode().persistInProfile()) {
             PlayerRespawnPoint.NONE.toNBT(playerData);
         } else if (!isValidRespawnPoint(world, current)) {
             PlayerRespawnPoint.NONE.toNBT(playerData);
