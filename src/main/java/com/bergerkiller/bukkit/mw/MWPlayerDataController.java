@@ -301,10 +301,6 @@ public class MWPlayerDataController extends PlayerDataController {
         // Import legacy positions of all worlds we need to check
         LastPlayerPositionList lastPositions = readLastPlayerPositions(player, possibleWorldConfigs);
         for (LastPlayerPositionList.LastPosition pos : lastPositions.all(true)) {
-            if (pos.hasDied()) {
-                break; // Fail instantly if the player last died here
-            }
-
             World posWorld = pos.getWorld();
             if (posWorld == null) {
                 continue; // Not loaded
@@ -312,6 +308,11 @@ public class MWPlayerDataController extends PlayerDataController {
 
             for (WorldConfig wc : possibleWorldConfigs) {
                 if (wc.getWorld() == posWorld) {
+                    // Fail instantly if the player last died here
+                    if (pos.hasDied()) {
+                        return null;
+                    }
+
                     Location loc = pos.getLocation();
                     if (loc == null) {
                         break; // Not loaded? Eh?
