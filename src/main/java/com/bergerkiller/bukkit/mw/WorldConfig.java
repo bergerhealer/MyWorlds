@@ -435,7 +435,7 @@ public class WorldConfig extends WorldConfigStore {
             this.difficulty = w.getDifficulty();
             this.keepSpawnInMemory = w.getKeepSpawnInMemory();
             this.autosave = w.isAutoSave();
-            this.allowHealthRegen = !"false".equals(w.getGameRuleValue("naturalRegeneration"));
+            this.allowHealthRegen = Util.GAME_RULE_NATURAL_REGENERATION.get(w);
         }
         if (this.worldname == null || this.worldname.equals(this.getConfigName())) {
             node.remove("name");
@@ -937,7 +937,7 @@ public class WorldConfig extends WorldConfigStore {
     }
     public void updateHealthRegen(World world) {
         if (world != null) {
-            world.setGameRuleValue("naturalRegeneration", allowHealthRegen ? "true" : "false");
+            Util.GAME_RULE_NATURAL_REGENERATION.set(world, allowHealthRegen);
         }
     }
     public void updateOP(Player player) {

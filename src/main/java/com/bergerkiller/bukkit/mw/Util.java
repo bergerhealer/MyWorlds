@@ -11,8 +11,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import com.bergerkiller.bukkit.common.MaterialBooleanProperty;
+import com.bergerkiller.bukkit.common.internal.CommonBootstrap;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -348,4 +350,38 @@ public class Util {
                 });
         return all;
     }
+
+    /**
+     * Works around the issue that the GameRule class does not exist before 1.13.1
+     */
+    public interface GameRuleWrapper<T> {
+        T get(World world);
+        void set(World world, T value);
+    }
+
+    public static GameRuleWrapper<Boolean> GAME_RULE_NATURAL_REGENERATION = CommonBootstrap.evaluateMCVersion(">=", "1.13.1")
+            ? new GameRuleWrapper<Boolean>()
+    {
+        @Override
+        public Boolean get(World world) {
+            return world.getGameRuleValue(GameRule.NATURAL_REGENERATION);
+        }
+
+        @Override
+        public void set(World world, Boolean value) {
+            world.setGameRule(GameRule.NATURAL_REGENERATION, value);
+        }
+    }
+            : new GameRuleWrapper<Boolean>()
+    {
+        @Override
+        public Boolean get(World world) {
+            return !"false".equals(world.getGameRuleValue("naturalRegeneration"));
+        }
+
+        @Override
+        public void set(World world, Boolean value) {
+            world.setGameRuleValue("naturalRegeneration", value ? "true" : "false");
+        }
+    };
 }
