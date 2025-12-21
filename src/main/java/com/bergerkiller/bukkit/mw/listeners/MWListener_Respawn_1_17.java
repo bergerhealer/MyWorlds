@@ -29,7 +29,6 @@ class MWListener_Respawn_1_17 implements Listener {
             return;
         }
 
-        System.out.println("Player has not played before");
         event.setSpawnLocation(WorldConfig.getMain().getSpawnLocation());
     }
 }
