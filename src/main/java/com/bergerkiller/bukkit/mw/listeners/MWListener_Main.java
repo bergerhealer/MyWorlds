@@ -1,21 +1,36 @@
-package com.bergerkiller.bukkit.mw;
+package com.bergerkiller.bukkit.mw.listeners;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Consumer;
-
+import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.Task;
 import com.bergerkiller.bukkit.common.block.SignSide;
+import com.bergerkiller.bukkit.common.entity.CommonEntity;
+import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
 import com.bergerkiller.bukkit.common.utils.BlockUtil;
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.EntityUtil;
+import com.bergerkiller.bukkit.common.utils.MaterialUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
+import com.bergerkiller.bukkit.common.wrappers.BlockData;
+import com.bergerkiller.bukkit.mw.Localization;
+import com.bergerkiller.bukkit.mw.MWPlayerDataController;
+import com.bergerkiller.bukkit.mw.MyWorlds;
+import com.bergerkiller.bukkit.mw.Permission;
+import com.bergerkiller.bukkit.mw.Portal;
+import com.bergerkiller.bukkit.mw.PortalItemType;
+import com.bergerkiller.bukkit.mw.PortalStore;
+import com.bergerkiller.bukkit.mw.PortalType;
+import com.bergerkiller.bukkit.mw.Util;
+import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.WorldManager;
 import com.bergerkiller.bukkit.mw.playerdata.InventoryPlayer;
+import com.bergerkiller.bukkit.mw.portal.PortalDestination;
 import com.bergerkiller.bukkit.mw.portal.PortalDestinationDebouncer;
 import com.bergerkiller.bukkit.mw.portal.PortalMode;
+import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
+import com.bergerkiller.bukkit.mw.utils.BlockPhysicsEventDataAccessor;
+import com.bergerkiller.mountiplex.reflection.declarations.ClassResolver;
+import com.bergerkiller.mountiplex.reflection.declarations.MethodDeclaration;
+import com.bergerkiller.mountiplex.reflection.util.FastMethod;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -37,8 +52,8 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -50,29 +65,26 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 
-import com.bergerkiller.bukkit.common.Common;
-import com.bergerkiller.bukkit.common.entity.CommonEntity;
-import com.bergerkiller.bukkit.common.events.CreaturePreSpawnEvent;
-import com.bergerkiller.bukkit.common.utils.CommonUtil;
-import com.bergerkiller.bukkit.common.utils.EntityUtil;
-import com.bergerkiller.bukkit.common.utils.MaterialUtil;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
-import com.bergerkiller.bukkit.common.wrappers.BlockData;
-import com.bergerkiller.bukkit.mw.portal.PortalDestination;
-import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
-import com.bergerkiller.bukkit.mw.utils.BlockPhysicsEventDataAccessor;
-import com.bergerkiller.mountiplex.reflection.declarations.ClassResolver;
-import com.bergerkiller.mountiplex.reflection.declarations.MethodDeclaration;
-import com.bergerkiller.mountiplex.reflection.util.FastMethod;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
 
-public class MWListener implements Listener {
+public class MWListener_Main implements Listener {
     private static final Material END_PORTAL_FRAME_TYPE = MaterialUtil.getFirst("END_PORTAL_FRAME", "LEGACY_ENDER_PORTAL_FRAME");
+    private final MWListeners listeners;
     private final MyWorlds plugin;
     private final Map<String, List<Consumer<Player>>> pendingPlayerJoinTasksByUUIDStr = new HashMap<>();
     private final Set<Player> playersInWater = new HashSet<>();
     private final PortalDestinationDebouncer destinationDebouncer;
 
-    public MWListener(MyWorlds plugin) {
+    public MWListener_Main(MWListeners listeners, MyWorlds plugin) {
+        this.listeners = listeners;
         this.plugin = plugin;
         this.destinationDebouncer = new PortalDestinationDebouncer(plugin);
     }
@@ -114,7 +126,7 @@ public class MWListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldInit(WorldInitEvent event) {
-        if (MyWorlds.plugin.clearInitDisableSpawn(event.getWorld().getName())) {
+        if (plugin.clearInitDisableSpawn(event.getWorld().getName())) {
             WorldUtil.setKeepSpawnInMemory(event.getWorld(), false);
         }
     }
@@ -410,7 +422,7 @@ public class MWListener implements Listener {
                 if (display.isEmpty()) {
                     display = destination.getName();
                 }
-                MWListenerPost.setLastEntered((Player) entity, display);
+                listeners.post.setLastEntered((Player) entity, display);
             }
 
             // Handle perms up-front

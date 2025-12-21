@@ -1,4 +1,4 @@
-package com.bergerkiller.bukkit.mw;
+package com.bergerkiller.bukkit.mw.listeners;
 
 import com.bergerkiller.bukkit.common.events.SignEditTextEvent;
 import org.bukkit.event.EventHandler;
@@ -8,10 +8,10 @@ import org.bukkit.event.Listener;
 /**
  * Uses the BKCommonLib {@link SignEditTextEvent} to handle sign changes
  */
-class MWListenerSignEditBKCL implements Listener {
-    private final MWListener listener;
+class MWListener_SignEdit_BKCL implements Listener {
+    private final MWListener_Main listener;
 
-    public MWListenerSignEditBKCL(MWListener listener) {
+    public MWListener_SignEdit_BKCL(MWListener_Main listener) {
         this.listener = listener;
     }
 

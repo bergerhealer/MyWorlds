@@ -167,7 +167,7 @@ public class Portal extends PortalStore {
      */
     public CompletableFuture<Boolean> teleportSelfAsync(Entity entity, MyWorldsTeleportEvent.Factory eventFactory) {
         if (entity instanceof Player) {
-            MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
+            MyWorlds.plugin.listeners.post.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
         }
         Location loc = Util.spawnOffset(this.getLocation(), entity);
         return WorldManager.teleportToExactAsync(entity, loc, eventFactory);
@@ -192,7 +192,7 @@ public class Portal extends PortalStore {
      */
     public boolean teleportSelf(Entity entity, MyWorldsTeleportEvent.Factory eventFactory) {
         if (entity instanceof Player) {
-            MWListenerPost.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
+            MyWorlds.plugin.listeners.post.setLastEntered((Player) entity, this.getOtherEnd().getDestinationDisplayName());
         }
         Location loc = Util.spawnOffset(this.getLocation(), entity);
 
@@ -394,7 +394,7 @@ public class Portal extends PortalStore {
     public static boolean canTeleportEntityTo(Entity e, Location dest) {
         // Check permissions for players
         if (e instanceof Player) {
-            return MWListenerPost.handleTeleportPermission((Player) e, dest);
+            return MyWorlds.plugin.listeners.post.handleTeleportPermission((Player) e, dest);
         }
         // Non-player entity was denied from teleporting there because of spawn control
         // Only applies when teleporting between worlds!

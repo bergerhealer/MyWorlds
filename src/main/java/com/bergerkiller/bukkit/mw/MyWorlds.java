@@ -11,6 +11,7 @@ import java.util.logging.Level;
 import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.bases.IntVector3;
 import com.bergerkiller.bukkit.common.softdependency.SoftDependency;
+import com.bergerkiller.bukkit.mw.listeners.MWListeners;
 import com.bergerkiller.bukkit.mw.mythicdungeons.MythicDungeonsHelper;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -97,8 +98,7 @@ public class MyWorlds extends PluginBase {
     public static boolean isMultiverseEnabled = false;
     // World to disable keepspawnloaded for
     private HashSet<String> spawnDisabledWorlds = new HashSet<String>();
-    final MWListener listener = new MWListener(this);
-    private MWPlayerChatListener chatListener = null; // Only initialized if used
+    final MWListeners listeners = new MWListeners(this);
     private MWPlayerDataController dataController;
     private final MyWorldsCommands commands = new MyWorldsCommands(this);
     private final WorldInventoriesDupingPatch worldDupingPatch = new WorldInventoriesDupingPatch();
@@ -109,7 +109,7 @@ public class MyWorlds extends PluginBase {
     private final AdvancementManager advancementManager = AdvancementManager.create(this);
     private final PortalSignList portalSignList = new PortalSignList(this);
     private final AutoSaveTask autoSaveTask = new AutoSaveTask(this);
-    private final PortalEnterEventDebouncer portalEnterEventDebouncer = new PortalEnterEventDebouncer(this, listener::onPortalEnter);
+    private final PortalEnterEventDebouncer portalEnterEventDebouncer = new PortalEnterEventDebouncer(this, listeners.main::onPortalEnter);
     private final PlayerDataMigrator migrator = new PlayerDataMigrator(this);
     private final List<PortalFilter> portalFilters = new ArrayList<>();
     private LibraryComponent placeholderApi = null;
@@ -247,13 +247,7 @@ public class MyWorlds extends PluginBase {
 
         // Event registering
         this.worldDupingPatch.enable(this);
-        this.register(listener);
-        if (Common.hasCapability("Common:SignEditTextEvent")) {
-            this.register(new MWListenerSignEditBKCL(listener));
-        } else {
-            this.register(new MWListenerSignEditLegacy(listener));
-        }
-        this.register(new MWListenerPost(this));
+        this.listeners.enable();
         this.register("tpp", "world");
         this.register(this.migrator);
 
@@ -386,12 +380,7 @@ public class MyWorlds extends PluginBase {
         useWorldBuildPermissions = config.get("useWorldBuildPermissions", false);
         useWorldUsePermissions = config.get("useWorldUsePermissions", false);
         useWorldChatPermissions = config.get("useWorldChatPermissions", false);
-        if (useWorldChatPermissions && chatListener == null) {
-            this.register(chatListener = new MWPlayerChatListener());
-        } else if (!useWorldChatPermissions && chatListener != null) {
-            CommonUtil.unregisterListener(chatListener);
-            chatListener = null;
-        }
+        listeners.setChatListenerEnabled(useWorldChatPermissions);
 
         config.setHeader("keepLastPositionPermissionEnabled", "\nWhether players with the myworlds.world.keeplastpos permission are teleported to");
         config.addHeader("keepLastPositionPermissionEnabled", "the last position they had on a world when using /tpp or using portals");

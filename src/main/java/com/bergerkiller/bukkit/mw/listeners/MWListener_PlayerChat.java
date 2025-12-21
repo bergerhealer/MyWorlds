@@ -1,4 +1,4 @@
-package com.bergerkiller.bukkit.mw;
+package com.bergerkiller.bukkit.mw.listeners;
 
 import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.Permission;
@@ -10,7 +10,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 import java.util.Iterator;
 
-class MWPlayerChatListener implements Listener {
+class MWListener_PlayerChat implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         // Handle chat permissions

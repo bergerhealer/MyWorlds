@@ -1,4 +1,4 @@
-package com.bergerkiller.bukkit.mw;
+package com.bergerkiller.bukkit.mw.listeners;
 
 import com.bergerkiller.bukkit.common.block.SignSide;
 import org.bukkit.event.EventHandler;
@@ -9,10 +9,10 @@ import org.bukkit.event.block.SignChangeEvent;
 /**
  * Uses the Bukkit {@link SignChangeEvent} to handle sign changes
  */
-class MWListenerSignEditLegacy implements Listener {
-    private final MWListener listener;
+class MWListener_SignEdit_Legacy implements Listener {
+    private final MWListener_Main listener;
 
-    public MWListenerSignEditLegacy(MWListener listener) {
+    public MWListener_SignEdit_Legacy(MWListener_Main listener) {
         this.listener = listener;
     }
 

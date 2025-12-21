@@ -1,8 +1,12 @@
-package com.bergerkiller.bukkit.mw;
+package com.bergerkiller.bukkit.mw.listeners;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.bergerkiller.bukkit.mw.Localization;
+import com.bergerkiller.bukkit.mw.MyWorlds;
+import com.bergerkiller.bukkit.mw.Permission;
+import com.bergerkiller.bukkit.mw.WorldConfig;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,7 +18,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.Plugin;
@@ -29,11 +32,11 @@ import com.bergerkiller.bukkit.common.utils.StringUtil;
  * Basically, everything that happens after performing a command
  * or using portals is dealt with here.
  */
-public class MWListenerPost implements Listener {
+public class MWListener_Post implements Listener {
     private final MyWorlds plugin;
-    private static EntityMap<Player, PortalInfo> lastEnteredPortal = new EntityMap<Player, PortalInfo>();
+    private final EntityMap<Player, PortalInfo> lastEnteredPortal = new EntityMap<Player, PortalInfo>();
 
-    public MWListenerPost(MyWorlds plugin) {
+    public MWListener_Post(MyWorlds plugin) {
         this.plugin = plugin;
     }
 
@@ -45,7 +48,7 @@ public class MWListenerPost implements Listener {
      * @param remove
      * @return last entered portal destination display name, null if none is applicable
      */
-    public static String getLastEnteredPortalDestination(Player player, boolean remove) {
+    public String getLastEnteredPortalDestination(Player player, boolean remove) {
         PortalInfo info = remove ? lastEnteredPortal.remove(player) : lastEnteredPortal.get(player);
         if (info == null) {
             return null;
@@ -59,14 +62,14 @@ public class MWListenerPost implements Listener {
         return info.portalDestinationDisplayName;
     }
 
-    public static void setLastEntered(Player player, String portalDestinationDisplayName) {
+    public void setLastEntered(Player player, String portalDestinationDisplayName) {
         PortalInfo info = new PortalInfo();
         info.portalDestinationDisplayName = portalDestinationDisplayName;
         info.tickStamp = CommonUtil.getServerTicks();
         lastEnteredPortal.put(player, info);
     }
 
-    public static boolean handleTeleportPermission(Player player, Location to) {
+    public boolean handleTeleportPermission(Player player, Location to) {
         // World can be entered?
         if (!Permission.canEnter(player, to.getWorld())) {
             Localization.WORLD_NOACCESS.message(player);
@@ -81,7 +84,7 @@ public class MWListenerPost implements Listener {
         return true;
     }
 
-    public static void handleTeleportMessage(Player player, Location to) {
+    public void handleTeleportMessage(Player player, Location to) {
         // We are handling this at the very end, so we can remove the portal as we get it
         String lastPortal = getLastEnteredPortalDestination(player, true);
         if (lastPortal != null) {

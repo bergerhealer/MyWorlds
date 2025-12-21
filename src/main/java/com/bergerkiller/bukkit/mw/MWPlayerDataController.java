@@ -109,6 +109,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
     private static final boolean SAVE_HEAL_F = Common.evaluateMCVersion("<=", "1.8.8");
     private static final boolean CAN_RESET_ATTRIBUTES = Common.hasCapability("Common:Attributes:RemoveAllModifiers");
+    private static final boolean CAN_RETURN_DEFAULT_WORLD_DATA = Common.evaluateMCVersion("<", "1.17");
 
     private static final Map<Player, World> worldToSaveTo = new IdentityHashMap<>();
     private static final LastPlayerPositionCache lastPlayerPositionCache = new LastPlayerPositionCache();
@@ -927,15 +928,34 @@ public class MWPlayerDataController extends PlayerDataController {
         }
     }
 
+    public boolean hasPlayedBefore(InventoryPlayer player) {
+        synchronized (getLock(player)) {
+            final PlayerDataFileCollection files = new PlayerDataFileCollection(player, WorldConfig.getVanillaMain().getWorld());
+            return files.mainWorldFile.exists();
+        }
+    }
+
     public LoadResult handleLoad(InventoryPlayer player) throws IOException {
         synchronized (getLock(player)) {
             final PlayerDataFileCollection files = new PlayerDataFileCollection(player, WorldConfig.getVanillaMain().getWorld());
 
-            // If no main world player data file exists, just return null instantly
-            // This indicates to the server this player has not played before
-            // We cannot return anything else as that will break that mechanism
+            System.out.println("Handle Load EXISTS=" + files.mainWorldFile.exists());
+
+            // What to do with new players that have not played before
             if (!files.mainWorldFile.exists()) {
-                return new LoadResult(files, null, false);
+                // For newer versions:
+                //
+                // If no main world player data file exists, just return null instantly
+                // This indicates to the server this player has not played before
+                // We cannot return anything else as that will break that mechanism on modern servers
+                if (!CAN_RETURN_DEFAULT_WORLD_DATA || !player.isOnline()) {
+                    return new LoadResult(files, null, false);
+                }
+
+                // Return a very minimal player profile with the initial main world set
+                // This ensures plugins see the player spawn on our main world
+                CommonTagCompound playerData = PlayerDataFile.createNewEmptyData(((InventoryPlayer.OnlineInventoryPlayer) player).getOnlinePlayer());
+                return new LoadResult(files, playerData, false);
             }
 
             // Read the main world file first. We need this information regardless of whether or not
@@ -1000,7 +1020,7 @@ public class MWPlayerDataController extends PlayerDataController {
 
                 // In this state we can't send a message to the player, delay it until the player
                 // has logged in
-                plugin.listener.scheduleForPlayerJoin(player, 100, Localization.WORLD_JOIN_REMOVED::message);
+                plugin.listeners.main.scheduleForPlayerJoin(player, 100, Localization.WORLD_JOIN_REMOVED::message);
             }
 
             // Find out where to find the save file
