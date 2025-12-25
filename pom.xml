@@ -4,7 +4,7 @@
 
     <groupId>com.bergerkiller.bukkit</groupId>
     <artifactId>MyWorlds</artifactId>
-    <version>1.21.11-v1-SNAPSHOT</version>
+    <version>1.21.11-v1</version>
     <packaging>jar</packaging>
 
     <name>MyWorlds</name>
