@@ -939,8 +939,6 @@ public class MWPlayerDataController extends PlayerDataController {
         synchronized (getLock(player)) {
             final PlayerDataFileCollection files = new PlayerDataFileCollection(player, WorldConfig.getVanillaMain().getWorld());
 
-            System.out.println("Handle Load EXISTS=" + files.mainWorldFile.exists());
-
             // What to do with new players that have not played before
             if (!files.mainWorldFile.exists()) {
                 // For newer versions:
