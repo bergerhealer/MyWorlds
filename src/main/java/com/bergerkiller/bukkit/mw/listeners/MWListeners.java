@@ -5,6 +5,8 @@ import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.mw.MWPlayerDataController;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 
+import java.util.logging.Level;
+
 /**
  * Stores all the event listeners used by MyWorlds. Put here so that all of the
  * listener classes don't have to be made public.
@@ -25,7 +27,16 @@ public class MWListeners {
     public void enable() {
         plugin.register(main);
         if (Common.evaluateMCVersion(">=", "1.17")) {
-            plugin.register(new MWListener_Respawn_1_17(plugin));
+            if (MWListener_Paper_AsyncSpawnLocation.AVAILABLE) {
+                try {
+                    MWListener_Paper_AsyncSpawnLocation listener = new MWListener_Paper_AsyncSpawnLocation();
+                    listener.register(plugin);
+                } catch (Throwable t) {
+                    plugin.getLogger().log(Level.SEVERE, "Failed to listen for Paper async spawn location", t);
+                }
+            } else {
+                plugin.register(new MWListener_Respawn_1_17(plugin));
+            }
         } else {
             // Here, the player data controller handles it by applying the world as part of player data
             // On these old versions we can handle the player loading itself, so we can set hasPlayedBefore and such.
