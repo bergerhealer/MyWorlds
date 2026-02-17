@@ -249,7 +249,7 @@ public class MyWorlds extends PluginBase {
         this.worldDupingPatch.enable(this);
         this.listeners.enable();
         this.register("tpp", "world");
-        this.register(this.migrator);
+        this.migrator.enable();
 
         // Soft Dependency evaluation beforehands
         isSpoutPluginEnabled = CommonUtil.isPluginEnabled("Spout");

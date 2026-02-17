@@ -15,10 +15,16 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.utils.CommonUtil;
+import com.bergerkiller.bukkit.common.utils.LogicUtil;
+import com.bergerkiller.mountiplex.reflection.declarations.ClassResolver;
+import com.bergerkiller.mountiplex.reflection.declarations.MethodDeclaration;
+import com.bergerkiller.mountiplex.reflection.util.FastMethod;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -31,13 +37,16 @@ import com.bergerkiller.bukkit.common.nbt.CommonTagList;
 import com.bergerkiller.bukkit.mw.MWPlayerDataController;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.WorldConfig;
+import org.bukkit.plugin.EventExecutor;
 
 /**
  * Performs (asynchronous) player data inventory migration.
  * Players whose data is being migrated cannot join the server until
  * the process is done.
  */
-public class PlayerDataMigrator implements Listener {
+public class PlayerDataMigrator {
+    private static final String KICK_MESSAGE = "Your player data is being migrated, try again later";
+
     private final MyWorlds plugin;
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private AsyncTask migrationTask = null;
@@ -51,6 +60,42 @@ public class PlayerDataMigrator implements Listener {
 
     public PlayerDataMigrator(MyWorlds plugin) {
         this.plugin = plugin;
+    }
+
+    public void enable() {
+        // Try to use Paper's PlayerConnectionValidateLoginEvent if available to kick players whose data is being migrated
+        Class<? extends Event> paperLoginEventClass = LogicUtil.unsafeCast(CommonUtil.getClass("io.papermc.paper.event.connection.PlayerConnectionValidateLoginEvent"));
+        if (paperLoginEventClass != null) {
+            // Paper's async login event
+            try {
+                PaperLoginEventHandler handler = new PaperLoginEventHandler(paperLoginEventClass);
+                Bukkit.getPluginManager().registerEvent(paperLoginEventClass, handler, EventPriority.LOWEST, handler, plugin);
+                return;
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.SEVERE, "Failed to register Paper async login event handler, falling back to sync login event", t);
+            }
+        }
+
+        // Default fallback. Is sync though and Paper doesn't like it.
+        plugin.register(new Listener() {
+            @EventHandler(priority = EventPriority.LOWEST)
+            public void onPlayerLogin(PlayerLoginEvent event) {
+                if (isBusy(event.getPlayer().getUniqueId())) {
+                    event.setResult(Result.KICK_OTHER);
+                    event.setKickMessage(KICK_MESSAGE);
+                }
+            }
+        });
+    }
+
+    private boolean isBusy(UUID playerUUID) {
+        if (!busy.get()) {
+            return false;
+        }
+
+        synchronized (pendingPlayerUUIDs) {
+            return pendingPlayerUUIDs.contains(playerUUID);
+        }
     }
 
     /**
@@ -404,20 +449,69 @@ public class PlayerDataMigrator implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerLogin(PlayerLoginEvent event) {
-        if (busy.get()) {
-            synchronized (pendingPlayerUUIDs) {
-                if (pendingPlayerUUIDs.contains(event.getPlayer().getUniqueId())) {
-                    event.setResult(Result.KICK_OTHER);
-                    event.setKickMessage("Your player data is being migrated, try again later");
-                }
-            }
-        }
-    }
-
     @FunctionalInterface
     public static interface Migrator {
         public void migrate(UUID playerUUID) throws IOException;
+    }
+
+    private class PaperLoginEventHandler implements Listener, EventExecutor {
+        private final FastMethod<UUID> getConnectingUserId = new FastMethod<>();
+        private final FastMethod<Void> kickWithStringMessage = new FastMethod<>();
+
+        public PaperLoginEventHandler(Class<?> playerConnectionValidateLoginEventType) throws Throwable {
+            ClassResolver resolver = new ClassResolver();
+            resolver.setDeclaredClass(playerConnectionValidateLoginEventType);
+
+            getConnectingUserId.init(new MethodDeclaration(resolver, "" +
+                    "public UUID getConnectingUserId() {\n" +
+                    "    io.papermc.paper.connection.PlayerConnection connection = instance.getConnection();\n" +
+                    "    System.out.println(\"Connection class: \" + connection.getClass().getName());\n" +
+                    "    if (connection instanceof io.papermc.paper.connection.PlayerLoginConnection) {\n" +
+                    "        io.papermc.paper.connection.PlayerLoginConnection plogin = (io.papermc.paper.connection.PlayerLoginConnection) connection;\n" +
+                    "        com.destroystokyo.paper.profile.PlayerProfile profile = plogin.getUnsafeProfile();\n" +
+                    "        if (profile != null) {\n" +
+                    "            return profile.getId();\n" +
+                    "        }\n" +
+                    "    } else if (connection instanceof io.papermc.paper.connection.PlayerConfigurationConnection) {\n" +
+                    "        io.papermc.paper.connection.PlayerConfigurationConnection pconfig = (io.papermc.paper.connection.PlayerConfigurationConnection) connection;\n" +
+                    "        com.destroystokyo.paper.profile.PlayerProfile profile = pconfig.getProfile();\n" +
+                    "        if (profile != null) {\n" +
+                    "            return profile.getId();\n" +
+                    "        }\n" +
+                    "    }\n" +
+                    "    return null;\n" +
+                    "}"));
+            getConnectingUserId.forceInitialization();
+
+            kickWithStringMessage.init(new MethodDeclaration(resolver, "" +
+                    "public void kickWithStringMessage(String message) {\n" +
+                    "    net.kyori.adventure.text.Component component = net.kyori.adventure.text.Component.text(message);\n" +
+                    "    instance.kickMessage(component);\n" +
+                    "}"));
+            kickWithStringMessage.forceInitialization();
+        }
+
+        @Override
+        public void execute(Listener listener, Event event) {
+            // Shortcut to avoid all this slowness if nothing is going on.
+            if (!busy.get()) {
+                return;
+            }
+
+            // Note: this event fires twice. Once during login and once during configuration.
+            // Due to a Paper bug if the legacy PlayerLoginEvent is used, the login kickMessage() call doesn't actually kick the player.
+            // So as a workaround we kick during configuration phase too.
+            //
+            // One problem is that during config phase the player data is loaded, so this could error out due to conflicting I/O.
+            // Ideally plugins don't use the login event at all.
+            UUID playerUUID = getConnectingUserId.invoke(event);
+            if (playerUUID == null) {
+                return; // Not login phase or invalid profile.
+            }
+
+            if (isBusy(playerUUID)) {
+                kickWithStringMessage.invoke(event, KICK_MESSAGE);
+            }
+        }
     }
 }
