@@ -465,7 +465,6 @@ public class PlayerDataMigrator {
             getConnectingUserId.init(new MethodDeclaration(resolver, "" +
                     "public UUID getConnectingUserId() {\n" +
                     "    io.papermc.paper.connection.PlayerConnection connection = instance.getConnection();\n" +
-                    "    System.out.println(\"Connection class: \" + connection.getClass().getName());\n" +
                     "    if (connection instanceof io.papermc.paper.connection.PlayerLoginConnection) {\n" +
                     "        io.papermc.paper.connection.PlayerLoginConnection plogin = (io.papermc.paper.connection.PlayerLoginConnection) connection;\n" +
                     "        com.destroystokyo.paper.profile.PlayerProfile profile = plogin.getUnsafeProfile();\n" +
