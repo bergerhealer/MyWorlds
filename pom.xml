@@ -15,7 +15,7 @@
         <project.build.number>NO-CI</project.build.number>
         <project.serverVersion>1.19.3-R0.1-SNAPSHOT</project.serverVersion>
         <project.bkcversion>1.21.10-v2-SNAPSHOT</project.bkcversion>
-        <project.preloaderversion>1.8</project.preloaderversion>
+        <project.preloaderversion>1.10</project.preloaderversion>
         <junit.version>4.12</junit.version>
     </properties>
 
