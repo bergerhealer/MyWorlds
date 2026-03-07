@@ -139,7 +139,7 @@ public class WorldConfig extends WorldConfigStore {
             this.respawnPoint = RespawnPoint.DEFAULT;
             this.pvp = world.getPVP();
             this.autosave = world.isAutoSave();
-            this.allowHealthRegen = !"false".equals(world.getGameRuleValue("naturalRegeneration"));
+            this.allowHealthRegen = Util.GAME_RULE_NATURAL_REGENERATION.get(world);
             this.getChunkGeneratorName();
         } else {
             this.alias = worldname;
