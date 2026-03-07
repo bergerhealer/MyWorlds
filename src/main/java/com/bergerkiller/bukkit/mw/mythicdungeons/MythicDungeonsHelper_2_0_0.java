@@ -6,6 +6,8 @@ import com.bergerkiller.mountiplex.reflection.util.ExtendedClassWriter;
 import com.bergerkiller.mountiplex.reflection.util.FastField;
 import com.bergerkiller.mountiplex.reflection.util.asm.MPLType;
 import net.playavalon.mythicdungeons.MythicDungeons;
+import net.playavalon.mythicdungeons.api.MythicDungeonsService;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.objectweb.asm.MethodVisitor;
@@ -19,7 +21,7 @@ import java.util.logging.Level;
 /**
  * Used for MythicDungeons 2.0.0+
  */
-public class MythicDungeonsHelper_2_x_x implements MythicDungeonsHelper {
+public class MythicDungeonsHelper_2_0_0 implements MythicDungeonsHelper {
     private final MyWorlds myworlds;
     private final MythicDungeons mythicDungeons;
     private final Class<?> abstractInstanceType;
@@ -27,9 +29,12 @@ public class MythicDungeonsHelper_2_x_x implements MythicDungeonsHelper {
     private final FastField<String> instanceNameField;
     private final MythicDungeonsAPI api;
 
-    public MythicDungeonsHelper_2_x_x(MyWorlds myworlds, Plugin plugin) {
+    public MythicDungeonsHelper_2_0_0(MyWorlds myworlds, Plugin plugin) {
         this.myworlds = myworlds;
         this.mythicDungeons = (MythicDungeons) plugin;
+
+        MythicDungeonsService service = Bukkit.getServicesManager().load(MythicDungeonsService.class);
+        System.out.println("SERVICE: " + service);
 
         // These types must exist
         try {
@@ -122,22 +127,8 @@ public class MythicDungeonsHelper_2_x_x implements MythicDungeonsHelper {
     @Override
     public List<World> getSameDungeonWorlds(World world) {
         try {
-            for (Object abstractInstance : api.getActiveInstances(mythicDungeons)) {
-                World instanceWorld = api.getInstanceWorld(abstractInstance);
-                if (instanceWorld == null) {
-                    if (instanceNameField == null) {
-                        continue;
-                    }
-                    String name = instanceNameField.get(abstractInstance);
-                    if (name == null || !world.getName().equals(name)) {
-                        continue;
-                    }
-                } else {
-                    if (instanceWorld != world) {
-                        continue;
-                    }
-                }
-
+            Object abstractInstance = findAbstractInstance(world);
+            if (abstractInstance != null) {
                 Object abstractDungeon = api.getDungeon(abstractInstance);
                 List<World> result = new ArrayList<>();
 
@@ -156,6 +147,39 @@ public class MythicDungeonsHelper_2_x_x implements MythicDungeonsHelper {
             myworlds.getLogger().log(Level.SEVERE, "Failed to check whether world is a mythic dungeons world", t);
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public boolean isDungeonWorld(World world) {
+        try {
+            return findAbstractInstance(world) != null;
+        } catch (Throwable t) {
+            myworlds.getLogger().log(Level.SEVERE, "Failed to check whether world is a mythic dungeons world", t);
+            return false;
+        }
+    }
+
+    private Object findAbstractInstance(World world) {
+        for (Object abstractInstance : api.getActiveInstances(mythicDungeons)) {
+            World instanceWorld = api.getInstanceWorld(abstractInstance);
+            if (instanceWorld == null) {
+                if (instanceNameField == null) {
+                    continue;
+                }
+                String name = instanceNameField.get(abstractInstance);
+                if (name == null || !world.getName().equals(name)) {
+                    continue;
+                }
+            } else {
+                if (instanceWorld != world) {
+                    continue;
+                }
+            }
+
+            return abstractInstance;
+        }
+
+        return null;
     }
 
     private void addToList(List<World> worlds, Object abstractInstance, World except) {

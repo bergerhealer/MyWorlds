@@ -195,6 +195,11 @@ public class WorldConfig extends WorldConfigStore {
                     .distinct()
                     .max(Comparator.comparing(inv -> inv.getWorlds().size()))
                     .ifPresent(inventory -> inventory.add(this.worldname));
+
+            if (this.startupLoadMode != WorldStartupLoadMode.IGNORE && MyWorlds.plugin.getMythicDungeonsHelper().isDungeonWorld(w)) {
+                MyWorlds.plugin.getLogger().log(Level.INFO, "Detected world '" + worldname + "' is a Mythic Dungeons world, world will not be auto-loaded on startup");
+                this.setStartupLoadMode(WorldStartupLoadMode.IGNORE);
+            }
         }
     }
 
@@ -844,7 +849,12 @@ public class WorldConfig extends WorldConfigStore {
         // Link inventories if it is a mythic dungeons instance
         // Also run this next-tick, just in case the instance isn't initialized yet during world load.
         detectMythicDungeonsInstance();
-        CommonUtil.nextTick(() -> detectMythicDungeonsInstance());
+        new Task(this.plugin) {
+            @Override
+            public void run() {
+                detectMythicDungeonsInstance();
+            }
+        }.start(2);
         // If advancements are disabled on this world, let the advancement manager know
         if (!advancementsEnabled) {
             MyWorlds.plugin.getAdvancementManager().notifyAdvancementsDisabledOnWorld();

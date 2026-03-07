@@ -46,21 +46,8 @@ public class MythicDungeonsHelper_1_x_x implements MythicDungeonsHelper {
     @Override
     public List<World> getSameDungeonWorlds(World world) {
         try {
-            for (Instance instance : mythicDungeons.getActiveInstances()) {
-                if (instance.getInstanceWorld() == null) {
-                    if (instanceNameField == null) {
-                        continue;
-                    }
-                    String name = instanceNameField.get(instance);
-                    if (name == null || !world.getName().equals(name)) {
-                        continue;
-                    }
-                } else {
-                    if (instance.getInstanceWorld() != world) {
-                        continue;
-                    }
-                }
-
+            Instance instance = findInstance(world);
+            if (instance != null) {
                 Dungeon dungeon = instance.getDungeon();
                 List<World> result = new ArrayList<>();
 
@@ -79,6 +66,37 @@ public class MythicDungeonsHelper_1_x_x implements MythicDungeonsHelper {
             myworlds.getLogger().log(Level.SEVERE, "Failed to check whether world is a mythic dungeons world", t);
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public boolean isDungeonWorld(World world) {
+        try {
+            return findInstance(world) != null;
+        } catch (Throwable t) {
+            myworlds.getLogger().log(Level.SEVERE, "Failed to check whether world is a mythic dungeons world", t);
+            return false;
+        }
+    }
+
+    private Instance findInstance(World world) {
+        for (Instance instance : mythicDungeons.getActiveInstances()) {
+            if (instance.getInstanceWorld() == null) {
+                if (instanceNameField == null) {
+                    continue;
+                }
+                String name = instanceNameField.get(instance);
+                if (name == null || !world.getName().equals(name)) {
+                    continue;
+                }
+            } else {
+                if (instance.getInstanceWorld() != world) {
+                    continue;
+                }
+            }
+            return instance;
+        }
+
+        return null;
     }
 
     private void addToList(List<World> worlds, Instance instance, World except) {

@@ -1,15 +1,11 @@
 package com.bergerkiller.bukkit.mw.mythicdungeons;
 
-import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
-import com.bergerkiller.mountiplex.reflection.util.FastField;
-import net.playavalon.mythicdungeons.MythicDungeons;
-import net.playavalon.mythicdungeons.dungeons.Dungeon;
-import net.playavalon.mythicdungeons.dungeons.Instance;
+import net.playavalon.mythicdungeons.api.MythicDungeonsService;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
@@ -18,10 +14,20 @@ import java.util.logging.Level;
  * Uses the mythic dungeons API for some extra integrations in MyWorlds
  */
 public interface MythicDungeonsHelper {
-    MythicDungeonsHelper DISABLED = world -> Collections.emptyList();
+    MythicDungeonsHelper DISABLED = new MythicDungeonsHelper() {
+        @Override
+        public List<World> getSameDungeonWorlds(World world) {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public boolean isDungeonWorld(World world) {
+            return false;
+        }
+    };
 
     /**
-     * Asks Mythic Dungeon whether the World is a dungeon, and if it is, returns all
+     * Asks Mythic Dungeons whether the World is a dungeon, and if it is, returns all
      * worlds that are instances or "edit instances" of that world. The edit instance
      * is pushed to the front of the list. Input world is excluded from the results.
      *
@@ -32,6 +38,15 @@ public interface MythicDungeonsHelper {
      */
     List<World> getSameDungeonWorlds(World world);
 
+    /**
+     * Asks Mythic Dungeons whether a particular World is a dungeon world instance.
+     * If it is, MyWorlds will ensure this world is not loaded on startup at all.
+     *
+     * @param world World
+     * @return True if it is a dungeon world, false if not
+     */
+    boolean isDungeonWorld(World world);
+
     static MythicDungeonsHelper init(final MyWorlds myworlds, Plugin plugin) {
         boolean hasAbstractInstanceAPI = false;
         try {
@@ -39,13 +54,30 @@ public interface MythicDungeonsHelper {
                     false, plugin.getClass().getClassLoader());
             hasAbstractInstanceAPI = true;
         } catch (Throwable t) {}
-
-        if (hasAbstractInstanceAPI) {
-            // This is used with the 2.x.x API
-            return new MythicDungeonsHelper_2_x_x(myworlds, plugin);
-        } else {
+        if (!hasAbstractInstanceAPI) {
             // For the 1.x.x there is an Instance class that is used
             return new MythicDungeonsHelper_1_x_x(myworlds, plugin);
         }
+
+        // Check to see if the service api is registered and has the "getAllDungeons()" API we need.
+        MythicDungeonsService service = null;
+        MythicDungeonsHelper_2_0_1.MythicDungeonsAPIHelper apiHelper = null;
+        try {
+            service = Bukkit.getServicesManager().load(MythicDungeonsService.class);
+            if (service != null) {
+                apiHelper = MythicDungeonsHelper_2_0_1.createAPIHelper();
+                apiHelper.getAllDungeons(service); // Just to check if the method is there and works
+            }
+        } catch (Throwable t) {
+            service = null; // Incompatible
+            apiHelper = null;
+        }
+        if (service == null) {
+            // This is used with the 2.0.0 API which lacks getAllDungeons() (?)
+            // Maybe we can remove this one tbh.
+            return new MythicDungeonsHelper_2_0_0(myworlds, plugin);
+        }
+
+        return new MythicDungeonsHelper_2_0_1(myworlds, service, apiHelper);
     }
 }
