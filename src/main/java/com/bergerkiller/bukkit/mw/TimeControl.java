@@ -1,21 +1,16 @@
 package com.bergerkiller.bukkit.mw;
 
+import com.bergerkiller.bukkit.mw.utils.GameRuleWrapper;
 import org.bukkit.World;
 
-import com.bergerkiller.bukkit.common.Task;
-
 public class TimeControl {
-    private static final String LOCKING_RULE = "doDaylightCycle";
-    private boolean canUseGameRule;
     public final WorldConfig config;
     public boolean locking = false;
     private long lockedTime;
     private World world;
-    private Task lockingTask;
 
     public TimeControl(WorldConfig owner) {
         this.config = owner;
-        this.lockingTask = null;
     }
 
     public void setTime(long time) {
@@ -27,7 +22,7 @@ public class TimeControl {
     }
 
     public long getTime() {
-        if (this.canUseGameRule && this.world != null) {
+        if (this.world != null) {
             this.lockedTime = world.getTime();
         }
         if (isLocked() || this.world == null) {
@@ -38,8 +33,8 @@ public class TimeControl {
     }
 
     public boolean isLocked() {
-        if (this.canUseGameRule && this.world != null) {
-            this.locking = !this.world.getGameRuleValue(LOCKING_RULE).equalsIgnoreCase("true");
+        if (this.world != null) {
+            this.locking = !GameRuleWrapper.ADVANCE_TIME.get(this.world);
         }
         return this.locking;
     }
@@ -67,19 +62,7 @@ public class TimeControl {
                 return;
             }
             if (this.world != null) {
-                if (canUseGameRule) {
-                    // Use the game rule instead of a task
-                    this.world.setGameRuleValue(LOCKING_RULE, Boolean.valueOf(!locking).toString());
-                } else if (locking) {
-                    // Start the locking task
-                    this.initLockingTask();
-                    this.lockingTask.start();
-                } else {
-                    // Stop the locking task
-                    if (this.lockingTask != null) {
-                        this.lockingTask.stop();
-                    }
-                }
+                GameRuleWrapper.ADVANCE_TIME.set(this.world, !locking);
             }
         }
     }
@@ -87,41 +70,11 @@ public class TimeControl {
     public boolean updateWorld(World world) {
         if (this.world != world) {
             this.world = world;
-            if (world == null && !canUseGameRule) {
-                if (this.lockingTask != null) {
-                    this.lockingTask.stop();
-                }
-            } else if (world != null) {
-                this.canUseGameRule = this.world.isGameRule(LOCKING_RULE);
-                if (canUseGameRule) {
-                    this.world.setGameRuleValue(LOCKING_RULE, Boolean.valueOf(!locking).toString());
-                } else {
-                    this.initLockingTask();
-                    this.lockingTask.start();
-                }
+            if (world != null) {
+                GameRuleWrapper.ADVANCE_TIME.set(world, !locking);
             }
             return true;
         }
         return false;
-    }
-
-    private void initLockingTask() {
-        if (this.lockingTask == null) {
-            this.lockingTask = new Task(MyWorlds.plugin) {
-                @Override
-                public Task start() {
-                    return this.start(MyWorlds.timeLockInterval, MyWorlds.timeLockInterval);
-                }
-
-                @Override
-                public void run() {
-                    if (locking && world != null) {
-                        world.setTime(lockedTime);
-                    } else {
-                        stop();
-                    }
-                }
-            };
-        }
     }
 }

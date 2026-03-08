@@ -1,9 +1,9 @@
 package com.bergerkiller.bukkit.mw.advancement;
 
 import com.bergerkiller.bukkit.common.events.PlayerAdvancementProgressEvent;
-import com.bergerkiller.bukkit.common.utils.CommonUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.utils.GameRuleWrapper;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -12,12 +12,12 @@ import org.bukkit.event.Listener;
 
 class AdvancementManagerUsingProgressEvent implements AdvancementManager {
     private final MyWorlds plugin;
-    private final boolean hasGameRuleEnum;
+    private final GameRuleWrapper<Boolean> showAnnouncementsGameRule;
     private boolean listenerRegistered = false;
 
     public AdvancementManagerUsingProgressEvent(MyWorlds plugin) {
         this.plugin = plugin;
-        this.hasGameRuleEnum = CommonUtil.getClass("org.bukkit.GameRule") != null;
+        this.showAnnouncementsGameRule = GameRuleWrapper.forBoolean("announceAdvancements", "show_advancement_messages");
     }
 
     @Override
@@ -45,16 +45,7 @@ class AdvancementManagerUsingProgressEvent implements AdvancementManager {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void applyGameRule(World world, boolean enabled) {
-        if (this.hasGameRuleEnum) {
-            applyGameRuleUsingEnum(world, enabled);
-        } else {
-            world.setGameRuleValue("announceAdvancements", enabled ? "true" : "false");
-        }
-    }
-
-    private void applyGameRuleUsingEnum(World world, boolean enabled) {
-        world.setGameRule(org.bukkit.GameRule.ANNOUNCE_ADVANCEMENTS, enabled);
+        this.showAnnouncementsGameRule.set(world, enabled);
     }
 }

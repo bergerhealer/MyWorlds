@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.mw.utils.GameRuleWrapper;
 import com.bergerkiller.mountiplex.logic.TextValueSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -139,7 +140,7 @@ public class WorldConfig extends WorldConfigStore {
             this.respawnPoint = RespawnPoint.DEFAULT;
             this.pvp = world.getPVP();
             this.autosave = world.isAutoSave();
-            this.allowHealthRegen = Util.GAME_RULE_NATURAL_REGENERATION.get(world);
+            this.allowHealthRegen = GameRuleWrapper.NATURAL_HEALTH_REGENERATION.get(world);
             this.getChunkGeneratorName();
         } else {
             this.alias = worldname;
@@ -440,7 +441,7 @@ public class WorldConfig extends WorldConfigStore {
             this.difficulty = w.getDifficulty();
             this.keepSpawnInMemory = w.getKeepSpawnInMemory();
             this.autosave = w.isAutoSave();
-            this.allowHealthRegen = Util.GAME_RULE_NATURAL_REGENERATION.get(w);
+            this.allowHealthRegen = GameRuleWrapper.NATURAL_HEALTH_REGENERATION.get(w);
         }
         if (this.worldname == null || this.worldname.equals(this.getConfigName())) {
             node.remove("name");
@@ -947,7 +948,7 @@ public class WorldConfig extends WorldConfigStore {
     }
     public void updateHealthRegen(World world) {
         if (world != null) {
-            Util.GAME_RULE_NATURAL_REGENERATION.set(world, allowHealthRegen);
+            GameRuleWrapper.NATURAL_HEALTH_REGENERATION.set(world, allowHealthRegen);
         }
     }
     public void updateOP(Player player) {
