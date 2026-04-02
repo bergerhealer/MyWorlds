@@ -16,7 +16,7 @@
         <project.serverVersion>1.19.3-R0.1-SNAPSHOT</project.serverVersion>
         <project.bkcversion>2.0.0-SNAPSHOT</project.bkcversion>
         <project.preloaderversion>1.10</project.preloaderversion>
-        <junit.version>4.12</junit.version>
+        <junit.version>4.13.1</junit.version>
     </properties>
 
     <profiles>
