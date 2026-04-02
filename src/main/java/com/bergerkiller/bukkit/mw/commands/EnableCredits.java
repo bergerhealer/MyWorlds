@@ -3,7 +3,7 @@ package com.bergerkiller.bukkit.mw.commands;
 import org.bukkit.ChatColor;
 
 import com.bergerkiller.bukkit.mw.Permission;
-import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
+import com.bergerkiller.generated.net.minecraft.server.level.ServerPlayerHandle;
 
 public class EnableCredits extends Command {
 
@@ -17,7 +17,7 @@ public class EnableCredits extends Command {
     }
 
     public void execute() {
-        EntityPlayerHandle.fromBukkit(player).setHasSeenCredits(false);
+        ServerPlayerHandle.fromBukkit(player).setHasSeenCredits(false);
         player.sendMessage(ChatColor.GREEN + "End game credits will be shown again next time you finish the end");
     }
 }

@@ -22,7 +22,7 @@ import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.PortalType;
-import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
+import com.bergerkiller.generated.net.minecraft.server.level.ServerPlayerHandle;
 import com.bergerkiller.generated.net.minecraft.world.entity.EntityHandle;
 
 import java.util.Optional;
@@ -158,7 +158,7 @@ public abstract class PortalTeleportationHandler {
                     });
                 } else {
                     // Skip credits
-                    final EntityPlayerHandle player_handle = EntityPlayerHandle.fromBukkit(player);
+                    final ServerPlayerHandle player_handle = ServerPlayerHandle.fromBukkit(player);
                     if (!player_handle.hasSeenCredits()) {
                         player_handle.setHasSeenCredits(true);
                         CommonUtil.nextTick(() -> player_handle.setHasSeenCredits(true));
@@ -174,7 +174,7 @@ public abstract class PortalTeleportationHandler {
             // Forcibly show the credits, which creates a respawn event similar to the default behavior
             boolean showCreditsScreen = false;
             if (this.destination.isShowCredits()) {
-                final EntityPlayerHandle player_handle = EntityPlayerHandle.fromBukkit(player);
+                final ServerPlayerHandle player_handle = ServerPlayerHandle.fromBukkit(player);
                 showCreditsScreen = !player_handle.hasSeenCredits();
             }
             if (showCreditsScreen) {

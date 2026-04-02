@@ -26,7 +26,7 @@ import com.bergerkiller.bukkit.mw.portal.NetherPortalOrientation;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher;
 import com.bergerkiller.bukkit.mw.portal.PortalTeleportationHandler;
 import com.bergerkiller.bukkit.mw.portal.NetherPortalSearcher.SearchStatus;
-import com.bergerkiller.generated.net.minecraft.world.level.dimension.DimensionManagerHandle;
+import com.bergerkiller.generated.net.minecraft.world.level.dimension.DimensionTypeHandle;
 
 /**
  * Handler for teleporting between worlds through nether portals,
@@ -38,9 +38,9 @@ public class PortalTeleportationHandlerNetherLink extends PortalTeleportationHan
 
     static {
         Method m = null;
-        if (Common.evaluateMCVersion(">=", "1.16") && DimensionManagerHandle.T.isAvailable()) {
+        if (Common.evaluateMCVersion(">=", "1.16") && DimensionTypeHandle.T.isAvailable()) {
             try {
-                m = DimensionManagerHandle.T.getType().getMethod("getCoordinateScale");
+                m = DimensionTypeHandle.T.getType().getMethod("getCoordinateScale");
                 if (m.getReturnType() != double.class) {
                     m = null;
                 }

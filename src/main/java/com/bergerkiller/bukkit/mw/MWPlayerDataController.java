@@ -21,8 +21,8 @@ import com.bergerkiller.bukkit.mw.playerdata.InventoryPlayer;
 import com.bergerkiller.bukkit.mw.playerdata.LastPlayerPositionCache;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataBootstrap;
 import com.bergerkiller.bukkit.mw.utils.KeyedLockMap;
-import com.bergerkiller.generated.net.minecraft.world.entity.ai.attributes.AttributeMapBaseHandle;
-import com.bergerkiller.generated.net.minecraft.world.entity.ai.attributes.AttributeModifiableHandle;
+import com.bergerkiller.generated.net.minecraft.world.entity.ai.attributes.AttributeMapHandle;
+import com.bergerkiller.generated.net.minecraft.world.entity.ai.attributes.AttributeInstanceHandle;
 import com.bergerkiller.mountiplex.reflection.resolver.Resolver;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -53,11 +53,11 @@ import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.bukkit.mw.playerdata.LastPlayerPositionList;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataFile;
 import com.bergerkiller.bukkit.mw.playerdata.PlayerDataFileCollection;
-import com.bergerkiller.generated.net.minecraft.network.protocol.game.PacketPlayOutEntityEquipmentHandle;
-import com.bergerkiller.generated.net.minecraft.server.level.EntityPlayerHandle;
+import com.bergerkiller.generated.net.minecraft.network.protocol.game.ClientboundSetEquipmentPacketHandle;
+import com.bergerkiller.generated.net.minecraft.server.level.ServerPlayerHandle;
+import com.bergerkiller.generated.net.minecraft.world.effect.MobEffectInstanceHandle;
 import com.bergerkiller.generated.net.minecraft.world.effect.MobEffectHandle;
-import com.bergerkiller.generated.net.minecraft.world.effect.MobEffectListHandle;
-import com.bergerkiller.generated.net.minecraft.world.entity.EntityLivingHandle;
+import com.bergerkiller.generated.net.minecraft.world.entity.LivingEntityHandle;
 
 public class MWPlayerDataController extends PlayerDataController {
     /** Root compound data tag path where MyWorlds stores all metadata in player data files */
@@ -560,16 +560,16 @@ public class MWPlayerDataController extends PlayerDataController {
      * @param human
      */
     private static void resetCurrentMobEffects(HumanEntity human) {
-        EntityLivingHandle livingHandle = EntityLivingHandle.fromBukkit(human);
+        LivingEntityHandle livingHandle = LivingEntityHandle.fromBukkit(human);
 
         // Reset current mob effects applied to the player
         // Notify the player of these effects being gone so they don't ghost
         {
-            Map<Holder<MobEffectListHandle>, MobEffectHandle> effects = livingHandle.getMobEffects();
+            Map<Holder<MobEffectHandle>, MobEffectInstanceHandle> effects = livingHandle.getMobEffects();
             if (human instanceof Player) {
                 // Send mob effect removal messages
                 Player player = (Player) human;
-                for (Holder<MobEffectListHandle> effect : effects.keySet()) {
+                for (Holder<MobEffectHandle> effect : effects.keySet()) {
                     PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_REMOVE.newInstance(player.getEntityId(), effect));
                 }
             }
@@ -584,10 +584,10 @@ public class MWPlayerDataController extends PlayerDataController {
     }
 
     //TODO: Make inline when bkcl 1.21 or later is a hard-dep
-    private static void resetAttributes(EntityLivingHandle handle, Player player) {
-        AttributeMapBaseHandle map = handle.getAttributeMap();
-        Collection<AttributeModifiableHandle> allAttributes = new ArrayList<>(map.getAllAttributes());
-        allAttributes.forEach(AttributeModifiableHandle::removeAllModifiers);
+    private static void resetAttributes(LivingEntityHandle handle, Player player) {
+        AttributeMapHandle map = handle.getAttributeMap();
+        Collection<AttributeInstanceHandle> allAttributes = new ArrayList<>(map.getAllAttributes());
+        allAttributes.forEach(AttributeInstanceHandle::removeAllModifiers);
         PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_UPDATE_ATTRIBUTES.newInstance(player.getEntityId(), map.getSynchronizedAttributes()));
     }
 
@@ -607,7 +607,7 @@ public class MWPlayerDataController extends PlayerDataController {
         resetCurrentMobEffects(human);
 
         // Clear attributes
-        EntityLivingHandle livingHandle = EntityLivingHandle.fromBukkit(human);
+        LivingEntityHandle livingHandle = LivingEntityHandle.fromBukkit(human);
         livingHandle.resetAttributes();
 
         // Clear inventory
@@ -681,7 +681,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 files.log("refreshing state");
 
                 CommonPlayer commonPlayer = CommonEntity.get(player);
-                EntityPlayerHandle playerHandle = EntityPlayerHandle.fromBukkit(player);
+                ServerPlayerHandle playerHandle = ServerPlayerHandle.fromBukkit(player);
 
                 // First, clear previous player information when loading involves adding new elements
                 resetState(player);
@@ -713,11 +713,11 @@ public class MWPlayerDataController extends PlayerDataController {
                 // Load Potion Effects active on the player right now
                 // Better to do this early in case later equipment changes alter them again
                 {
-                    Map<Holder<MobEffectListHandle>, MobEffectHandle> effects = playerHandle.getMobEffects();
+                    Map<Holder<MobEffectHandle>, MobEffectInstanceHandle> effects = playerHandle.getMobEffects();
                     CommonTagList effectsTagList = readPotionEffects(playerData);
                     if (effectsTagList != null) {
                         for (int i = 0; i < effectsTagList.size(); ++i) {
-                            MobEffectHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) effectsTagList.get(i));
+                            MobEffectInstanceHandle mobEffect = NBTUtil.loadMobEffect((CommonTagCompound) effectsTagList.get(i));
                             if (mobEffect != null) {
                                 effects.put(mobEffect.getEffectList(), mobEffect);
                             }
@@ -748,10 +748,10 @@ public class MWPlayerDataController extends PlayerDataController {
                     try {
                         java.lang.reflect.Method m;
                         if (Common.evaluateMCVersion(">=", "1.18")) {
-                            m = Resolver.resolveAndGetDeclaredMethod(EntityLivingHandle.T.getType(),
+                            m = Resolver.resolveAndGetDeclaredMethod(LivingEntityHandle.T.getType(),
                                     "setAbsorptionAmount", float.class);
                         } else {
-                            m = Resolver.resolveAndGetDeclaredMethod(EntityLivingHandle.T.getType(),
+                            m = Resolver.resolveAndGetDeclaredMethod(LivingEntityHandle.T.getType(),
                                     "setAbsorptionHearts", float.class);
                         }
                         m.setAccessible(true);
@@ -785,7 +785,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 postLoad(player);
 
                 // Send add messages for all (new) effects
-                for (MobEffectHandle effect : EntityPlayerHandle.fromBukkit(player).getMobEffects().values()) {
+                for (MobEffectInstanceHandle effect : ServerPlayerHandle.fromBukkit(player).getMobEffects().values()) {
                     PacketUtil.sendPacket(player, PacketType.OUT_ENTITY_EFFECT_ADD.newInstance(player.getEntityId(), effect));
                 }
 
@@ -807,7 +807,7 @@ public class MWPlayerDataController extends PlayerDataController {
                 for (Player viewer : player.getWorld().getPlayers()) {
                     if (viewer != player && PlayerUtil.isChunkVisible(viewer, chunk)) {
                         for (EquipmentSlot slot : playerSupportedSlots) {
-                            PacketPlayOutEntityEquipmentHandle packet = PacketPlayOutEntityEquipmentHandle.createNew(
+                            ClientboundSetEquipmentPacketHandle packet = ClientboundSetEquipmentPacketHandle.createNew(
                                     player.getEntityId(), slot, EntityUtil.getEquipment(player, slot));
                             PacketUtil.sendPacket(viewer, packet);
                         }
