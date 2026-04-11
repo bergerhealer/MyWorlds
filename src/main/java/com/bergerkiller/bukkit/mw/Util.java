@@ -7,10 +7,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import com.bergerkiller.bukkit.common.MaterialBooleanProperty;
+import com.bergerkiller.bukkit.common.wrappers.BlockProperty;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -56,18 +56,19 @@ public class Util {
             }
 
             // Try to find a 'waterlogged' state, and if present, return its state
-            for (Map.Entry<?, Comparable<?>> state : blockData.getStates().entrySet()) {
-                if (!(state.getValue() instanceof Boolean)) {
+            for (BlockProperty<?> property : blockData.getProperties()) {
+                Object value = blockData.getProperty(property);
+                if (!(value instanceof Boolean)) {
                     continue;
                 }
                 String name;
                 try {
-                    name = (String) state.getKey().getClass().getMethod("name").invoke(state.getKey());
+                    name = (String) property.getClass().getMethod("name").invoke(property);
                 } catch (Throwable t) {
                     throw new RuntimeException("Failed to read block state name()", t);
                 }
                 if ("waterlogged".equals(name)) {
-                    return (Boolean) state.getValue();
+                    return (Boolean) value;
                 }
             }
 

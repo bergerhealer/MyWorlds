@@ -142,7 +142,7 @@ public class NetherPortalOrientation {
         BlockData blockData = WorldUtil.getBlockData(netherPortalBlock);
         if (!MaterialUtil.ISNETHERPORTAL.get(blockData)) {
             return BlockFace.SELF;
-        } else if (blockData.getState("axis", String.class).equalsIgnoreCase("x")) {
+        } else if (blockData.getProperty("axis", String.class).equalsIgnoreCase("x")) {
             return BlockFace.NORTH;
         } else {
             return BlockFace.EAST;
@@ -168,7 +168,7 @@ public class NetherPortalOrientation {
         }
 
         Queue<Block> remaining = new LinkedList<Block>(Collections.singletonList(netherPortalBlock));
-        if (blockData.getState("axis", String.class).equalsIgnoreCase("x")) {
+        if (blockData.getProperty("axis", String.class).equalsIgnoreCase("x")) {
             return findAlongX(remaining, blockData);
         } else {
             return findAlongZ(remaining, blockData);

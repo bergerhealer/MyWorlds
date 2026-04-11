@@ -38,9 +38,9 @@ public enum PortalItemType {
         case NETHER_FRAME:
             BlockData data = BlockData.fromMaterial(MaterialUtil.getFirst("NETHER_PORTAL", "LEGACY_PORTAL"));
             if (FaceUtil.isAlongX(FaceUtil.yawToFace(playerYaw))) {
-                data = data.setState("axis", "X");
+                data = data.setProperty("axis", "X");
             } else {
-                data = data.setState("axis", "Z");
+                data = data.setProperty("axis", "Z");
             }
             return data;
         case END_FRAME:
