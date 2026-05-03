@@ -14,12 +14,12 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
+import com.bergerkiller.bukkit.common.world.LoadableWorld;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.config.FileConfiguration;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 
 public class WorldInventory {
@@ -274,7 +274,7 @@ public class WorldInventory {
      * @return shared world name
      */
     public String getSharedWorldName() {
-        if (this.worldname == null || !WorldUtil.getWorldFolder(this.worldname).exists()) {
+        if (this.worldname == null || LoadableWorld.find(this.worldname) == null) {
             this.worldname = getSharedWorldName(this.worlds);
             if (this.worldname == null) {
                 throw new RuntimeException("Unable to locate a valid World folder to use for player data");
@@ -285,7 +285,7 @@ public class WorldInventory {
 
     private static String getSharedWorldName(Collection<String> worlds) {
         for (String world : worlds) {
-            if (WorldConfig.get(world).getWorldFolder().exists()) {
+            if (WorldConfig.get(world).getDimensionFolder().exists()) {
                 return world;
             }
         }

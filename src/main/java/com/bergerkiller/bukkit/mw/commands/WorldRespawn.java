@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
+import com.bergerkiller.bukkit.common.world.LoadableWorld;
 import com.bergerkiller.bukkit.mw.BedRespawnMode;
 import org.bukkit.ChatColor;
 
@@ -96,7 +97,7 @@ public class WorldRespawn extends Command {
                 if (destConfig != null) {
                     valid = destConfig.isLoaded() || destConfig.isExisting();
                 } else {
-                    valid = WorldUtil.isLoadableWorld(destinationWorld);
+                    valid = LoadableWorld.find(destinationWorld) != null;
                 }
                 if (!valid) {
                     sender.sendMessage(ChatColor.RED + "Can not find world '" + destinationWorld + "' to respawn at!");
@@ -144,7 +145,7 @@ public class WorldRespawn extends Command {
         if (config != null) {
             valid = config.isLoaded() || config.isExisting();
         } else {
-            valid = WorldUtil.isLoadableWorld(worldname);
+            valid = LoadableWorld.find(worldname) != null;
         }
         if (!valid) {
             Localization.WORLD_NOTFOUND.message(sender);

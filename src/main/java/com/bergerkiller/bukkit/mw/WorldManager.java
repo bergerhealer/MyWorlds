@@ -15,6 +15,7 @@ import java.util.zip.ZipException;
 
 import com.bergerkiller.bukkit.common.chunk.ForcedChunk;
 import com.bergerkiller.bukkit.common.utils.MathUtil;
+import com.bergerkiller.bukkit.common.world.LoadableWorld;
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportEvent;
 import org.bukkit.Bukkit;
@@ -263,7 +264,7 @@ public class WorldManager {
     }
 
     public static boolean worldExists(String worldname) {
-        return worldname != null && WorldUtil.isLoadableWorld(worldname);
+        return worldname != null && LoadableWorld.find(worldname) != null;
     }
 
     public static World getOrCreateWorld(String worldname) {
@@ -357,7 +358,14 @@ public class WorldManager {
         }
         Throwable failReason = null;
         try {
-            WorldCreator c = new WorldCreator(worldname);
+            WorldCreator c;
+            LoadableWorld loadableWorld = LoadableWorld.find(worldname);
+            if (loadableWorld != null) {
+                c = loadableWorld.getWorldCreator();
+            } else {
+                c = new WorldCreator(worldname);
+            }
+
             wc.worldmode.apply(c);
             if (seed != 0) {
                 c.seed(seed);

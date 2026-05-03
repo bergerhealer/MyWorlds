@@ -244,6 +244,9 @@ public class MyWorlds extends PluginBase {
         if (!Common.hasCapability("Common:CommonItemStack")) {
             throw new UnsupportedOperationException("This version of MyWorlds requires BKCommonLib 1.21 or later");
         }
+        if (!Common.hasCapability("Common:LoadableWorld")) {
+            throw new UnsupportedOperationException("This version of MyWorlds requires a newer BKCommonLib 2.0.0 build or later");
+        }
 
         // Event registering
         this.worldDupingPatch.enable(this);

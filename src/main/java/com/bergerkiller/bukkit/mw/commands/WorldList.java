@@ -1,57 +1,65 @@
 package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import com.bergerkiller.bukkit.common.world.LoadableWorld;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import com.bergerkiller.bukkit.common.MessageBuilder;
-import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Permission;
-import com.bergerkiller.bukkit.mw.WorldConfigStore;
-import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldList extends Command {
 
     public WorldList() {
         super(Permission.COMMAND_LIST, "world.list");
     }
-    
+
     public void execute() {
-        List<String> worldNames = new ArrayList<>(WorldUtil.getLoadableWorlds());
-        Collections.sort(worldNames);
+        List<LoadableWorld> loadableWorlds = new ArrayList<>(LoadableWorld.listAll());
+        loadableWorlds.sort((a, b) -> {
+            boolean aLoaded = a.isLoaded();
+            boolean bLoaded = b.isLoaded();
+            if (aLoaded && !bLoaded) {
+                return -1;
+            } else if (!aLoaded && bLoaded) {
+                return 1;
+            } else {
+                return a.getDisplayName().compareToIgnoreCase(b.getDisplayName());
+            }
+        });
 
         if (sender instanceof Player) {
             //perform some nice layout coloring
             MessageBuilder builder = new MessageBuilder();
-            builder.newLine().green("[Loaded/Online] ").red("[Unloaded/Offline] ").dark_red("[Broken/Dead]");
+            builder.newLine().green("[Loaded/Online] ").red("[Unloaded/Offline] ").gold("[Legacy]");
             builder.newLine().yellow("Available worlds: ");
             builder.setSeparator(ChatColor.WHITE, " / ").setIndent(2).newLine();
-            for (String world : worldNames) {
-                if (WorldManager.isLoaded(world)) {
-                    builder.green(world);
-                } else if (WorldConfigStore.get(world).isBroken()) {
-                    builder.dark_red(world);
+            for (LoadableWorld world : loadableWorlds) {
+                if (world.getFormat() == LoadableWorld.Format.SPIGOT_CONVERTED) {
+                    builder.gold(world.getDisplayName());
+                } else if (world.isLoaded()) {
+                    builder.green(world.getDisplayName());
                 } else {
-                    builder.red(world);
+                    builder.red(world.getDisplayName());
                 }
             }
             builder.send(sender);
         } else {
             //plain world per line
             sender.sendMessage("Available worlds:");
-            for (String world : worldNames) {
-                String status = "[Unloaded]";
-                if (WorldManager.isLoaded(world)) {
+            for (LoadableWorld world : loadableWorlds) {
+                String status;
+                if (world.getFormat() == LoadableWorld.Format.SPIGOT_CONVERTED) {
+                    status = "[Legacy]";
+                } else if (world.isLoaded()) {
                     status = "[Loaded]";
-                } else if (WorldConfigStore.get(world).isBroken()) {
-                    status = "[Broken]";
+                } else {
+                    status = "[Unloaded]";
                 }
-                sender.sendMessage("    " + world + " " + status);
+                sender.sendMessage("    " + world.getDisplayName() + " " + status);
             }
         }
     }
-
 }

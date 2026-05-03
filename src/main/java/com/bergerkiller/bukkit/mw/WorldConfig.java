@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.Task;
+import com.bergerkiller.bukkit.common.world.LoadableWorld;
 import com.bergerkiller.bukkit.mw.utils.GameRuleWrapper;
 import com.bergerkiller.mountiplex.logic.TextValueSequence;
 import org.bukkit.Bukkit;
@@ -26,7 +27,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 
-import com.bergerkiller.bukkit.common.Common;
 import com.bergerkiller.bukkit.common.config.ConfigurationNode;
 import com.bergerkiller.bukkit.common.internal.CommonBootstrap;
 import com.bergerkiller.bukkit.common.nbt.CommonTagCompound;
@@ -1197,13 +1197,18 @@ public class WorldConfig extends WorldConfigStore {
         return lower;
     }
 
+    public LoadableWorld getLoadableWorld() {
+        World loadedWorld = this.getWorld();
+        return loadedWorld != null ? LoadableWorld.of(loadedWorld) : LoadableWorld.find(worldname);
+    }
+
     /**
      * Gets the File folder where the data of this World is stored
      * 
      * @return World Folder
      */
-    public File getWorldFolder() {
-        return WorldUtil.getWorldFolder(this.worldname);
+    public File getDimensionFolder() {
+        return getLoadableWorld().getDimensionFolder();
     }
 
     /**
@@ -1216,12 +1221,18 @@ public class WorldConfig extends WorldConfigStore {
             return worldPlayerDataFolderOverride;
         }
 
-        World world = getWorld();
-        if (world == null) {
-            return new File(getWorldFolder(), "playerdata");
-        } else {
-            return WorldUtil.getPlayersFolder(world);
+        LoadableWorld loadableWorld = getLoadableWorld();
+        if (loadableWorld == null) {
+            throw new IllegalStateException("World '" + worldname + "' does not exist / has no player data");
         }
+
+        // Main overworld always uses ./world/players/data instead of the myworlds alternative
+        if (loadableWorld.getFormat() == LoadableWorld.Format.PAPER && this == WorldConfig.getVanillaMain()) {
+            return new File(loadableWorld.getRootFolder(), "players" + File.pathSeparator + "data");
+        }
+
+        // "playerdata" folder inside the dimension / world folder
+        return new File(loadableWorld.getDimensionFolder(), "playerdata");
     }
 
     /**
@@ -1251,7 +1262,8 @@ public class WorldConfig extends WorldConfigStore {
      * @return Region Folder
      */
     public File getRegionFolder() {
-        return WorldUtil.getWorldRegionFolder(this.worldname);
+        LoadableWorld loadableWorld = getLoadableWorld();
+        return loadableWorld == null ? null : loadableWorld.getRegionFolder();
     }
 
     /**
@@ -1260,16 +1272,12 @@ public class WorldConfig extends WorldConfigStore {
      * @return Data File
      */
     public File getDataFile() {
-        if (Common.hasCapability("Common:WorldUtil:getWorldLevelFile")) {
-            return getDataFileUsingBKCLAPI();
-        } else {
-            // Note: not correct for forge servers
-            return new File(getWorldFolder(), "level.dat");
+        LoadableWorld loadableWorld = getLoadableWorld();
+        if (loadableWorld == null) {
+            throw new IllegalStateException("World '" + worldname + "' does not exist / has no level.dat");
         }
-    }
 
-    private File getDataFileUsingBKCLAPI() {
-        return WorldUtil.getWorldLevelFile(this.worldname);
+        return loadableWorld.getLevelFile();
     }
 
     /**
@@ -1278,7 +1286,7 @@ public class WorldConfig extends WorldConfigStore {
      * @return UID File
      */
     public File getUIDFile() {
-        return new File(getWorldFolder(), "uid.dat");
+        return new File(getDimensionFolder(), "uid.dat");
     }
 
     /**
@@ -1287,7 +1295,7 @@ public class WorldConfig extends WorldConfigStore {
      * @return World file size
      */
     public long getWorldSize() {
-        return Util.getFileSize(getWorldFolder());
+        return Util.getFileSize(getDimensionFolder());
     }
 
     /**
@@ -1522,7 +1530,7 @@ public class WorldConfig extends WorldConfigStore {
         }
 
         // Copy the world folder over
-        if (!StreamUtil.tryCopyFile(this.getWorldFolder(), newWorldConfig.getWorldFolder())) {
+        if (!StreamUtil.tryCopyFile(this.getDimensionFolder(), newWorldConfig.getDimensionFolder())) {
             return false;
         }
 
@@ -1553,7 +1561,7 @@ public class WorldConfig extends WorldConfigStore {
         if (this.isLoaded()) {
             return false;
         }
-        File worldFolder = this.getWorldFolder();
+        File worldFolder = this.getDimensionFolder();
         WorldConfig.remove(this.worldname);
         return StreamUtil.deleteFile(worldFolder).isEmpty();
     }
