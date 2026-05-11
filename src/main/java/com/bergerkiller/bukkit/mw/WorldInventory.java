@@ -1,5 +1,6 @@
 package com.bergerkiller.bukkit.mw;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -285,7 +286,8 @@ public class WorldInventory {
 
     private static String getSharedWorldName(Collection<String> worlds) {
         for (String world : worlds) {
-            if (WorldConfig.get(world).getDimensionFolder().exists()) {
+            File dimFolder = WorldConfig.get(world).getDimensionFolder();
+            if (dimFolder != null && dimFolder.exists()) {
                 return world;
             }
         }

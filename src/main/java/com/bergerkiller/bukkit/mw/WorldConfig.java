@@ -1,13 +1,13 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import com.bergerkiller.bukkit.common.Task;
@@ -533,16 +533,54 @@ public class WorldConfig extends WorldConfigStore {
             return new Position(world.getSpawnLocation());
         }
 
-        // Try to read the level.dat file to find it
-        CommonTagCompound data = getData();
-        if (data != null) {
-            double[] pos = data.getValue("Pos", double[].class);
-            float[] rot = data.getValue("Rotation", float[].class);
-            if (pos != null) {
-                if (rot == null) {
-                    rot = new float[] { 0.0f, 0.0f };
+        // Try to read from file to find it
+        LoadableWorld loadableWorld = getLoadableWorld();
+        if (loadableWorld != null) {
+            if (loadableWorld.getFormat() == LoadableWorld.Format.PAPER) {
+                // Paper format, stores it in the "level_overrides.dat" file
+                File levelOverridesFile = new File(loadableWorld.getDimensionFolder(),
+                        "data" + File.separator + "paper" + File.separator + "level_overrides.dat");
+                if (levelOverridesFile.exists()) {
+                    try {
+                        CommonTagCompound overridesData = CommonTagCompound.readFromFile(levelOverridesFile, true);
+                        if (overridesData != null) {
+                            CommonTagCompound spawnData = overridesData.getCompoundOrEmpty("data")
+                                    .getCompoundOrEmpty("spawn");
+                            int[] pos = spawnData.getValue("pos", int[].class);
+                            if (pos != null) {
+                                float yaw = spawnData.getValue("yaw", 0.0f);
+                                float pitch = spawnData.getValue("pitch", 0.0f);
+                                return new Position(this.worldname, pos[0], pos[1], pos[2], yaw, pitch);
+                            }
+                        }
+                    } catch (IOException e) {
+                        MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read level_overrides.dat file of world '" + worldname + "' to find spawn position", e);
+                    }
                 }
-                return new Position(this.worldname, pos[0], pos[1], pos[2], rot[0], rot[1]);
+
+            } else {
+                // Legacy spigot format, stores it in the "level.dat" file
+                File levelFile = loadableWorld.getLevelFile();
+                if (levelFile.exists()) {
+                    try {
+                        CommonTagCompound levelData = CommonTagCompound.readFromFile(levelFile, true);
+                        if (levelData != null) {
+                            CommonTagCompound data = levelData.getValue("Data", CommonTagCompound.class);
+                            if (data != null) {
+                                double[] pos = data.getValue("Pos", double[].class);
+                                float[] rot = data.getValue("Rotation", float[].class);
+                                if (pos != null) {
+                                    if (rot == null) {
+                                        rot = new float[] { 0.0f, 0.0f };
+                                    }
+                                    return new Position(this.worldname, pos[0], pos[1], pos[2], rot[0], rot[1]);
+                                }
+                            }
+                        }
+                    } catch (IOException e) {
+                        MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read level.dat file of world '" + worldname + "' to find spawn position", e);
+                    }
+                }
             }
         }
 
@@ -1205,10 +1243,11 @@ public class WorldConfig extends WorldConfigStore {
     /**
      * Gets the File folder where the data of this World is stored
      * 
-     * @return World Folder
+     * @return World Folder, or null if this world does not exist on disk (anymore)
      */
     public File getDimensionFolder() {
-        return getLoadableWorld().getDimensionFolder();
+        LoadableWorld loadableWorld = getLoadableWorld();
+        return (loadableWorld == null) ? null : loadableWorld.getDimensionFolder();
     }
 
     /**
@@ -1228,7 +1267,7 @@ public class WorldConfig extends WorldConfigStore {
 
         // Main overworld always uses ./world/players/data instead of the myworlds alternative
         if (loadableWorld.getFormat() == LoadableWorld.Format.PAPER && this == WorldConfig.getVanillaMain()) {
-            return new File(loadableWorld.getRootFolder(), "players" + File.pathSeparator + "data");
+            return new File(loadableWorld.getRootFolder(), "players" + File.separator + "data");
         }
 
         // "playerdata" folder inside the dimension / world folder
@@ -1269,24 +1308,15 @@ public class WorldConfig extends WorldConfigStore {
     /**
      * Gets the File pointing to the level.dat of the world
      * 
-     * @return Data File
+     * @return Data File, or <i>null</i> if the world does not yet exist (not initialized)
      */
     public File getDataFile() {
         LoadableWorld loadableWorld = getLoadableWorld();
         if (loadableWorld == null) {
-            throw new IllegalStateException("World '" + worldname + "' does not exist / has no level.dat");
+            return null;
         }
 
         return loadableWorld.getLevelFile();
-    }
-
-    /**
-     * Gets the File pointing to the uid.dat of the world
-     * 
-     * @return UID File
-     */
-    public File getUIDFile() {
-        return new File(getDimensionFolder(), "uid.dat");
     }
 
     /**
@@ -1295,7 +1325,8 @@ public class WorldConfig extends WorldConfigStore {
      * @return World file size
      */
     public long getWorldSize() {
-        return Util.getFileSize(getDimensionFolder());
+        File dimensionFolder = getDimensionFolder();
+        return dimensionFolder == null ? 0L : Util.getFileSize(dimensionFolder);
     }
 
     /**
@@ -1321,12 +1352,49 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     /**
-     * Creates a new Data compound for this World, storing the default values
+     * Recreates the data file of a world in a legacy spigot world format (has own level.dat)
+     *
+     * @param seed to store in the new data file
+     * @return True if successful, False if not
+     */
+    public boolean generateLegacyWorldData(String seed) {
+        return generateLegacyWorldData(WorldManager.getRandomSeed(seed));
+    }
+
+    /**
+     * Recreates the data file of a world in a legacy spigot world format (has own level.dat)
+     *
+     * @param seed to store in the new data file
+     * @return True if successful, False if not
+     */
+    public boolean generateLegacyWorldData(long seed) {
+        CommonTagCompound data = createLegacySpigotWorldData(seed);
+        try {
+            // Put in a Data tag
+            {
+                CommonTagCompound root = new CommonTagCompound();
+                root.putValue("Data", data);
+                data = root;
+            }
+
+            data.writeToFile(new File(Bukkit.getWorldContainer(), worldname + File.separator + "level.dat"), true);
+            return true;
+        } catch (IOException e) {
+            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to write new (legacy) world data for world '" + worldname + "'", e);
+            return false;
+        }
+    }
+
+    /**
+     * Creates a new Data compound for this World's level.dat, storing the default values.
+     * The file generated here is only valid for the legacy Spigot format. It cannot be
+     * used with the modern Paper world structure. This makes this only useful for generating
+     * new worlds.
      * 
      * @param seed to use
      * @return Data compound
      */
-    public CommonTagCompound createData(long seed) {
+    private CommonTagCompound createLegacySpigotWorldData(long seed) {
         String args = this.getChunkGeneratorName();
         if (args == null) {
             args = ""; // Eh.
@@ -1373,6 +1441,7 @@ public class WorldConfig extends WorldConfigStore {
         data.putValue("LevelName", worldname);
         data.putValue("SizeOnDisk", getWorldSize());
         data.putValue("rainTime", 50000);
+
         return data;
     }
 
@@ -1383,7 +1452,7 @@ public class WorldConfig extends WorldConfigStore {
      */
     public CommonTagCompound getData() {
         File f = getDataFile();
-        if (!f.exists()) {
+        if (f == null || !f.exists()) {
             return null;
         }
         try {
@@ -1399,49 +1468,6 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     /**
-     * Sets the Data compound stored by this world
-     * 
-     * @param data to set to
-     * @return True if successful, False if not
-     */
-    public boolean setData(CommonTagCompound data) {
-        try {
-            CommonTagCompound root = new CommonTagCompound();
-            root.put("Data", data);
-            FileOutputStream out = StreamUtil.createOutputStream(getDataFile());
-            try {
-                root.writeToStream(out, true);
-            } finally {
-                out.close();
-            }
-            return true;
-        } catch (IOException e) {
-            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Unhandled error trying to save world level.dat of " + this.worldname, e);
-            return false;
-        }
-    }
-
-    /**
-     * Recreates the data file of a world
-     * 
-     * @param seed to store in the new data file
-     * @return True if successful, False if not
-     */
-    public boolean resetData(String seed) {
-        return resetData(WorldManager.getRandomSeed(seed));
-    }
-
-    /**
-     * Recreates the data file of a world
-     * 
-     * @param seed to store in the new data file
-     * @return True if successful, False if not
-     */
-    public boolean resetData(long seed) {
-        return setData(createData(seed));
-    }
-
-    /**
      * Reads the WorldInfo structure from this World
      * 
      * @return WorldInfo structure
@@ -1449,16 +1475,67 @@ public class WorldConfig extends WorldConfigStore {
     public WorldInfo getInfo() {
         WorldInfo info = null;
         try {
-            CommonTagCompound t = getData();
-            if (t != null) {
-                info = new WorldInfo();
-                info.seed = t.getValue("RandomSeed", 0L);
-                info.time = t.getValue("Time", 0L);
-                info.raining = t.getValue("raining", (byte) 0) != 0;
-                info.thundering = t.getValue("thundering", (byte) 0) != 0;
-                info.weather_endless = t.getValue("rainTime", 0) > (Integer.MAX_VALUE / 2);
+            LoadableWorld loadableWorld = getLoadableWorld();
+            if (loadableWorld != null) {
+                if (loadableWorld.getFormat() == LoadableWorld.Format.PAPER) {
+                    // For Paper worlds, the data is stored in separate files
+                    info = new WorldInfo();
+
+                    // world_gen_settings.dat
+                    File worldGenSettingsFile = new File(loadableWorld.getDimensionFolder(),
+                            "data" + File.separator + "minecraft" + File.separator + "world_gen_settings.dat");
+                    if (worldGenSettingsFile.exists()) {
+                        CommonTagCompound worldGenSettings = CommonTagCompound.readFromFile(worldGenSettingsFile, true);
+                        if (worldGenSettings != null) {
+                            worldGenSettings = worldGenSettings.getCompoundOrEmpty("data");
+                            info.seed = worldGenSettings.getValue("seed", 0L);
+                        }
+                    }
+
+                    // level_overrides.dat
+                    File levelOverridesFile = new File(loadableWorld.getDimensionFolder(),
+                            "data" + File.separator + "paper" + File.separator + "level_overrides.dat");
+                    if (levelOverridesFile.exists()) {
+                        CommonTagCompound levelOverrides = CommonTagCompound.readFromFile(levelOverridesFile, true);
+                        if (levelOverrides != null) {
+                            levelOverrides = levelOverrides.getCompoundOrEmpty("data");
+                            info.time = levelOverrides.getValue("time", 0L);
+                        }
+                    }
+
+                    // weather.dat
+                    File weatherFile = new File(loadableWorld.getDimensionFolder(),
+                            "data" + File.separator + "minecraft" + File.separator + "weather.dat");
+                    if (weatherFile.exists()) {
+                        CommonTagCompound weatherData = CommonTagCompound.readFromFile(weatherFile, true);
+                        if (weatherData != null) {
+                            weatherData = weatherData.getCompoundOrEmpty("data");
+                            info.raining = weatherData.getValue("raining", (byte) 0) != 0;
+                            info.thundering = weatherData.getValue("thundering", (byte) 0) != 0;
+                            info.weather_endless = weatherData.getValue("rain_time", 0) > (Integer.MAX_VALUE / 2);
+                        }
+                    }
+                } else {
+                    // For legacy spigot worlds, we can get the world info from level.dat
+                    File levelFile = loadableWorld.getLevelFile();
+                    if (levelFile != null && levelFile.exists()) {
+                        CommonTagCompound metadata = CommonTagCompound.readFromFile(levelFile, true);
+                        if (metadata != null) {
+                            CommonTagCompound data = metadata.getCompoundOrEmpty("Data");
+                            info = new WorldInfo();
+                            info.seed = data.getValue("RandomSeed", 0L);
+                            info.time = data.getValue("Time", 0L);
+                            info.raining = data.getValue("raining", (byte) 0) != 0;
+                            info.thundering = data.getValue("thundering", (byte) 0) != 0;
+                            info.weather_endless = data.getValue("rainTime", 0) > (Integer.MAX_VALUE / 2);
+                        }
+                    }
+                }
+
             }
-        } catch (Exception ex) {}
+        } catch (Throwable t) {
+            MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read world info offline of world " + this.worldname, t);
+        }
         World w = getWorld();
         if (w != null) {
             if (info == null) {
@@ -1497,23 +1574,50 @@ public class WorldConfig extends WorldConfigStore {
     }
 
     /**
-     * Gets whether this World is broken (and needs repairs to properly load)
-     * 
-     * @return True if broken, False if not
-     */
-    public boolean isBroken() {
-        return getData() == null && !isLoaded();
-    }
-
-    /**
      * Gets whether the world data of this World has been initialized.
      * If not initialized, then the spawn position needs to be calculated, among other things.
      * 
      * @return True if initialized, False if not
      */
     public boolean isInitialized() {
-        CommonTagCompound data = getData();
-        return data != null && data.getValue("initialized", true);
+        LoadableWorld loadableWorld = getLoadableWorld();
+        if (loadableWorld == null) {
+            return false;
+        }
+
+        if (loadableWorld.getFormat() == LoadableWorld.Format.PAPER) {
+            // Paper stores this information in data/paper/level_overrides.dat -> initialized (byte)
+            File levelOverridesFile = new File(loadableWorld.getDimensionFolder(),
+                    "data" + File.separator + "paper" + File.separator + "level_overrides.dat");
+            if (levelOverridesFile.exists()) {
+                try {
+                    CommonTagCompound metadata = CommonTagCompound.readFromFile(levelOverridesFile, true);
+                    if (metadata != null) {
+                        return metadata.getCompoundOrEmpty("data").getValue("initialized", true);
+                    }
+                } catch (IOException e) {
+                    MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read level_overrides.dat of world " + worldname, e);
+                }
+            }
+
+        } else {
+            // For legacy spigot worlds, we can check the "initialized" byte in level.dat
+            File levelFile = loadableWorld.getLevelFile();
+            if (levelFile == null || !levelFile.exists()) {
+                return false;
+            }
+
+            try {
+                CommonTagCompound metadata = CommonTagCompound.readFromFile(levelFile, true);
+                if (metadata != null) {
+                    return metadata.getCompoundOrEmpty("Data").getValue("initialized", true);
+                }
+            } catch (IOException e) {
+                MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to read level.dat of world " + worldname, e);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1529,26 +1633,80 @@ public class WorldConfig extends WorldConfigStore {
             return false;
         }
 
-        // Copy the world folder over
-        if (!StreamUtil.tryCopyFile(this.getDimensionFolder(), newWorldConfig.getDimensionFolder())) {
+        // Figure out how this existing world is stored
+        LoadableWorld originalWorld = getLoadableWorld();
+        if (originalWorld == null) {
+            return false;
+        }
+
+        // Copy the world data
+        File oldWorldDimensionFolder = originalWorld.getDimensionFolder();
+        File newWorldDimensionFolder = new File(oldWorldDimensionFolder.getParentFile(), newWorldConfig.worldname);
+        if (!StreamUtil.tryCopyFile(oldWorldDimensionFolder, newWorldDimensionFolder)) {
             return false;
         }
 
         // Take over the world configuration
         newWorldConfig.load(this);
 
-        // Delete the UID file, as the new world is unique (forces regeneration)
-        File uid = newWorldConfig.getUIDFile();
-        if (uid.exists()) {
-            uid.delete();
+        if (originalWorld.getFormat() == LoadableWorld.Format.PAPER) {
+            // We've copied a Paper dimension to another folder. To give it a new UUID, we need to rewrite
+            // data/paper/metadata.dat -> uuid (int[4])
+            File metadataFile = new File(newWorldDimensionFolder, "data" + File.separator + "paper" + File.separator + "metadata.dat");
+            if (metadataFile.exists()) {
+                try {
+                    CommonTagCompound metadata = CommonTagCompound.readFromFile(metadataFile, true);
+                    if (metadata != null) {
+                        CommonTagCompound dataTag = metadata.getCompoundOrEmpty("data");
+                        if (dataTag != null && dataTag.containsKey("uuid")) {
+                            UUID uuid = UUID.randomUUID();
+                            long msb = uuid.getMostSignificantBits();
+                            long lsb = uuid.getLeastSignificantBits();
+
+                            int[] parts = new int[]{
+                                    (int) (msb >>> 32),
+                                    (int) msb,
+                                    (int) (lsb >>> 32),
+                                    (int) lsb
+                            };
+                            dataTag.putValue("uuid", parts);
+
+                            metadata.writeToFile(metadataFile, true);
+                        }
+                    }
+                } catch (IOException e) {
+                    MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to update paper world metadata for new world " + newWorldConfig.worldname, e);
+                }
+            }
+
+        } else {
+            // Older spigot format
+
+            // Delete the uid.dat file if it exists so the new copied world gets a new UUID
+            File uid = new File(newWorldDimensionFolder, "uid.dat");
+            if (uid.exists()) {
+                uid.delete();
+            }
+
+            // With older spigot format, it will also copy the level.dat, which still has the old LevelName inside
+            File levelFile = new File(newWorldDimensionFolder, "level.dat");
+            if (levelFile.exists()) {
+                try {
+                    CommonTagCompound metadata = CommonTagCompound.readFromFile(levelFile, true);
+                    if (metadata != null) {
+                        CommonTagCompound dataTag = metadata.getCompoundOrEmpty("Data");
+                        if (dataTag != null) {
+                            dataTag.putValue("LevelName", newWorldConfig.worldname);
+
+                            metadata.writeToFile(levelFile, true);
+                        }
+                    }
+                } catch (IOException e) {
+                    MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to update level.dat for new world " + newWorldConfig.worldname, e);
+                }
+            }
         }
 
-        // Update the name set in the level.dat for the new world
-        CommonTagCompound data = newWorldConfig.getData();
-        if (data != null) {
-            data.putValue("LevelName", newWorldConfig.worldname);
-            newWorldConfig.setData(data);
-        }
         return true;
     }
 
@@ -1575,60 +1733,177 @@ public class WorldConfig extends WorldConfigStore {
      * @return True if resetting was successful
      */
     public boolean regenerateWorldData(WorldRegenerateOptions options) {
-        if (this.isLoaded()) {
+        LoadableWorld loadableWorld = getLoadableWorld();
+        if (loadableWorld == null) {
+            plugin.getLogger().log(Level.WARNING, "Could not regenerate world " + worldname + ": world no longer exists");
+            return false;
+        }
+        if (loadableWorld.isLoaded()) {
             plugin.getLogger().log(Level.WARNING, "Could not regenerate world " + worldname + ": world is loaded");
             return false;
         }
 
-        File regionFolder = this.getRegionFolder();
         boolean fullySuccessful = true;
-        if (regionFolder.exists()) {
-            if (!StreamUtil.deleteFile(regionFolder).isEmpty()) {
-                fullySuccessful = false;
+
+        // Delete the region, poi and entities folder entirely. This always exists regardless of format.
+        {
+            File regionFolder = loadableWorld.getRegionFolder();
+            if (regionFolder.exists()) {
+                if (!StreamUtil.deleteFile(regionFolder).isEmpty()) {
+                    fullySuccessful = false;
+                }
             }
-        }
-        File parentFolder = regionFolder.getParentFile();
-        for (String otherFolderName : new String[] {"poi", "entities", "data"}) {
-            File otherFolder = new File(parentFolder, otherFolderName);
-            if (otherFolder.exists() && !StreamUtil.deleteFile(otherFolder).isEmpty()) {
-                fullySuccessful = false;
+            File parentFolder = regionFolder.getParentFile();
+            for (String otherFolderName : new String[] {"poi", "entities"}) {
+                File otherFolder = new File(parentFolder, otherFolderName);
+                if (otherFolder.exists() && !StreamUtil.deleteFile(otherFolder).isEmpty()) {
+                    fullySuccessful = false;
+                }
             }
-        }
-        if (!fullySuccessful) {
-            plugin.getLogger().log(Level.WARNING, "Could not regenerate world " + worldname + " entirely: some files could not be deleted");
         }
 
         // Set initialized to false so that the next time this world is loaded, a spawn point is found
-        CommonTagCompound data = getData();
-        if (data == null) {
-            fullySuccessful = false;
-            plugin.getLogger().log(Level.WARNING, "Could not update level.dat of " +
-                    worldname + ": Could not load data");
-        } else {
-            if (options.isResetSeed()) {
-                long randomSeed = new Random().nextLong();
-                boolean changedSeed = false;
-                if (data.containsKey("RandomSeed")) {
-                    // 1.8 - 1.15.2
-                    data.putValue("RandomSeed", randomSeed);
-                    changedSeed = true;
-                }
-                CommonTagCompound worldGenSettings = data.get("WorldGenSettings", CommonTagCompound.class);
-                if (worldGenSettings != null && worldGenSettings.containsKey("seed")) {
-                    // 1.16+
-                    worldGenSettings.putValue("seed", randomSeed);
-                    changedSeed = true;
-                }
-                if (!changedSeed) {
-                    plugin.getLogger().log(Level.WARNING, "Could not regenerate level.dat seed of " +
-                            worldname + ": No seed setting found");
+        // If specified, also set a new seed
+        if (loadableWorld.getFormat() == LoadableWorld.Format.PAPER) {
+            // For paper worlds, this data is stored in separate files
+
+            // level_overrides.dat -> initialized (byte) and time (long)
+            File levelOverridesFile = new File(loadableWorld.getDimensionFolder(),
+                    "data" + File.separator + "paper" + File.separator + "level_overrides.dat");
+            if (!levelOverridesFile.exists()) {
+                fullySuccessful = false;
+                plugin.getLogger().log(Level.WARNING, "Could not update level_overrides.dat of " +
+                        worldname + ": Could not load data");
+            } else {
+                try {
+                    CommonTagCompound metadata = CommonTagCompound.readFromFile(levelOverridesFile, true);
+                    if (metadata != null) {
+                        CommonTagCompound data = metadata.get("data", CommonTagCompound.class);
+                        if (data != null) {
+                            data.putValue("initialized", (byte) 0); // Spawn point needs to be re-initialized, etc.
+                            data.putValue("game_time", 0L); // Reset game time back to beginning
+                            metadata.writeToFile(levelOverridesFile, true);
+                        }
+                    }
+                } catch (IOException e) {
+                    plugin.getLogger().log(Level.SEVERE, "Could not regenerate world " + worldname + ": failed to update level_overrides.dat", e);
+                    fullySuccessful = false;
                 }
             }
 
-            // Set initialized to 0 to force a new spawn point to be found
-            data.putValue("initialized", (byte) 0);
+            // If seed should be changed, update it in the world gen settings
+            if (options.isResetSeed()) {
+                File worldGenSettingsFile = new File(loadableWorld.getDimensionFolder(),
+                        "data" + File.separator + "minecraft" + File.separator + "world_gen_settings.dat");
+                if (!worldGenSettingsFile.exists()) {
+                    fullySuccessful = false;
+                    plugin.getLogger().log(Level.WARNING, "Could not update world_gen_settings.dat of " +
+                            worldname + ": Could not load data");
+                } else {
+                    try {
+                        CommonTagCompound worldGenSettings = CommonTagCompound.readFromFile(worldGenSettingsFile, true);
+                        if (worldGenSettings != null) {
+                            CommonTagCompound data = worldGenSettings.get("data", CommonTagCompound.class);
+                            if (data != null) {
+                                long randomSeed = new Random().nextLong();
+                                data.putValue("seed", randomSeed);
+                                worldGenSettings.writeToFile(worldGenSettingsFile, true);
+                            }
+                        }
+                    } catch (IOException e) {
+                        plugin.getLogger().log(Level.SEVERE, "Could not regenerate world " + worldname + ": failed to update world_gen_settings.dat", e);
+                        fullySuccessful = false;
+                    }
+                }
+            }
 
-            setData(data);
+            // Delete some data files that need to be reset for a proper regeneration
+            for (String name : new String[] { "raids.dat", "scheduled_events.dat", "wandering_trader.dat", "weather.dat", "ender_dragon_fight.dat" }) {
+                File f = new File(loadableWorld.getDimensionFolder(), "data" + File.separator + "minecraft" + File.separator + name);
+                if (f.exists() && !f.delete()) {
+                    fullySuccessful = false;
+                    plugin.getLogger().log(Level.WARNING, "Could not delete data/minecraft/" + name + " of " +
+                            worldname + ": Could not delete file");
+                }
+            }
+
+        } else {
+            // For legacy spigot worlds, all data is stored in level.dat.
+            File levelFile = loadableWorld.getLevelFile();
+            if (levelFile == null || !levelFile.exists()) {
+                fullySuccessful = false;
+                plugin.getLogger().log(Level.WARNING, "Could not update level.dat of " +
+                        worldname + ": Could not load data");
+            } else {
+                try {
+                    CommonTagCompound metadata = CommonTagCompound.readFromFile(levelFile, true);
+                    if (metadata != null) {
+                        CommonTagCompound data = metadata.getCompoundOrEmpty("Data");
+                        if (data != null) {
+                            // Spawn point needs to be re-initialized, etc.
+                            data.putValue("initialized", (byte) 0);
+                            data.remove("spawn");
+
+                            // Reset dragon fight, clear sub-fields to avoid warn during world load
+                            CommonTagCompound dragonFight = data.get("DragonFight", CommonTagCompound.class);
+                            if (dragonFight != null) {
+                                dragonFight.clear();
+                            }
+
+                            // Other boss metadata?
+                            data.remove("CustomBossEvents");
+
+                            // Reset time / weather state
+                            data.remove("DayTime");
+                            data.remove("Time");
+                            data.remove("clearWeatherTime");
+                            data.remove("rainTime");
+                            data.remove("thundering");
+                            data.remove("thunderTime");
+
+                            if (options.isResetSeed()) {
+                                long randomSeed = new Random().nextLong();
+                                boolean changedSeed = false;
+                                if (data.containsKey("RandomSeed")) {
+                                    // 1.8 - 1.15.2
+                                    data.putValue("RandomSeed", randomSeed);
+                                    changedSeed = true;
+                                }
+                                CommonTagCompound worldGenSettings = data.get("WorldGenSettings", CommonTagCompound.class);
+                                if (worldGenSettings != null && worldGenSettings.containsKey("seed")) {
+                                    // 1.16+
+                                    worldGenSettings.putValue("seed", randomSeed);
+                                    changedSeed = true;
+                                }
+                                if (!changedSeed) {
+                                    plugin.getLogger().log(Level.WARNING, "Could not regenerate level.dat seed of " +
+                                            worldname + ": No seed setting found");
+                                    fullySuccessful = false;
+                                }
+                            }
+
+                            metadata.writeToFile(levelFile, true);
+                        }
+                    }
+                } catch (IOException e) {
+                    plugin.getLogger().log(Level.SEVERE, "Could not regenerate world " + worldname + ": failed to update level.dat", e);
+                    fullySuccessful = false;
+                }
+            }
+
+            // Also clean up the chunks.dat / raids.dat files if they exist
+            for (String name : new String[] { "chunks.dat", "raids.dat" }) {
+                File f = new File(loadableWorld.getDimensionFolder(), "data" + File.separator + name);
+                if (f.exists() && !f.delete()) {
+                    fullySuccessful = false;
+                    plugin.getLogger().log(Level.WARNING, "Could not delete data/" + name + " of " +
+                            worldname + ": Could not delete file");
+                }
+            }
+        }
+
+        if (!fullySuccessful) {
+            plugin.getLogger().log(Level.WARNING, "Could not regenerate world " + worldname + " entirely: some files could not be reset/deleted");
         }
 
         return fullySuccessful;

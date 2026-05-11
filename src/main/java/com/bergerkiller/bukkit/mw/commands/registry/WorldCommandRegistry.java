@@ -27,7 +27,6 @@ public class WorldCommandRegistry extends CommandRegistry {
         register(WorldSpawn::new, "spawn");
         register(WorldRejoin::new, "rejoin");
         register(WorldEvacuate::new, "evacuate", "evac");
-        register(WorldRepair::new, "repair", "rep");
         register(WorldSave::new, "save");
         register(WorldDelete::new, "delete", "del");
         register(WorldRegenerate::new, "regenerate");

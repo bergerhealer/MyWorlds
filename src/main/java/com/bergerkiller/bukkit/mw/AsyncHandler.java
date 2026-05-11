@@ -1,11 +1,10 @@
 package com.bergerkiller.bukkit.mw;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
+import com.bergerkiller.bukkit.common.world.LoadableWorld;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
@@ -23,6 +22,19 @@ public class AsyncHandler {
         final CompletableFuture<Boolean> future = new CompletableFuture<>();
         new AsyncTask("World reset thread") {
             public void run() {
+                // World was likely unloaded previously, wait a short time for server for the server to save all the data
+                // In particular, the world level.dat must be written out before we can modify it
+                // Until this is done, the world might appear as not loadable
+                for (int n = 50; n >= 0; n--) {
+                    sleep(100);
+                    if (isWorldFullySaved(worldConfig)) {
+                        break;
+                    }
+                    if (n == 0) {
+                        MyWorlds.plugin.getLogger().log(Level.WARNING, "World '" + worldConfig.worldname + "' was not fully saved after waiting for 5 seconds! Attempting to reset the world anyway...");
+                    }
+                }
+
                 future.complete(worldConfig.regenerateWorldData(options));
             }
         }.start();
@@ -36,6 +48,21 @@ public class AsyncHandler {
             return success;
         }, CommonUtil.getMainThreadExecutor());
     }
+
+    private static boolean isWorldFullySaved(WorldConfig worldConfig) {
+        LoadableWorld loadableWorld = worldConfig.getLoadableWorld();
+        if (loadableWorld == null) {
+            return false;
+        }
+
+        File levelFile = loadableWorld.getLevelFile();
+        if (!levelFile.exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
     public static void delete(final CommandSender sender, String worldname) {
         final WorldConfig worldConfig = WorldConfig.get(worldname);
         if (worldConfig.isLoaded()) {
@@ -66,89 +93,4 @@ public class AsyncHandler {
             }
         }.start();
     }
-    public static void repair(final CommandSender sender, final String worldname, final long seed) {
-        final WorldConfig config = WorldConfig.get(worldname);
-        if (config.isLoaded()) {
-            CommonUtil.sendMessage(sender, ChatColor.RED + "Can not repair a loaded world!");
-            return;
-        }
-        new AsyncTask("World repair thread") {
-            public void run() {
-                boolean hasMadeFixes = false;
-                if (config.isBroken()) {
-                    if (config.resetData(seed)) {
-                        hasMadeFixes = true;
-                        CommonUtil.sendMessage(sender, ChatColor.YELLOW + "Level.dat regenerated using seed: " + seed);
-                    } else {
-                        CommonUtil.sendMessage(sender, ChatColor.RED + "Failed to repair world '" + worldname + "': could not fix level.dat!");
-                        return;
-                    }
-                }
-                //Fix chunks
-                int fixedfilecount = 0;
-                int totalfixes = 0;
-                int totalremoves = 0;
-                int totaldelfailures = 0;
-                int totalaccessfailures = 0;
-                try {
-                    File regionfolder = config.getRegionFolder();
-                    if (regionfolder != null) {
-                        //Generate backup folder
-                        Calendar cal = Calendar.getInstance();
-                        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy_hh-mm-ss");
-                        File backupfolder = new File(regionfolder + File.separator + "backup_" + sdf.format(cal.getTime()));
-                        String[] regionfiles = regionfolder.list();
-                        int i = 1;
-                        for (String listedFile : regionfiles) {
-                            if (listedFile.toLowerCase().endsWith(".mca")) {
-                                CommonUtil.sendMessage(sender, ChatColor.YELLOW + "Scanning and repairing file " + i + "/" + regionfiles.length);
-                                int fixcount = WorldManager.repairRegion(new File(regionfolder + File.separator + listedFile), backupfolder);
-                                if (fixcount == -1) {
-                                    totalremoves++;
-                                    fixedfilecount++;
-                                } else if (fixcount == -2) {
-                                    totalaccessfailures++;
-                                } else if (fixcount == -3) {
-                                    totaldelfailures++;
-                                } else if (fixcount > 0) {
-                                    totalfixes += fixcount;
-                                    fixedfilecount++;
-                                }
-                            }
-                            i++;
-                        }
-                        if (totalfixes > 0 || totalremoves > 0 || fixedfilecount > 0) {
-                            CommonUtil.sendMessage(sender, ChatColor.YELLOW + "Fixed " + totalfixes + " chunk(s) and removed " + totalremoves + " file(s)!");
-                            CommonUtil.sendMessage(sender, ChatColor.YELLOW.toString() + fixedfilecount + " File(s) are affected!");
-                            if (fixedfilecount > 0) {
-                                CommonUtil.sendMessage(sender, ChatColor.YELLOW + "A backup of these files can be found in '" + backupfolder + "'");
-                            }
-                            hasMadeFixes = true;
-                        } else {
-                            CommonUtil.sendMessage(sender, ChatColor.YELLOW + "No chunk or region file errors have been detected");
-                        }
-                        if (totalaccessfailures > 0) {
-                            CommonUtil.sendMessage(sender, ChatColor.YELLOW.toString() + totalaccessfailures + " File(s) were inaccessible (OK-status unknown).");
-                        }
-                        if (totaldelfailures > 0) {
-                            CommonUtil.sendMessage(sender, ChatColor.YELLOW.toString() + totaldelfailures + " Unrecoverable file(s) could not be removed.");
-                        }
-                    } else {
-                        CommonUtil.sendMessage(sender, ChatColor.RED + "Region folder not found, no regions edited.");
-                    }
-                } catch (Throwable t) {
-                    //We did nothing...
-                    MyWorlds.plugin.getLogger().log(Level.SEVERE, "Unhandled error trying to repair world", t);
-                    CommonUtil.sendMessage(sender, ChatColor.RED + "Error while repairing: " + t.getMessage());
-                }
-                if (hasMadeFixes) {
-                    CommonUtil.sendMessage(sender, ChatColor.GREEN + "World: '" + worldname + "' has been repaired!");
-                } else {
-                    CommonUtil.sendMessage(sender, ChatColor.GREEN + "World: '" + worldname + "' contained no errors, no fixes have been performed!");
-                }
-            }
-        }.start();    
-    }
-
-
 }

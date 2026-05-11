@@ -1127,41 +1127,6 @@ public class WorldManager {
     }
 
     @Deprecated
-    public static boolean generateData(String worldname, String seed) {
-        return WorldConfig.get(worldname).resetData(seed);
-    }
-
-    @Deprecated
-    public static boolean generateData(String worldname, long seed) {
-        return WorldConfig.get(worldname).resetData(seed);
-    }
-
-    @Deprecated
-    public static CommonTagCompound createData(String worldname, long seed) {
-        return WorldConfig.get(worldname).createData(seed);
-    }
-
-    @Deprecated
-    public static CommonTagCompound getData(String worldname) {
-        return WorldConfig.get(worldname).getData();
-    }
-
-    @Deprecated
-    public static boolean setData(String worldname, CommonTagCompound data) {
-        return WorldConfig.get(worldname).setData(data);
-    }
-
-    @Deprecated
-    public static File getDataFile(String worldname) {
-        return WorldConfig.get(worldname).getDataFile();
-    }
-
-    @Deprecated
-    public static File getUIDFile(String worldname) {
-        return WorldConfig.get(worldname).getUIDFile();
-    }
-
-    @Deprecated
     public static long getWorldSize(String worldname) {
         return WorldConfig.get(worldname).getWorldSize();
     }
@@ -1169,11 +1134,6 @@ public class WorldManager {
     @Deprecated
     public static WorldInfo getInfo(String worldname) {
         return WorldConfig.get(worldname).getInfo();
-    }
-
-    @Deprecated
-    public static boolean isBroken(String worldname) {
-        return WorldConfig.get(worldname).isBroken();
     }
 
     @Deprecated

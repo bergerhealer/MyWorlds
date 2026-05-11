@@ -23,7 +23,6 @@ public class Permission extends PermissionEnum {
     public static final Permission COMMAND_REJOIN = new Permission("world.rejoin", PermissionDefault.OP, "Sets if the player can teleport to rejoin the last world they were on, permission per world", 1);
     public static final Permission COMMAND_REJOIN_OTHERS = new Permission("world.rejoinothers", PermissionDefault.OP, "Sets whether the player can force a rejoin of other players on any world. Overrides the normal permission.");
     public static final Permission COMMAND_EVACUATE = new Permission("world.evacuate", PermissionDefault.OP, "Sets if the player can clear a world from its players");
-    public static final Permission COMMAND_REPAIR = new Permission("world.repair", PermissionDefault.OP, "Sets if the player can repair damaged worlds (only if broken)");
     public static final Permission COMMAND_SAVE = new Permission("world.save", PermissionDefault.OP, "Sets if the player can save worlds");
     public static final Permission COMMAND_SETSAVING = new Permission("world.setsaving", PermissionDefault.OP, "Sets if the player can toggle world auto-saving on or off");
     public static final Permission COMMAND_DELETE = new Permission("world.delete", PermissionDefault.OP, "Sets if the player can permanently delete worlds");

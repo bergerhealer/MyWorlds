@@ -60,7 +60,7 @@ public class WorldCreate extends Command {
 
                         // Write a level.dat with the options changed
                         // This is needed because the options passed to WorldCreator don't support special syntaxes.
-                        wc.resetData(seedval);
+                        wc.generateLegacyWorldData(seedval);
 
                         // Log options, limit it to 200 chars
                         if (args.length() > 200) {
