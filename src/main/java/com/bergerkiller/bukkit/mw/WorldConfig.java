@@ -1265,9 +1265,14 @@ public class WorldConfig extends WorldConfigStore {
             throw new IllegalStateException("World '" + worldname + "' does not exist / has no player data");
         }
 
-        // Main overworld always uses ./world/players/data instead of the myworlds alternative
-        if (loadableWorld.getFormat() == LoadableWorld.Format.PAPER && this == WorldConfig.getVanillaMain()) {
-            return new File(loadableWorld.getRootFolder(), "players" + File.separator + "data");
+        if (loadableWorld.getFormat() == LoadableWorld.Format.PAPER) {
+            // Main overworld always uses ./world/players/data instead of the myworlds alternative
+            if (this == WorldConfig.getVanillaMain()) {
+                return new File(loadableWorld.getRootFolder(), "players" + File.separator + "data");
+            }
+
+            // Other worlds store the playerdata folder in the my_worlds namespace
+            return new File(loadableWorld.getDimensionFolder(), "data" + File.separator + "my_worlds" + File.separator + "playerdata");
         }
 
         // "playerdata" folder inside the dimension / world folder
