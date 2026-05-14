@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
@@ -305,6 +306,7 @@ public class WorldManager {
      */
     public static World createWorld(String worldname, long seed, CommandSender sender) {
         final MyWorlds plugin = MyWorlds.plugin;
+        final Logger logger = plugin.getLogger();
 
         WorldConfig wc = WorldConfig.get(worldname);
         final boolean load = wc.isInitialized();
@@ -329,7 +331,6 @@ public class WorldManager {
         plugin.log(Level.INFO, msg.toString());
 
         World w = null;
-        int i = 0;
         ChunkGenerator cgen = null;
         try {
             if (chunkGeneratorName != null) {
@@ -397,25 +398,80 @@ public class WorldManager {
             } else {
                 c.generatorSettings("{}");
             }
-
             c.generator(cgen);
+
+            // When world is migrated from spigots format to papers format, per-world player inventories need to be migrated also.
+            // Park the inventory in a plugin-controlled safe folder during migration. This is a little complicated to be resistant against
+            // crashes. Luckily folder move operations are typically atomic.
+            if (loadableWorld != null && loadableWorld.getFormat() == LoadableWorld.Format.SPIGOT_CONVERTED) {
+                logger.warning("World '" + worldname + "' is being migrated from an old Spigot world format to the new Paper world format.");
+                logger.warning("Player inventories will be migrated as well. Please be patient and do not interrupt the server during this process.");
+
+                File oldInventoryFolder = new File(loadableWorld.getDimensionFolder(), "playerdata");
+                if (oldInventoryFolder.exists()) {
+                    // Prepare the folder location for the new inventory backup. If it already exists, back it up to a timestamped folder to avoid overwriting previous backups,
+                    // which could be useful for recovery if something goes wrong during migration.
+                    File newInventoryFolder = new File(plugin.getDataFolder(), "migrated_inventories" + File.separator + worldname);
+                    if (newInventoryFolder.exists()) {
+                        if (!parkOldWorldInventoryBackup(plugin, worldname, newInventoryFolder)) {
+                            return null;
+                        }
+                    }
+
+                    // Move the playerdata folder to the new location
+                    if (!safeMove(plugin, oldInventoryFolder, newInventoryFolder)) {
+                        logger.log(Level.SEVERE, "Failed to move player inventory data folder for world '" + worldname + "', world migration aborted!");
+                        logger.log(Level.SEVERE, "Old playerdata folder: " + oldInventoryFolder.getAbsolutePath());
+                        logger.log(Level.SEVERE, "Intended new backup folder: " + newInventoryFolder.getAbsolutePath());
+                        return null;
+                    }
+
+                    logger.warning("Player inventory data has been migrated to a safe temporary location at " + newInventoryFolder.getAbsolutePath());
+                } else {
+                    logger.warning("This world does not appear to contain (per-world) player inventory data, no migration needed");
+                }
+            }
+
             w = c.createWorld();
+
+            // Restore the backup we made to the proper intended folder location
+            // There is no guarantee at all that before loading, we had done migrations, so we have to actively check for this folder existing
+            if (w != null) {
+                // Folder location changed after migration, so refresh the details in that case
+                if (loadableWorld != null && loadableWorld.getFormat() == LoadableWorld.Format.SPIGOT_CONVERTED) {
+                    loadableWorld = LoadableWorld.of(w);
+                }
+
+                // Check to see if a backup exists
+                File backupInventoryFolder = new File(plugin.getDataFolder(), "migrated_inventories" + File.separator + worldname);
+                if (backupInventoryFolder.exists()) {
+                    File newPlayerDataFolder = wc.getPlayerFolder();
+                    if (newPlayerDataFolder.exists()) {
+                        logger.warning("After migrating world '" + worldname + "', there is a backup of player inventories from the old world format, but the new player inventory folder");
+                        logger.warning("already exists at " + newPlayerDataFolder.getAbsolutePath());
+                        logger.warning("The old migration backup will be moved to a new timestamped location if you do need it later");
+                        parkOldWorldInventoryBackup(plugin, worldname, backupInventoryFolder);
+                    } else if (!safeMove(plugin, backupInventoryFolder, newPlayerDataFolder)) {
+                        logger.severe("Failed to move player inventory data to the new world dimension folder after migration! You can perform this manually, by moving:");
+                        logger.severe("Old backup folder: " + backupInventoryFolder.getAbsolutePath());
+                        logger.severe("Intended new player inventory data folder: " + newPlayerDataFolder.getAbsolutePath());
+                    } else {
+                        logger.warning("Player inventory data has been moved from a safe backup to the new world dimension folder after migration, at " + newPlayerDataFolder.getAbsolutePath());
+                    }
+                }
+            }
         } catch (Throwable t) {
             failReason = t;
         }
         if (w == null) {
             if (failReason != null) {
-                plugin.getLogger().log(Level.SEVERE, "World creation failed after " + i + " retries!", failReason);
+                plugin.getLogger().log(Level.SEVERE, "World creation failed!", failReason);
                 if (sender != null) {
                     sender.sendMessage(ChatColor.RED + "Failed to create world: " + failReason.getMessage());
                 }
             } else {
-                plugin.log(Level.SEVERE, "World creation failed after " + i + " retries!");
+                plugin.log(Level.SEVERE, "World creation failed!");
             }
-        } else if (i == 1) {
-            plugin.log(Level.INFO, "World creation succeeded after 1 retry!");
-        } else if (i > 0) {
-            plugin.log(Level.INFO, "World creation succeeded after " + i + " retries!");
         }
 
         // Force a save of world configurations so this persists
@@ -423,6 +479,75 @@ public class WorldManager {
         WorldConfigStore.saveAll(plugin);
 
         return w;
+    }
+
+    private static boolean parkOldWorldInventoryBackup(MyWorlds plugin, String worldname, File migratedInventoryFolder) {
+        Logger logger = plugin.getLogger();
+
+        File backupFolder;
+        for (long l = System.currentTimeMillis(); ; l++) {
+            backupFolder = new File(plugin.getDataFolder(), "migrated_inventories_backup" + File.separator + worldname + "_" + l);
+            if (!backupFolder.exists()) {
+                break;
+            }
+        }
+
+        if (!safeMove(plugin, migratedInventoryFolder, backupFolder)) {
+            logger.log(Level.SEVERE, "Failed to back up existing inventory migration backup for world '" + worldname + "' at " + migratedInventoryFolder.getAbsolutePath() + "!");
+            logger.log(Level.SEVERE, "Please fix this manually by moving this folder elsewhere.");
+            return false;
+        }
+
+        logger.log(Level.WARNING, "Backed up an existing inventory backup for world '" + worldname + "' to make way for a new backup during world format migration.");
+        logger.log(Level.WARNING, "Old backup folder: " + migratedInventoryFolder.getAbsolutePath());
+        logger.log(Level.WARNING, "New backup folder: " + backupFolder.getAbsolutePath());
+        logger.log(Level.WARNING, "You can safely delete this backup after verifying that player inventories are working correctly in the migrated world.");
+        return true;
+    }
+
+    /**
+     * Safely moves a folder from one location to another. This is used for moving player inventory data during world format migrations, and is designed to be resistant
+     * against crashes and interruptions. It first tries a normal file move operation, which is typically atomic and very fast. If that fails (which can happen on some platforms
+     * or filesystems), it falls back to copying the folder recursively, and then deleting the old folder. If the copy operation succeeds but some files in the old folder could not be deleted,
+     * it logs a warning with the paths of those files, so that server administrators can clean them up manually if needed.
+     *
+     * @param plugin to log warnings and errors to
+     * @param from folder to move
+     * @param to destination folder
+     * @return true if the move (or copy) operation succeeded, false if it failed
+     */
+    private static boolean safeMove(MyWorlds plugin, File from, File to) {
+        // Ensure the parent directory exists
+        if (!to.getParentFile().mkdirs() && !to.getParentFile().exists()) {
+            plugin.getLogger().warning("Failed to create parent directories for new folder: " + to.getAbsolutePath());
+            return false;
+        }
+
+        // Try a normal file move operation first
+        if (from.renameTo(to)) {
+            return true;
+        }
+
+        // Try a recursive file copy as a fallback
+        plugin.getLogger().warning("Failed to move folder " + from.getAbsolutePath() + " to " + to.getAbsolutePath());
+        plugin.getLogger().warning("Attempting to copy the folder instead, this may take a while...");
+        try {
+            StreamUtil.copyFile(from, to);
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to copy folder either. Reason:", e);
+            return false;
+        }
+
+        // Delete the old folder
+        List<File> oldFiles = StreamUtil.deleteFile(from);
+        if (oldFiles != null && !oldFiles.isEmpty()) {
+            plugin.getLogger().log(Level.WARNING, "Some files in the old folder could not be deleted after copying them over:");
+            for (File f : oldFiles) {
+                plugin.getLogger().log(Level.WARNING, "- " + f.getAbsolutePath());
+            }
+        }
+
+        return true;
     }
 
     /**
