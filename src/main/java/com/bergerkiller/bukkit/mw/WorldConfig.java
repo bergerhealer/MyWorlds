@@ -1753,16 +1753,18 @@ public class WorldConfig extends WorldConfigStore {
         // Delete the region, poi and entities folder entirely. This always exists regardless of format.
         {
             File regionFolder = loadableWorld.getRegionFolder();
-            if (regionFolder.exists()) {
-                if (!StreamUtil.deleteFile(regionFolder).isEmpty()) {
-                    fullySuccessful = false;
+            if (regionFolder != null) {
+                if (regionFolder.exists()) {
+                    if (!StreamUtil.deleteFile(regionFolder).isEmpty()) {
+                        fullySuccessful = false;
+                    }
                 }
-            }
-            File parentFolder = regionFolder.getParentFile();
-            for (String otherFolderName : new String[] {"poi", "entities"}) {
-                File otherFolder = new File(parentFolder, otherFolderName);
-                if (otherFolder.exists() && !StreamUtil.deleteFile(otherFolder).isEmpty()) {
-                    fullySuccessful = false;
+                File parentFolder = regionFolder.getParentFile();
+                for (String otherFolderName : new String[] {"poi", "entities"}) {
+                    File otherFolder = new File(parentFolder, otherFolderName);
+                    if (otherFolder.exists() && !StreamUtil.deleteFile(otherFolder).isEmpty()) {
+                        fullySuccessful = false;
+                    }
                 }
             }
         }
