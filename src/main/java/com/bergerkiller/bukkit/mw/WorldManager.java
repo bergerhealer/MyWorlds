@@ -400,15 +400,21 @@ public class WorldManager {
             }
             c.generator(cgen);
 
+            // This is a workaround for Paper bug https://github.com/PaperMC/Paper/pull/14190
+            // Force generate_structures: 0 when the existing world sets MapFeatures: 0
+            // This is something MyWorlds does for 'legacy' flat world generation
+            boolean forceDisableGenerateStructures = false;
+
             // When world is migrated from spigots format to papers format, per-world player inventories need to be migrated also.
             // Park the inventory in a plugin-controlled safe folder during migration. This is a little complicated to be resistant against
             // crashes. Luckily folder move operations are typically atomic.
             if (loadableWorld != null && loadableWorld.getFormat() == LoadableWorld.Format.SPIGOT_CONVERTED) {
                 logger.warning("World '" + worldname + "' is being migrated from an old Spigot world format to the new Paper world format.");
-                logger.warning("Player inventories will be migrated as well. Please be patient and do not interrupt the server during this process.");
 
                 File oldInventoryFolder = new File(loadableWorld.getDimensionFolder(), "playerdata");
                 if (oldInventoryFolder.exists()) {
+                    logger.warning("Player inventories will be migrated as well. Please be patient and do not interrupt the server during this process.");
+
                     // Prepare the folder location for the new inventory backup. If it already exists, back it up to a timestamped folder to avoid overwriting previous backups,
                     // which could be useful for recovery if something goes wrong during migration.
                     File newInventoryFolder = new File(plugin.getDataFolder(), "migrated_inventories" + File.separator + worldname);
@@ -430,9 +436,29 @@ public class WorldManager {
                 } else {
                     logger.warning("This world does not appear to contain (per-world) player inventory data, no migration needed");
                 }
+
+                // Test for MapFeatures: 0 being present
+                File levelFile = loadableWorld.getLevelFile();
+                if (levelFile != null && levelFile.exists()) {
+                    try {
+                        CommonTagCompound data = CommonTagCompound.readFromFile(levelFile, true);
+                        data = data.getCompoundOrEmpty("Data");
+                        if (!data.getValue("MapFeatures", true) && !data.containsKey("generate_features") && !data.containsKey("generate_structures")) {
+                            logger.info("World requests structure generation is turned off, which will be forced with a reload");
+                            forceDisableGenerateStructures = true;
+                        }
+                    } catch (IOException ex) {
+                        logger.log(Level.WARNING, "Failed to read level.dat of the world to be loaded");
+                    }
+                }
             }
 
             w = c.createWorld();
+
+            // If generate_structures must be off, unload the world and load it again to force the setting
+            if (w != null && forceDisableGenerateStructures) {
+                w = forceStructureGenerationOff(w, logger);
+            }
 
             // Restore the backup we made to the proper intended folder location
             // There is no guarantee at all that before loading, we had done migrations, so we have to actively check for this folder existing
@@ -479,6 +505,76 @@ public class WorldManager {
         WorldConfigStore.saveAll(plugin);
 
         return w;
+    }
+
+    /**
+     * Workaround for issue <a href="https://github.com/PaperMC/Paper/pull/14190">where migration of MapFeatures tag doesn't work</a>.
+     * Unloads the world, modifies the world_gen_settings.dat, and reloads. Only runs on paper after the world split happened.
+     * Does not unload/reload the world if the setting is already correct.
+     *
+     * @param world World
+     * @param logger Logger
+     * @return The new or previous loaded World
+     */
+    private static World forceStructureGenerationOff(World world, Logger logger) {
+        // Force a save first to ensure world_gen_settings.dat is written out
+        world.save();
+
+        // Load the details about the world
+        LoadableWorld afterMigrationWorld = LoadableWorld.of(world);
+        File dimensionFolder, worldGenSettingsFile;
+
+        // World must use Paper's format
+        if (
+                afterMigrationWorld == null ||
+                        afterMigrationWorld.getFormat() != LoadableWorld.Format.PAPER ||
+                        (dimensionFolder = afterMigrationWorld.getDimensionFolder()) == null
+        ) {
+            logger.warning("Migrated world is not in Paper format, failed to turn structure generation off");
+            return world;
+        }
+
+        // File must exist
+        if (!(worldGenSettingsFile = new File(dimensionFolder, "data" + File.separator + "minecraft" + File.separator + "world_gen_settings.dat")).exists()) {
+            logger.warning("Migrated world lacks a world_gen_settings.dat, failed to force structure generation off");
+            return world;
+        }
+
+        // Verify the setting isn't already correct in world_gen_settings.dat
+        // This can happen if the problem is later patched in Paper server
+        // A little risky as the world is still loaded! So if we can't read the file, don't treat it as correct
+        try {
+            CommonTagCompound genSettings = CommonTagCompound.readFromFile(worldGenSettingsFile, true);
+            CommonTagCompound data = genSettings.getCompoundOrEmpty("data");
+            if (!data.getValue("generate_structures", true)) {
+                logger.info("The generate_structures setting is already correct, no reload required");
+                return world;
+            }
+        } catch (IOException ex) { /* ignore */ }
+
+        // Unload first
+        if (!unload(world)) {
+            logger.warning("Failed to unload world to force structure generation off");
+            return world;
+        }
+
+        // Patch the world_gen_settings.dat
+        try {
+            CommonTagCompound genSettings = CommonTagCompound.readFromFile(worldGenSettingsFile, true);
+            CommonTagCompound data = genSettings.get("data", CommonTagCompound.class);
+            if (data == null) {
+                logger.warning("No data tag in world_gen_settings.dat, failed to force structure generation off");
+            } else {
+                data.putValue("generate_structures", false);
+                genSettings.writeToFile(worldGenSettingsFile, true);
+                logger.info("Updated world_gen_settings.dat, setting generate_structures=0. Reloading world...");
+            }
+        } catch (IOException ex) {
+            logger.log(Level.WARNING, "Failed to turn structure generation off", ex);
+        }
+
+        // Re-load the world
+        return afterMigrationWorld.getWorldCreator().createWorld();
     }
 
     private static boolean parkOldWorldInventoryBackup(MyWorlds plugin, String worldname, File migratedInventoryFolder) {
