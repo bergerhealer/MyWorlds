@@ -254,7 +254,10 @@ public class WorldManager {
     public static World getWorld(String worldname) {
         if (worldname == null) return null;
         try {
-            return Bukkit.getServer().getWorld(worldname);
+            World world = Bukkit.getServer().getWorld(worldname);
+            if (world != null) return world;
+            LoadableWorld loadableWorld = LoadableWorld.find(worldname);
+            return loadableWorld == null ? null : loadableWorld.getWorld();
         } catch (Exception ex) {
             return null;
         }
