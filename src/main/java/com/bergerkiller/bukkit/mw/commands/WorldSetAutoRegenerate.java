@@ -86,6 +86,9 @@ public class WorldSetAutoRegenerate extends Command {
         if (options.isResetSeed()) {
             builder.blue(" with a new seed");
         }
+        if (!options.isResetSpawn()) {
+            builder.blue(" while keeping spawn");
+        }
         builder.yellow("!");
         builder.send(sender);
     }

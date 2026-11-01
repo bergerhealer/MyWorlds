@@ -1750,6 +1750,17 @@ public class WorldConfig extends WorldConfigStore {
 
         boolean fullySuccessful = true;
 
+        // If requested, clear the MyWorlds-managed spawn so it falls back to Bukkit spawn after load
+        if (options.isResetSpawn()) {
+            this.spawnPoint = null;
+            CommonUtil.nextTick(new Runnable() {
+                @Override
+                public void run() {
+                    saveAllLater();
+                }
+            });
+        }
+
         // Delete the region, poi and entities folder entirely. This always exists regardless of format.
         {
             File regionFolder = loadableWorld.getRegionFolder();
@@ -1788,6 +1799,9 @@ public class WorldConfig extends WorldConfigStore {
                         CommonTagCompound data = metadata.get("data", CommonTagCompound.class);
                         if (data != null) {
                             data.putValue("initialized", (byte) 0); // Spawn point needs to be re-initialized, etc.
+                            if (options.isResetSpawn()) {
+                                data.remove("spawn");
+                            }
                             data.putValue("game_time", 0L); // Reset game time back to beginning
                             metadata.writeToFile(levelOverridesFile, true);
                         }
@@ -1849,7 +1863,12 @@ public class WorldConfig extends WorldConfigStore {
                         if (data != null) {
                             // Spawn point needs to be re-initialized, etc.
                             data.putValue("initialized", (byte) 0);
-                            data.remove("spawn");
+                            if (options.isResetSpawn()) {
+                                data.remove("SpawnX");
+                                data.remove("SpawnY");
+                                data.remove("SpawnZ");
+                                data.remove("spawn");
+                            }
 
                             // Reset dragon fight, clear sub-fields to avoid warn during world load
                             CommonTagCompound dragonFight = data.get("DragonFight", CommonTagCompound.class);
