@@ -86,17 +86,16 @@ public class WorldManager {
         if (preferEndOuterRingFirst && world.getEnvironment() == Environment.THE_END) {
             if (retry <= 5) {
                 // The central End island is roughly within a 128-block radius. Probe the outer ring first.
-                final int minRadiusSq = 65 * 65;
-                final int maxRadiusSq = 127 * 127;
-                for (int n = 0; n < 100; n++) {
-                    int x = random.nextInt(255) - 127;
-                    int z = random.nextInt(255) - 127;
-                    int distSq = (x * x) + (z * z);
-                    if (distSq >= minRadiusSq && distSq <= maxRadiusSq) {
-                        return new IntVector2(x, z);
-                    }
-                }
-                return new IntVector2(127, 0);
+                final int minRadius = 65;
+                final int maxRadius = 127;
+                final double baseAngle = ((double) retry / 6.0) * (Math.PI * 2.0);
+                final double jitter = (random.nextDouble() - 0.5) * (Math.PI / 6.0);
+                final double angle = baseAngle + jitter;
+                final int radius = minRadius + random.nextInt(maxRadius - minRadius + 1);
+                return new IntVector2(
+                        (int) Math.round(Math.cos(angle) * radius),
+                        (int) Math.round(Math.sin(angle) * radius)
+                );
             } else {
                 // If no good location is found quickly, include the inner region too
                 return new IntVector2(random.nextInt(255) - 127, random.nextInt(255) - 127);
