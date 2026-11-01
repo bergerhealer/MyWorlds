@@ -15,6 +15,7 @@ import java.util.zip.InflaterInputStream;
 import java.util.zip.ZipException;
 
 import com.bergerkiller.bukkit.common.chunk.ForcedChunk;
+import com.bergerkiller.bukkit.common.bases.IntVector2;
 import com.bergerkiller.bukkit.common.utils.MathUtil;
 import com.bergerkiller.bukkit.common.world.LoadableWorld;
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
@@ -22,6 +23,7 @@ import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
@@ -47,6 +49,10 @@ import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.bukkit.mw.utils.GeneratorStructuresParser;
 
 public class WorldManager {
+    private static final Material END_GATEWAY_TYPE = MaterialUtil.getFirst("END_GATEWAY", "LEGACY_END_GATEWAY");
+    private static final Material IRON_BARS_TYPE = MaterialUtil.getFirst("IRON_BARS", "LEGACY_IRON_FENCE");
+    private static final Material OBSIDIAN_TYPE = MaterialUtil.getFirst("OBSIDIAN", "LEGACY_OBSIDIAN");
+    private static final Material BEDROCK_TYPE = MaterialUtil.getFirst("BEDROCK", "LEGACY_BEDROCK");
 
     private static boolean isSafeSpawnAir(BlockData blockData, Block block) {
         if (MaterialUtil.ISLIQUID.get(blockData)) {
@@ -59,6 +65,50 @@ public class WorldManager {
             return false;
         }
         return true;
+    }
+
+    private static boolean isInconvenientSpawnSurface(World world, Block block) {
+        if (world.getEnvironment() != Environment.THE_END) {
+            return false;
+        }
+        Material blockType = block.getType();
+        return blockType == END_GATEWAY_TYPE || blockType == IRON_BARS_TYPE ||
+               blockType == OBSIDIAN_TYPE || blockType == BEDROCK_TYPE;
+    }
+
+    private static boolean isEndCenterSpawnExcluded(World world, int x, int z) {
+        return world.getEnvironment() == Environment.THE_END &&
+               Math.abs(x) <= 4 && Math.abs(z) <= 4;
+    }
+
+    private static IntVector2 nextSafeSpawnProbe(World world, Random random, int retry, int originX, int originZ,
+                                                 boolean preferEndOuterRingFirst) {
+        if (preferEndOuterRingFirst && world.getEnvironment() == Environment.THE_END) {
+            if (retry <= 5) {
+                // The central End island is roughly within a 128-block radius. Probe the outer ring first.
+                final int minRadiusSq = 65 * 65;
+                final int maxRadiusSq = 127 * 127;
+                for (int n = 0; n < 100; n++) {
+                    int x = random.nextInt(255) - 127;
+                    int z = random.nextInt(255) - 127;
+                    int distSq = (x * x) + (z * z);
+                    if (distSq >= minRadiusSq && distSq <= maxRadiusSq) {
+                        return new IntVector2(x, z);
+                    }
+                }
+                return new IntVector2(127, 0);
+            } else {
+                // If no good location is found quickly, include the inner region too
+                return new IntVector2(random.nextInt(255) - 127, random.nextInt(255) - 127);
+            }
+        }
+
+        // Default behavior: first a few probes nearby, then wider around the origin column
+        if (retry <= 5) {
+            return new IntVector2(originX + random.nextInt(8) - 3, originZ + random.nextInt(8) - 3);
+        } else {
+            return new IntVector2(originX + random.nextInt(128) - 63, originZ + random.nextInt(128) - 63);
+        }
     }
 
     private static boolean isSafeSpawnSurface(BlockData blockData, Block block) {
@@ -1135,11 +1185,19 @@ public class WorldManager {
         final int startY = world.getEnvironment() == Environment.NETHER ? 127 : (world.getMaxHeight() - 1);
         final Random random = new Random();
         int y, x = blockX, z = blockZ;
+        final boolean preferEndOuterRingFirst = isEndCenterSpawnExcluded(world, blockX, blockZ);
         int alterX = blockX, alterY = blockY, alterZ = blockZ;
+        Location inconvenientAlternative = null;
         int airCounter;
         BlockData data;
         Block block;
         for (int retry = 0; retry < 200; retry++) {
+            if (isEndCenterSpawnExcluded(world, x, z)) {
+                IntVector2 probe = nextSafeSpawnProbe(world, random, retry, blockX, blockZ, preferEndOuterRingFirst);
+                x = probe.x;
+                z = probe.z;
+                continue;
+            }
             airCounter = world.getEnvironment() == Environment.NETHER ? 0 : 2;
             for (y = startY; y > 0; y--) {
                 block = world.getBlockAt(x, y, z);
@@ -1151,8 +1209,14 @@ public class WorldManager {
                     // Safe spawn is only there with 2 air-blocks above the surface
                     if (airCounter >= 2) {
                         if (isSafeSpawnSurface(data, block)) {
-                            // Safe place to spawn on - ENDING
-                            return new Location(world, x + 0.5, y + 1.5, z + 0.5);
+                            Location result = new Location(world, x + 0.5, y + 1.5, z + 0.5);
+                            if (isInconvenientSpawnSurface(world, block)) {
+                                if (inconvenientAlternative == null) {
+                                    inconvenientAlternative = result;
+                                }
+                            } else {
+                                return result;
+                            }
                         } else {
                             // Unsafe place but still a surface...set as alternative
                             alterX = x;
@@ -1165,15 +1229,12 @@ public class WorldManager {
                 }
             }
 
-            // Obtain a new column to look at
-            // For the first 5 calls, probe around a bit < 8 blocks away
-            if (retry <= 5) {
-                x = blockX + random.nextInt(8) - 3;
-                z = blockZ + random.nextInt(8) - 3;
-            } else {
-                x = blockX + random.nextInt(128) - 63;
-                z = blockZ + random.nextInt(128) - 63;
-            }
+            IntVector2 probe = nextSafeSpawnProbe(world, random, retry, blockX, blockZ, preferEndOuterRingFirst);
+            x = probe.x;
+            z = probe.z;
+        }
+        if (inconvenientAlternative != null) {
+            return inconvenientAlternative;
         }
         // Return the alternative (unsafe) location
         // This could occur if spawning in an ocean, for example
