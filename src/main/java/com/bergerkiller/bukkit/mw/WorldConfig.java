@@ -1223,6 +1223,9 @@ public class WorldConfig extends WorldConfigStore {
      */
     private String getRawWorldName() {
         String lower = this.worldname.toLowerCase();
+        if (lower.endsWith("_the_nether")) {
+            return lower.substring(0, lower.length() - 11);
+        }
         if (lower.endsWith("_nether")) {
             return lower.substring(0, lower.length() - 7);
         }
