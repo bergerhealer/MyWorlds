@@ -1219,9 +1219,10 @@ public class WorldConfig extends WorldConfigStore {
      * Returns an empty String if the world name equals DIM1 or DIM-1 (for MCPC+ server).
      * In all cases, a lower-cased world name is returned.
      * 
-     * @return Raw world name
+     * @return Raw world name, lower-cased. Use it to match against other dimensions that share
+     *                 world names
      */
-    private String getRawWorldName() {
+    protected String getRawWorldName() {
         String lower = this.worldname.toLowerCase();
         if (lower.endsWith("_the_nether")) {
             return lower.substring(0, lower.length() - 11);

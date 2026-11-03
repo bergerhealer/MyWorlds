@@ -123,6 +123,33 @@ public class WorldConfigStore {
     }
 
     /**
+     * Looks up the configuration for another vanilla main world dimension, such as the end or nether world,
+     * if one exists.
+     *
+     * @param environment Vanilla world environment
+     * @return WorldConfig for that environment, or null if not found
+     */
+    public static WorldConfig getVanillaMainDimension(World.Environment environment) {
+        WorldConfig vanillaMain = WorldConfigStore.getVanillaMain();
+        if (environment == World.Environment.NORMAL) {
+            return vanillaMain;
+        }
+
+        String mainWorldName = vanillaMain.getRawWorldName();
+        for (WorldConfig otherWorld : all()) {
+            if (
+                    otherWorld != vanillaMain
+                            && mainWorldName.equals(otherWorld.getRawWorldName())
+                            && otherWorld.worldmode.getEnvironment() == environment
+            ) {
+                return otherWorld;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Gets the World Configuration of the main world for inventory storage. This is
      * the first world where player data is loaded when players join to figure out what
      * world they are on. This world also stores special metadata, like the last positions
@@ -244,6 +271,16 @@ public class WorldConfigStore {
      * @param plugin MyWorlds plugin instance
      */
     public static void initStartup(MyWorlds plugin) {
+        // The nether and end world load automatically, but perhaps they shouldn't be
+        // If the user last unloaded those worlds, keep them unloaded (unload them again)
+        for (World.Environment environment : new World.Environment[] { World.Environment.NETHER, World.Environment.THE_END }) {
+            WorldConfig environmentWc = WorldConfigStore.getVanillaMainDimension(environment);
+            if (environmentWc != null && environmentWc.isLoaded() && environmentWc.getStartupLoadMode() == WorldStartupLoadMode.NOT_LOADED) {
+                plugin.getLogger().info("Unloading vanilla dimension world " + environmentWc.worldname + " because it was last unloaded at shutdown");
+                environmentWc.unloadWorld();
+            }
+        }
+
         // Ensure all currently loaded worlds have a configuration, generate a new one if needed
         // Fire an initial onWorldLoad event for them
         for (World world : WorldUtil.getWorlds()) {
