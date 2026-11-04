@@ -3,12 +3,16 @@ package com.bergerkiller.bukkit.mw;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
@@ -49,10 +53,14 @@ import com.bergerkiller.bukkit.common.wrappers.PlayerRespawnPoint;
 import com.bergerkiller.bukkit.mw.utils.GeneratorStructuresParser;
 
 public class WorldManager {
-    private static final Material END_GATEWAY_TYPE = MaterialUtil.getFirst("END_GATEWAY", "LEGACY_END_GATEWAY");
-    private static final Material IRON_BARS_TYPE = MaterialUtil.getFirst("IRON_BARS", "LEGACY_IRON_FENCE");
-    private static final Material OBSIDIAN_TYPE = MaterialUtil.getFirst("OBSIDIAN", "LEGACY_OBSIDIAN");
-    private static final Material BEDROCK_TYPE = MaterialUtil.getFirst("BEDROCK", "LEGACY_BEDROCK");
+    private static final EnumSet<Material> INCONVENIENT_SPAWN_MATERIALS = Stream.of(
+            "END_GATEWAY", "LEGACY_END_GATEWAY",
+            "IRON_BARS", "LEGACY_IRON_FENCE",
+            "OBSIDIAN", "LEGACY_OBSIDIAN",
+            "BEDROCK", "LEGACY_BEDROCK"
+    ).map(MaterialUtil::getMaterial)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(() -> EnumSet.noneOf(Material.class)));
 
     private static boolean isSafeSpawnAir(BlockData blockData, Block block) {
         if (MaterialUtil.ISLIQUID.get(blockData)) {
@@ -72,8 +80,7 @@ public class WorldManager {
             return false;
         }
         Material blockType = block.getType();
-        return blockType == END_GATEWAY_TYPE || blockType == IRON_BARS_TYPE ||
-               blockType == OBSIDIAN_TYPE || blockType == BEDROCK_TYPE;
+        return INCONVENIENT_SPAWN_MATERIALS.contains(blockType);
     }
 
     private static boolean isEndCenterSpawnExcluded(World world, int x, int z) {
