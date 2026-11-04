@@ -2,7 +2,6 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.List;
 
-import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.mw.Localization;
@@ -19,7 +18,7 @@ public class WorldEvacuate extends Command {
         if (args.length != 0) {
             worldname = WorldManager.matchWorld(args[0]);
             if (this.handleWorld()) {
-                World w = Bukkit.getServer().getWorld(worldname);
+                World w = WorldManager.getWorld(worldname);
                 if (w != null) {
                     String message = "";
                     for (int i = 1;i < args.length;i++) {

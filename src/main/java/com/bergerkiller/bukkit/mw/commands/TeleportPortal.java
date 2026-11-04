@@ -7,7 +7,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import com.bergerkiller.bukkit.mw.events.MyWorldsTeleportCommandEvent;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -19,6 +18,7 @@ import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.PortalStore;
 import com.bergerkiller.bukkit.mw.Util;
 import com.bergerkiller.bukkit.mw.WorldManager;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.commands.registry.RegisteredCommand;
 
 public class TeleportPortal extends Command {
@@ -140,7 +140,7 @@ public class TeleportPortal extends Command {
                                 .thenApply(results -> results.stream().mapToInt(success -> success ? 1 : 0).sum())
                                 .thenAccept(succCount -> {
                                     message(ChatColor.YELLOW.toString() + succCount + "/" + targets.length +
-                                            " Players have been teleported to world '" + w.getName() + "'!");
+                                            " Players have been teleported to world '" + WorldManager.getWorldDisplayName(w) + "'!");
                                 });
                     }
                 } else {
@@ -158,8 +158,7 @@ public class TeleportPortal extends Command {
         if (args.length <= 1) {
             return processAutocomplete(Stream.concat(
                         Stream.of(PortalStore.getPortals()),
-                        /* Important: don't use World::getName(), that breaks on older mc */
-                        Bukkit.getWorlds().stream().map(w -> w.getName())
+                        WorldUtil.getLoadableWorlds().stream()
                     ));
         } else {
             return processPlayerNameAutocomplete();

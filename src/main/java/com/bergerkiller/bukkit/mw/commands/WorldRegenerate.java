@@ -20,10 +20,7 @@ public class WorldRegenerate extends Command {
 
     public void execute() {
         if (args.length >= 1) {
-            worldname = args[0];
-            if (!WorldManager.worldExists(worldname)) {
-                worldname = null;
-            }
+            worldname = WorldManager.matchWorld(args[0]);
             if (this.handleWorld()) {
                 this.removeArg(0);
 
@@ -34,7 +31,7 @@ public class WorldRegenerate extends Command {
 
                 final boolean wasLoaded;
                 {
-                    World loadedWorld = Bukkit.getWorld(worldname);
+                    World loadedWorld = WorldManager.getWorld(worldname);
                     if (loadedWorld == null) {
                         wasLoaded = false;
                     } else {

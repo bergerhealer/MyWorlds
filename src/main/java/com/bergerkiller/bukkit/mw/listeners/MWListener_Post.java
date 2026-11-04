@@ -7,6 +7,7 @@ import com.bergerkiller.bukkit.mw.Localization;
 import com.bergerkiller.bukkit.mw.MyWorlds;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.WorldManager;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -77,7 +78,7 @@ public class MWListener_Post implements Listener {
         }
         // World reached player limit?
         if (player.getWorld() != to.getWorld() && !WorldConfig.get(to.getWorld()).checkPlayerLimit(player)) {
-            Localization.WORLD_FULL.message(player, to.getWorld().getName());
+            Localization.WORLD_FULL.message(player, WorldManager.getWorldDisplayName(to.getWorld()));
             return false;
         }
 
@@ -92,7 +93,7 @@ public class MWListener_Post implements Listener {
             Localization.PORTAL_ENTER.message(player, lastPortal);
         } else if (to != null && to.getWorld() != player.getWorld()) {
             // Show world enter message
-            Localization.WORLD_ENTER.message(player, to.getWorld().getName());
+            Localization.WORLD_ENTER.message(player, WorldManager.getWorldDisplayName(to.getWorld()));
         }
     }
 

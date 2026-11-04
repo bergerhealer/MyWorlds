@@ -2,13 +2,13 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.List;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.WorldConfig;
+import com.bergerkiller.bukkit.mw.WorldManager;
 
 public class WorldInfo extends Command {
     
@@ -119,7 +119,7 @@ public class WorldInfo extends Command {
                         message(ChatColor.WHITE + "Weather: " + ChatColor.YELLOW + "The sky is clear");
                     }
                 }                            
-                World w = Bukkit.getServer().getWorld(worldname);
+                World w = WorldManager.getWorld(worldname);
                 if (w != null) {
                     int playercount = w.getPlayers().size();
                     if (playercount > 0) {

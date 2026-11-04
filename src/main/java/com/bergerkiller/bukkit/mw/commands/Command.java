@@ -392,11 +392,13 @@ public abstract class Command {
         // Run this once loading of spawn completes
         CompletableFuture.allOf(loadFutures.toArray(new CompletableFuture[0]))
                 .whenComplete((v, error) -> {
+                    String worldDisplayName = WorldManager.getWorldDisplayName(world);
+
                     // If something went wrong, log it and show a message
                     // Still do the post-load logic, because that stuff must run anyway
                     if (error != null) {
-                        MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to load some spawn chunks of " + world.getName(), error);
-                        message(ChatColor.RED + "Failed to fully load spawn area of '" + world.getName() + "': " + error.getMessage());
+                        MyWorlds.plugin.getLogger().log(Level.SEVERE, "Failed to load some spawn chunks of " + worldDisplayName, error);
+                        message(ChatColor.RED + "Failed to fully load spawn area of '" + worldDisplayName + "': " + error.getMessage());
                     }
 
                     WorldConfig loaded_wc = WorldConfig.get(world);
@@ -415,8 +417,8 @@ public abstract class Command {
                     forcedChunks.clear();
 
                     // Confirmation message
-                    message(ChatColor.GREEN + "World '" + world.getName() + "' has been loaded and is ready for use!");
-                    plugin.log(Level.INFO, "World '"+ world.getName() + "' loaded.");
+                    message(ChatColor.GREEN + "World '" + worldDisplayName + "' has been loaded and is ready for use!");
+                    plugin.log(Level.INFO, "World '" + worldDisplayName + "' loaded.");
                 });
     }
 }

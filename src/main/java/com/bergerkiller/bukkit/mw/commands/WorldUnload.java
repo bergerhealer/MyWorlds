@@ -2,7 +2,6 @@ package com.bergerkiller.bukkit.mw.commands;
 
 import java.util.List;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
@@ -22,7 +21,7 @@ public class WorldUnload extends Command {
         if (args.length != 0) {
             worldname = WorldManager.matchWorld(args[0]);
             if (this.handleWorld()) {
-                World w = Bukkit.getServer().getWorld(worldname);
+                World w = WorldManager.getWorld(worldname);
                 if (w != null) {
                     logAction("Issued an unload command for world: " + worldname);
                     if (WorldManager.unload(w)) {

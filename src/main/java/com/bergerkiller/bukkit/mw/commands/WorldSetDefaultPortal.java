@@ -6,12 +6,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
 import com.bergerkiller.bukkit.common.utils.LogicUtil;
 import com.bergerkiller.bukkit.common.utils.ParseUtil;
+import com.bergerkiller.bukkit.common.utils.WorldUtil;
 import com.bergerkiller.bukkit.mw.Permission;
 import com.bergerkiller.bukkit.mw.Portal;
 import com.bergerkiller.bukkit.mw.PortalStore;
@@ -291,8 +291,7 @@ public class WorldSetDefaultPortal extends Command {
         if (args[0].equalsIgnoreCase("destination")) {
             return processAutocomplete(Stream.concat(
                     Stream.of(PortalStore.getPortals()),
-                    /* Important: don't use World::getName(), that breaks on older mc */
-                    Bukkit.getWorlds().stream().map(w -> w.getName())
+                    WorldUtil.getLoadableWorlds().stream()
                 ));
         }
         if (args[0].equalsIgnoreCase("mode")) {

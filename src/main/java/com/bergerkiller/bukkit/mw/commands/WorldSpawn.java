@@ -58,7 +58,7 @@ public class WorldSpawn extends Command {
             if (args.length >= 2) {
                 player = Util.parsePlayerName(sender, args[0]);
                 if (player != null) {
-                    Localization.COMMAND_REJOIN_OTHER.message(sender, player.getName(), world.getName());
+                    Localization.COMMAND_REJOIN_OTHER.message(sender, player.getName(), WorldManager.getWorldDisplayName(world));
                 }
             }
             if (player != null) {

@@ -21,12 +21,9 @@ public class WorldDelete extends Command {
 
     public void execute() {
         if (args.length == 1) {
-            worldname = args[0];
-            if (!WorldManager.worldExists(worldname)) {
-                worldname = null;
-            }
+            worldname = WorldManager.matchWorld(args[0]);
             if (this.handleWorld()) {
-                World loadedWorld = Bukkit.getWorld(worldname);
+                World loadedWorld = WorldManager.getWorld(worldname);
                 if (loadedWorld != null) {
                     // Try to unload the world first
                     if (!Permission.COMMAND_UNLOAD.has(sender)) {

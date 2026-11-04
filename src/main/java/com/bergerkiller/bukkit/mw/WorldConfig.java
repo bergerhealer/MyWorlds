@@ -1041,7 +1041,7 @@ public class WorldConfig extends WorldConfigStore {
         try {
             MyWorlds.plugin.getAdvancementManager().applyGameRule(world, this.advancementsEnabled && !this.advancementsSilent);
         } catch (Throwable t) {
-            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to update advancements enabled setting for world " + world.getName(), t);
+            MyWorlds.plugin.getLogger().log(Level.WARNING, "Failed to update advancements enabled setting for world " + WorldManager.getWorldDisplayName(world), t);
         }
     }
 

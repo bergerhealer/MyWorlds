@@ -176,6 +176,7 @@ public class WorldLastPosition extends Command {
             Localization.WORLD_NOTLOADED.message(sender, worldname);
             return;
         }
+        String worldDisplayName = WorldManager.getWorldDisplayName(world);
 
         // If a player name is specified, use that player's last position on that world instead
         // of the sender
@@ -186,7 +187,7 @@ public class WorldLastPosition extends Command {
 
         // Skip if target and sender are the same and already on this world
         if (lastPosPlayer == player && lastPosPlayer.getWorld() == world) {
-            Localization.COMMAND_LASTPOSITION_TP_SAME.message(sender, lastPosPlayer.getName(), world.getName());
+            Localization.COMMAND_LASTPOSITION_TP_SAME.message(sender, lastPosPlayer.getName(), worldDisplayName);
             return;
         }
 
@@ -197,7 +198,7 @@ public class WorldLastPosition extends Command {
             lastLoc = MWPlayerDataController.readLastLocation(lastPosPlayer, world, true);
         }
         if (lastLoc == null) {
-            Localization.COMMAND_LASTPOSITION_TP_NEVERVISITED.message(sender, lastPosPlayer.getName(), world.getName());
+            Localization.COMMAND_LASTPOSITION_TP_NEVERVISITED.message(sender, lastPosPlayer.getName(), worldDisplayName);
             return;
         }
 
@@ -206,7 +207,7 @@ public class WorldLastPosition extends Command {
                 MyWorldsTeleportCommandEvent.CommandType.LAST_POSITION,
                 to
         ))) {
-            Localization.COMMAND_LASTPOSITION_TP_SUCCESS.message(sender, lastPosPlayer.getName(), world.getName());
+            Localization.COMMAND_LASTPOSITION_TP_SUCCESS.message(sender, lastPosPlayer.getName(), worldDisplayName);
         }
     }
 

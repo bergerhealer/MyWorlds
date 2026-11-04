@@ -312,6 +312,21 @@ public class WorldManager {
         }
     }
 
+    /**
+     * Gets the canonical MyWorlds name for a loaded world.
+     * Falls back to Bukkit's world name if no LoadableWorld metadata is available.
+     *
+     * @param world Bukkit world
+     * @return Canonical world name, or null if world is null
+     */
+    public static String getWorldDisplayName(World world) {
+        if (world == null) {
+            return null;
+        }
+        LoadableWorld loadableWorld = LoadableWorld.of(world);
+        return (loadableWorld == null) ? world.getName() : loadableWorld.getDisplayName();
+    }
+
     public static boolean isLoaded(String worldname) {
         return getWorld(worldname) != null;
     }
