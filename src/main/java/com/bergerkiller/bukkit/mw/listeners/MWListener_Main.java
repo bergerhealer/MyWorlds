@@ -509,6 +509,11 @@ public class MWListener_Main implements Listener {
         case INFECTION:
             return !MyWorlds.ignoreBreedingSpawns;
         case DEFAULT:
+            // Ender dragon spawns in with this spawn reason, and we have to block it.
+            if (entityType == EntityType.ENDER_DRAGON) {
+                return true;
+            }
+
             return false;
         case CUSTOM:
             if (TRADER_SPAWNS_BORKED) {
@@ -575,9 +580,21 @@ public class MWListener_Main implements Listener {
         }
 
         // Cancel creature spawns after entities are created, before they spawn
-        if (WorldConfig.get(event.getEntity()).spawnControl.isDenied(event.getEntity())) {
+        World world = event.getEntity().getWorld();
+        if (WorldConfig.get(world).spawnControl.isDenied(event.getEntity())) {
             event.setCancelled(true);
+
+            // Also turn off the boss bar, since the dragon doesn't even exist
+            if (event.getEntityType() == EntityType.ENDER_DRAGON && world.getEnvironment() == World.Environment.THE_END) {
+                if (Common.hasCapability("Common:WorldUtil:disableEnderDragonFight")) {
+                    disableActiveEnderDragonFightBKCL(world);
+                }
+            }
         }
+    }
+
+    private static void disableActiveEnderDragonFightBKCL(World world) {
+        WorldUtil.disableEnderDragonFight(world);
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
